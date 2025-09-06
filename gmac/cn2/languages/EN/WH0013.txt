@@ -1,0 +1,44 @@
+Add Detail Receiption
+Filter Detail Receiption
+Save
+Filter
+Back
+Reload
+Reload
+Help
+Help
+Add new successfully!
+Could not added, error: 
+Edit successfully!
+Could not editted, error!
+...//Begin show data part
+Edit Detail Receiption
+AutoID 
+RecieptionID
+ItemID
+Quantity
+UnitID
+OtherQuantity
+OtherUnitID
+Price
+Currency
+Tax
+Expiration Date
+Discount
+Co
+LotID
+Note
+DateCreate
+ItemID is not empty
+You must enter number 
+ReceiptionID is not empty
+Choose file template of Receiption
+Download file template
+Please!Unzip file,open file MAU_NHAP_KHO.xml by microsoft excel,by open office
+Cut#
+Color
+Size
+Category Size
+Package Item
+Date create
+Lot DateExpire

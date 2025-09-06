@@ -1,0 +1,25 @@
+Thêm Mục Menu Thao Tác
+Lọc Mục Menu Thao Tác
+Lưu
+Lọc
+Quay lại
+Nạp lại trang này
+Nạp lại
+Trợ giúp
+Trợ giúp
+Thêm thành công.
+Thêm không được, lỗi: 
+Sửa thành công.
+Sửa không được, lỗi: 
+...//Bắt đầu từ phần hiển thị thông tin trong bảng
+Sửa Menu Thao Tác
+Mã
+Mã nguời dùng
+Tên thao tác
+Liên kết tới
+Trạng thái
+--Lựa chọn--
+...///Bắt đầu từ phần thông báo
+Mã không có dữ liệu, xin hãy thử lại.
+Xin hãy nhập tên.
+Xin hãy chọn tài khoản

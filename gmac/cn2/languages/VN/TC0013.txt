@@ -1,0 +1,13 @@
+...Bắt đầu từ phần biểu tượng điều khiển
+Quay lại
+Quay lại
+Nạp lại trang này
+Nạp lại
+Trợ giúp
+Trợ giúp
+...//Begin control icon part
+Thông số lương theo mã chấm công
+Thông số lương theo sản phẩm
+Loại sản phẩm theo chất lượng
+Nhập doanh thu phòng ban
+Nhập lương sản phẩm theo chuyền

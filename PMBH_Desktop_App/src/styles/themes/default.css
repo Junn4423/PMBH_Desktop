@@ -1,0 +1,200 @@
+/* ================================================================
+   DEFAULT THEME
+   Theme mặc định cho ứng dụng POS Cafe
+================================================================ */
+
+/* ============================================
+   THEME OVERRIDES - Default Light Theme
+============================================ */
+
+/* Theme này là theme chính, các variables đã được định nghĩa trong base/variables.css */
+
+/* Light Theme Specific Adjustments */
+.theme-default {
+  /* Background colors */
+  --color-background: var(--color-white);
+  --color-surface: var(--color-white);
+  --color-surface-hover: var(--color-gray-50);
+  
+  /* Text colors for light theme */
+  --color-text-on-primary: var(--color-white);
+  --color-text-on-secondary: var(--color-white);
+  --color-text-on-surface: var(--color-gray-900);
+  
+  /* Border colors */
+  --color-border-light: var(--color-gray-100);
+  --color-border-medium: var(--color-gray-300);
+  --color-border-strong: var(--color-gray-500);
+  
+  /* Shadow adjustments for light theme */
+  --shadow-color: rgba(0, 0, 0, 0.1);
+  --shadow-strong-color: rgba(0, 0, 0, 0.15);
+}
+
+/* ============================================
+   LIGHT THEME SPECIFIC COMPONENTS
+============================================ */
+
+/* Header in light theme */
+.theme-default .app-header {
+  background-color: var(--color-white);
+  border-bottom: 1px solid var(--color-gray-200);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+/* Sidebar in light theme */
+.theme-default .app-sidebar {
+  background-color: var(--color-white);
+  border-right: 1px solid var(--color-gray-200);
+}
+
+/* Cards in light theme */
+.theme-default .card {
+  background-color: var(--color-white);
+  border: 1px solid var(--color-gray-200);
+}
+
+/* Tables in light theme */
+.theme-default .table {
+  background-color: var(--color-white);
+}
+
+.theme-default .table th {
+  background-color: var(--color-gray-50);
+  color: var(--color-gray-700);
+}
+
+.theme-default .table tbody tr:hover {
+  background-color: var(--color-gray-50);
+}
+
+/* Forms in light theme */
+.theme-default .form-input {
+  background-color: var(--color-white);
+  border-color: var(--color-gray-300);
+  color: var(--color-gray-900);
+}
+
+.theme-default .form-input:focus {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px var(--color-primary-light);
+}
+
+/* Buttons adjustments for light theme */
+.theme-default .btn-ghost {
+  color: var(--color-gray-700);
+}
+
+.theme-default .btn-ghost:hover {
+  background-color: var(--color-gray-100);
+  color: var(--color-gray-900);
+}
+
+/* ============================================
+   CAFE SPECIFIC LIGHT THEME
+============================================ */
+
+/* Tables (bàn) in light theme */
+.theme-default .ban-item--trong {
+  background-color: #f0f9ff;
+  border-color: var(--color-success);
+  color: #065f46;
+}
+
+.theme-default .ban-item--co-khach {
+  background-color: #fef2f2;
+  border-color: var(--color-danger);
+  color: #991b1b;
+}
+
+.theme-default .ban-item--dat-truoc {
+  background-color: #fffbeb;
+  border-color: var(--color-warning);
+  color: #92400e;
+}
+
+.theme-default .ban-item--don-dep {
+  background-color: #eff6ff;
+  border-color: var(--color-info);
+  color: #1e40af;
+}
+
+/* Products in light theme */
+.theme-default .san-pham-card {
+  background-color: var(--color-white);
+  border: 1px solid var(--color-gray-200);
+}
+
+.theme-default .san-pham-card:hover {
+  border-color: var(--color-primary);
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+}
+
+/* Cart in light theme */
+.theme-default .gio-hang-container {
+  background-color: var(--color-white);
+}
+
+.theme-default .gio-hang-header {
+  background-color: var(--color-primary);
+  color: var(--color-white);
+}
+
+.theme-default .gio-hang-item {
+  background-color: var(--color-white);
+  border: 1px solid var(--color-gray-200);
+}
+
+.theme-default .gio-hang-item:hover {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+/* Payment in light theme */
+.theme-default .phuong-thuc-item {
+  background-color: var(--color-white);
+  border: 2px solid var(--color-gray-200);
+}
+
+.theme-default .phuong-thuc-item:hover {
+  border-color: var(--color-primary);
+  background-color: var(--color-primary-light);
+}
+
+.theme-default .phuong-thuc-item--active {
+  border-color: var(--color-primary);
+  background-color: var(--color-primary-light);
+  color: var(--color-primary-dark);
+}
+
+/* Invoice in light theme */
+.theme-default .hoa-don-container {
+  background-color: var(--color-white);
+  color: var(--color-gray-900);
+}
+
+.theme-default .hoa-don-table th {
+  background-color: var(--color-gray-100);
+  color: var(--color-gray-700);
+}
+
+/* ============================================
+   PRINT STYLES FOR LIGHT THEME
+============================================ */
+@media print {
+  .theme-default {
+    --color-primary: #000000;
+    --color-text: #000000;
+    --color-background: #ffffff;
+  }
+  
+  .theme-default .hoa-don-container {
+    background-color: white !important;
+    color: black !important;
+    box-shadow: none !important;
+  }
+  
+  .theme-default .hoa-don-table th {
+    background-color: #f5f5f5 !important;
+    color: black !important;
+  }
+}

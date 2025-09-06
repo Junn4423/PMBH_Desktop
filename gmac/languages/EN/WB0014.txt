@@ -1,0 +1,29 @@
+Thêm Mục Chi Tiết Sản Phẩm
+Lọc Mục Chi Tiết Sản Phẩm
+Lưu
+Lọc
+Quay lại
+Nạp lại trang này
+Nạp lại
+Trợ giúp
+Trợ giúp
+Thêm thành công.
+Thêm không được, lỗi: 
+Sửa thành công.
+Sửa không được, lỗi: 
+...//Bắt đầu từ phần hiển thị thông tin trong bảng
+Sửa Mục Chi Tiết Sản Phẩm
+Mã tự đồng
+Mã nội dung
+Chủ đề
+Nội dung ngắn
+Nội dung
+Ngày đăng
+Ngôn ngữ
+Mổ tả seo
+Từ khoá seo
+Mã nội dung không rổng
+Bạn phải nhập chủ đề
+Mã nội dung
+Điều kiện
+Điểm nổi bật

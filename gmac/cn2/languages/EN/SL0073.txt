@@ -1,0 +1,27 @@
+Thêm Mục Chi tiết chương trình
+Lọc Mục Chi tiết chương trình
+Lưu
+Lọc
+Quay lại
+Nạp lại trang này
+Nạp lại
+Trợ giúp
+Trợ giúp
+Thêm thành công.
+Thêm không được, lỗi: 
+Sửa thành công.
+Sửa không được, lỗi: 
+...//Bắt đầu từ phần hiển thị thông tin trong bảng
+Sửa Mục Chi tiết chương trình 
+Mã chiết khấu
+Mã chương trình
+Mã sản phẩm
+%CK
+Số tiền
+Số điểm
+Mua 1 tặng 1
+Bạn phải chọn chương trình
+Bạn phải chọn sản phẩm chương trình
+Chọn mẫu tập tin chương trình theo mẫu
+Tải phải mẫu chường trình về
+Ghi chú

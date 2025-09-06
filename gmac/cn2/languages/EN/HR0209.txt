@@ -1,0 +1,33 @@
+Thêm Mục Quản Lý Tiền Khác
+Lọc Mục Quản Lý Tiền Khác
+Lưu
+Lọc
+Quay lại
+Nạp lại trang này
+Nạp lại
+Trợ giúp
+Trợ giúp
+Thêm thành công.
+Thêm không được, lỗi: 
+Sửa thành công.
+Sửa không được, lỗi: 
+...//Bắt đầu từ phần hiển thị thông tin trong bảng
+Sửa Mục Quản Lý Tiền Khác
+Mã tự động
+Mã NV thụ hưởng
+Mã người tư vấn
+Mã nhân viên mới
+Lần ghi
+Tháng
+Năm
+Số tiền
+Số tiền người tư vấn
+Chương trình
+Ghi chú
+Người khóa
+Ngày ghi
+Ngày khóa
+Khóa
+Mã sản phẩm không rổng
+Bạn phải nhập số
+Mã hợp đồng không rổng

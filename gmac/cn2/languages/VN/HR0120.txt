@@ -1,0 +1,25 @@
+Thêm Mục Bằng Cấp Đạt Được
+Lọc Mục Bằng Cấp Đạt Được
+Lưu
+Lọc
+Quay lại
+Nạp lại trang này
+Nạp lại
+Trợ giúp
+Trợ giúp
+Thêm thành công.
+Thêm không được, lỗi: 
+Sửa thành công.
+Sửa không được, lỗi: 
+...//Bắt đầu từ phần hiển thị thông tin trong bảng
+Sửa Mục Bằng Cấp Đạt Được
+Mã tự động
+Mã nhân viên
+Bằng cấp
+Ngáy bắt đầu
+Ngày kết thúc
+Ghi chú
+Mã nhân viên không được rỗng
+Bằng cấp không được rỗng
+Bạn phải nhập ngày
+Mã trường đào tạo

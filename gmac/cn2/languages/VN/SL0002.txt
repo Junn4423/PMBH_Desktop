@@ -1,0 +1,46 @@
+Thêm Mục Khách Hàng
+Lọc Mục Khách Hàng
+Lưu
+Lọc
+Quay lại
+Nạp lại trang này
+Nạp lại
+Trợ giúp
+Trợ giúp
+Thêm thành công.
+Thêm không được, lỗi: 
+Sửa thành công.
+Sửa không được, lỗi: 
+...//Bắt đầu từ phần hiển thị thông tin trong bảng
+Sửa Mục Khách Hàng
+Mã khách hàng
+Tên khách hàng
+Họ và tên
+CMND
+Ngày cấp
+Địa chỉ
+Tỉnh
+Quốc gia
+Quận/Huyện
+Điện thoại
+Điện thoại di động
+Fax
+Mã số thuế
+Website
+E-mail
+Số tài khoản
+Ngày sinh
+Quốc gia giao hàng
+Địa chỉ giao hàng
+Điên thoại giao hàng
+Những thông tin giao hàng khác
+Bạn phải nhập phần tên công ty
+Số điện thoại không hợp lệ
+Bạn phải nhập phần mã khách hàng.
+Địa chỉ không rỗng;
+Số fax không hợp lệ
+Nhóm khách hàng
+Trạng thái
+Ngày giờ tạo
+Mã nhân viên
+---

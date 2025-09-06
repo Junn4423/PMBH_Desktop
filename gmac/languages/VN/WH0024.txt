@@ -1,0 +1,43 @@
+Cấu hình
+Thêm mới
+Thêm
+Sửa
+Sửa
+Xóa
+Xóa
+Lọc
+Quay lại
+Nạp lại trang này
+Nạp lại
+Trợ giúp
+Trợ giúp
+...///Bắt đầu từ phần thông báo
+Xóa thành công.
+Xóa không được, lỗi: 
+PHIẾU MUA HÀNG
+DANH MỤC ĐƠN ĐẶT HÀNG
+STT
+MÃ ĐẶT HÀNG 
+Nhà cung cấp
+Chủ đề
+Ngày mua
+Ngày giao hàng
+Tỷ lệ thuế
+Thanh toán
+Vận chuyển
+Ghi chú
+MÃ NV
+Trạng thái
+Mã tiền tệ
+Tổng tiền thanh toán
+Ngày hủy
+Lưu
+Số dòng hiển thị
+Cách hiển thị
+Kết xuất dữ liệu
+Tạo tập tin exel
+Tạo tập tin word
+Tạo tập tin pdf
+Tổng tiền
+Vận chuyển đến
+Tiền nợ NCC

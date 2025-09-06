@@ -1,0 +1,17 @@
+...Bắt đầu từ phần biểu tượng điều khiển
+Quay lại
+Quay lại
+Nạp lại trang này
+Nạp lại
+Trợ giúp
+Trợ giúp
+...//Begin control icon part
+Chi tiết hợp đồng
+Lưu tài liệu hợp đồng
+Nhập theo hợp đồng
+Xuất theo hợp đồng
+Nhập trả theo hợp đồng
+Xuất trả theo hợp đồng
+Chi tiền
+Thu tiền
+Lịch sử

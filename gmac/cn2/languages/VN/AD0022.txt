@@ -1,0 +1,65 @@
+Thêm Mục Nhân Viên Làm Việc
+Lọc Mục Nhân Viên Làm Việc
+Lưu
+Lọc
+Quay lại
+Nạp lại trang này
+Nạp lại
+Trợ giúp
+Trợ giúp
+Thêm thành công.
+Thêm không được, lỗi: 
+Sửa thành công.
+Sửa không được, lỗi: 
+...//Bắt đầu từ phần hiển thị thông tin trong bảng
+Sửa Mục Nhân Viên Làm Việc
+Mã nhân viên
+Tên
+Tên Đệm
+Họ
+Chức vụ
+Tên riêng
+Hình
+Mã nhóm người dùng
+Trạng thái
+Mã CMND
+Ngày cấp CMND
+Nơi cấp
+Mã sô lính/Thông tin
+Số tài khoản/Thông tin
+Ngày sinh
+Nơi sinh
+Tình trang gia đình
+Phái
+Hút thuốc
+Số sổ BHXH
+Ngày cấp
+Quốc tịch
+Dân tộc
+Tôn giáo
+Màu gia
+Mã chủ đề công việc
+Mã trạng thái tuyển dụng
+Mã loại công việc
+Mã phòng ban
+Ngày bắt đầu làm việc
+Mã quốc gia
+Mã tỉnh
+Tên thành phố
+Địa chỉ hộ khẩu hay thường trú
+Địa chỉ tạm trú
+Mã bưu điện
+Số điện thoại nhà
+Số điện thoại công ty
+Số điện thoại di động
+Email công ty
+Email khác
+Người giới thiệu
+Nơi cấp bảo hiểm
+Ngày lên VIP
+Bạn phải nhập phần tên nhân viên.
+Số điện thoại không hợp lệ
+Bạn phải nhập phần mã nhân viên.
+Vị trí cấp trong cây
+Cấp bậc của bạn
+Người chỉ định

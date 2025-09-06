@@ -1,0 +1,38 @@
+Thêm Mục Hợp Đồng
+Lọc Mục Hợp Đồng
+Lưu
+Lọc
+Quay lại
+Nạp lại trang này
+Nạp lại
+Trợ giúp
+Trợ giúp
+Thêm thành công.
+Thêm không được, lỗi: 
+Sửa thành công.
+Sửa không được, lỗi: 
+...//Bắt đầu từ phần hiển thị thông tin trong bảng
+Sửa Mục Hợp Đồng
+Mã tự động
+Mã khách hàng
+Chù đề
+Ngày bắt đầu hợp đồng
+Ngày hết hạn hợp đồng
+Tỷ lệ thuế
+BÀN CAFE
+TẦNG CAFE
+Địa chỉ tạm chú/thrường trú
+Mã nhân viên bán hàng
+Trạng thái
+Mã chào giá
+0.Chưa xác nhận
+1.Đã xác nhận
+Bạn phải nhập tên sản phẩm
+Bạn phải nhập ngày
+Mã khách hàng không rổng
+Chi chú
+Nạp biểu mẩu vào nội dung hợp đồng
+Số HĐ/PO
+Mã cha
+(0=Bán/1=Mua)
+CK Tiền mặt

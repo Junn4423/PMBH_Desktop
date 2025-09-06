@@ -1,0 +1,24 @@
+Thêm Mục Doanh Thu Theo Bàn Ban
+Lọc Mục Doanh Thu Theo Bàn Ban
+Lưu
+Lọc
+Quay lại
+Nạp lại trang này
+Nạp lại
+Trợ giúp
+Trợ giúp
+Thêm thành công.
+Thêm không được, lỗi: 
+Sửa thành công.
+Sửa không được, lỗi: 
+...//Bắt đầu từ phần hiển thị thông tin trong bảng
+Sửa Mục Thông Số Lương Theo Sản Phẩm
+Mã
+Lần tính
+Mã phòng ban
+Tổng doanh thu
+Mã tiền tệ
+Mã lần tính không được rỗng
+Mã phòng ban không được rỗng
+Tổng doanh thu không được rỗng.
+Tổng công

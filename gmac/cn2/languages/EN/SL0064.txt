@@ -1,0 +1,23 @@
+Thêm Mục Chi Tiết Hoa Hồng
+Lọc Mục Chi Tiết Hoa Hồng
+Lưu
+Lọc
+Quay lại
+Nạp lại trang này
+Nạp lại
+Trợ giúp
+Trợ giúp
+Thêm thành công.
+Thêm không được, lỗi: 
+Sửa thành công.
+Sửa không được, lỗi: 
+...//Bắt đầu từ phần hiển thị thông tin trong bảng
+Danh Sách Chi Tiết Hoa Hồng
+Mã tự động
+Mã giảm giá
+Mã khách hàng
+Giảm giá(%)
+Điểm giới thiệu
+Điểm cho người quản lý
+Tổng doanh thu
+Mã không được rỗng

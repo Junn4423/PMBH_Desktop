@@ -1,0 +1,37 @@
+/*------------------------------------*/
+ThÃªm thÃ´ng tin cÃ¡ nhÃ¢n nhÃ¢n viÃªn
+ThÃªm thÃ´ng tin cÃ¡ nhÃ¢n nhÃ¢n viÃªn
+LÆ°u
+LÆ°u
+Quay láº¡i trang trÆ°á»›c
+Quay láº¡i
+ThÃªm dá»¯ liá»‡u thÃ nh cÃ´ng
+QuÃ¡ trÃ¬nh thÃªm bá»‹ lá»—i, nguyÃªn nhÃ¢n:
+Sá»­a dá»¯ liá»‡u thÃ nh cÃ´ng
+QuÃ¡ trÃ¬nh sá»­a bá»‹ lá»—i, nguyÃªn nhÃ¢n:
+/*------------------------------------*/
+MÃ£ NV
+TiÃªu Ä‘á»� cÃ´ng viá»‡c:
+--Chá»�n TiÃªu Ä‘á»�--
+Loáº¡i cÃ´ng viá»‡c:
+--Chá»�n loáº¡i cÃ´ng viá»‡c--
+Tráº¡ng thÃ¡i tuyá»ƒn dá»¥ng:
+--Chá»�n tráº¡ng thÃ¡i tuyá»ƒn dá»¥ng--
+PhÃ²ng ban:
+--Chá»�n phÃ²ng ban--
+NgÃ y vÃ o lÃ m:
+/*------------------------------------*/
+CÃ³ lá»—i xáº£y ra trong quÃ¡ trÃ¬nh láº¥y mÃ£ nhÃ¢n viÃªn, xin vui lÃ²ng thá»­ láº¡i
+Xin hÃ£y chá»�n TiÃªu Ä‘á»� cÃ´ng viá»‡c
+Xin hÃ£y chá»�n Loáº¡i cÃ´ng viá»‡c
+Xin hÃ£y chá»�n Tráº¡ng thÃ¡i tuyá»ƒn dá»¥ng
+Xin hÃ£y chá»�n PhÃ²ng ban
+Nháº¥p Ä‘Ãºp chuá»™t Ä‘á»ƒ xÃ³a ngÃ y
+/*------------------------------------*/
+ThÃ´ng tin cÃ´ng viá»‡c
+TÃªn cÃ´ng viá»‡c:
+Loáº¡i hÃ¬nh lÃ m viá»‡c:
+Chá»§ Ä‘á»� cÃ´ng viá»‡c:
+PhÃ²ng ban:
+NgÃ y vÃ o lÃ m:
+KhÃ´ng cÃ³ dá»¯ liá»‡u trong pháº§n nÃ y

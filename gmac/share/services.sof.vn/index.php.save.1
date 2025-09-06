@@ -1,0 +1,24 @@
+<?php
+header("Content-Type: application/json; charset=UTF-8");
+include("config.php");
+include("function.php");
+include("lv_controler.php");
+include("hr_lv0020.php");
+$lvhr_lv0020=new hr_lv0020($_SESSION['ERPSOFV2RRight'],$_SESSION['ERPSOFV2RUserID'],'Ad0003');
+$vtable="hr_lv0020";
+$vlimit="0,10";
+$lvhr_lv0020->lv001=$_GET['ID'];
+$objEmp=$lvhr_lv0020->LV_LoadID($lvhr_lv0020->lv001);
+$vOutput=Array();
+foreach($objEmp as $key => $value)
+{
+	if(!is_numeric($key))
+	{
+
+		$vOutput[$key]=$value;
+	
+	
+	}
+}
+echo json_encode($vOutput);
+?>

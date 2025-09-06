@@ -1,0 +1,55 @@
+Cấu hình
+Thêm mới
+Thêm
+Sửa
+Sửa
+Xóa
+Xóa
+Lọc
+Quay lại
+Nạp lại trang này
+Nạp lại
+Trợ giúp
+Trợ giúp
+...///Bắt đầu từ phần thông báo
+Xóa thành công.
+Xóa không được, lỗi: 
+...//Bắt đầu từ phần hiển thị thông tin trong bảng
+Danh Mục Xem Lịch Đã Tạo
+STT
+Chọn hết
+Mã phòng ban
+Tên
+Tháng
+Ngày làm việc
+Giờ bình thường
+Tăng ca
+Mã chấp công
+Ghi chú
+Mã tạo
+Ca
+Lưu
+Số dòng hiển thị
+Cách hiển thị
+Kết xuất dữ liệu
+Tạo tập tin exel
+Tạo tập tin word
+Tạo tập tin pdf
+Giờ vào-ra
+Hệ số công
+Tên
+Có hiển thị thông tin xử lý giờ công
+Mã nhân viên 
+Tên nhân viên
+Phòng ban
+Ngày sinh 
+LỊCH LÀM VIỆC NHÂN VIÊN
+Tháng
+Năm
+Phản ánh hàng ngày
+1: Đi trễ
+2: Về sớm
+3: Đi trễ, về sớm
+4: Thiếu giờ vào/ra
+5: Không thiết lập ca làm việc
+BÁO CÁO TÌNH TRẠNG LÀM VIỆC HÀNG NGÀY

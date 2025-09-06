@@ -1,0 +1,21 @@
+Thêm Nhà Cung Cấp
+Lọc Nhà Cung Cấp
+Lưu
+Quay lại
+Quay lại
+Nạp lại trang này
+Nạp lại
+Trợ giúp
+Trợ giúp
+Thêm thành công.
+Thêm không được, lỗi: 
+Sửa thành công.
+Sửa không được, lỗi: 
+...//Bắt đầu từ phần hiển thị thông tin trong bảng
+Sửa Nhà Cung Cấp
+Mã NCC
+Tên
+Liên kết
+Kiểu liên kết
+Hình ảnh 
+Thứ tự

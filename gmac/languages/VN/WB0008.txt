@@ -1,0 +1,19 @@
+Thêm Mục Nhóm Loại Sản Phẩm
+Lọc Mục Nhóm Loại Sản Phẩm
+Lưu
+Lọc
+Quay lại
+Nạp lại trang này
+Nạp lại
+Trợ giúp
+Trợ giúp
+Thêm thành công.
+Thêm không được, lỗi: 
+Sửa thành công.
+Sửa không được, lỗi: 
+...//Bắt đầu từ phần hiển thị thông tin trong bảng
+Sửa Mục Nhóm Loại Sản Phẩm
+Mã tự động
+Tên tiếng việt
+Tên tiếng anh
+Thứ tự

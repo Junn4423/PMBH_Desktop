@@ -1,0 +1,227 @@
+/**
+ * VARIABLES.CSS
+ * Định nghĩa tất cả các biến CSS để dễ dàng thay đổi và maintain
+ * Sử dụng CSS Custom Properties (CSS Variables)
+ */
+
+:root {
+  /* ==================== COLOR PALETTE ==================== */
+  
+  /* Primary Colors - Màu chủ đạo của cafe */
+  --color-primary: #8B4513;           /* Nâu cafe chính */
+  --color-primary-light: #D2B48C;     /* Nâu sáng */
+  --color-primary-dark: #5D2F0A;      /* Nâu đậm */
+  --color-primary-gradient: linear-gradient(135deg, #8B4513 0%, #CD853F 100%);
+  
+  /* Secondary Colors - Màu phụ */
+  --color-secondary: #F4A460;         /* Nâu cát */
+  --color-secondary-light: #FFEFD5;   /* Kem nhạt */
+  --color-secondary-dark: #DAA520;    /* Vàng đồng */
+  
+  /* Accent Colors - Màu nhấn */
+  --color-accent: #FF6347;            /* Đỏ cam nhấn */
+  --color-accent-light: #FFB6C1;      /* Hồng nhạt */
+  --color-accent-green: #32CD32;      /* Xanh lá */
+  
+  /* Neutral Colors - Màu trung tính */
+  --color-white: #FFFFFF;
+  --color-black: #000000;
+  --color-gray-50: #FAFAFA;
+  --color-gray-100: #F5F5F5;
+  --color-gray-200: #E8E8E8;
+  --color-gray-300: #D9D9D9;
+  --color-gray-400: #BFBFBF;
+  --color-gray-500: #8C8C8C;
+  --color-gray-600: #595959;
+  --color-gray-700: #434343;
+  --color-gray-800: #262626;
+  --color-gray-900: #141414;
+  
+  /* Status Colors - Màu trạng thái */
+  --color-success: #52C41A;           /* Xanh thành công */
+  --color-success-light: #B7EB8F;
+  --color-success-dark: #389E0D;
+  
+  --color-warning: #FAAD14;           /* Vàng cảnh báo */
+  --color-warning-light: #FFE58F;
+  --color-warning-dark: #D48806;
+  
+  --color-error: #FF4D4F;             /* Đỏ lỗi */
+  --color-error-light: #FFCCC7;
+  --color-error-dark: #CF1322;
+  
+  --color-info: #1890FF;              /* Xanh thông tin */
+  --color-info-light: #91D5FF;
+  --color-info-dark: #096DD9;
+  
+  /* Background Colors */
+  --bg-primary: #FFFFFF;
+  --bg-secondary: #F0F2F5;
+  --bg-tertiary: #FAFAFA;
+  --bg-dark: #001529;
+  --bg-overlay: rgba(0, 0, 0, 0.45);
+  
+  /* Border Colors */
+  --border-light: #F0F0F0;
+  --border-medium: #D9D9D9;
+  --border-dark: #434343;
+  
+  /* ==================== TYPOGRAPHY ==================== */
+  
+  /* Font Families */
+  --font-primary: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  --font-secondary: 'Arial', sans-serif;
+  --font-monospace: 'Monaco', 'Consolas', monospace;
+  --font-vietnamese: 'Inter', 'Segoe UI', Roboto, sans-serif;
+  
+  /* Font Sizes */
+  --font-size-xs: 10px;      /* Extra small */
+  --font-size-sm: 12px;      /* Small */
+  --font-size-base: 14px;    /* Base size */
+  --font-size-md: 16px;      /* Medium */
+  --font-size-lg: 18px;      /* Large */
+  --font-size-xl: 20px;      /* Extra large */
+  --font-size-2xl: 24px;     /* 2X large */
+  --font-size-3xl: 32px;     /* 3X large */
+  --font-size-4xl: 40px;     /* 4X large */
+  
+  /* Font Weights */
+  --font-weight-light: 300;
+  --font-weight-normal: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;
+  --font-weight-extrabold: 800;
+  
+  /* Line Heights */
+  --line-height-tight: 1.2;
+  --line-height-normal: 1.4;
+  --line-height-relaxed: 1.6;
+  --line-height-loose: 1.8;
+  
+  /* ==================== SPACING ==================== */
+  
+  /* Spacing Scale - Theo hệ thống 4px */
+  --space-0: 0px;
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-10: 40px;
+  --space-12: 48px;
+  --space-16: 64px;
+  --space-20: 80px;
+  --space-24: 96px;
+  --space-32: 128px;
+  
+  /* ==================== BORDER RADIUS ==================== */
+  
+  --radius-none: 0px;
+  --radius-sm: 2px;
+  --radius-base: 4px;
+  --radius-md: 6px;
+  --radius-lg: 8px;
+  --radius-xl: 12px;
+  --radius-2xl: 16px;
+  --radius-3xl: 24px;
+  --radius-full: 9999px;
+  
+  /* ==================== SHADOWS ==================== */
+  
+  --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.05);
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.1), 0 1px 2px rgba(0, 0, 0, 0.06);
+  --shadow-base: 0 4px 6px rgba(0, 0, 0, 0.07), 0 2px 4px rgba(0, 0, 0, 0.06);
+  --shadow-md: 0 10px 15px rgba(0, 0, 0, 0.1), 0 4px 6px rgba(0, 0, 0, 0.05);
+  --shadow-lg: 0 20px 25px rgba(0, 0, 0, 0.1), 0 10px 10px rgba(0, 0, 0, 0.04);
+  --shadow-xl: 0 25px 50px rgba(0, 0, 0, 0.25);
+  --shadow-inner: inset 0 2px 4px rgba(0, 0, 0, 0.06);
+  
+  /* Colored Shadows */
+  --shadow-primary: 0 4px 14px rgba(139, 69, 19, 0.25);
+  --shadow-success: 0 4px 14px rgba(82, 196, 26, 0.25);
+  --shadow-warning: 0 4px 14px rgba(250, 173, 20, 0.25);
+  --shadow-error: 0 4px 14px rgba(255, 77, 79, 0.25);
+  
+  /* ==================== Z-INDEX ==================== */
+  
+  --z-dropdown: 1000;
+  --z-sticky: 1020;
+  --z-fixed: 1030;
+  --z-modal-backdrop: 1040;
+  --z-modal: 1050;
+  --z-popover: 1060;
+  --z-tooltip: 1070;
+  --z-toast: 1080;
+  
+  /* ==================== BREAKPOINTS ==================== */
+  
+  --breakpoint-xs: 480px;
+  --breakpoint-sm: 576px;
+  --breakpoint-md: 768px;
+  --breakpoint-lg: 992px;
+  --breakpoint-xl: 1200px;
+  --breakpoint-2xl: 1600px;
+  
+  /* ==================== TRANSITIONS ==================== */
+  
+  --transition-fast: 0.15s ease-in-out;
+  --transition-base: 0.3s ease-in-out;
+  --transition-slow: 0.5s ease-in-out;
+  
+  /* ==================== COMPONENT SPECIFIC ==================== */
+  
+  /* Header */
+  --header-height: 64px;
+  --header-bg: var(--bg-primary);
+  --header-border: var(--border-light);
+  
+  /* Sidebar */
+  --sidebar-width: 280px;
+  --sidebar-collapsed-width: 80px;
+  --sidebar-bg: var(--bg-primary);
+  --sidebar-border: var(--border-light);
+  
+  /* Content */
+  --content-max-width: 1200px;
+  --content-padding: var(--space-6);
+  
+  /* Cards */
+  --card-padding: var(--space-6);
+  --card-radius: var(--radius-lg);
+  --card-shadow: var(--shadow-base);
+  
+  /* Buttons */
+  --btn-height-sm: 24px;
+  --btn-height-base: 32px;
+  --btn-height-lg: 40px;
+  --btn-padding-sm: var(--space-2) var(--space-3);
+  --btn-padding-base: var(--space-2) var(--space-4);
+  --btn-padding-lg: var(--space-3) var(--space-5);
+  
+  /* Forms */
+  --form-control-height: 32px;
+  --form-control-padding: var(--space-3);
+  --form-control-border: var(--border-medium);
+  --form-control-radius: var(--radius-base);
+  
+  /* Tables */
+  --table-header-bg: var(--bg-tertiary);
+  --table-border: var(--border-light);
+  --table-row-hover: var(--bg-tertiary);
+  
+  /* Specific for Cafe POS */
+  --table-status-empty: var(--color-gray-300);
+  --table-status-occupied: var(--color-warning);
+  --table-status-serving: var(--color-info);
+  --table-status-checkout: var(--color-success);
+  --table-status-locked: var(--color-error);
+  
+  /* Product Status */
+  --product-available: var(--color-success);
+  --product-low-stock: var(--color-warning);
+  --product-out-stock: var(--color-error);
+  --product-disabled: var(--color-gray-400);
+}

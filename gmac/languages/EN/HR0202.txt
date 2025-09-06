@@ -1,0 +1,24 @@
+Thêm Mục Nạp Tiền
+Lọc Mục Nạp Tiền
+Lưu
+Lọc
+Quay lại
+Nạp lại trang này
+Nạp lại
+Trợ giúp
+Trợ giúp
+Thêm thành công.
+Thêm không được, lỗi: 
+Sửa thành công.
+Sửa không được, lỗi: 
+...//Bắt đầu từ phần hiển thị thông tin trong bảng
+Sửa Mục Nạp Tiền
+Mã nạp tiền
+Chủ đề
+Ghi chú
+Ngày nạp
+Khóa
+0.Chưa xác nhận
+1.Đã xác nhận
+Bạn phải nhập mã nạp tiền
+Chủ đề kiểm kho không rỗng

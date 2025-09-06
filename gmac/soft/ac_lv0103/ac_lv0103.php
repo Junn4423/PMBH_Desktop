@@ -1,0 +1,173 @@
+<?php
+include("paras.php");
+require_once("../clsall/lv_controler.php");
+require_once("../clsall/ac_lv0103.php");
+
+/////////////init object//////////////
+$moac_lv0103=new  ac_lv0103($_SESSION['ERPSOFV2RRight'],$_SESSION['ERPSOFV2RUserID'],'Ac0103');
+/////////////init object//////////////
+
+if($plang=="") $plang="EN";
+	$vLangArr=GetLangFile("../","AC0064.txt",$plang);
+
+//////////////////////////////////////////////////////
+//////Delete message///
+$lvMessage=array();
+$lvMessage[0]=$vLangArr[14];
+$lvMessage[1]=$vLangArr[15];
+$vNow=GetServerDate();
+$moac_lv0103->lv002=getyear($vNow)."-".getmonth($vNow)."-"."01";
+$moac_lv0103->lv003=$vNow;
+$moac_lv0103->lv008='156';
+//$ma=$_GET['ma'];
+$strchk=$_POST["txtStringID"];
+$flagID=(int)$_POST["txtFlag"];
+$vFieldList=$_POST['txtFieldList'];$vOrderList=$_POST['txtOrderList'];
+
+
+$vStrMessage="";
+if($flagID==1)
+{
+//	$tsql="select count(*) from department where CompanyID ";
+	$strar=substr($strchk,0,strlen($strchk)-1);
+	$strar=str_replace("@","','",$strar);
+	$strar="'".$strar."'";
+	$vStrMessage=GetNoDelete($strar,"",$lvMessage);
+}
+elseif($flagID==2)
+{
+
+}
+//first is load
+if($_POST["txtFlag"]=="")
+{
+	//////////////////////////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////////////////////////
+}
+else//last is RptWH
+{
+$curPage = (int)$_POST['curPg'];
+$maxRows =(int)$_POST['lvmaxrow'];
+$vSortNum=(int)$_POST['lvsort'];
+}
+if($maxRows ==0) $maxRows = 10;
+
+$maxPages = 10;
+if($curPage=="") 
+$curPage = 1;
+$curRow = ($curPage-1)*$maxRows;
+$paging = divepage($plang, $curPage, $totalRowsC, $maxRows, $maxPages, $curRow,'document.frmRpt','document.frmRpt.curPg',2);
+?>
+<link rel="stylesheet" href="../css/<?php echo getInfor($_SESSION['ERPSOFV2RUserID'],99);?>.css" type="text/css">
+<link rel="stylesheet" href="../css/popup.css" type="text/css">
+<script language="javascript" src="../javascript/lvscriptfunc.js"></script>
+<script language="javascript" src="../javascript/engine.js"></script>
+<script language="JavaScript" type="text/javascript">
+<!--
+function RptWH(vValue)
+{
+ 	var o=document.frmRpt;
+	o.target="_blank";
+	o.action="ac_lv0103?func=rpt"
+	o.submit();
+}
+function Refresh()
+{
+}
+function RunThuChi()
+{
+	window.open('?lang=<?php echo $plang;?>&opt=99&item=&link=YWNfbHYwMDE5L2FjX2x2MDAxOS5waHA=','_self');
+}
+function  phieuchi()
+{
+	window.open('?lang=<?php echo $plang;?>&opt=99&item=&link=YWNfbHYwMDE5L2FjX2x2MDAxOS5waHA=','_self');
+}
+function CombackHome()
+{
+	window.open('?lang=<?php echo $plang;?>','_self')
+}
+//-->
+</script>
+<div class="hd_cafe">
+	<ul class="qlycafe">
+		
+		<li><div class="licafe" onclick="RunThuChi()">CHI TIỀN</div></li>
+		<li><div class="licafe" onclick="phieuchi()">DANH SÁCH CHI</div></li>
+		<li><div class="licafe" onclick="baocaochitien()">BÁO CÁO CHI</div></li>
+		<li><div  onclick="CombackHome()" style="cursor:pointer;background:#eaeaea;padding:7px;">&nbsp;&nbsp;&nbsp;&nbsp;<img src="images/controlright/move_f2.png" height="25" alt="Cancel" name="cancel" title="Quay lại trang chủ" border="0" align="middle" id="cancel">&nbsp;&nbsp;&nbsp;&nbsp;</li>		
+	</ul>
+</div>
+<?php
+if($moac_lv0103->GetView())
+{
+?>
+
+				<!--////////////////////////////////////Code add here///////////////////////////////////////////-->
+					<div><div id="lvleft"><form  method="get" name="frmRpt" id="frmRpt" enctype="multipart/form-data">
+					 <table width="100%" border="0" align="center" id="table1">
+							<tr>
+								<td colspan="2" height="100%" align="center">
+								</font>
+								<?php
+									echo "<font color='#FF0066' face='Verdana, Arial, Helvetica, sans-serif'>".$vStrMessage."</font>";
+								?>			</td>	
+							</tr><tr>
+				      <td width="166"  height="20"><?php echo $vLangArr[2];?></td>
+				      <td width="178"  height="20"><input name="txtlv002" type="text" id="txtlv002" value="<?php echo formatdate($moac_lv0103->lv002,$plang);?>" tabindex="11" maxlength="100" style="width:80%" onKeyPress="return CheckKey(event,7)">
+			          <span class="td"><img src="../images/calendar/calendar.gif" name="imgDate1" id="imgDate1"  tabindex="11"
+															border="0" style="cursor:pointer" width="16" height="16" align="top" 
+															onClick="if(self.gfPop)gfPop.fPopCalendar(document.frmRpt.txtlv002);return false;" /></span></td>
+						  </tr>							 
+							
+						  <tr>
+				      <td  height="20"><?php echo $vLangArr[3];?></td>
+				      <td  height="20"><input name="txtlv003" type="text" id="txtlv003" value="<?php echo formatdate($moac_lv0103->lv003,$plang);?>" tabindex="11" maxlength="100" style="width:80%" onKeyPress="return CheckKey(event,7)">
+				        <span class="td"><img src="../images/calendar/calendar.gif" name="imgDate1" id="imgDate1"  tabindex="11"
+															border="0" style="cursor:pointer" width="16" height="16" align="top" 
+															onClick="if(self.gfPop)gfPop.fPopCalendar(document.frmRpt.txtlv003);return false;" /></span></td>
+						  </tr>
+						 <tr>
+							  <td  height="20" valign="top"><?php echo $vLangArr[39];?></td>
+							  <td  height="20">
+							  <table width="80%"><tr><td width="50%">
+							  <select name="txtlv005" id="txtlv005"   tabindex="7"  style="width:100%" onkeypress="return CheckKey(event,7)"/>
+							    
+							  <option value="">...</option>
+							  <?php echo $moac_lv0103->LV_LinkField('lv005',$moac_lv0103->lv006);?>
+							  </select>
+							  </td><td>
+							  <ul id="pop-nav" lang="pop-nav1" onkeyup="ChangeName(this,1)" onMouseOver="ChangeName(this,1)" onkeyup="ChangeName(this,1)"> <li class="menupopT">
+							    <input type="text" autocomplete="off" class="search_img_btn" name="txtlv005_search" id="txtlv005_search" style="width:100%" onKeyUp="LoadPopupParent(this,'txtlv005','ac_lv0002','concat(lv001,@! @!,lv002)')" onFocus="LoadPopupParent(this,'txtlv005','ac_lv0002','concat(lv001,@! @!,lv002)')"  tabindex="200" >
+							    <div id="lv_popup" lang="lv_popup1"> </div>						  
+						</li>
+					</ul></td></tr></table>		</td>
+						    </tr>								
+							<tr>
+							  <td  height="20" colspan="2"><input type="hidden" name="rad" id="rad" value="2"/><input name="func" type="hidden" id="func" value="rpt"  /></td>
+							</tr>
+							<tr>
+							  <td  height="20" colspan="2"><TABLE id=lvtoolbar cellSpacing=0 cellPadding=0 border=0>
+        <TBODY>
+        <TR vAlign=center align=middle>
+	          <TD nowrap="nowrap"><a class="lvtoolbar" href="javascript:RptWH();" tabindex="47"><img src="../images/lvicon/Rpt.png" 
+            alt="RptWH" title="<?php echo $vLangArr[12];?>" 
+            name="RptWH" border="0" align="middle" id="RptWH" /> <?php echo $vLangArr[12];?></a></TD>
+                    <TD nowrap="nowrap"><a class=lvtoolbar 
+            href="javascript:Refresh();" tabindex="49"><img title="<?php echo $vLangArr[13];?>" 
+            alt=Trash src="../images/controlright/reload.gif" align=middle border=0 
+            name=remove> <?php echo $vLangArr[13];?></a></TD>
+			</TR></TBODY></TABLE> </td>
+						  </tr>
+					  </table>  
+				  </form>
+</div></div>
+				<!--////////////////////////////////////Code add here///////////////////////////////////////////-->
+<script language="javascript">
+div = document.getElementById('lvtitlelist');
+div.innerHTML='<?php echo $vLangArr[35];?>';	
+</script>
+<script language="javascript" src="<?php echo $vDir;?>../javascript/menupopup.js"></script>
+<iframe width=174 height=189 name="gToday:normal:agenda.js" id="gToday:normal:agenda.js" src="../javascript/ipopeng.php?lang=<?php echo $_GET['lang'];?>" scrolling="no" frameborder="0" style="visibility:visible; z-index:999; position:absolute; top:-500px; left:-500px;"></iframe>
+<?php
+}
+?>

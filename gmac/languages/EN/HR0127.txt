@@ -1,0 +1,14 @@
+ERP SOF
+//………….
+Quản Lý Thông Tin Nhân Viên Theo Điều Kiện
+In
+Đóng
+Không có dữ liệu
+STT
+Tên phòng ban
+Mã nhân viên
+Tên nhân viên
+Tên riêng
+Loại công việc
+Ngày vào làm
+Chức danh

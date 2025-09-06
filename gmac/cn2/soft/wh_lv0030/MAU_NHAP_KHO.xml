@@ -1,0 +1,174 @@
+<?xml version="1.0"?>
+<?mso-application progid="Excel.Sheet"?>
+<Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet"
+ xmlns:o="urn:schemas-microsoft-com:office:office"
+ xmlns:x="urn:schemas-microsoft-com:office:excel"
+ xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet"
+ xmlns:c="urn:schemas-microsoft-com:office:component:spreadsheet"
+ xmlns:html="http://www.w3.org/TR/REC-html40"
+ xmlns:x2="http://schemas.microsoft.com/office/excel/2003/xml"
+ xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+ <DocumentProperties xmlns="urn:schemas-microsoft-com:office:office">
+  <Version>12.00</Version>
+ </DocumentProperties>
+ <OfficeDocumentSettings xmlns="urn:schemas-microsoft-com:office:office">
+  <Colors>
+   <Color>
+    <Index>3</Index>
+    <RGB>#C0C0C0</RGB>
+   </Color>
+   <Color>
+    <Index>4</Index>
+    <RGB>#FF0000</RGB>
+   </Color>
+  </Colors>
+ </OfficeDocumentSettings>
+ <ExcelWorkbook xmlns="urn:schemas-microsoft-com:office:excel">
+  <WindowHeight>9000</WindowHeight>
+  <WindowWidth>13860</WindowWidth>
+  <WindowTopX>240</WindowTopX>
+  <WindowTopY>75</WindowTopY>
+  <ProtectStructure>False</ProtectStructure>
+  <ProtectWindows>False</ProtectWindows>
+ </ExcelWorkbook>
+ <Styles>
+  <Style ss:ID="Default" ss:Name="Normal">
+   <Alignment ss:Vertical="Bottom"/>
+   <Borders/>
+   <Font ss:FontName="Arial"/>
+   <Interior/>
+   <NumberFormat/>
+   <Protection/>
+  </Style>
+  <Style ss:ID="s62" ss:Name="Default">
+  </Style>
+  <Style ss:ID="s66" ss:Name="Normal__">
+   <Font ss:FontName="Calibri" ss:Size="11" ss:Color="#000000"/>
+  </Style>
+  <Style ss:ID="s69" ss:Parent="s66">
+   <Alignment ss:Vertical="Center"/>
+   <Borders/>
+   <Font ss:FontName="Trebuchet MS"/>
+   <NumberFormat/>
+  </Style>
+  <Style ss:ID="s70" ss:Parent="s62">
+   <Borders/>
+  </Style>
+  <Style ss:ID="s71" ss:Parent="s62">
+   <Borders/>
+   <Font ss:FontName="Arial"/>
+  </Style>
+  <Style ss:ID="s72" ss:Parent="s62">
+   <Borders/>
+   <Font ss:FontName="Arial2"/>
+   <NumberFormat/>
+  </Style>
+  <Style ss:ID="s73" ss:Parent="s62">
+   <Borders>
+    <Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1"/>
+    <Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1"/>
+    <Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1"/>
+    <Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1"/>
+   </Borders>
+   <Font ss:FontName="Arial" x:Family="Swiss" ss:Bold="1"/>
+  </Style>
+ </Styles>
+ <Worksheet ss:Name="mau_nhap">
+  <Table ss:ExpandedColumnCount="10" ss:ExpandedRowCount="6" x:FullColumns="1"
+   x:FullRows="1" ss:StyleID="s62">
+   <Column ss:StyleID="s62" ss:Width="99"/>
+   <Column ss:StyleID="s62" ss:Width="64.5" ss:Span="6"/>
+   <Column ss:Index="9" ss:StyleID="s62" ss:AutoFitWidth="0" ss:Width="90.75"/>
+   <Column ss:StyleID="s62" ss:Width="64.5"/>
+   <Row ss:AutoFitHeight="0">
+    <Cell ss:StyleID="s73"><Data ss:Type="String">Mã Sản Phẩm</Data></Cell>
+    <Cell ss:StyleID="s73"><Data ss:Type="String">Số lượng 1</Data></Cell>
+    <Cell ss:StyleID="s73"><Data ss:Type="String">Đơn vị 1</Data></Cell>
+    <Cell ss:StyleID="s73"><Data ss:Type="String">Số lượng 2</Data></Cell>
+    <Cell ss:StyleID="s73"><Data ss:Type="String">Đơn vị 2</Data></Cell>
+    <Cell ss:StyleID="s73"><Data ss:Type="String">Giá</Data></Cell>
+    <Cell ss:StyleID="s73"><Data ss:Type="String">Đơn Giá</Data></Cell>
+    <Cell ss:StyleID="s73"><Data ss:Type="String">Lô</Data></Cell>
+    <Cell ss:StyleID="s73"><Data ss:Type="String">Ngày hết hạn lô</Data></Cell>
+    <Cell ss:StyleID="s73"><Data ss:Type="String">Ghi chú</Data></Cell>
+   </Row>
+   <Row ss:AutoFitHeight="0">
+    <Cell ss:StyleID="s69"><Data ss:Type="String">Sachet-CADIDROXYL250</Data></Cell>
+    <Cell ss:StyleID="s70"><Data ss:Type="Number">1</Data></Cell>
+    <Cell ss:StyleID="s70"><Data ss:Type="String">HOP</Data></Cell>
+    <Cell ss:StyleID="s70"><Data ss:Type="Number">1</Data></Cell>
+    <Cell ss:StyleID="s70"><Data ss:Type="String">THUNG</Data></Cell>
+    <Cell ss:StyleID="s70"><Data ss:Type="Number">0</Data></Cell>
+    <Cell ss:StyleID="s70"><Data ss:Type="String">CUR001</Data></Cell>
+    <Cell ss:StyleID="s70"><Data ss:Type="String">NAVY</Data></Cell>
+    <Cell ss:StyleID="s70"><Data ss:Type="String">30/12/2013</Data></Cell>
+    <Cell ss:StyleID="s71"><Data ss:Type="String">Nhập ghi chú</Data></Cell>
+   </Row>
+   <Row ss:AutoFitHeight="0">
+    <Cell ss:StyleID="s72"><Data ss:Type="String">Sachet-CADICEFACLOR125</Data></Cell>
+    <Cell ss:StyleID="s70"><Data ss:Type="Number">1</Data></Cell>
+    <Cell ss:StyleID="s70"><Data ss:Type="String">HOP</Data></Cell>
+    <Cell ss:StyleID="s70"><Data ss:Type="Number">1</Data></Cell>
+    <Cell ss:StyleID="s70"><Data ss:Type="String">THUNG</Data></Cell>
+    <Cell ss:StyleID="s70"><Data ss:Type="Number">0</Data></Cell>
+    <Cell ss:StyleID="s70"><Data ss:Type="String">CUR001</Data></Cell>
+    <Cell ss:StyleID="s70"><Data ss:Type="String">BUR</Data></Cell>
+    <Cell ss:StyleID="s70"><Data ss:Type="String">30/12/2013</Data></Cell>
+    <Cell ss:StyleID="s71"><Data ss:Type="String">Nhập ghi chú</Data></Cell>
+   </Row>
+   <Row ss:AutoFitHeight="0">
+    <Cell ss:StyleID="s72"><Data ss:Type="String">Tab-CADICIPROLOX500</Data></Cell>
+    <Cell ss:StyleID="s70"><Data ss:Type="Number">1</Data></Cell>
+    <Cell ss:StyleID="s70"><Data ss:Type="String">HOP</Data></Cell>
+    <Cell ss:StyleID="s70"><Data ss:Type="Number">1</Data></Cell>
+    <Cell ss:StyleID="s70"><Data ss:Type="String">THUNG</Data></Cell>
+    <Cell ss:StyleID="s70"><Data ss:Type="Number">0</Data></Cell>
+    <Cell ss:StyleID="s70"><Data ss:Type="String">CUR001</Data></Cell>
+    <Cell ss:StyleID="s70"><Data ss:Type="String">TEA</Data></Cell>
+    <Cell ss:StyleID="s70"><Data ss:Type="String">30/12/2013</Data></Cell>
+    <Cell ss:StyleID="s71"><Data ss:Type="String">Nhập ghi chú</Data></Cell>
+   </Row>
+   <Row ss:AutoFitHeight="0">
+    <Cell ss:StyleID="s72"><Data ss:Type="String">Tab-CADICLARIN250</Data></Cell>
+    <Cell ss:StyleID="s70"><Data ss:Type="Number">1</Data></Cell>
+    <Cell ss:StyleID="s70"><Data ss:Type="String">HOP</Data></Cell>
+    <Cell ss:StyleID="s70"><Data ss:Type="Number">1</Data></Cell>
+    <Cell ss:StyleID="s70"><Data ss:Type="String">THUNG</Data></Cell>
+    <Cell ss:StyleID="s70"><Data ss:Type="Number">0</Data></Cell>
+    <Cell ss:StyleID="s70"><Data ss:Type="String">CUR001</Data></Cell>
+    <Cell ss:StyleID="s70"><Data ss:Type="String">MID</Data></Cell>
+    <Cell ss:StyleID="s70"><Data ss:Type="String">30/12/2013</Data></Cell>
+    <Cell ss:StyleID="s71"><Data ss:Type="String">Nhập ghi chú</Data></Cell>
+   </Row>
+   <Row ss:AutoFitHeight="0">
+    <Cell ss:StyleID="s72"><Data ss:Type="String">Tab-CADICLARIN500</Data></Cell>
+    <Cell ss:StyleID="s70"><Data ss:Type="Number">1</Data></Cell>
+    <Cell ss:StyleID="s70"><Data ss:Type="String">HOP</Data></Cell>
+    <Cell ss:StyleID="s70"><Data ss:Type="Number">1</Data></Cell>
+    <Cell ss:StyleID="s70"><Data ss:Type="String">THUNG</Data></Cell>
+    <Cell ss:StyleID="s70"><Data ss:Type="Number">0</Data></Cell>
+    <Cell ss:StyleID="s70"><Data ss:Type="String">CUR001</Data></Cell>
+    <Cell ss:StyleID="s70"><Data ss:Type="String">BLUE</Data></Cell>
+    <Cell ss:StyleID="s70"><Data ss:Type="String">30/12/2013</Data></Cell>
+    <Cell ss:StyleID="s71"><Data ss:Type="String">Nhập ghi chú</Data></Cell>
+   </Row>
+  </Table>
+  <WorksheetOptions xmlns="urn:schemas-microsoft-com:office:excel">
+   <Print>
+    <ValidPrinterInfo/>
+    <VerticalResolution>0</VerticalResolution>
+   </Print>
+   <Selected/>
+   <Panes>
+    <Pane>
+     <Number>3</Number>
+     <ActiveRow>3</ActiveRow>
+     <ActiveCol>1</ActiveCol>
+    </Pane>
+   </Panes>
+   <ProtectObjects>False</ProtectObjects>
+   <ProtectScenarios>False</ProtectScenarios>
+  </WorksheetOptions>
+  <x:WorksheetOptions/>
+ </Worksheet>
+</Workbook>

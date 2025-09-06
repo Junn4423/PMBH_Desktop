@@ -1,0 +1,50 @@
+Cấu hình
+Thêm mới
+Thêm
+Sửa
+Sửa
+Xóa
+Xóa
+Lọc
+Quay lại
+Nạp lại trang này
+Nạp lại
+Trợ giúp
+Trợ giúp
+...///Bắt đầu từ phần thông báo
+Xóa thành công.
+Xóa không được, lỗi: 
+...//Bắt đầu từ phần hiển thị thông tin trong bảng
+Danh Mục Chi Tiết Hợp Đồng
+STT
+Mã tự động
+Mã đơn hàng
+Tên hàng
+Số lượng 
+Đơn vị
+Đơn giá
+ĐV giá
+Thuế 
+Chương trình
+Chi chú
+Chiết khấu
+Điểm
+Ngày tạo
+Ngày giờ đặt món
+Thứ tự
+Lưu
+Số dòng hiển thị
+Cách hiển thị
+Kết xuất dữ liệu
+Tạo tập tin exel
+Tạo tập tin word
+Tạo tập tin pdf
+Người thêm
+Khóa NV
+Khóa người quản lý
+Khóa nhà bếp
+Người quản lý
+Nhà bếp
+Ghi chú quản lý
+Ghi chú nhà bếp
+Thành tiền
