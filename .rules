@@ -1,0 +1,10 @@
+#KHÔNG THÊM AUTO ICONS - WINDOW ICONS VÀO UI
+#CHỈ CODE TRÊN SCRIPT PMBH_Desktop_App, CÒN 2 SCRIPT Backup_Sql_MB VÀ gmac KHÔNG ĐƯỢC CHỈNH SỬA HAY THÊM XÓA BẤT CỨ GÌ, CHỈ ĐƯỢC ĐỌC
+#CODE APP DESKTOP ELECTRON
+#TUÂN THỦ PALLET MÀU 
+- THEME: #197dd3, #77d4fb, #bdbcc4, #4b4344
+tôi đã setup xong file database(sql) và backend(gmac), file gmac nằm trong htdocs, tôi để file ở đây để backup thôilocalhost/gmac/login.sof.vn/index.php
+{
+    "txtUserName": "admin",
+    "txtPassword": "123456"
+}

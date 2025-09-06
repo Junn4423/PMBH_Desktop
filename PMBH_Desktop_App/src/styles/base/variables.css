@@ -2,26 +2,33 @@
  * VARIABLES.CSS
  * Định nghĩa tất cả các biến CSS để dễ dàng thay đổi và maintain
  * Sử dụng CSS Custom Properties (CSS Variables)
+ * 
+ * THEME SYSTEM:
+ * - Default: Blue Ocean theme (#197dd3, #77d4fb, #bdbcc4, #4b4344)
+ * - Theme 1: Cafe Classic theme (brown tones)
  */
 
 :root {
+  /* ==================== THEME CONFIGURATION ==================== */
+  /* Default theme variables - Blue Ocean theme */
+  
   /* ==================== COLOR PALETTE ==================== */
   
-  /* Primary Colors - Màu chủ đạo của cafe */
-  --color-primary: #8B4513;           /* Nâu cafe chính */
-  --color-primary-light: #D2B48C;     /* Nâu sáng */
-  --color-primary-dark: #5D2F0A;      /* Nâu đậm */
-  --color-primary-gradient: linear-gradient(135deg, #8B4513 0%, #CD853F 100%);
+  /* Primary Colors - Màu chủ đạo Blue Ocean (Default theme) */
+  --color-primary: #197dd3;           /* Xanh dương chính */
+  --color-primary-light: #77d4fb;     /* Xanh dương sáng */
+  --color-primary-dark: #1565c0;      /* Xanh dương đậm */
+  --color-primary-gradient: linear-gradient(135deg, #197dd3 0%, #77d4fb 100%);
   
-  /* Secondary Colors - Màu phụ */
-  --color-secondary: #F4A460;         /* Nâu cát */
-  --color-secondary-light: #FFEFD5;   /* Kem nhạt */
-  --color-secondary-dark: #DAA520;    /* Vàng đồng */
+  /* Secondary Colors - Màu phụ Blue Ocean */
+  --color-secondary: #bdbcc4;         /* Xám bạc */
+  --color-secondary-light: #e8e7ec;   /* Xám nhạt */
+  --color-secondary-dark: #9e9ca6;    /* Xám đậm */
   
   /* Accent Colors - Màu nhấn */
-  --color-accent: #FF6347;            /* Đỏ cam nhấn */
-  --color-accent-light: #FFB6C1;      /* Hồng nhạt */
-  --color-accent-green: #32CD32;      /* Xanh lá */
+  --color-accent: #4fc3f7;            /* Xanh cyan */
+  --color-accent-light: #81c784;      /* Xanh lá nhạt */
+  --color-accent-green: #29b6f6;      /* Xanh sky blue */
   
   /* Neutral Colors - Màu trung tính */
   --color-white: #FFFFFF;
@@ -37,34 +44,34 @@
   --color-gray-800: #262626;
   --color-gray-900: #141414;
   
-  /* Status Colors - Màu trạng thái */
-  --color-success: #52C41A;           /* Xanh thành công */
-  --color-success-light: #B7EB8F;
-  --color-success-dark: #389E0D;
+  /* Status Colors - Màu trạng thái với improved palette */
+  --color-success: #22c55e;           /* Xanh thành công - modern green */
+  --color-success-light: #bbf7d0;     /* Xanh thành công nhạt */
+  --color-success-dark: #16a34a;      /* Xanh thành công đậm */
   
-  --color-warning: #FAAD14;           /* Vàng cảnh báo */
-  --color-warning-light: #FFE58F;
-  --color-warning-dark: #D48806;
+  --color-warning: #f59e0b;           /* Vàng cảnh báo - warmer tone */
+  --color-warning-light: #fef3c7;     /* Vàng cảnh báo nhạt */
+  --color-warning-dark: #d97706;      /* Vàng cảnh báo đậm */
   
-  --color-error: #FF4D4F;             /* Đỏ lỗi */
-  --color-error-light: #FFCCC7;
-  --color-error-dark: #CF1322;
+  --color-error: #ef4444;             /* Đỏ lỗi - modern red */
+  --color-error-light: #fecaca;       /* Đỏ lỗi nhạt */
+  --color-error-dark: #dc2626;        /* Đỏ lỗi đậm */
   
-  --color-info: #1890FF;              /* Xanh thông tin */
-  --color-info-light: #91D5FF;
-  --color-info-dark: #096DD9;
+  --color-info: #3b82f6;              /* Xanh thông tin - modern blue */
+  --color-info-light: #dbeafe;        /* Xanh thông tin nhạt */
+  --color-info-dark: #1d4ed8;         /* Xanh thông tin đậm */
   
   /* Background Colors */
   --bg-primary: #FFFFFF;
-  --bg-secondary: #F0F2F5;
-  --bg-tertiary: #FAFAFA;
-  --bg-dark: #001529;
-  --bg-overlay: rgba(0, 0, 0, 0.45);
+  --bg-secondary: #f8fafc;
+  --bg-tertiary: #f1f5f9;
+  --bg-dark: #1e293b;
+  --bg-overlay: rgba(25, 125, 211, 0.15);
   
   /* Border Colors */
-  --border-light: #F0F0F0;
-  --border-medium: #D9D9D9;
-  --border-dark: #434343;
+  --border-light: #e2e8f0;
+  --border-medium: #cbd5e1;
+  --border-dark: #64748b;
   
   /* ==================== TYPOGRAPHY ==================== */
   
@@ -139,11 +146,16 @@
   --shadow-xl: 0 25px 50px rgba(0, 0, 0, 0.25);
   --shadow-inner: inset 0 2px 4px rgba(0, 0, 0, 0.06);
   
-  /* Colored Shadows */
-  --shadow-primary: 0 4px 14px rgba(139, 69, 19, 0.25);
-  --shadow-success: 0 4px 14px rgba(82, 196, 26, 0.25);
-  --shadow-warning: 0 4px 14px rgba(250, 173, 20, 0.25);
-  --shadow-error: 0 4px 14px rgba(255, 77, 79, 0.25);
+  /* Colored Shadows - Updated for Blue Ocean default theme */
+  --shadow-primary: 0 4px 14px rgba(25, 125, 211, 0.25);
+  --shadow-success: 0 4px 14px rgba(34, 197, 94, 0.25);
+  --shadow-warning: 0 4px 14px rgba(245, 158, 11, 0.25);
+  --shadow-error: 0 4px 14px rgba(239, 68, 68, 0.25);
+  --shadow-info: 0 4px 14px rgba(59, 130, 246, 0.25);
+  
+  /* Theme-specific shadow variables */
+  --shadow-color: rgba(30, 41, 59, 0.08);
+  --shadow-strong-color: rgba(30, 41, 59, 0.12);
   
   /* ==================== Z-INDEX ==================== */
   
@@ -225,3 +237,31 @@
   --product-out-stock: var(--color-error);
   --product-disabled: var(--color-gray-400);
 }
+
+/* ==================== THEME SYSTEM NOTES ==================== */
+/*
+ * THEME USAGE:
+ * 
+ * 1. Default Theme (Blue Ocean):
+ *    - Không cần class, sử dụng variables mặc định
+ *    - Palette: #197dd3, #77d4fb, #bdbcc4, #4b4344
+ *    - Phù hợp cho business hiện đại, tech-focused
+ * 
+ * 2. Theme 1 (Cafe Classic):
+ *    - Thêm class "theme-1" vào body hoặc root element
+ *    - Palette: #8B4513, #D2B48C, #5D2F0A, #F4A460
+ *    - Phù hợp cho quán cafe truyền thống, không gian ấm cúng
+ * 
+ * 3. Để thêm theme mới:
+ *    - Tạo file theme-[number].css trong thư mục themes/
+ *    - Override các CSS variables trong class .theme-[number]
+ *    - Import vào main.css
+ * 
+ * STATUS COLORS:
+ * - Success: #22c55e (Modern Green)
+ * - Warning: #f59e0b (Amber)  
+ * - Error: #ef4444 (Modern Red)
+ * - Info: #3b82f6 (Modern Blue)
+ * 
+ * Các màu status được thiết kế để hài hòa với tất cả themes
+ */

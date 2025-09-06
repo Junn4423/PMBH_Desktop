@@ -1,51 +1,52 @@
 /* ================================================================
-   DEFAULT THEME
-   Theme mặc định cho ứng dụng POS Cafe
+   DEFAULT THEME - Blue Ocean
+   Theme mặc định với tone xanh dương hiện đại cho ứng dụng POS
+   Pallet: #197dd3, #77d4fb, #bdbcc4, #4b4344
 ================================================================ */
 
 /* ============================================
-   THEME OVERRIDES - Default Light Theme
+   THEME OVERRIDES - Default Blue Ocean Theme
 ============================================ */
 
-/* Theme này là theme chính, các variables đã được định nghĩa trong base/variables.css */
+/* Theme này là theme chính với màu Blue Ocean, các variables đã được định nghĩa trong base/variables.css */
 
-/* Light Theme Specific Adjustments */
+/* Blue Ocean Theme Specific Adjustments */
 .theme-default {
   /* Background colors */
   --color-background: var(--color-white);
   --color-surface: var(--color-white);
-  --color-surface-hover: var(--color-gray-50);
+  --color-surface-hover: #f0f8ff;
   
-  /* Text colors for light theme */
+  /* Text colors for Blue Ocean theme */
   --color-text-on-primary: var(--color-white);
-  --color-text-on-secondary: var(--color-white);
-  --color-text-on-surface: var(--color-gray-900);
+  --color-text-on-secondary: #1e293b;
+  --color-text-on-surface: #1e293b;
   
   /* Border colors */
-  --color-border-light: var(--color-gray-100);
-  --color-border-medium: var(--color-gray-300);
-  --color-border-strong: var(--color-gray-500);
+  --color-border-light: #e2e8f0;
+  --color-border-medium: #cbd5e1;
+  --color-border-strong: #64748b;
   
-  /* Shadow adjustments for light theme */
-  --shadow-color: rgba(0, 0, 0, 0.1);
-  --shadow-strong-color: rgba(0, 0, 0, 0.15);
+  /* Shadow adjustments for Blue Ocean theme */
+  --shadow-color: rgba(30, 41, 59, 0.08);
+  --shadow-strong-color: rgba(30, 41, 59, 0.12);
 }
 
 /* ============================================
-   LIGHT THEME SPECIFIC COMPONENTS
+   BLUE OCEAN THEME SPECIFIC COMPONENTS
 ============================================ */
 
-/* Header in light theme */
+/* Header in Blue Ocean theme */
 .theme-default .app-header {
   background-color: var(--color-white);
-  border-bottom: 1px solid var(--color-gray-200);
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  border-bottom: 1px solid #e2e8f0;
+  box-shadow: 0 2px 8px rgba(30, 41, 59, 0.08);
 }
 
-/* Sidebar in light theme */
+/* Sidebar in Blue Ocean theme */
 .theme-default .app-sidebar {
   background-color: var(--color-white);
-  border-right: 1px solid var(--color-gray-200);
+  border-right: 1px solid #e2e8f0;
 }
 
 /* Cards in light theme */

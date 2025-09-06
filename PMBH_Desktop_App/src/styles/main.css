@@ -15,7 +15,8 @@
 /* ==================== THEME STYLES ==================== */
 /* Theme mặc định và các theme khác */
 
-/* @import './themes/default.css'; */     /* Theme mặc định */
+@import './themes/default.css';        /* Theme mặc định (Cafe Brown) */
+@import './themes/theme-1.css';        /* Theme 1 (Blue Ocean) */
 /* @import './themes/dark.css'; */        /* Theme tối */
 /* @import './themes/cafe.css'; */        /* Theme đặc biệt cho cafe */
 
@@ -33,6 +34,7 @@
 @import './components/forms.css';      /* Form elements */
 @import './components/cards.css';      /* Cards */
 @import './components/tables.css';     /* Tables */
+@import './components/theme-selector.css'; /* Theme selector */
 /* @import './components/modals.css'; */     /* Modals & Dialogs */
 /* @import './components/navigation.css'; */ /* Navigation */
 /* @import './components/badges.css'; */     /* Badges & Tags */
