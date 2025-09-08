@@ -25,7 +25,7 @@ import QuanLyBan from './ban/QuanLyBan';
 import QuanLyKhachHang from './khachhang/QuanLyKhachHang';
 import QuanLyNhanVien from './nhanvien/QuanLyNhanVien';
 import BaoCaoThongKe from './baocao/BaoCaoThongKe';
-import CaiDatHeThong from './caidat/CaiDatHeThong';
+import CaiDatHeThong from './features/caidat/CaiDatHeThongdat/CaiDatHeThong';
 
 const { Header, Sider, Content } = Layout;
 

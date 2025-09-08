@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { login as apiLogin } from '../services/apiLogin';
 
 const AuthContext = createContext();
 
@@ -30,33 +31,70 @@ export const AuthProvider = ({ children }) => {
 
   const login = async (taiKhoan, matKhau) => {
     try {
-      // Giả lập API call
-      if (taiKhoan === 'admin' && matKhau === '123456') {
+      // Demo accounts for testing
+      const demoAccounts = [
+        { username: 'admin', password: 'admin', role: 'Admin', chiNhanh: 'Chi nhánh chính' },
+        { username: 'manager', password: '123', role: 'Manager', chiNhanh: 'Chi nhánh 1' },
+        { username: 'user', password: '123', role: 'User', chiNhanh: 'Chi nhánh 2' },
+        { username: 'demo', password: 'demo', role: 'Demo', chiNhanh: 'Chi nhánh demo' }
+      ];
+
+      // Check demo accounts first
+      const demoAccount = demoAccounts.find(
+        acc => acc.username === taiKhoan && acc.password === matKhau
+      );
+
+      if (demoAccount) {
         const userData = {
-          id: 1,
-          taiKhoan: 'admin',
-          hoTen: 'Quản trị viên',
-          vaiTro: 'admin',
-          email: 'admin@pmbh.com'
+          id: demoAccount.username,
+          taiKhoan: demoAccount.username,
+          hoTen: demoAccount.username,
+          vaiTro: demoAccount.role,
+          email: `${demoAccount.username}@demo.com`,
+          token: `demo_token_${Date.now()}`,
+          chiNhanh: demoAccount.chiNhanh
         };
         
         setUser(userData);
         setIsAuthenticated(true);
         
         localStorage.setItem('pmbh_user', JSON.stringify(userData));
-        localStorage.setItem('pmbh_token', 'fake-jwt-token');
+        localStorage.setItem('pmbh_token', userData.token);
+        
+        return { success: true };
+      }
+
+      // If not demo account, try real API
+      const result = await apiLogin(taiKhoan, matKhau);
+      
+      if (result.code && result.token) {
+        const userData = {
+          id: result.code,
+          taiKhoan: result.code,
+          hoTen: result.code,
+          vaiTro: result.role || 'user',
+          email: '',
+          token: result.token,
+          chiNhanh: result.chiNhanh
+        };
+        
+        setUser(userData);
+        setIsAuthenticated(true);
+        
+        localStorage.setItem('pmbh_user', JSON.stringify(userData));
+        localStorage.setItem('pmbh_token', result.token);
         
         return { success: true };
       } else {
         return { 
           success: false, 
-          message: 'Tài khoản hoặc mật khẩu không đúng' 
+          message: result.message || 'Đăng nhập thất bại' 
         };
       }
     } catch (error) {
       return { 
         success: false, 
-        message: 'Đã xảy ra lỗi khi đăng nhập' 
+        message: error.message || 'Đã xảy ra lỗi khi đăng nhập' 
       };
     }
   };

@@ -1,28 +1,43 @@
 import React, { useState, useEffect } from 'react';
-import { Modal, Row, Col, Card, Typography, Tag, Button, Space } from 'antd';
-import { TableOutlined, CheckOutlined } from '@ant-design/icons';
-import { useCart } from '../../../contexts/CartContext';
+import { Card, Row, Col, Button, Badge, Typography, Space, Tag } from 'antd';
+import { Table, Plus, Check, Users } from 'lucide-react';
 import './ChonBan.css';
 
-const { Text } = Typography;
+const { Title, Text } = Typography;
 
-const ChonBan = ({ visible, onClose }) => {
-  const { selectedTable, setSelectedTable } = useCart();
-  const [tables, setTables] = useState([]);
-  const getStatusColor = (status) => {
+const ChonBan = ({ selectedTable, onTableSelect, tables = [] }) => {
+  const [availableTables, setAvailableTables] = useState([]);
+
+  useEffect(() => {
+    // Mock data cho các bàn
+    const mockTables = [
+      { id: 'B01', name: 'Bàn 01', seats: 4, status: 'available', customer: null },
+      { id: 'B02', name: 'Bàn 02', seats: 2, status: 'occupied', customer: 'Nguyễn Văn A' },
+      { id: 'B03', name: 'Bàn 03', seats: 6, status: 'available', customer: null },
+      { id: 'B04', name: 'Bàn 04', seats: 4, status: 'reserved', customer: 'Trần Thị B' },
+      { id: 'B05', name: 'Bàn 05', seats: 2, status: 'available', customer: null },
+      { id: 'B06', name: 'Bàn 06', seats: 8, status: 'occupied', customer: 'Lê Văn C' },
+      { id: 'B07', name: 'Bàn 07', seats: 4, status: 'available', customer: null },
+      { id: 'B08', name: 'Bàn 08', seats: 6, status: 'available', customer: null },
+    ];
+
+    setAvailableTables(tables.length > 0 ? tables : mockTables);
+  }, [tables]);
+
+  const getTableStatusColor = (status) => {
     switch (status) {
       case 'available':
-        return 'success';
+        return '#52c41a';
       case 'occupied':
-        return 'error';
+        return '#f5222d';
       case 'reserved':
-        return 'warning';
+        return '#faad14';
       default:
-        return 'default';
+        return '#d9d9d9';
     }
   };
 
-  const getStatusText = (status) => {
+  const getTableStatusText = (status) => {
     switch (status) {
       case 'available':
         return 'Trống';
@@ -35,104 +50,95 @@ const ChonBan = ({ visible, onClose }) => {
     }
   };
 
-  const handleSelectTable = (table) => {
-    if (table.trangThai === 'available') {
-      setSelectedTable(table);
-      onClose();
+  const getTableStatusIcon = (status) => {
+    switch (status) {
+      case 'available':
+        return <Plus size={16} />;
+      case 'occupied':
+        return <Users size={16} />;
+      case 'reserved':
+        return <Check size={16} />;
+      default:
+        return <Table size={16} />;
     }
   };
 
-  // Nhóm bàn theo khu vực
-  const tablesByArea = tables.reduce((acc, table) => {
-    if (!acc[table.khuVuc]) {
-      acc[table.khuVuc] = [];
+  const handleTableClick = (table) => {
+    if (table.status === 'available' || table.id === selectedTable?.id) {
+      onTableSelect?.(table);
     }
-    acc[table.khuVuc].push(table);
-    return acc;
-  }, {});
+  };
 
   return (
-    <Modal
-      title="Chọn bàn"
-      open={visible}
-      onCancel={onClose}
-      footer={null}
-      width={800}
-      className="chon-ban-modal"
-    >
-      <div className="tables-container">
-        {Object.entries(tablesByArea).map(([area, areaTables]) => (
-          <div key={area} className="area-section">
-            <h3 className="area-title">{area}</h3>
-            <Row gutter={[12, 12]}>
-              {areaTables.map(table => (
-                <Col xs={12} sm={8} md={6} key={table.id}>
-                  <Card
-                    size="small"
-                    className={`table-card ${table.trangThai} ${
-                      selectedTable?.id === table.id ? 'selected' : ''
-                    }`}
-                    onClick={() => handleSelectTable(table)}
-                    style={{
-                      cursor: table.trangThai === 'available' ? 'pointer' : 'not-allowed',
-                      opacity: table.trangThai === 'available' ? 1 : 0.6
-                    }}
-                  >
-                    <div className="table-content">
-                      <div className="table-icon">
-                        <TableOutlined style={{ fontSize: '24px' }} />
-                        {selectedTable?.id === table.id && (
-                          <CheckOutlined className="check-icon" />
-                        )}
-                      </div>
-                      
-                      <div className="table-info">
-                        <Text strong className="table-name">
-                          {table.ten}
-                        </Text>
-                        <div className="table-details">
-                          <Text type="secondary" style={{ fontSize: '12px' }}>
-                            {table.soGhe} ghế
-                          </Text>
-                        </div>
-                        <Tag 
-                          color={getStatusColor(table.trangThai)}
-                          size="small"
-                          className="table-status"
-                        >
-                          {getStatusText(table.trangThai)}
-                        </Tag>
-                      </div>
-                    </div>
-                  </Card>
-                </Col>
-              ))}
-            </Row>
-          </div>
-        ))}
+    <div className="chon-ban-container">
+      <div className="chon-ban-header">
+        <Title level={4}>Chọn bàn</Title>
+        <div className="status-legend">
+          <Space>
+            <Tag color="#52c41a">Trống</Tag>
+            <Tag color="#f5222d">Có khách</Tag>
+            <Tag color="#faad14">Đã đặt</Tag>
+          </Space>
+        </div>
       </div>
 
-      <div className="modal-footer">
-        <Space>
-          <div className="legend">
-            <Space wrap>
-              <div className="legend-item">
-                <Tag color="success">Trống</Tag>
-                <Text style={{ fontSize: '12px' }}>Có thể chọn</Text>
+      <Row gutter={[16, 16]} className="tables-grid">
+        {availableTables.map((table) => (
+          <Col xs={12} sm={8} md={6} lg={4} key={table.id}>
+            <Card
+              className={`table-card ${table.id === selectedTable?.id ? 'selected' : ''} ${table.status}`}
+              hoverable={table.status === 'available'}
+              onClick={() => handleTableClick(table)}
+              bodyStyle={{ padding: '16px' }}
+            >
+              <div className="table-content">
+                <div className="table-header">
+                  <div className="table-icon">
+                    <Table size={24} color={getTableStatusColor(table.status)} />
+                  </div>
+                  <Badge 
+                    status={table.status === 'available' ? 'success' : 
+                           table.status === 'occupied' ? 'error' : 'warning'} 
+                    dot 
+                  />
+                </div>
+                
+                <div className="table-info">
+                  <Text strong className="table-name">{table.name}</Text>
+                  <Text className="table-seats">{table.seats} chỗ ngồi</Text>
+                </div>
+
+                <div className="table-status">
+                  <Tag 
+                    color={getTableStatusColor(table.status)}
+                    icon={getTableStatusIcon(table.status)}
+                  >
+                    {getTableStatusText(table.status)}
+                  </Tag>
+                </div>
+
+                {table.customer && (
+                  <div className="table-customer">
+                    <Text type="secondary" className="customer-label">Khách:</Text>
+                    <Text className="customer-name">{table.customer}</Text>
+                  </div>
+                )}
               </div>
-              <div className="legend-item">
-                <Tag color="error">Có khách</Tag>
-                <Text style={{ fontSize: '12px' }}>Không thể chọn</Text>
-              </div>
-              <div className="legend-item">
-                <Tag color="warning">Đã đặt</Tag>
-                <Text style={{ fontSize: '12px' }}>Không thể chọn</Text>
-              </div>
-            </Space>
+            </Card>
+          </Col>
+        ))}
+      </Row>
+
+      {selectedTable && (
+        <Card className="selected-table-info" size="small">
+          <div className="selected-info">
+            <Text strong>Đã chọn: </Text>
+            <Text>{selectedTable.name}</Text>
+            <Text type="secondary"> - {selectedTable.seats} chỗ ngồi</Text>
           </div>
-        </Space>
-      </div>
-    </Modal>
+        </Card>
+      )}
+    </div>
   );
 };
 

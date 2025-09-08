@@ -1,0 +1,100 @@
+.trang-chu-container {
+  padding: 20px;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.trang-chu-header {
+  text-align: center;
+  margin-bottom: 40px;
+}
+
+.trang-chu-title {
+  color: var(--primary-color, #197dd3);
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+
+.working-areas-grid {
+  width: 100%;
+}
+
+.working-area-card {
+  border-radius: 12px;
+  border: 2px solid transparent;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  height: 100%;
+}
+
+.working-area-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+  border-color: var(--primary-color, #197dd3);
+}
+
+.area-icon {
+  margin-bottom: 16px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  transition: transform 0.3s ease;
+}
+
+.working-area-card:hover .area-icon {
+  transform: scale(1.1);
+}
+
+.area-title {
+  margin-bottom: 8px !important;
+  color: var(--text-primary, #4b4344);
+  font-weight: 600;
+}
+
+.area-description {
+  color: var(--text-secondary, #bdbcc4);
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .trang-chu-container {
+    padding: 16px;
+  }
+  
+  .working-areas-grid .ant-col {
+    margin-bottom: 16px;
+  }
+  
+  .working-area-card .ant-card-body {
+    padding: 24px !important;
+    height: 180px !important;
+  }
+  
+  .area-icon svg {
+    width: 40px !important;
+    height: 40px !important;
+  }
+}
+
+@media (max-width: 576px) {
+  .working-area-card .ant-card-body {
+    padding: 20px !important;
+    height: 160px !important;
+  }
+  
+  .area-icon svg {
+    width: 36px !important;
+    height: 36px !important;
+  }
+  
+  .area-title {
+    font-size: 16px !important;
+  }
+  
+  .area-description {
+    font-size: 12px;
+  }
+}

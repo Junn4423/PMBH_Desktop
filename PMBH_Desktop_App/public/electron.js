@@ -13,26 +13,50 @@ function createWindow() {
     minWidth: 1200,
     minHeight: 700,
     webPreferences: {
-      nodeIntegration: true,
-      contextIsolation: false,
-      enableRemoteModule: true
+      nodeIntegration: false,
+      contextIsolation: true,
+      enableRemoteModule: false,
+      preload: path.join(__dirname, 'preload.js')
     },
     icon: path.join(__dirname, 'assets/icon.png'),
-    show: false
+    show: false,
+    titleBarStyle: 'default',
+    autoHideMenuBar: false
   });
 
-  mainWindow.loadURL(
-    isDev
-      ? 'http://localhost:3000'
-      : `file://${path.join(__dirname, '../build/index.html')}`
-  );
+  const loadURL = isDev
+    ? 'http://localhost:3000'
+    : `file://${path.join(__dirname, '../build/index.html')}`;
+  
+  console.log('Loading URL:', loadURL);
+  console.log('isDev:', isDev);
+  console.log('__dirname:', __dirname);
+
+  mainWindow.loadURL(loadURL);
 
   mainWindow.once('ready-to-show', () => {
     mainWindow.show();
+    console.log('Window shown successfully');
     
     if (isDev) {
       mainWindow.webContents.openDevTools();
     }
+  });
+
+  mainWindow.webContents.on('did-fail-load', (event, errorCode, errorDescription, validatedURL) => {
+    console.error('Failed to load:', errorCode, errorDescription, validatedURL);
+  });
+
+  mainWindow.webContents.on('dom-ready', () => {
+    console.log('DOM ready');
+  });
+
+  mainWindow.webContents.on('did-finish-load', () => {
+    console.log('Page finished loading');
+  });
+
+  mainWindow.webContents.on('console-message', (event, level, message, line, sourceId) => {
+    console.log(`Console [${level}]: ${message}`);
   });
 
   mainWindow.on('closed', () => {

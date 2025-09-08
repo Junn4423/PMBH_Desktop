@@ -1,0 +1,29 @@
+.bc-tong-container {
+  padding: 24px;
+}
+
+.page-breadcrumb {
+  margin-bottom: 24px;
+}
+
+.main-card {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.page-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #197dd3;
+}
+
+.development-notice {
+  text-align: center;
+  padding: 40px 20px;
+  color: #4b4344;
+}
+
+.development-notice h3 {
+  color: #197dd3;
+  margin-bottom: 12px;
+}

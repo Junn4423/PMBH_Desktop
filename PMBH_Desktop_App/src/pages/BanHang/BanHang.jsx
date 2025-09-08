@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Row, Col, Card, Input, Select, Button, List, Typography, InputNumber, Space, Tag, Divider, message } from 'antd';
 import { SearchOutlined, PlusOutlined, MinusOutlined, DeleteOutlined, PrinterOutlined } from '@ant-design/icons';
 import { useCart } from '../../contexts/CartContext';
-import ChonBan from '../../components/BanHang/ChonBan/ChonBan';
+import ChonBan from '../../components/BanHang/ChonBan/ChonBan.jsx';
 import './BanHang.css';
 
 const { Title, Text } = Typography;

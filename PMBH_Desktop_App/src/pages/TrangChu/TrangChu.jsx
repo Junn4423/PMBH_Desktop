@@ -1,233 +1,127 @@
-import React, { useState, useEffect } from 'react';
-import { Row, Col, Card, Statistic, Typography, List, Avatar, Tag, Space } from 'antd';
-import {
-  DollarOutlined,
-  ShoppingCartOutlined,
-  UserOutlined,
-  CoffeeOutlined,
-  TrophyOutlined,
-  ClockCircleOutlined
-} from '@ant-design/icons';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line } from 'recharts';
+import React from 'react';
+import { useNavigate } from 'react-router-dom';
+import { Card, Row, Col, Typography } from 'antd';
+import { 
+  ShoppingCart, 
+  ChefHat, 
+  Package, 
+  Receipt, 
+  BarChart, 
+  Users, 
+  Settings 
+} from 'lucide-react';
 import './TrangChu.css';
 
-const { Title, Text } = Typography;
+const { Title } = Typography;
 
 const TrangChu = () => {
-  const [statistics, setStatistics] = useState({
-    doanhThuHômnay: 2450000,
-    donHangHômnay: 45,
-    khachHangMoi: 12,
-    monBanChay: 28
-  });
+  const navigate = useNavigate();
 
-  const [recentOrders, setRecentOrders] = useState([
+  const workingAreas = [
     {
-      id: 1,
-      ban: 'Bàn 5',
-      khachHang: 'Nguyễn Văn A',
-      tongTien: 150000,
-      thoiGian: '10:30',
-      trangThai: 'completed'
+      id: 'ban-hang',
+      title: 'Bán hàng',
+      description: 'Quản lý bán hàng và thanh toán',
+      icon: <ShoppingCart size={48} />,
+      path: '/ban-hang',
+      color: '#197dd3'
     },
     {
-      id: 2,
-      ban: 'Bàn 12',
-      khachHang: 'Trần Thị B',
-      tongTien: 280000,
-      thoiGian: '10:15',
-      trangThai: 'pending'
+      id: 'bep-bar',
+      title: 'Bếp/Bar',
+      description: 'Quản lý bếp và khu vực bar',
+      icon: <ChefHat size={48} />,
+      path: '/bep-bar',
+      color: '#77d4fb'
     },
     {
-      id: 3,
-      ban: 'Bàn 3',
-      khachHang: 'Lê Văn C',
-      tongTien: 95000,
-      thoiGian: '09:45',
-      trangThai: 'completed'
+      id: 'kho',
+      title: 'Kho',
+      description: 'Quản lý kho hàng và tồn kho',
+      icon: <Package size={48} />,
+      path: '/kho',
+      color: '#197dd3'
+    },
+    {
+      id: 'chi-khac',
+      title: 'Chi khác',
+      description: 'Quản lý các chi phí khác',
+      icon: <Receipt size={48} />,
+      path: '/chi-khac',
+      color: '#77d4fb'
+    },
+    {
+      id: 'bao-cao',
+      title: 'Báo cáo',
+      description: 'Xem báo cáo và thống kê',
+      icon: <BarChart size={48} />,
+      path: '/bao-cao',
+      color: '#197dd3'
+    },
+    {
+      id: 'nhan-su',
+      title: 'Nhân sự',
+      description: 'Quản lý nhân viên và lương',
+      icon: <Users size={48} />,
+      path: '/nhan-vien',
+      color: '#77d4fb'
+    },
+    {
+      id: 'quan-tri',
+      title: 'Quản trị',
+      description: 'Cài đặt và quản trị hệ thống',
+      icon: <Settings size={48} />,
+      path: '/cai-dat',
+      color: '#197dd3'
     }
-  ]);
-
-  const [topProducts, setTopProducts] = useState([
-    { name: 'Cà phê đen', soLuong: 45, doanhThu: 450000 },
-    { name: 'Cà phê sữa', soLuong: 38, doanhThu: 570000 },
-    { name: 'Trà sữa', soLuong: 32, doanhThu: 480000 },
-    { name: 'Bánh ngọt', soLuong: 28, doanhThu: 420000 },
-    { name: 'Nước ép', soLuong: 25, doanhThu: 375000 }
-  ]);
-
-  const salesData = [
-    { name: 'T2', doanhThu: 2400 },
-    { name: 'T3', doanhThu: 1398 },
-    { name: 'T4', doanhThu: 9800 },
-    { name: 'T5', doanhThu: 3908 },
-    { name: 'T6', doanhThu: 4800 },
-    { name: 'T7', doanhThu: 3800 },
-    { name: 'CN', doanhThu: 4300 }
   ];
 
-  const getStatusColor = (status) => {
-    switch (status) {
-      case 'completed':
-        return 'success';
-      case 'pending':
-        return 'processing';
-      case 'cancelled':
-        return 'error';
-      default:
-        return 'default';
-    }
-  };
-
-  const getStatusText = (status) => {
-    switch (status) {
-      case 'completed':
-        return 'Hoàn thành';
-      case 'pending':
-        return 'Đang xử lý';
-      case 'cancelled':
-        return 'Đã hủy';
-      default:
-        return 'Không xác định';
-    }
+  const handleAreaClick = (path) => {
+    navigate(path);
   };
 
   return (
-    <div className="trang-chu">
-      <div className="page-header">
-        <Title level={2}>Trang chủ</Title>
-        <Text type="secondary">
-          Chào mừng bạn quay trở lại! Đây là tổng quan hoạt động hôm nay.
-        </Text>
+    <div className="trang-chu-container">
+      <div className="trang-chu-header">
+        <Title level={2} className="trang-chu-title">
+          Chọn khu vực làm việc
+        </Title>
       </div>
-
-      {/* Thống kê tổng quan */}
-      <Row gutter={[16, 16]} className="statistics-row">
-        <Col xs={24} sm={12} lg={6}>
-          <Card>
-            <Statistic
-              title="Doanh thu hôm nay"
-              value={statistics.doanhThuHômnay}
-              precision={0}
-              valueStyle={{ color: '#3f8600' }}
-              prefix={<DollarOutlined />}
-              suffix="đ"
-            />
-          </Card>
-        </Col>
-        <Col xs={24} sm={12} lg={6}>
-          <Card>
-            <Statistic
-              title="Đơn hàng hôm nay"
-              value={statistics.donHangHômnay}
-              valueStyle={{ color: '#1890ff' }}
-              prefix={<ShoppingCartOutlined />}
-            />
-          </Card>
-        </Col>
-        <Col xs={24} sm={12} lg={6}>
-          <Card>
-            <Statistic
-              title="Khách hàng mới"
-              value={statistics.khachHangMoi}
-              valueStyle={{ color: '#722ed1' }}
-              prefix={<UserOutlined />}
-            />
-          </Card>
-        </Col>
-        <Col xs={24} sm={12} lg={6}>
-          <Card>
-            <Statistic
-              title="Món bán chạy"
-              value={statistics.monBanChay}
-              valueStyle={{ color: '#fa8c16' }}
-              prefix={<CoffeeOutlined />}
-            />
-          </Card>
-        </Col>
-      </Row>
-
-      <Row gutter={[16, 16]} className="content-row">
-        {/* Biểu đồ doanh thu */}
-        <Col xs={24} lg={16}>
-          <Card title="Doanh thu 7 ngày qua" className="chart-card">
-            <ResponsiveContainer width="100%" height={300}>
-              <BarChart data={salesData}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="name" />
-                <YAxis />
-                <Tooltip formatter={(value) => [`${value}k đ`, 'Doanh thu']} />
-                <Bar dataKey="doanhThu" fill="#1890ff" />
-              </BarChart>
-            </ResponsiveContainer>
-          </Card>
-        </Col>
-
-        {/* Đơn hàng gần đây */}
-        <Col xs={24} lg={8}>
-          <Card title="Đơn hàng gần đây" className="recent-orders-card">
-            <List
-              dataSource={recentOrders}
-              renderItem={(item) => (
-                <List.Item>
-                  <List.Item.Meta
-                    avatar={<Avatar icon={<ClockCircleOutlined />} />}
-                    title={
-                      <Space>
-                        <Text strong>{item.ban}</Text>
-                        <Tag color={getStatusColor(item.trangThai)}>
-                          {getStatusText(item.trangThai)}
-                        </Tag>
-                      </Space>
-                    }
-                    description={
-                      <div>
-                        <div>{item.khachHang}</div>
-                        <div>
-                          <Text strong>{item.tongTien.toLocaleString()}đ</Text>
-                          <Text type="secondary" style={{ marginLeft: 8 }}>
-                            {item.thoiGian}
-                          </Text>
-                        </div>
-                      </div>
-                    }
-                  />
-                </List.Item>
-              )}
-            />
-          </Card>
-        </Col>
-      </Row>
-
-      {/* Món bán chạy */}
-      <Row gutter={[16, 16]} className="content-row">
-        <Col xs={24}>
-          <Card title="Top món bán chạy hôm nay" className="top-products-card">
-            <Row gutter={[16, 16]}>
-              {topProducts.map((product, index) => (
-                <Col xs={24} sm={12} md={8} lg={4.8} key={index}>
-                  <Card size="small" className="product-card">
-                    <div className="product-rank">
-                      <TrophyOutlined style={{ 
-                        color: index === 0 ? '#faad14' : index === 1 ? '#d9d9d9' : '#faad14',
-                        fontSize: '16px'
-                      }} />
-                      <Text strong style={{ marginLeft: 4 }}>#{index + 1}</Text>
-                    </div>
-                    <div className="product-info">
-                      <Text strong>{product.name}</Text>
-                      <div className="product-stats">
-                        <Text type="secondary">Số lượng: {product.soLuong}</Text>
-                        <br />
-                        <Text type="secondary">Doanh thu: {product.doanhThu.toLocaleString()}đ</Text>
-                      </div>
-                    </div>
-                  </Card>
-                </Col>
-              ))}
-            </Row>
-          </Card>
-        </Col>
+      
+      <Row gutter={[24, 24]} className="working-areas-grid">
+        {workingAreas.map((area) => (
+          <Col xs={24} sm={12} md={8} lg={8} key={area.id}>
+            <Card
+              className="working-area-card"
+              hoverable
+              onClick={() => handleAreaClick(area.path)}
+              styles={{
+                body: { 
+                  padding: '32px',
+                  textAlign: 'center',
+                  height: '200px',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  justifyContent: 'center',
+                  alignItems: 'center'
+                }
+              }}
+            >
+              <div 
+                className="area-icon" 
+                style={{ color: area.color }}
+              >
+                {area.icon}
+              </div>
+              <Title level={4} className="area-title">
+                {area.title}
+              </Title>
+              <p className="area-description">
+                {area.description}
+              </p>
+            </Card>
+          </Col>
+        ))}
       </Row>
     </div>
   );

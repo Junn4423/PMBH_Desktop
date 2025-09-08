@@ -1,93 +1,99 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
-  Card, 
-  Row, 
-  Col, 
-  Switch, 
-  Select, 
-  Input, 
-  Button, 
-  Form, 
-  message, 
-  Divider, 
-  Typography,
-  Space,
-  Slider,
-  ColorPicker
+  Card, Row, Col, Form, Input, Select, Switch, 
+  Button, Space, message, Divider, InputNumber,
+  Upload, Avatar 
 } from 'antd';
-import { SaveOutlined, ReloadOutlined, SettingOutlined } from '@ant-design/icons';
+import {
+  SaveOutlined,
+  ReloadOutlined,
+  ShopOutlined,
+  SettingOutlined,
+  BellOutlined,
+  SecurityScanOutlined,
+  GlobalOutlined,
+  PrinterOutlined,
+  UploadOutlined,
+  UserOutlined
+} from '@ant-design/icons';
 
-const { Title, Text } = Typography;
 const { Option } = Select;
+const { TextArea } = Input;
 
 const CaiDatHeThong = () => {
   const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
+  const [caiDatHienTai, setCaiDatHienTai] = useState({});
 
-  // Dữ liệu cài đặt mặc định
-  const [caiDat, setCaiDat] = useState({
-    // Cài đặt chung
-    tenCuaHang: 'Cafe ABC',
-    diaChi: '123 Đường ABC, Quận 1, TP.HCM',
-    soDienThoai: '0901234567',
-    email: 'cafe@abc.com',
-    website: 'https://cafeabc.com',
-    
-    // Cài đặt bán hàng
-    tuDongInHoaDon: true,
-    choPhepTraHang: true,
-    thoiHanTraHang: 7,
-    yeuCauLyDoTraHang: true,
-    choPhepGiamGia: true,
-    giamGiaToiDa: 50,
-    
-    // Cài đặt thuế
-    thueSuatVAT: 10,
-    apDungVATMacDinh: true,
-    
-    // Cài đặt thanh toán
-    phuongThucThanhToanMacDinh: 'tien_mat',
-    choPhepThanhToanThe: true,
-    choPhepChuyenKhoan: true,
-    
-    // Cài đặt kho
-    tuDongCapNhatKho: true,
-    canhBaoKhiHetHang: true,
-    canhBaoKhiSapHetHang: true,
-    soLuongCanhBao: 10,
-    
-    // Cài đặt nhân viên
-    choPhepDangNhapNhieuThietBi: false,
-    thoiGianLamViec: [8, 22],
-    tuDongTinhLuong: true,
-    luongGioLamThem: 50000,
-    
-    // Cài đặt giao diện
-    mauChuDe: 'blue',
-    kichThuocFont: 14,
-    ngonNgu: 'vi',
-    hienThiTienTe: 'VND',
-    
-    // Cài đặt bảo mật
-    doPhucTapMatKhau: 'trung_binh',
-    thoiGianHetHanMatKhau: 90,
-    tuDongDangXuat: 30,
-    
-    // Cài đặt sao lưu
-    tuDongSaoLuu: true,
-    thoiGianSaoLuu: 'hang_ngay',
-    noiLuuSaoLuu: 'local'
-  });
+  useEffect(() => {
+    taiCaiDat();
+  }, []);
+
+  const taiCaiDat = async () => {
+    setLoading(true);
+    try {
+      // Demo settings data
+      const caiDat = {
+        // Thông tin cửa hàng
+        tenCuaHang: 'Café Phố Cổ',
+        diaChi: '123 Nguyễn Huệ, Quận 1, TP.HCM',
+        soDienThoai: '0123456789',
+        email: 'contact@cafephoco.com',
+        website: 'www.cafephoco.com',
+        moTa: 'Chuỗi cà phê hàng đầu với không gian ấm cúng và thức uống chất lượng cao',
+        
+        // Cài đặt hệ thống
+        ngonNgu: 'vi',
+        donViTienTe: 'VND',
+        thueSuat: 10,
+        timeZone: 'Asia/Ho_Chi_Minh',
+        
+        // Cài đặt bán hàng
+        tuDongTinhToan: true,
+        choPhepGiamGia: true,
+        yeuCauKhachHang: false,
+        inHoaDonTuDong: true,
+        ghiLogGiaoDich: true,
+        
+        // Cài đặt thông báo
+        thongBaoEmail: true,
+        thongBaoSMS: false,
+        thongBaoTonKho: true,
+        thongBaoDoanhThu: true,
+        
+        // Cài đặt bảo mật
+        batBuocMatKhau: true,
+        thoiGianPhienLam: 480, // phút
+        saoLuuTuDong: true,
+        xacThuc2Buoc: false,
+        
+        // Cài đặt in ấn
+        mayIn: 'Máy in nhiệt POS-80',
+        kichThuocGiay: '80mm',
+        inLogo: true,
+        inThongTinLienHe: true,
+        inMaVach: false
+      };
+
+      setCaiDatHienTai(caiDat);
+      form.setFieldsValue(caiDat);
+    } catch (error) {
+      console.error('Lỗi tải cài đặt:', error);
+      message.error('Không thể tải cài đặt hệ thống');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const luuCaiDat = async (values) => {
     setLoading(true);
     try {
-      // Mô phỏng lưu cài đặt
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      setCaiDat({ ...caiDat, ...values });
-      message.success('Lưu cài đặt thành công!');
+      // Lưu cài đặt
+      setCaiDatHienTai({ ...caiDatHienTai, ...values });
+      message.success('Lưu cài đặt thành công');
     } catch (error) {
-      message.error('Lỗi khi lưu cài đặt!');
+      console.error('Lỗi lưu cài đặt:', error);
+      message.error('Không thể lưu cài đặt');
     } finally {
       setLoading(false);
     }
@@ -95,224 +101,454 @@ const CaiDatHeThong = () => {
 
   const khoiPhucMacDinh = () => {
     form.resetFields();
-    message.info('Đã khôi phục cài đặt mặc định');
+    message.success('Đã khôi phục cài đặt mặc định');
+  };
+
+  const khoiDongLaiHeThong = () => {
+    message.loading('Đang khởi động lại hệ thống...', 2);
+    setTimeout(() => {
+      message.success('Hệ thống đã được khởi động lại');
+    }, 2000);
+  };
+
+  const uploadProps = {
+    name: 'logo',
+    action: '/api/upload-logo',
+    showUploadList: false,
+    beforeUpload: (file) => {
+      const isJpgOrPng = file.type === 'image/jpeg' || file.type === 'image/png';
+      if (!isJpgOrPng) {
+        message.error('Chỉ chấp nhận file JPG/PNG!');
+      }
+      const isLt2M = file.size / 1024 / 1024 < 2;
+      if (!isLt2M) {
+        message.error('Kích thước ảnh phải nhỏ hơn 2MB!');
+      }
+      return isJpgOrPng && isLt2M;
+    },
+    onChange: (info) => {
+      if (info.file.status === 'done') {
+        message.success('Upload logo thành công');
+      } else if (info.file.status === 'error') {
+        message.error('Upload logo thất bại');
+      }
+    },
   };
 
   return (
-    <div style={{ padding: 24 }}>
-      <Title level={3}>
-        <SettingOutlined /> Cài đặt hệ thống
-      </Title>
-      
+    <div style={{ padding: '24px' }}>
+      <Row justify="space-between" align="middle" style={{ marginBottom: '24px' }}>
+        <Col>
+          <h2>Cài đặt hệ thống</h2>
+        </Col>
+        <Col>
+          <Space>
+            <Button icon={<ReloadOutlined />} onClick={khoiPhucMacDinh}>
+              Khôi phục mặc định
+            </Button>
+            <Button type="primary" icon={<SaveOutlined />} onClick={() => form.submit()}>
+              Lưu cài đặt
+            </Button>
+          </Space>
+        </Col>
+      </Row>
+
       <Form
         form={form}
         layout="vertical"
-        initialValues={caiDat}
         onFinish={luuCaiDat}
+        loading={loading}
       >
         <Row gutter={24}>
-          {/* Cột trái */}
-          <Col span={12}>
+          <Col span={16}>
             {/* Thông tin cửa hàng */}
-            <Card title="Thông tin cửa hàng" style={{ marginBottom: 16 }}>
-              <Form.Item name="tenCuaHang" label="Tên cửa hàng">
-                <Input placeholder="Nhập tên cửa hàng" />
+            <Card 
+              title={
+                <Space>
+                  <ShopOutlined />
+                  Thông tin cửa hàng
+                </Space>
+              }
+              style={{ marginBottom: '24px' }}
+            >
+              <Row gutter={16}>
+                <Col span={12}>
+                  <Form.Item
+                    name="tenCuaHang"
+                    label="Tên cửa hàng"
+                    rules={[{ required: true, message: 'Vui lòng nhập tên cửa hàng' }]}
+                  >
+                    <Input placeholder="Nhập tên cửa hàng" />
+                  </Form.Item>
+                </Col>
+                <Col span={12}>
+                  <Form.Item
+                    name="soDienThoai"
+                    label="Số điện thoại"
+                  >
+                    <Input placeholder="Nhập số điện thoại" />
+                  </Form.Item>
+                </Col>
+              </Row>
+
+              <Form.Item
+                name="diaChi"
+                label="Địa chỉ"
+              >
+                <TextArea rows={2} placeholder="Nhập địa chỉ cửa hàng" />
               </Form.Item>
-              <Form.Item name="diaChi" label="Địa chỉ">
-                <Input.TextArea rows={3} placeholder="Nhập địa chỉ đầy đủ" />
+
+              <Row gutter={16}>
+                <Col span={12}>
+                  <Form.Item
+                    name="email"
+                    label="Email"
+                    rules={[{ type: 'email', message: 'Email không hợp lệ' }]}
+                  >
+                    <Input placeholder="Nhập email" />
+                  </Form.Item>
+                </Col>
+                <Col span={12}>
+                  <Form.Item
+                    name="website"
+                    label="Website"
+                  >
+                    <Input placeholder="Nhập website" />
+                  </Form.Item>
+                </Col>
+              </Row>
+
+              <Form.Item
+                name="moTa"
+                label="Mô tả"
+              >
+                <TextArea rows={3} placeholder="Nhập mô tả về cửa hàng" />
               </Form.Item>
-              <Form.Item name="soDienThoai" label="Số điện thoại">
-                <Input placeholder="Nhập số điện thoại" />
-              </Form.Item>
-              <Form.Item name="email" label="Email">
-                <Input type="email" placeholder="Nhập địa chỉ email" />
-              </Form.Item>
-              <Form.Item name="website" label="Website">
-                <Input placeholder="Nhập địa chỉ website" />
-              </Form.Item>
+            </Card>
+
+            {/* Cài đặt hệ thống */}
+            <Card 
+              title={
+                <Space>
+                  <SettingOutlined />
+                  Cài đặt hệ thống
+                </Space>
+              }
+              style={{ marginBottom: '24px' }}
+            >
+              <Row gutter={16}>
+                <Col span={12}>
+                  <Form.Item
+                    name="ngonNgu"
+                    label="Ngôn ngữ"
+                  >
+                    <Select>
+                      <Option value="vi">Tiếng Việt</Option>
+                      <Option value="en">English</Option>
+                    </Select>
+                  </Form.Item>
+                </Col>
+                <Col span={12}>
+                  <Form.Item
+                    name="donViTienTe"
+                    label="Đơn vị tiền tệ"
+                  >
+                    <Select>
+                      <Option value="VND">VND (₫)</Option>
+                      <Option value="USD">USD ($)</Option>
+                    </Select>
+                  </Form.Item>
+                </Col>
+              </Row>
+
+              <Row gutter={16}>
+                <Col span={12}>
+                  <Form.Item
+                    name="thueSuat"
+                    label="Thuế suất (%)"
+                  >
+                    <InputNumber 
+                      min={0} 
+                      max={100} 
+                      style={{ width: '100%' }}
+                      placeholder="Nhập thuế suất"
+                    />
+                  </Form.Item>
+                </Col>
+                <Col span={12}>
+                  <Form.Item
+                    name="timeZone"
+                    label="Múi giờ"
+                  >
+                    <Select>
+                      <Option value="Asia/Ho_Chi_Minh">GMT+7 (Việt Nam)</Option>
+                      <Option value="Asia/Bangkok">GMT+7 (Bangkok)</Option>
+                      <Option value="Asia/Singapore">GMT+8 (Singapore)</Option>
+                    </Select>
+                  </Form.Item>
+                </Col>
+              </Row>
             </Card>
 
             {/* Cài đặt bán hàng */}
-            <Card title="Cài đặt bán hàng" style={{ marginBottom: 16 }}>
-              <Form.Item name="tuDongInHoaDon" label="Tự động in hóa đơn" valuePropName="checked">
-                <Switch />
-              </Form.Item>
-              <Form.Item name="choPhepTraHang" label="Cho phép trả hàng" valuePropName="checked">
-                <Switch />
-              </Form.Item>
-              <Form.Item name="thoiHanTraHang" label="Thời hạn trả hàng (ngày)">
-                <Slider min={1} max={30} marks={{ 1: '1', 7: '7', 15: '15', 30: '30' }} />
-              </Form.Item>
-              <Form.Item name="yeuCauLyDoTraHang" label="Yêu cầu lý do khi trả hàng" valuePropName="checked">
-                <Switch />
-              </Form.Item>
-              <Form.Item name="choPhepGiamGia" label="Cho phép giảm giá" valuePropName="checked">
-                <Switch />
-              </Form.Item>
-              <Form.Item name="giamGiaToiDa" label="Giảm giá tối đa (%)">
-                <Slider min={0} max={100} marks={{ 0: '0%', 25: '25%', 50: '50%', 100: '100%' }} />
-              </Form.Item>
+            <Card 
+              title={
+                <Space>
+                  <GlobalOutlined />
+                  Cài đặt bán hàng
+                </Space>
+              }
+              style={{ marginBottom: '24px' }}
+            >
+              <Row gutter={16}>
+                <Col span={12}>
+                  <Form.Item
+                    name="tuDongTinhToan"
+                    label="Tự động tính toán"
+                    valuePropName="checked"
+                  >
+                    <Switch />
+                  </Form.Item>
+                  <Form.Item
+                    name="choPhepGiamGia"
+                    label="Cho phép giảm giá"
+                    valuePropName="checked"
+                  >
+                    <Switch />
+                  </Form.Item>
+                  <Form.Item
+                    name="yeuCauKhachHang"
+                    label="Yêu cầu thông tin khách hàng"
+                    valuePropName="checked"
+                  >
+                    <Switch />
+                  </Form.Item>
+                </Col>
+                <Col span={12}>
+                  <Form.Item
+                    name="inHoaDonTuDong"
+                    label="In hóa đơn tự động"
+                    valuePropName="checked"
+                  >
+                    <Switch />
+                  </Form.Item>
+                  <Form.Item
+                    name="ghiLogGiaoDich"
+                    label="Ghi log giao dịch"
+                    valuePropName="checked"
+                  >
+                    <Switch />
+                  </Form.Item>
+                </Col>
+              </Row>
             </Card>
 
-            {/* Cài đặt thuế */}
-            <Card title="Cài đặt thuế" style={{ marginBottom: 16 }}>
-              <Form.Item name="thueSuatVAT" label="Thuế suất VAT (%)">
-                <Select>
-                  <Option value={0}>0%</Option>
-                  <Option value={5}>5%</Option>
-                  <Option value={10}>10%</Option>
-                  <Option value={15}>15%</Option>
-                </Select>
-              </Form.Item>
-              <Form.Item name="apDungVATMacDinh" label="Áp dụng VAT mặc định" valuePropName="checked">
-                <Switch />
-              </Form.Item>
-            </Card>
-
-            {/* Cài đặt thanh toán */}
-            <Card title="Cài đặt thanh toán" style={{ marginBottom: 16 }}>
-              <Form.Item name="phuongThucThanhToanMacDinh" label="Phương thức thanh toán mặc định">
-                <Select>
-                  <Option value="tien_mat">Tiền mặt</Option>
-                  <Option value="chuyen_khoan">Chuyển khoản</Option>
-                  <Option value="the">Thẻ ngân hàng</Option>
-                </Select>
-              </Form.Item>
-              <Form.Item name="choPhepThanhToanThe" label="Cho phép thanh toán bằng thẻ" valuePropName="checked">
-                <Switch />
-              </Form.Item>
-              <Form.Item name="choPhepChuyenKhoan" label="Cho phép chuyển khoản" valuePropName="checked">
-                <Switch />
-              </Form.Item>
-            </Card>
-          </Col>
-
-          {/* Cột phải */}
-          <Col span={12}>
-            {/* Cài đặt kho */}
-            <Card title="Cài đặt kho" style={{ marginBottom: 16 }}>
-              <Form.Item name="tuDongCapNhatKho" label="Tự động cập nhật kho khi bán" valuePropName="checked">
-                <Switch />
-              </Form.Item>
-              <Form.Item name="canhBaoKhiHetHang" label="Cảnh báo khi hết hàng" valuePropName="checked">
-                <Switch />
-              </Form.Item>
-              <Form.Item name="canhBaoKhiSapHetHang" label="Cảnh báo khi sắp hết hàng" valuePropName="checked">
-                <Switch />
-              </Form.Item>
-              <Form.Item name="soLuongCanhBao" label="Số lượng cảnh báo">
-                <Input type="number" placeholder="Nhập số lượng" />
-              </Form.Item>
-            </Card>
-
-            {/* Cài đặt nhân viên */}
-            <Card title="Cài đặt nhân viên" style={{ marginBottom: 16 }}>
-              <Form.Item name="choPhepDangNhapNhieuThietBi" label="Cho phép đăng nhập nhiều thiết bị" valuePropName="checked">
-                <Switch />
-              </Form.Item>
-              <Form.Item name="tuDongTinhLuong" label="Tự động tính lương" valuePropName="checked">
-                <Switch />
-              </Form.Item>
-              <Form.Item name="luongGioLamThem" label="Lương giờ làm thêm (VND)">
-                <Input type="number" placeholder="Nhập lương/giờ" />
-              </Form.Item>
-            </Card>
-
-            {/* Cài đặt giao diện */}
-            <Card title="Cài đặt giao diện" style={{ marginBottom: 16 }}>
-              <Form.Item name="mauChuDe" label="Màu chủ đề">
-                <Select>
-                  <Option value="blue">Xanh dương</Option>
-                  <Option value="green">Xanh lá</Option>
-                  <Option value="red">Đỏ</Option>
-                  <Option value="purple">Tím</Option>
-                  <Option value="orange">Cam</Option>
-                </Select>
-              </Form.Item>
-              <Form.Item name="kichThuocFont" label="Kích thước font">
-                <Slider min={12} max={20} marks={{ 12: '12px', 14: '14px', 16: '16px', 18: '18px', 20: '20px' }} />
-              </Form.Item>
-              <Form.Item name="ngonNgu" label="Ngôn ngữ">
-                <Select>
-                  <Option value="vi">Tiếng Việt</Option>
-                  <Option value="en">English</Option>
-                </Select>
-              </Form.Item>
-              <Form.Item name="hienThiTienTe" label="Hiển thị tiền tệ">
-                <Select>
-                  <Option value="VND">VND (đ)</Option>
-                  <Option value="USD">USD ($)</Option>
-                </Select>
-              </Form.Item>
+            {/* Cài đặt thông báo */}
+            <Card 
+              title={
+                <Space>
+                  <BellOutlined />
+                  Cài đặt thông báo
+                </Space>
+              }
+              style={{ marginBottom: '24px' }}
+            >
+              <Row gutter={16}>
+                <Col span={12}>
+                  <Form.Item
+                    name="thongBaoEmail"
+                    label="Thông báo qua Email"
+                    valuePropName="checked"
+                  >
+                    <Switch />
+                  </Form.Item>
+                  <Form.Item
+                    name="thongBaoSMS"
+                    label="Thông báo qua SMS"
+                    valuePropName="checked"
+                  >
+                    <Switch />
+                  </Form.Item>
+                </Col>
+                <Col span={12}>
+                  <Form.Item
+                    name="thongBaoTonKho"
+                    label="Thông báo hết tồn kho"
+                    valuePropName="checked"
+                  >
+                    <Switch />
+                  </Form.Item>
+                  <Form.Item
+                    name="thongBaoDoanhThu"
+                    label="Thông báo doanh thu"
+                    valuePropName="checked"
+                  >
+                    <Switch />
+                  </Form.Item>
+                </Col>
+              </Row>
             </Card>
 
             {/* Cài đặt bảo mật */}
-            <Card title="Cài đặt bảo mật" style={{ marginBottom: 16 }}>
-              <Form.Item name="doPhucTapMatKhau" label="Độ phức tạp mật khẩu">
-                <Select>
-                  <Option value="thap">Thấp</Option>
-                  <Option value="trung_binh">Trung bình</Option>
-                  <Option value="cao">Cao</Option>
-                </Select>
-              </Form.Item>
-              <Form.Item name="thoiGianHetHanMatKhau" label="Thời gian hết hạn mật khẩu (ngày)">
-                <Select>
-                  <Option value={30}>30 ngày</Option>
-                  <Option value={60}>60 ngày</Option>
-                  <Option value={90}>90 ngày</Option>
-                  <Option value={180}>180 ngày</Option>
-                </Select>
-              </Form.Item>
-              <Form.Item name="tuDongDangXuat" label="Tự động đăng xuất sau (phút)">
-                <Slider min={15} max={120} marks={{ 15: '15', 30: '30', 60: '60', 120: '120' }} />
-              </Form.Item>
+            <Card 
+              title={
+                <Space>
+                  <SecurityScanOutlined />
+                  Cài đặt bảo mật
+                </Space>
+              }
+              style={{ marginBottom: '24px' }}
+            >
+              <Row gutter={16}>
+                <Col span={12}>
+                  <Form.Item
+                    name="batBuocMatKhau"
+                    label="Bắt buộc mật khẩu mạnh"
+                    valuePropName="checked"
+                  >
+                    <Switch />
+                  </Form.Item>
+                  <Form.Item
+                    name="saoLuuTuDong"
+                    label="Sao lưu tự động"
+                    valuePropName="checked"
+                  >
+                    <Switch />
+                  </Form.Item>
+                </Col>
+                <Col span={12}>
+                  <Form.Item
+                    name="thoiGianPhienLam"
+                    label="Thời gian phiên làm việc (phút)"
+                  >
+                    <InputNumber 
+                      min={30} 
+                      max={1440}
+                      style={{ width: '100%' }}
+                    />
+                  </Form.Item>
+                  <Form.Item
+                    name="xacThuc2Buoc"
+                    label="Xác thực 2 bước"
+                    valuePropName="checked"
+                  >
+                    <Switch />
+                  </Form.Item>
+                </Col>
+              </Row>
             </Card>
 
-            {/* Cài đặt sao lưu */}
-            <Card title="Cài đặt sao lưu" style={{ marginBottom: 16 }}>
-              <Form.Item name="tuDongSaoLuu" label="Tự động sao lưu" valuePropName="checked">
-                <Switch />
-              </Form.Item>
-              <Form.Item name="thoiGianSaoLuu" label="Thời gian sao lưu">
-                <Select>
-                  <Option value="hang_ngay">Hàng ngày</Option>
-                  <Option value="hang_tuan">Hàng tuần</Option>
-                  <Option value="hang_thang">Hàng tháng</Option>
-                </Select>
-              </Form.Item>
-              <Form.Item name="noiLuuSaoLuu" label="Nơi lưu sao lưu">
-                <Select>
-                  <Option value="local">Máy tính cục bộ</Option>
-                  <Option value="cloud">Đám mây</Option>
-                  <Option value="usb">USB/Ổ cứng ngoài</Option>
-                </Select>
-              </Form.Item>
+            {/* Cài đặt in ấn */}
+            <Card 
+              title={
+                <Space>
+                  <PrinterOutlined />
+                  Cài đặt in ấn
+                </Space>
+              }
+            >
+              <Row gutter={16}>
+                <Col span={12}>
+                  <Form.Item
+                    name="mayIn"
+                    label="Máy in"
+                  >
+                    <Select>
+                      <Option value="Máy in nhiệt POS-80">Máy in nhiệt POS-80</Option>
+                      <Option value="Máy in kim EP-500">Máy in kim EP-500</Option>
+                      <Option value="Máy in laser HP-1020">Máy in laser HP-1020</Option>
+                    </Select>
+                  </Form.Item>
+                  <Form.Item
+                    name="kichThuocGiay"
+                    label="Kích thước giấy"
+                  >
+                    <Select>
+                      <Option value="80mm">80mm</Option>
+                      <Option value="58mm">58mm</Option>
+                      <Option value="A4">A4</Option>
+                    </Select>
+                  </Form.Item>
+                </Col>
+                <Col span={12}>
+                  <Form.Item
+                    name="inLogo"
+                    label="In logo trên hóa đơn"
+                    valuePropName="checked"
+                  >
+                    <Switch />
+                  </Form.Item>
+                  <Form.Item
+                    name="inThongTinLienHe"
+                    label="In thông tin liên hệ"
+                    valuePropName="checked"
+                  >
+                    <Switch />
+                  </Form.Item>
+                  <Form.Item
+                    name="inMaVach"
+                    label="In mã vạch"
+                    valuePropName="checked"
+                  >
+                    <Switch />
+                  </Form.Item>
+                </Col>
+              </Row>
             </Card>
           </Col>
-        </Row>
 
-        <Divider />
+          <Col span={8}>
+            {/* Logo cửa hàng */}
+            <Card title="Logo cửa hàng" style={{ marginBottom: '24px' }}>
+              <div style={{ textAlign: 'center' }}>
+                <Avatar 
+                  size={120} 
+                  icon={<ShopOutlined />}
+                  style={{ marginBottom: '16px' }}
+                />
+                <br />
+                <Upload {...uploadProps}>
+                  <Button icon={<UploadOutlined />}>
+                    Tải lên logo
+                  </Button>
+                </Upload>
+                <div style={{ color: '#666', fontSize: '12px', marginTop: '8px' }}>
+                  Kích thước tối đa: 2MB<br />
+                  Định dạng: JPG, PNG
+                </div>
+              </div>
+            </Card>
 
-        {/* Nút điều khiển */}
-        <Row justify="center">
-          <Col>
-            <Space size="large">
-              <Button 
-                icon={<ReloadOutlined />} 
-                onClick={khoiPhucMacDinh}
-              >
-                Khôi phục mặc định
-              </Button>
-              <Button 
-                type="primary" 
-                icon={<SaveOutlined />} 
-                htmlType="submit"
-                loading={loading}
-                size="large"
-              >
-                Lưu cài đặt
-              </Button>
-            </Space>
+            {/* Thông tin hệ thống */}
+            <Card title="Thông tin hệ thống">
+              <Space direction="vertical" style={{ width: '100%' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                  <span>Phiên bản:</span>
+                  <strong>v1.0.0</strong>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                  <span>Cơ sở dữ liệu:</span>
+                  <strong>SQLite</strong>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                  <span>Dung lượng:</span>
+                  <strong>245 MB</strong>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                  <span>Sao lưu cuối:</span>
+                  <strong>Hôm qua</strong>
+                </div>
+                <Divider />
+                <Button 
+                  type="primary" 
+                  danger 
+                  block
+                  onClick={khoiDongLaiHeThong}
+                >
+                  Khởi động lại hệ thống
+                </Button>
+              </Space>
+            </Card>
           </Col>
         </Row>
       </Form>
