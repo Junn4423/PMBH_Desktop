@@ -220,7 +220,14 @@ const SidebarMenu = () => {
         },
         {
           key: 'quan-ly-ban-nha-hang',
-          label: 'Quản lý bán nhà hàng',
+          label: (
+            <span 
+              onClick={() => handleParentItemClick('quan-ly-ban-nha-hang', '/quan-ly-ban-nha-hang')}
+              style={{ cursor: 'pointer' }}
+            >
+              Quản lý bán nhà hàng
+            </span>
+          ),
           children: [
             {
               key: '/chuong-trinh-kinh-doanh',

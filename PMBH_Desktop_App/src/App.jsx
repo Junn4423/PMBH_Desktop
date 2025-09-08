@@ -54,6 +54,7 @@ import XemThongTinXoaDonHang from './pages/XemThongTinXoaDonHang/XemThongTinXoaD
 import ChoNhaBepQl from './pages/ChoNhaBepQl/ChoNhaBepQl';
 import ChoQuayBarQl from './pages/ChoQuayBarQl/ChoQuayBarQl';
 import BaoCaoDoanhThuKhachHang from './pages/BaoCaoDoanhThuKhachHang/BaoCaoDoanhThuKhachHang';
+import QuanLyBanNhaHang from './pages/QuanLyBanNhaHang/QuanLyBanNhaHang';
 import SidebarMenu from './components/Layout/SidebarMenu/SidebarMenu';
 import HeaderBar from './components/Layout/HeaderBar/HeaderBar';
 
@@ -152,7 +153,7 @@ function App() {
             
             {/* Routes cho kinh doanh */}
             <Route path="/danh-muc-khach-hang" element={<DanhMucKhachHang />} />
-            <Route path="/quan-ly-ban-nha-hang" element={<QuanLyBan />} />
+            <Route path="/quan-ly-ban-nha-hang" element={<QuanLyBanNhaHang />} />
             <Route path="/bao-cao-doanh-thu-khach-hang" element={<BaoCaoDoanhThuKhachHang />} />
             
             {/* Routes con cho Quản lý bán nhà hàng */}

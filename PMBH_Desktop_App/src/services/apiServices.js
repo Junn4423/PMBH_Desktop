@@ -26,6 +26,7 @@ export async function callApi(table, func, additionalData = {}) {
 
 // -------------------- Functions from index_HNhan.php --------------------
 
+
 // Lấy loại sản phẩm
 export async function getLoaiSanPham() {
   return await callApi('Mb_loaiSanPham', 'data');
