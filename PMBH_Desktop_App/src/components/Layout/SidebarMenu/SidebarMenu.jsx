@@ -31,7 +31,14 @@ const SidebarMenu = () => {
         },
         {
           key: 'cong-ty',
-          label: 'Công ty',
+          label: (
+            <span 
+              onClick={() => handleParentItemClick('cong-ty', '/cong-ty')}
+              style={{ cursor: 'pointer' }}
+            >
+              Công ty
+            </span>
+          ),
           children: [
             {
               key: '/phong-ban',
@@ -45,7 +52,14 @@ const SidebarMenu = () => {
         },
         {
           key: 'bang-dieu-khien-nguoi-dung',
-          label: 'Bảng điều khiển người dùng',
+          label: (
+            <span 
+              onClick={() => handleParentItemClick('bang-dieu-khien-nguoi-dung', '/bang-dieu-khien-nguoi-dung')}
+              style={{ cursor: 'pointer' }}
+            >
+              Bảng điều khiển người dùng
+            </span>
+          ),
           children: [
             {
               key: '/nhom-nguoi-dung',
@@ -254,8 +268,23 @@ const SidebarMenu = () => {
     { value: 'purple', label: 'Tím', colors: ['#6600cc', '#cc66ff'] }
   ];
 
+  // Hàm xử lý click vào parent item (có cả navigation và dropdown)
+  const handleParentItemClick = (key, path) => {
+    // Navigate đến trang
+    navigate(path);
+    
+    // Toggle dropdown
+    const newOpenKeys = openKeys.includes(key) 
+      ? openKeys.filter(k => k !== key)
+      : [...openKeys, key];
+    setOpenKeys(newOpenKeys);
+  };
+
   const handleMenuClick = ({ key }) => {
-    navigate(key);
+    // Chỉ xử lý navigation cho các items con (routes)
+    if (key.startsWith('/')) {
+      navigate(key);
+    }
   };
 
   // Hàm xử lý khi submenu được mở/đóng

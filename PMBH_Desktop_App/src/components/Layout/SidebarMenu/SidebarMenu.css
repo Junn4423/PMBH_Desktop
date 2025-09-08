@@ -75,7 +75,7 @@
 }
 
 .main-menu .ant-menu-sub .ant-menu-item {
-  padding-left: 48px !important;
+  padding-left: 28px !important;
   margin: 2px 8px !important;
   height: 36px;
   line-height: 36px;
@@ -83,7 +83,7 @@
 
 /* Styles for nested sub menus (3rd level) */
 .main-menu .ant-menu-sub .ant-menu-submenu-title {
-  padding-left: 48px !important;
+  padding-left: 28px !important;
   margin: 2px 8px !important;
   height: 36px;
   line-height: 36px;
@@ -91,11 +91,21 @@
 }
 
 .main-menu .ant-menu-sub .ant-menu-sub .ant-menu-item {
-  padding-left: 72px !important;
+  padding-left: 48px !important;
   margin: 1px 8px !important;
   height: 32px;
   line-height: 32px;
   font-size: 12px;
+}
+
+/* Clickable parent items styling */
+.main-menu .ant-menu-submenu-title span {
+  transition: color 0.3s ease;
+}
+
+.main-menu .ant-menu-submenu-title span:hover {
+  color: var(--primary-color) !important;
+  font-weight: 600;
 }
 
 .main-menu .ant-menu-sub .ant-menu-submenu-arrow {
