@@ -7,7 +7,7 @@ const CaiDat = () => {
   return (
     <div>
       <Title level={2}>Cài đặt</Title>
-      <p>Trang cài đặt đang được phát triển...</p>
+      <p>Trang cài đặt cần gói premium để sử dụng...</p>
     </div>
   );
 };

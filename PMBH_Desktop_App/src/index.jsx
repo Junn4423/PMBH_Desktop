@@ -12,8 +12,13 @@ import './styles/index.css';
 const root = ReactDOM.createRoot(document.getElementById('root'));
 
 root.render(
-  <React.StrictMode>
-    <HashRouter>
+  // <React.StrictMode>
+    <HashRouter
+      future={{
+        v7_startTransition: true,
+        v7_relativeSplatPath: true
+      }}
+    >
       <ConfigProvider locale={viVN}>
         <ThemeProvider>
           <AuthProvider>
@@ -24,5 +29,5 @@ root.render(
         </ThemeProvider>
       </ConfigProvider>
     </HashRouter>
-  </React.StrictMode>
+  // </React.StrictMode>
 );

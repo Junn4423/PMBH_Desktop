@@ -126,7 +126,7 @@ export default function XuatKho() {
       )}
       <ConfirmModal
         onConfirm={handleXoa}
-        visible={visibleXoaKho}
+        open={visibleXoaKho}
         hideModal={() => setVisibleXoaKho(false)}
         loading={loadingXoaPhieu}
         title="Xoá phiếu nhập"

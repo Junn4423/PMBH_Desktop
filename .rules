@@ -1,10 +1,19 @@
 #KHÔNG THÊM AUTO ICONS - WINDOW ICONS VÀO UI
+#KHÔNG MOCK DATA
 #CHỈ CODE TRÊN SCRIPT PMBH_Desktop_App, CÒN 2 SCRIPT Backup_Sql_MB VÀ gmac KHÔNG ĐƯỢC CHỈNH SỬA HAY THÊM XÓA BẤT CỨ GÌ, CHỈ ĐƯỢC ĐỌC
 #CODE APP DESKTOP ELECTRON
 #TUÂN THỦ PALLET MÀU 
 - THEME: #197dd3, #77d4fb, #bdbcc4, #4b4344
-tôi đã setup xong file database(sql) và backend(gmac), file gmac nằm trong htdocs, tôi để file ở đây để backup thôilocalhost/gmac/login.sof.vn/index.php
-{
-    "txtUserName": "admin",
-    "txtPassword": "123456"
-}
+#KHÔNG TẠO FILE TEST, KHÔNG TẠO FILE MD, KHÔNG TẠO DEMO, CHỈ CODE FILE CHÍNH
+#KHÔNG INLINE CSS
+#TẤT CẢ CSS PHẢI NẲM Ở FILE RIÊNG ĐẶT TRONG /STYLES/../..css
+#CHỈ SỬ DỤNG ICON TỪ THƯ VIỆN Lucide (lucide-react)
+#API KIẾM TỪ FILE GMAC, VIẾT LẠI HÀM GỌI API TỪ CÁC FILES: 
+##services.sof.vn\index_HNhan.php
+##services.sof.vn\index_Cong.php
+##services.sof.vn\index_KBao.php
+##services.sof.vn\index_long.php
+##services.sof.vn\index_NChung.php
+#SAU ĐÓ CÁC PAGES SẼ GỌI CÁC HÀM ĐÃ GỌI API Ở TRÊN
+#DÙNG AXIOS ĐỂ GỌI API
+#KHÔNG ĐƯỢC CODE TRÊN FILE PHP!!!!!!!!!!!!!

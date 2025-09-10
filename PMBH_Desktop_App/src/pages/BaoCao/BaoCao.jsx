@@ -7,7 +7,7 @@ const BaoCao = () => {
   return (
     <div>
       <Title level={2}>Báo cáo</Title>
-      <p>Trang báo cáo đang được phát triển...</p>
+      <p>Trang báo cáo cần gói premium để sử dụng...</p>
     </div>
   );
 };

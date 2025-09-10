@@ -67,11 +67,13 @@ export const AuthProvider = ({ children }) => {
       // If not demo account, try real API
       const result = await apiLogin(taiKhoan, matKhau);
       
-      if (result.code && result.token) {
+      console.log('AuthContext received result:', result);
+      
+      if (result.success && result.userCode && result.token) {
         const userData = {
-          id: result.code,
-          taiKhoan: result.code,
-          hoTen: result.code,
+          id: result.userCode,
+          taiKhoan: result.userCode,
+          hoTen: result.userCode,
           vaiTro: result.role || 'user',
           email: '',
           token: result.token,

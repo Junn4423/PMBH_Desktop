@@ -7,7 +7,7 @@ const KhachHang = () => {
   return (
     <div>
       <Title level={2}>Quản lý khách hàng</Title>
-      <p>Trang quản lý khách hàng đang được phát triển...</p>
+      <p>Trang quản lý khách hàng cần gói premium để sử dụng...</p>
     </div>
   );
 };

@@ -14,7 +14,7 @@ const ChiKhac = () => {
             Chi khác
           </Title>
           <Text type="secondary">
-            Trang quản lý chi phí khác đang được phát triển
+            Trang quản lý chi phí khác cần gói premium để sử dụng
           </Text>
         </div>
       </Card>

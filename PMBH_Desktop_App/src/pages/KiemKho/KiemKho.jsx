@@ -17,7 +17,7 @@ const KiemKho = () => {
           <ClipboardCheck size={64} style={{ color: '#197dd3', marginBottom: 16 }} />
           <Title level={3}>Kiểm kho</Title>
           <p style={{ color: '#bdbcc4', fontSize: '16px' }}>
-            Tính năng kiểm kho đang được phát triển...
+            Tính năng kiểm kho cần gói premium để sử dụng...
           </p>
         </div>
       </Card>

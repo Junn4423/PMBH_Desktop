@@ -23,12 +23,13 @@ let baseUrl, loginUrl, logoutUrl, servicesUrl;
 
 if (isElectronEnv) {
   // Direct URLs for Electron (no CORS issues)
-  baseUrl = "http://localhost/gmac";
-  loginUrl = "http://localhost/gmac/login.sof.vn/index.php";
-  logoutUrl = "http://localhost/gmac/signout.sof.vn/index.php";
-  servicesUrl = "http://localhost/gmac/services.sof.vn/index.php";
+  baseUrl = "http://192.168.1.92/gmac";
+  loginUrl = "http://192.168.1.92/gmac/login.sof.vn/index.php";
+  logoutUrl = "http://192.168.1.92/gmac/signout.sof.vn/index.php";
+  servicesUrl = "http://192.168.1.92/gmac/services.sof.vn/index.php";
 } else {
-  // Proxy URLs for web browser (to avoid CORS)
+  // For development in browser, use proxy URLs
+  // The proxy in package.json will redirect these to http://localhost
   baseUrl = "/gmac";
   loginUrl = "/gmac/login.sof.vn/index.php";
   logoutUrl = "/gmac/signout.sof.vn/index.php";

@@ -1,70 +1,103 @@
 import axios from 'axios';
 import {url_api_services, url_login_api, url_api_logout, environment} from "./url";
+import { mockGmacLogin } from './gmacMockServer';
 
 const urlApi = url_api_services;
 const urlLoginApi = url_login_api;
 const urlLogoutApi = url_api_logout;
+
+// GMAC login endpoint
+const GMAC_LOGIN_URL = 'http://192.168.1.92/gmac/login.sof.vn/index.php';
 
 // Debug environment
 console.log('API Login Environment:', environment);
 
 // -------------------- Authentication helpers --------------------
 let authCache = null; // Lưu token sau lần đăng nhập đầu tiên
+let authExpiry = null; // Thời gian hết hạn token
 
-async function getAuthToken(
-  username = "",
-  password = "",
-  forceRefresh = false
-) {
-  // Use cached token if available and not forcing refresh
-  if (authCache && !forceRefresh) {
+async function getAuthToken(forceRefresh = false) {
+  // Check if cached token is still valid
+  if (authCache && authExpiry && Date.now() < authExpiry && !forceRefresh) {
     console.log("Using cached auth token");
     return authCache;
   }
 
   console.log("Getting fresh auth token...");
-  console.log("Login URL:", urlLoginApi);
+  console.log("Login URL:", GMAC_LOGIN_URL);
 
   const payload = {
-    txtUserName: username,
-    txtPassword: password,
+    txtUserName: "admin",
+    txtPassword: "123456"
   };
 
   try {
-    const res = await axios.post(urlLoginApi, payload, {
-      headers: { "Content-Type": "application/json" },
+    // Try real GMAC server first
+    const res = await axios.post(GMAC_LOGIN_URL, payload, {
+      headers: { 
+        "Content-Type": "application/json",
+        "Accept": "application/json"
+      },
+      timeout: 5000 // 5 second timeout
     });
 
     const result = res.data;
 
-    // Kiểm tra nếu có lỗi trong response
-    if (result.error) {
-      console.error("Login error:", result.error);
-      throw new Error(result.error);
+    // Kiểm tra response từ GMAC - format: {"code":"admin","token":"29oJ8XO88yDm08kd","role":null,"chiNhanh":""}
+    if (result && result.token && result.code) {
+      authCache = {
+        token: result.token,
+        code: result.code,
+        userId: result.userId || 1,
+        role: result.role,
+        chiNhanh: result.chiNhanh
+      };
+      // Set expiry to 1 hour from now
+      authExpiry = Date.now() + (60 * 60 * 1000);
+      console.log("Got auth token from GMAC:", authCache);
+      return authCache;
+    } else {
+      throw new Error("Invalid GMAC response");
     }
-
-    // Kiểm tra nếu không có token
-    if (!result.token || !result.code) {
-      console.error("Invalid login response:", result);
-      throw new Error("Đăng nhập thất bại: không nhận được token");
-    }
-
-    authCache = result;
-    console.log("Got auth token:", authCache);
-    return authCache;
   } catch (error) {
-    console.error("Login failed:", error.response ? error.response.data : error.message);
-    throw new Error("Không thể đăng nhập để lấy token");
+    console.warn("GMAC server not available, using mock authentication:", error.message);
+    
+    // Fallback to mock authentication for development
+    try {
+      const mockResult = await mockGmacLogin("admin", "123456");
+      authCache = {
+        token: mockResult.token,
+        code: mockResult.userCode || 'admin',
+        userId: mockResult.userId || 1
+      };
+      authExpiry = mockResult.expires;
+      console.log("Got auth token from mock server:", authCache);
+      return authCache;
+    } catch (mockError) {
+      console.error("Mock authentication also failed:", mockError);
+      authCache = null;
+      authExpiry = null;
+      throw new Error("Không thể đăng nhập: cả GMAC server và mock server đều không khả dụng");
+    }
   }
 }
 
 export async function getAuthHeaders(forceRefresh = false) {
-  const authData = await getAuthToken("admin", "1", forceRefresh);
-  return {
-    "Content-Type": "application/json",
-    "X-USER-CODE": authData.code,
-    "X-USER-TOKEN": authData.token,
-  };
+  try {
+    const authData = await getAuthToken(forceRefresh);
+    return {
+      "Content-Type": "application/json",
+      "Authorization": `Bearer ${authData.token}`,
+      "X-USER-CODE": authData.code,
+      "X-USER-TOKEN": authData.token,
+    };
+  } catch (error) {
+    console.error("Failed to get auth headers:", error);
+    // Return basic headers if auth fails
+    return {
+      "Content-Type": "application/json",
+    };
+  }
 }
 
 async function callApiWithAuth(payload, retryCount = 0) {
@@ -84,6 +117,7 @@ async function callApiWithAuth(payload, retryCount = 0) {
     if (error.response && error.response.status === 401 && retryCount === 0) {
       console.log("Got 401, clearing auth cache and retrying...");
       authCache = null; // Clear cached token
+      authExpiry = null;
       return callApiWithAuth(payload, 1); // Retry once
     }
     throw error;
@@ -92,24 +126,39 @@ async function callApiWithAuth(payload, retryCount = 0) {
 
 export async function login(username, password) {
   try {
-    console.log("Login attempt:", { username, loginUrl: urlLoginApi });
+    console.log("Login attempt:", { username, loginUrl: GMAC_LOGIN_URL });
     
     const payload = {
       txtUserName: username,
       txtPassword: password,
     };
 
-    const res = await axios.post(urlLoginApi, payload, {
-      headers: { "Content-Type": "application/json" },
+    const res = await axios.post(GMAC_LOGIN_URL, payload, {
+      headers: { 
+        "Content-Type": "application/json",
+        "Accept": "application/json"
+      },
     });
 
     console.log("Login response:", res.data);
     const result = res.data;
 
-    if (result.code && result.token) {
-      authCache = result;
-      console.log("Login successful:", result);
-      return result;
+    // Check if we have token and code (GMAC format)
+    if (result.token && result.code) {
+      authCache = {
+        token: result.token,
+        code: result.code,
+        userId: result.userId || 1
+      };
+      authExpiry = Date.now() + (60 * 60 * 1000); // 1 hour
+      console.log("Login successful:", authCache);
+      return { 
+        success: true, 
+        token: result.token, 
+        userCode: result.code,
+        role: result.role,
+        chiNhanh: result.chiNhanh 
+      };
     } else {
       console.error("Login failed - invalid response:", result);
       throw new Error(result.message || "Đăng nhập thất bại");

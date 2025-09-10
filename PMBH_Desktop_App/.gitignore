@@ -50,9 +50,14 @@ coverage/
 # Electron
 out/
 app/
+release/
+electron-builder-output/
 *.exe
 *.dmg
 *.AppImage
+*.deb
+*.rpm
+*.snap
 
 # Temporary folders
 tmp/
@@ -74,3 +79,18 @@ temp/
 # ESLint cache
 .eslintcache
 
+# Additional Node.js
+.node_modules/
+package-lock.json
+yarn.lock
+
+# IDE specific
+.vscode/settings.json
+.vscode/launch.json
+.vscode/extensions.json
+
+# Application specific
+config/database.json
+*.key
+*.pem
+*.p12

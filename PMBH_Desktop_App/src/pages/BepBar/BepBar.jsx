@@ -14,7 +14,7 @@ const BepBar = () => {
             Bếp/Bar
           </Title>
           <Text type="secondary">
-            Trang quản lý bếp và bar đang được phát triển
+            Trang quản lý bếp và bar cần gói premium để sử dụng
           </Text>
         </div>
       </Card>

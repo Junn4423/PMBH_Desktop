@@ -33,6 +33,10 @@ const DangNhap = () => {
       const result = await authLogin(tenDangNhap, matKhau);
 
       if (result.success) {
+        // Clear any previous errors
+        setShowError(false);
+        setErrorMessage('');
+        
         // Save login info if remember is checked
         if (ghi_nho) {
           localStorage.setItem('remembered_user', tenDangNhap);
@@ -73,7 +77,7 @@ const DangNhap = () => {
   return (
     <div className="login-container">
       <div className="login-content">
-        <Card className="login-card" bodyStyle={{ padding: '50px 40px' }}>
+        <Card className="login-card" styles={{ body: { padding: '50px 40px' } }}>
           <div className="login-header">
             <div className="login-logo">
               <Shield size={36} />

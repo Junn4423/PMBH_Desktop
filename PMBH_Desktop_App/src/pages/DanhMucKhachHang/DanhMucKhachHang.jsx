@@ -25,7 +25,7 @@ const DanhMucKhachHang = () => {
         className="main-card"
       >
         <div className="development-notice">
-          <h3>Màn hình Danh mục khách hàng đang được phát triển</h3>
+          <h3>Màn hình Danh mục khách hàng cần gói premium để sử dụng</h3>
           <p>Chức năng này sẽ sớm được hoàn thiện.</p>
         </div>
       </Card>

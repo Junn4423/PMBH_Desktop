@@ -123,30 +123,8 @@ export const AuthProvider = ({ children }) => {
     dispatch({ type: AUTH_ACTIONS.LOGIN_START });
 
     try {
-      // TODO: Replace with actual API call
-      const response = await mockLoginAPI(username, password);
-
-      if (response.success) {
-        const { user, token, permissions } = response.data;
-
-        // Save to localStorage
-        localStorage.setItem('authToken', token);
-        localStorage.setItem('user', JSON.stringify(user));
-        localStorage.setItem('permissions', JSON.stringify(permissions));
-
-        if (remember) {
-          localStorage.setItem('rememberLogin', 'true');
-        }
-
-        dispatch({
-          type: AUTH_ACTIONS.LOGIN_SUCCESS,
-          payload: { user, permissions }
-        });
-
-        return response;
-      } else {
-        throw new Error(response.message || 'Đăng nhập thất bại');
-      }
+      // Call real GMAC authentication API
+      throw new Error('GMAC Authentication API chưa được implement');
     } catch (error) {
       dispatch({
         type: AUTH_ACTIONS.LOGIN_FAILURE,
@@ -179,19 +157,8 @@ export const AuthProvider = ({ children }) => {
     dispatch({ type: AUTH_ACTIONS.CHANGE_PASSWORD_START });
 
     try {
-      // TODO: Replace with actual API call
-      const response = await mockChangePasswordAPI(
-        state.user.id,
-        currentPassword,
-        newPassword
-      );
-
-      if (response.success) {
-        dispatch({ type: AUTH_ACTIONS.CHANGE_PASSWORD_SUCCESS });
-        return response;
-      } else {
-        throw new Error(response.message || 'Đổi mật khẩu thất bại');
-      }
+      // Call real GMAC change password API
+      throw new Error('GMAC Change Password API chưa được implement');
     } catch (error) {
       dispatch({
         type: AUTH_ACTIONS.CHANGE_PASSWORD_FAILURE,
@@ -249,86 +216,6 @@ export const useAuth = () => {
     throw new Error('useAuth must be used within an AuthProvider');
   }
   return context;
-};
-
-// Mock API functions (replace with actual API calls)
-const mockLoginAPI = async (username, password) => {
-  // Simulate API delay
-  await new Promise(resolve => setTimeout(resolve, 1000));
-
-  // Demo accounts
-  const accounts = [
-    {
-      username: 'admin',
-      password: 'admin123',
-      user: {
-        id: 1,
-        username: 'admin',
-        fullName: 'Quản trị viên',
-        email: 'admin@pmhb.com',
-        role: 'admin',
-        avatar: null
-      },
-      permissions: ['*'] // Admin has all permissions
-    },
-    {
-      username: 'cashier',
-      password: 'cashier123',
-      user: {
-        id: 2,
-        username: 'cashier',
-        fullName: 'Thu ngân',
-        email: 'cashier@pmhb.com',
-        role: 'cashier',
-        avatar: null
-      },
-      permissions: ['pos', 'orders', 'customers']
-    },
-    {
-      username: 'manager',
-      password: 'manager123',
-      user: {
-        id: 3,
-        username: 'manager',
-        fullName: 'Quản lý',
-        email: 'manager@pmhb.com',
-        role: 'manager',
-        avatar: null
-      },
-      permissions: ['pos', 'orders', 'customers', 'products', 'reports']
-    }
-  ];
-
-  const account = accounts.find(
-    acc => acc.username === username && acc.password === password
-  );
-
-  if (account) {
-    return {
-      success: true,
-      data: {
-        user: account.user,
-        token: `token_${account.user.id}_${Date.now()}`,
-        permissions: account.permissions
-      }
-    };
-  } else {
-    return {
-      success: false,
-      message: 'Tên đăng nhập hoặc mật khẩu không chính xác'
-    };
-  }
-};
-
-const mockChangePasswordAPI = async (userId, currentPassword, newPassword) => {
-  // Simulate API delay
-  await new Promise(resolve => setTimeout(resolve, 1000));
-
-  // TODO: Implement actual password change logic
-  return {
-    success: true,
-    message: 'Đổi mật khẩu thành công'
-  };
 };
 
 export default AuthContext;

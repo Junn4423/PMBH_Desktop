@@ -17,7 +17,7 @@ const BangDieuKhienNguoiDung = () => {
           <Users size={64} style={{ color: '#197dd3', marginBottom: 16 }} />
           <Title level={3}>Bảng điều khiển người dùng</Title>
           <p style={{ color: '#bdbcc4', fontSize: '16px' }}>
-            Tính năng quản lý người dùng đang được phát triển...
+            Tính năng quản lý người dùng cần gói premium để sử dụng...
           </p>
         </div>
       </Card>

@@ -7,7 +7,7 @@ const NhanVien = () => {
   return (
     <div>
       <Title level={2}>Quản lý nhân viên</Title>
-      <p>Trang quản lý nhân viên đang được phát triển...</p>
+      <p>Trang quản lý nhân viên cần gói premium để sử dụng...</p>
     </div>
   );
 };

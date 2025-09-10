@@ -1,9 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { Row, Col, Card, Input, Select, Button, List, Typography, InputNumber, Space, Tag, Divider, message } from 'antd';
-import { SearchOutlined, PlusOutlined, MinusOutlined, DeleteOutlined, PrinterOutlined } from '@ant-design/icons';
+import { Typography, Button, Space, message, Modal, Input, Select } from 'antd';
+import { Search, Filter, Plus } from 'lucide-react';
 import { useCart } from '../../contexts/CartContext';
-import ChonBan from '../../components/BanHang/ChonBan/ChonBan.jsx';
-import './BanHang.css';
+import { getAllSanPham, getLoaiSanPham, loadBan, loadKhuVuc, createGmacOrder } from '../../services/apiServices';
+import TableGrid from '../../components/tables/TableGrid';
+import { CartSidebar, FloatingCartButton } from '../../components/cart/CartComponents';
+import ChonSanPham from './ChonSanPham';
+import '../../styles/tables/TableGrid.css';
 
 const { Title, Text } = Typography;
 const { Option } = Select;
@@ -22,112 +25,89 @@ const BanHang = () => {
     clearCart,
     setCustomer,
     setDiscount,
-    saveOrder
+    saveOrder,
+    setSelectedTable
   } = useCart();
 
-  const [products, setProducts] = useState([]);
-  const [filteredProducts, setFilteredProducts] = useState([]);
+  // States
+  const [tables, setTables] = useState([]);
+  const [khuVucList, setKhuVucList] = useState([]);
+  const [loadingTables, setLoadingTables] = useState(false);
+  const [loadingKhuVuc, setLoadingKhuVuc] = useState(false);
+  const [selectedKhuVuc, setSelectedKhuVuc] = useState('all');
+  const [showCart, setShowCart] = useState(false);
+  const [showProductModal, setShowProductModal] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState('all');
-  const [showTableSelection, setShowTableSelection] = useState(false);
 
-  const categories = [
-    { value: 'all', label: 'Tất cả' },
-    { value: 'coffee', label: 'Cà phê' },
-    { value: 'tea', label: 'Trà' },
-    { value: 'juice', label: 'Nước ép' },
-    { value: 'cake', label: 'Bánh ngọt' },
-    { value: 'other', label: 'Khác' }
-  ];
-
-  // Dữ liệu mẫu sản phẩm
+  // Load tables và khu vực khi component mount
   useEffect(() => {
-    const sampleProducts = [
-      {
-        id: 1,
-        ten: 'Cà phê đen',
-        gia: 15000,
-        danhMuc: 'coffee',
-        moTa: 'Cà phê đen truyền thống',
-        hinhAnh: '/images/coffee-black.jpg'
-      },
-      {
-        id: 2,
-        ten: 'Cà phê sữa',
-        gia: 18000,
-        danhMuc: 'coffee',
-        moTa: 'Cà phê sữa đậm đà',
-        hinhAnh: '/images/coffee-milk.jpg'
-      },
-      {
-        id: 3,
-        ten: 'Trà sữa',
-        gia: 25000,
-        danhMuc: 'tea',
-        moTa: 'Trà sữa thơm ngon',
-        hinhAnh: '/images/milk-tea.jpg'
-      },
-      {
-        id: 4,
-        ten: 'Nước ép cam',
-        gia: 20000,
-        danhMuc: 'juice',
-        moTa: 'Nước ép cam tươi',
-        hinhAnh: '/images/orange-juice.jpg'
-      },
-      {
-        id: 5,
-        ten: 'Bánh tiramisu',
-        gia: 35000,
-        danhMuc: 'cake',
-        moTa: 'Bánh tiramisu Italy',
-        hinhAnh: '/images/tiramisu.jpg'
-      },
-      {
-        id: 6,
-        ten: 'Cappuccino',
-        gia: 22000,
-        danhMuc: 'coffee',
-        moTa: 'Cappuccino Italy',
-        hinhAnh: '/images/cappuccino.jpg'
-      }
-    ];
-    
-    setProducts(sampleProducts);
-    setFilteredProducts(sampleProducts);
+    loadTableList();
+    fetchKhuVuc();
   }, []);
 
-  // Lọc sản phẩm
-  useEffect(() => {
-    let filtered = products;
+  const loadTableList = async () => {
+    try {
+      setLoadingTables(true);
+      const tablesResponse = await loadBan();
+      console.log('Tables response:', tablesResponse);
+      
+      // Xử lý dữ liệu bàn - format: {"idBan":"1","tenBan":"Quầy 1","idKhuVuc":"NGOAI"}
+      let tablesData = [];
+      if (Array.isArray(tablesResponse)) {
+        tablesData = tablesResponse.map(table => ({
+          id: table.idBan,
+          tenBan: table.tenBan,
+          idKhuVuc: table.idKhuVuc,
+          khuVuc: table.idKhuVuc
+        }));
+      } else {
+        console.warn('Tables data is not in expected format:', tablesResponse);
+        tablesData = [];
+      }
 
-    // Lọc theo danh mục
-    if (selectedCategory !== 'all') {
-      filtered = filtered.filter(product => product.danhMuc === selectedCategory);
+      setTables(tablesData);
+    } catch (error) {
+      console.error('Error loading tables:', error);
+      message.error('Không thể tải danh sách bàn');
+    } finally {
+      setLoadingTables(false);
     }
-
-    // Lọc theo từ khóa tìm kiếm
-    if (searchTerm) {
-      filtered = filtered.filter(product =>
-        product.ten.toLowerCase().includes(searchTerm.toLowerCase())
-      );
-    }
-
-    setFilteredProducts(filtered);
-  }, [products, selectedCategory, searchTerm]);
-
-  const handleAddToCart = (product) => {
-    addToCart(product);
-    message.success(`Đã thêm ${product.ten} vào giỏ hàng`);
   };
 
-  const handleQuantityChange = (cartId, newQuantity) => {
-    updateQuantity(cartId, newQuantity);
+  // Load danh sách khu vực
+  const fetchKhuVuc = async () => {
+    setLoadingKhuVuc(true);
+    try {
+      const result = await loadKhuVuc();
+      console.log('Khu vuc response:', result);
+      
+      // API trả về trực tiếp là array, không có .data
+      if (Array.isArray(result) && result.length > 0) {
+        setKhuVucList(result);
+        console.log('Set khu vuc list:', result);
+      } else {
+        console.warn('Khu vuc data format:', result);
+        message.warning('Không có dữ liệu khu vực');
+      }
+    } catch (error) {
+      console.error('Error loading khu vuc:', error);
+      message.error('Không thể tải danh sách khu vực');
+    } finally {
+      setLoadingKhuVuc(false);
+    }
   };
 
-  const handleRemoveItem = (cartId) => {
-    removeFromCart(cartId);
-    message.success('Đã xóa món khỏi giỏ hàng');
+  // Filter tables theo search term và khu vực
+  const filteredTables = tables.filter(table => {
+    const matchesSearch = table.tenBan?.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesKhuVuc = selectedKhuVuc === 'all' || table.idKhuVuc === selectedKhuVuc;
+    return matchesSearch && matchesKhuVuc;
+  });
+
+  const handleTableSelect = (table) => {
+    setSelectedTable(table);
+    message.success(`Đã chọn ${table.tenBan}`);
+    setShowProductModal(true);
   };
 
   const handleSaveOrder = async () => {
@@ -142,229 +122,118 @@ const BanHang = () => {
     }
 
     try {
-      await saveOrder();
-      message.success('Đã lưu đơn hàng thành công');
+      // Tạo đơn hàng qua GMAC API
+      const orderData = {
+        banId: selectedTable.id,
+        itemId: cartItems[0].id,
+        order: 1,
+        customerId: customer?.id || '',
+        addState: 1,
+        traHang: 0,
+        programId: '',
+        contractId: ''
+      };
+
+      const result = await createGmacOrder(orderData);
+
+      if (result && result.success) {
+        message.success('Đã lưu đơn hàng thành công');
+        clearCart();
+        setShowCart(false);
+      } else {
+        throw new Error('Không thể tạo đơn hàng');
+      }
     } catch (error) {
-      message.error(error.message);
+      console.error('Error saving order:', error);
+      message.error(error.message || 'Không thể lưu đơn hàng');
     }
   };
 
   const handlePrintOrder = () => {
-    // Logic in hóa đơn
-    message.info('Chức năng in hóa đơn đang được phát triển');
+    message.info('Chức năng in hóa đơn cần gói premium để sử dụng');
   };
 
   return (
-    <div className="ban-hang">
-      <Row gutter={[16, 16]} style={{ height: '100%' }}>
-        {/* Danh sách sản phẩm */}
-        <Col xs={24} lg={14}>
-          <Card title="Thực đơn" className="products-card">
-            <div className="products-filter">
-              <Row gutter={[12, 12]}>
-                <Col xs={24} md={12}>
-                  <Input
-                    placeholder="Tìm kiếm món..."
-                    prefix={<SearchOutlined />}
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                  />
-                </Col>
-                <Col xs={24} md={12}>
-                  <Select
-                    value={selectedCategory}
-                    onChange={setSelectedCategory}
-                    style={{ width: '100%' }}
-                  >
-                    {categories.map(category => (
-                      <Option key={category.value} value={category.value}>
-                        {category.label}
-                      </Option>
-                    ))}
-                  </Select>
-                </Col>
-              </Row>
-            </div>
+    <div className="tables-container">
+      {/* Header */}
+      <div className="tables-header">
+        <div>
+          <Title level={3} style={{ margin: 0, color: '#4b4344' }}>
+            Chọn bàn để bán hàng
+          </Title>
+          <Text type="secondary">
+            {tables.length} bàn • {cartItems.length} món trong giỏ
+          </Text>
+        </div>
+        
+        <div className="tables-filter">
+          <Input
+            placeholder="Tìm bàn..."
+            prefix={<Search size={16} />}
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            style={{ width: 200 }}
+          />
+          
+          <Select
+            value={selectedKhuVuc}
+            onChange={setSelectedKhuVuc}
+            style={{ width: 200 }}
+            loading={loadingKhuVuc}
+            placeholder="Chọn khu vực"
+          >
+            <Option value="all">Tất cả khu vực</Option>
+            {khuVucList.map(khuVuc => (
+              <Option key={khuVuc.idKhuVuc} value={khuVuc.idKhuVuc}>
+                {khuVuc.ten}
+              </Option>
+            ))}
+          </Select>
+        </div>
+      </div>
 
-            <div className="products-grid">
-              <Row gutter={[12, 12]}>
-                {filteredProducts.map(product => (
-                  <Col xs={12} sm={8} md={6} key={product.id}>
-                    <Card
-                      size="small"
-                      className="product-item"
-                      onClick={() => handleAddToCart(product)}
-                      hoverable
-                    >
-                      <div className="product-image">
-                        <div className="product-placeholder">
-                          {product.ten.charAt(0)}
-                        </div>
-                      </div>
-                      <div className="product-info">
-                        <Text strong className="product-name">
-                          {product.ten}
-                        </Text>
-                        <div className="product-price">
-                          {product.gia.toLocaleString()}đ
-                        </div>
-                      </div>
-                    </Card>
-                  </Col>
-                ))}
-              </Row>
-            </div>
-          </Card>
-        </Col>
-
-        {/* Giỏ hàng */}
-        <Col xs={24} lg={10}>
-          <Card title="Giỏ hàng" className="cart-card">
-            <div className="cart-header">
-              <Space style={{ width: '100%', justifyContent: 'space-between' }}>
-                <Button
-                  type="primary"
-                  ghost
-                  onClick={() => setShowTableSelection(true)}
-                >
-                  {selectedTable ? `${selectedTable.ten}` : 'Chọn bàn'}
-                </Button>
-                {cartItems.length > 0 && (
-                  <Button
-                    type="text"
-                    danger
-                    onClick={clearCart}
-                    icon={<DeleteOutlined />}
-                  >
-                    Xóa tất cả
-                  </Button>
-                )}
-              </Space>
-            </div>
-
-            <Divider />
-
-            <div className="cart-items">
-              {cartItems.length === 0 ? (
-                <div className="empty-cart">
-                  <Text type="secondary">Giỏ hàng trống</Text>
-                </div>
-              ) : (
-                <List
-                  dataSource={cartItems}
-                  renderItem={(item) => (
-                    <List.Item className="cart-item">
-                      <div className="cart-item-content">
-                        <div className="cart-item-info">
-                          <Text strong>{item.ten}</Text>
-                          <div className="cart-item-price">
-                            {item.gia.toLocaleString()}đ
-                          </div>
-                        </div>
-                        <div className="cart-item-controls">
-                          <Button
-                            size="small"
-                            icon={<MinusOutlined />}
-                            onClick={() => handleQuantityChange(item.cartId, item.soLuong - 1)}
-                          />
-                          <InputNumber
-                            size="small"
-                            min={1}
-                            value={item.soLuong}
-                            onChange={(value) => handleQuantityChange(item.cartId, value)}
-                            style={{ width: '60px', margin: '0 8px' }}
-                          />
-                          <Button
-                            size="small"
-                            icon={<PlusOutlined />}
-                            onClick={() => handleQuantityChange(item.cartId, item.soLuong + 1)}
-                          />
-                          <Button
-                            size="small"
-                            type="text"
-                            danger
-                            icon={<DeleteOutlined />}
-                            onClick={() => handleRemoveItem(item.cartId)}
-                            style={{ marginLeft: 8 }}
-                          />
-                        </div>
-                      </div>
-                      <div className="cart-item-total">
-                        {(item.gia * item.soLuong).toLocaleString()}đ
-                      </div>
-                    </List.Item>
-                  )}
-                />
-              )}
-            </div>
-
-            {cartItems.length > 0 && (
-              <>
-                <Divider />
-                <div className="cart-summary">
-                  <div className="summary-row">
-                    <Text>Tổng tiền:</Text>
-                    <Text strong>{total.toLocaleString()}đ</Text>
-                  </div>
-                  
-                  <div className="summary-row">
-                    <Text>Giảm giá:</Text>
-                    <InputNumber
-                      size="small"
-                      min={0}
-                      max={100}
-                      value={discount}
-                      onChange={setDiscount}
-                      formatter={value => `${value}%`}
-                      parser={value => value.replace('%', '')}
-                      style={{ width: '80px' }}
-                    />
-                  </div>
-
-                  <Divider style={{ margin: '12px 0' }} />
-
-                  <div className="summary-row total-row">
-                    <Title level={4} style={{ margin: 0 }}>Thành tiền:</Title>
-                    <Title level={4} style={{ margin: 0, color: '#1890ff' }}>
-                      {finalTotal.toLocaleString()}đ
-                    </Title>
-                  </div>
-
-                  <div className="cart-actions">
-                    <Space style={{ width: '100%' }} direction="vertical">
-                      <Button
-                        type="primary"
-                        size="large"
-                        block
-                        onClick={handleSaveOrder}
-                        disabled={!selectedTable || cartItems.length === 0}
-                      >
-                        Lưu đơn hàng
-                      </Button>
-                      <Button
-                        type="default"
-                        size="large"
-                        block
-                        icon={<PrinterOutlined />}
-                        onClick={handlePrintOrder}
-                        disabled={cartItems.length === 0}
-                      >
-                        In hóa đơn
-                      </Button>
-                    </Space>
-                  </div>
-                </div>
-              </>
-            )}
-          </Card>
-        </Col>
-      </Row>
-
-      {/* Modal chọn bàn */}
-      <ChonBan
-        visible={showTableSelection}
-        onClose={() => setShowTableSelection(false)}
+      {/* Tables Grid */}
+      <TableGrid
+        tables={filteredTables}
+        loading={loadingTables}
+        selectedTable={selectedTable}
+        onTableSelect={handleTableSelect}
+        selectedKhuVuc={selectedKhuVuc}
       />
+
+      {/* Floating Cart Button */}
+      <FloatingCartButton
+        cartItems={cartItems}
+        onClick={() => setShowCart(true)}
+      />
+
+      {/* Cart Sidebar */}
+      <CartSidebar
+        isOpen={showCart}
+        onClose={() => setShowCart(false)}
+        cartItems={cartItems}
+        selectedTable={selectedTable}
+        customer={customer}
+        discount={discount}
+        total={total}
+        finalTotal={finalTotal}
+        onUpdateQuantity={updateQuantity}
+        onRemoveItem={removeFromCart}
+        onSaveOrder={handleSaveOrder}
+        onPrintOrder={handlePrintOrder}
+      />
+
+      {/* Product Selection Modal */}
+      <Modal
+        title={`Chọn món cho ${selectedTable?.tenBan || 'bàn'}`}
+        open={showProductModal}
+        onCancel={() => setShowProductModal(false)}
+        footer={null}
+        width={1200}
+        centered
+      >
+        <ChonSanPham onAddToCart={addToCart} />
+      </Modal>
     </div>
   );
 };
