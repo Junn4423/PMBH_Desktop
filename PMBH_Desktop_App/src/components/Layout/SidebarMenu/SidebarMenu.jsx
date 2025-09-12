@@ -7,7 +7,9 @@ import {
   Package,
   TrendingUp,
   Palette,
-  ChevronDown
+  ChevronDown,
+  ShoppingCart,
+  ChefHat
 } from 'lucide-react';
 import './SidebarMenu.css';
 
@@ -168,6 +170,21 @@ const SidebarMenu = () => {
               label: 'Bàn nhà hàng',
             }
           ]
+        }
+      ]
+    },
+    {
+      key: 'ban-hang',
+      icon: <ShoppingCart size={16} />,
+      label: 'Bán hàng',
+      children: [
+        {
+          key: '/ban-hang',
+          label: 'Giao diện bán hàng',
+        },
+        {
+          key: '/kitchen-system',
+          label: 'Hệ thống bếp',
         }
       ]
     },

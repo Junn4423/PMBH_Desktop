@@ -5,6 +5,7 @@ import { useAuth } from './contexts/AuthContext';
 import DangNhap from './auth/DangNhap';
 import TrangChu from './pages/TrangChu/TrangChu';
 import BanHang from './pages/BanHang/BanHang';
+import KitchenSystem from './pages/BepBar/BepBar';
 import QuanLyBan from './pages/QuanLyBan/QuanLyBan';
 import ThucDon from './pages/ThucDon/ThucDon';
 import KhachHang from './pages/KhachHang/KhachHang';
@@ -79,6 +80,7 @@ function App() {
             <Route path="/" element={<Navigate to="/trang-chu" replace />} />
             <Route path="/trang-chu" element={<TrangChu />} />
             <Route path="/ban-hang" element={<BanHang />} />
+            <Route path="/kitchen-system" element={<KitchenSystem />} />
             <Route path="/bep-bar" element={<BepBar />} />
             <Route path="/chi-khac" element={<ChiKhac />} />
             <Route path="/quan-ly-ban" element={<QuanLyBan />} />
