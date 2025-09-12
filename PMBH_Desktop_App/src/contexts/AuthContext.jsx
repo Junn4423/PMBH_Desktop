@@ -17,14 +17,10 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Kiểm tra xem có token đã lưu không
-    const savedUser = localStorage.getItem('pmbh_user');
-    const savedToken = localStorage.getItem('pmbh_token');
-    
-    if (savedUser && savedToken) {
-      setUser(JSON.parse(savedUser));
-      setIsAuthenticated(true);
-    }
+    // Clear session trước, không restore từ localStorage
+    // App yêu cầu logout mỗi lần restart
+    localStorage.removeItem('pmbh_user');
+    localStorage.removeItem('pmbh_token');
     
     setLoading(false);
   }, []);

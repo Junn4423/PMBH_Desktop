@@ -264,8 +264,7 @@ export async function getGmacKhuVucList() {
     }
   } catch (error) {
     console.error('GMAC API không khả dụng:', error);
-    // Không sử dụng mock data, trả về mảng rỗng
-    return [];
+    throw error;
   }
 }
 
@@ -288,8 +287,7 @@ export async function getGmacBanListByKhuVuc(khuVucId) {
     }
   } catch (error) {
     console.error('GMAC API không khả dụng:', error);
-    // Không sử dụng mock data, trả về mảng rỗng
-    return [];
+    throw error;
   }
 }
 
@@ -334,29 +332,25 @@ export async function createGmacOrder(orderData) {
 
 // Parse dữ liệu khu vực từ GMAC hr_lv0004 response
 function parseGmacHrData(htmlData) {
-  // Parse HTML response từ GMAC để lấy dữ liệu khu vực
-  // Không sử dụng mock data, cần parse HTML thực tế từ GMAC
   try {
     // TODO: Implement actual HTML parsing từ GMAC hr_lv0004
-    console.warn('parseGmacHrData chưa được implement, trả về mảng rỗng');
-    return [];
+    console.warn('parseGmacHrData chưa được implement');
+    throw new Error('parseGmacHrData chưa được implement');
   } catch (error) {
     console.error('Lỗi parse dữ liệu khu vực GMAC:', error);
-    return [];
+    throw error;
   }
 }
 
 // Parse dữ liệu bàn từ GMAC sl_lv0008 response
 function parseGmacBanData(htmlData, khuVucId) {
-  // Parse HTML response từ GMAC để lấy dữ liệu bàn
-  // Không sử dụng mock data, cần parse HTML thực tế từ GMAC
   try {
     // TODO: Implement actual HTML parsing từ GMAC sl_lv0008
-    console.warn('parseGmacBanData chưa được implement, trả về mảng rỗng');
-    return [];
+    console.warn('parseGmacBanData chưa được implement');
+    throw new Error('parseGmacBanData chưa được implement');
   } catch (error) {
     console.error('Lỗi parse dữ liệu bàn GMAC:', error);
-    return [];
+    throw error;
   }
 }
 
@@ -388,4 +382,480 @@ function parseGmacOrderResult(rawData) {
       error: 'Parse error: ' + error.message
     };
   }
+}
+
+// -------------------- Functions from features/quan-ly --------------------
+
+// Lấy số lượng tồn kho
+export async function laySoLuongTonKho(maSP, maKho) {
+  return await callApi('Mb_Kho', 'LaySoLuongTonKho', { maSP, maKho });
+}
+
+// Lấy số lượng tồn kho nhiều sản phẩm
+export async function laySoLuongTonKhoNhieuSP(maSP, maKho) {
+  return await callApi('Mb_Kho', 'LaySoLuongTonKhoNhieuSP', { maSP, maKho });
+}
+
+// Load kho từ features
+export async function loadKhoFeatures(data = {}) {
+  return await callApi('wh_lv0001', 'loadKho', data);
+}
+
+// Thêm kho
+export async function themKhoFeatures(khoData) {
+  const { lv001, lv002, lv003, lv004, lv005, lv006, lv007, lv008 } = khoData;
+  return await callApi('wh_lv0001', 'themKho', {
+    lv001, lv002, lv003, lv004, lv005, lv006, lv007, lv008
+  });
+}
+
+// Cập nhật kho
+export async function capNhatKhoFeatures(khoData) {
+  const { lv001, lv002, lv003, lv004, lv005, lv006, lv007, lv008 } = khoData;
+  return await callApi('wh_lv0001', 'capNhatKho', {
+    lv001, lv002, lv003, lv004, lv005, lv006, lv007, lv008
+  });
+}
+
+// Xóa kho
+export async function xoaKhoFeatures(lv001) {
+  return await callApi('wh_lv0001', 'xoaKho', { lv001 });
+}
+
+// Load sản phẩm theo ID kho
+export async function loadSanPhamTheoIdKho(idKho) {
+  return await callApi('sl_lv0007', 'loadSanPhamTheoIdKho', { idKho });
+}
+
+// Load phiếu nhập
+export async function loadPhieuNhap(data = {}) {
+  return await callApi('wh_lv0002', 'loadPhieuNhap', data);
+}
+
+// Xóa phiếu nhập
+export async function xoaPhieuNhap(maPhieu) {
+  return await callApi('wh_lv0002', 'xoaPhieuNhap', { maPhieu });
+}
+
+// Thêm phiếu nhập chi tiết
+export async function ThemPhieuNhapChiTietPn(phieuNhapData) {
+  const { maPhieu, maSP, soLuong, donGia, ghiChu, maKho } = phieuNhapData;
+  return await callApi('wh_lv0003', 'ThemPhieuNhapChiTietPn', {
+    maPhieu, maSP, soLuong, donGia, ghiChu, maKho
+  });
+}
+
+// Fetch all nguyên liệu kho
+export async function fetchAllNguyenLieuKho() {
+  return await callApi('wh_lv0004', 'fetchAllNguyenLieuKho');
+}
+
+// Lấy phiếu nhập by ID
+export async function layPhieuNhapById(maPhieu) {
+  return await callApi('wh_lv0002', 'layPhieuNhapById', { maPhieu });
+}
+
+// Lấy chi tiết phiếu nhập
+export async function layCtPhieuNhap(maPhieu) {
+  return await callApi('wh_lv0003', 'layCtPhieuNhap', { maPhieu });
+}
+
+// Lấy xuất kho
+export async function layXuatKho() {
+  return await callApi('wh_lv0005', 'layXuatKho');
+}
+
+// Lấy phiếu xuất by ID
+export async function layPhieuXuatById(maPhieu) {
+  return await callApi('wh_lv0005', 'layPhieuXuatById', { maPhieu });
+}
+
+// Thêm phiếu xuất chi tiết
+export async function themPhieuXuatChiTietPX(phieuXuatData) {
+  const { maPhieu, maSP, soLuong, donGia, ghiChu, maKho } = phieuXuatData;
+  return await callApi('wh_lv0006', 'themPhieuXuatChiTietPX', {
+    maPhieu, maSP, soLuong, donGia, ghiChu, maKho
+  });
+}
+
+// Xóa phiếu xuất
+export async function xoaPhieuXuat(maPhieu) {
+  return await callApi('wh_lv0005', 'xoaPhieuXuat', { maPhieu });
+}
+
+// Lấy chi tiết phiếu xuất
+export async function layCtPhieuXuat(maPhieu) {
+  return await callApi('wh_lv0006', 'layCtPhieuXuat', { maPhieu });
+}
+
+// Lấy tất cả loại nguyên vật liệu
+export async function layAll_LoaiNVL() {
+  return await callApi('Mb_NguyenLieu', 'get_DS_LoaiNVL');
+}
+
+// Lấy tất cả danh mục sản phẩm (corrected table)
+export async function layAllDanhMucSPCorrected() {
+  return await callApi('Mb_LoaiNguyenLieu', 'data');
+}
+
+// Thêm loại nguyên liệu (corrected parameters)
+export async function themLoaiNguyenLieuCorrected(loaiData) {
+  const { maLoai, moTa, maLoaiCha, trangThai } = loaiData;
+  return await callApi('Mb_LoaiNguyenLieu', 'add', {
+    maLoai, moTa, maLoaiCha, trangThai
+  });
+}
+
+// Thêm nguyên liệu (corrected with more params)
+export async function themNguyenLieuCorrected(nguyenLieuData) {
+  const { 
+    maSanPham, tenSanPham, maLoai, maDonVi, donViTinhQuyDoi, 
+    giaTriQuyDoi, gia, donViGia, trangThai_HienThiSP, maKho 
+  } = nguyenLieuData;
+  return await callApi('Mb_NguyenLieu', 'add', {
+    maSanPham, tenSanPham, maLoai, 
+    donViTinh: maDonVi, 
+    donViQuyDoi: donViTinhQuyDoi, 
+    giaTriQuyDoi, gia, donViGia, 
+    trangThai_HienThiSP: 0, 
+    maKho
+  });
+}
+
+// Thêm sản phẩm (corrected function)
+export async function themSanPhamCorrected(sanPhamData) {
+  const { 
+    maSanPham, tenSanPham, maLoai, maDonVi, donViTinhQuyDoi, 
+    giaTriQuyDoi, gia, donViGia, trangThai_HienThiSP, maKho 
+  } = sanPhamData;
+  return await callApi('Mb_NguyenLieu', 'add_SP', {
+    maSanPham, tenSanPham, maLoai, 
+    donViTinh: maDonVi, 
+    donViQuyDoi: donViTinhQuyDoi, 
+    giaTriQuyDoi, gia, donViGia, 
+    trangThai_HienThiSP: 1, 
+    maKho
+  });
+}
+
+// Lấy tất cả danh mục sản phẩm
+export async function layAllDanhMucSP() {
+  return await callApi('Mb_loaiSanPham', 'data');
+}
+
+// Lấy danh sách nguyên vật liệu
+export async function layDS_NVL() {
+  return await callApi('wh_lv0008', 'layDS_NVL');
+}
+
+// Lấy danh sách nguyên vật liệu (version 2 - from features)
+export async function layDSNguyenLieu() {
+  return await callApi('Mb_NguyenLieu', 'get_dsNVL');
+}
+
+// Thêm nguyên liệu
+export async function themNguyenLieu(nguyenLieuData) {
+  const { lv001, lv002, lv003, lv004, lv005, lv006, lv007, lv008, lv009, lv010, lv011, lv012, lv013, lv014, lv015, lv016, lv017, lv018, lv019, lv020 } = nguyenLieuData;
+  return await callApi('wh_lv0008', 'themNguyenLieu', {
+    lv001, lv002, lv003, lv004, lv005, lv006, lv007, lv008, lv009, lv010, 
+    lv011, lv012, lv013, lv014, lv015, lv016, lv017, lv018, lv019, lv020
+  });
+}
+
+// Cập nhật nguyên liệu
+export async function capNhatNguyenLieu(nguyenLieuData) {
+  const { lv001, lv002, lv003, lv004, lv005, lv006, lv007, lv008, lv009, lv010, lv011, lv012, lv013, lv014, lv015, lv016, lv017, lv018, lv019, lv020 } = nguyenLieuData;
+  return await callApi('wh_lv0008', 'capNhatNguyenLieu', {
+    lv001, lv002, lv003, lv004, lv005, lv006, lv007, lv008, lv009, lv010, 
+    lv011, lv012, lv013, lv014, lv015, lv016, lv017, lv018, lv019, lv020
+  });
+}
+
+// Xóa nguyên liệu
+export async function xoaNguyenLieu(lv001) {
+  return await callApi('wh_lv0008', 'xoaNguyenLieu', { lv001 });
+}
+
+// Thêm loại nguyên vật liệu
+export async function themLoaiNguyenLieu(loaiData) {
+  const { lv001, lv002, lv003, lv004, lv005, lv006, lv007, lv008 } = loaiData;
+  return await callApi('wh_lv0007', 'themLoaiNguyenLieu', {
+    lv001, lv002, lv003, lv004, lv005, lv006, lv007, lv008
+  });
+}
+
+// Cập nhật loại nguyên vật liệu
+export async function capNhatLoaiNVL(loaiData) {
+  const { lv001, lv002, lv003, lv004, lv005, lv006, lv007, lv008 } = loaiData;
+  return await callApi('wh_lv0007', 'capNhatLoaiNVL', {
+    lv001, lv002, lv003, lv004, lv005, lv006, lv007, lv008
+  });
+}
+
+// Xóa loại nguyên vật liệu
+export async function xoaLoaiNVL(lv001) {
+  return await callApi('wh_lv0007', 'xoaLoaiNVL', { lv001 });
+}
+
+// Thêm sản phẩm
+export async function themSanPham(sanPhamData) {
+  const { lv001, lv002, lv003, lv004, lv005, lv006, lv007, lv008, lv009, lv010, lv011, lv012, lv013, lv014, lv015, lv016, lv017, lv018, lv019, lv020 } = sanPhamData;
+  return await callApi('sl_lv0007', 'themSanPham', {
+    lv001, lv002, lv003, lv004, lv005, lv006, lv007, lv008, lv009, lv010, 
+    lv011, lv012, lv013, lv014, lv015, lv016, lv017, lv018, lv019, lv020
+  });
+}
+
+// Cập nhật sản phẩm
+export async function capNhatSanPham(sanPhamData) {
+  const { lv001, lv002, lv003, lv004, lv005, lv006, lv007, lv008, lv009, lv010, lv011, lv012, lv013, lv014, lv015, lv016, lv017, lv018, lv019, lv020 } = sanPhamData;
+  return await callApi('sl_lv0007', 'capNhatSanPham', {
+    lv001, lv002, lv003, lv004, lv005, lv006, lv007, lv008, lv009, lv010, 
+    lv011, lv012, lv013, lv014, lv015, lv016, lv017, lv018, lv019, lv020
+  });
+}
+
+// Xóa sản phẩm
+export async function xoaSanPham(lv001) {
+  return await callApi('sl_lv0007', 'xoaSanPham', { lv001 });
+}
+
+// -------------------- Functions from features/banhang --------------------
+
+// Load bàn từ banhang
+export async function loadBanBanhang(data = {}) {
+  return await callApi('sl_lv0009', 'loadBan', data);
+}
+
+// Load khu vực từ banhang  
+export async function loadKhuVucBanhang(data = {}) {
+  return await callApi('sl_lv0008', 'loadKhuVuc', data);
+}
+
+// Load trạng thái bàn theo hóa đơn
+export async function loadTrangThaiBanTheoHoaDon(data = {}) {
+  return await callApi('sl_lv0013', 'loadTrangThaiBanTheoHoaDon', data);
+}
+
+// Gộp bàn
+export async function gopBanBanhang(maHoaDon, idBanGop) {
+  return await callApi('sl_lv0013', 'gopBan', { maHoaDon, idBanGop });
+}
+
+// Tách bàn
+export async function tachBan(maHoaDon) {
+  return await callApi('sl_lv0013', 'tachBan', { maHoaDon });
+}
+
+// Load danh mục sản phẩm từ banhang
+export async function loadDanhMucSpBanhang(data = {}) {
+  return await callApi('sl_lv0006', 'loadDanhMucSp', data);
+}
+
+// Load sản phẩm từ banhang
+export async function loadSanPhamBanhang(data = {}) {
+  return await callApi('sl_lv0007', 'loadSanPham', data);
+}
+
+// -------------------- Additional Functions from features/quan-ly --------------------
+
+// Lấy danh sách nguyên vật liệu theo loại
+export async function layDanhSachNVL_TheoLoai(maLoai) {
+  return await callApi('Mb_NguyenLieu', 'layNVLTheoMaLoai', { idLoai: maLoai });
+}
+
+// Cập nhật nguyên liệu (version corrected)
+export async function capNhatNguyenLieuFixed(nguyenLieuData) {
+  const { lv001, lv002, lv003, lv004, lv005, lv006, lv007, lv008, lv009, lv010, lv011, lv012, lv013, lv014, lv015, lv016, lv017, lv018, lv019, lv020 } = nguyenLieuData;
+  return await callApi('Mb_NguyenLieu', 'edit', {
+    lv001, lv002, lv003, lv004, lv005, lv006, lv007, lv008, lv009, lv010, 
+    lv011, lv012, lv013, lv014, lv015, lv016, lv017, lv018, lv019, lv020
+  });
+}
+
+// Xóa nguyên liệu (corrected)
+export async function xoaNguyenLieuFixed(maNguyenLieu) {
+  return await callApi('Mb_NguyenLieu', 'delete', { maNguyenLieu });
+}
+
+// -------------------- Phiếu kiểm kho --------------------
+
+// Lấy danh sách phiếu kiểm kho theo mã kho
+export async function layDanhSachPhieuKiemKho(maKho) {
+  return await callApi('Mb_KiemKho', 'layDanhSachPhieuKiemTheoKho', { maKho });
+}
+
+// Lấy chi tiết phiếu kiểm
+export async function layChiTietPhieuKiem(maPK) {
+  return await callApi('Mb_ChiTietPK', 'data', { maPK });
+}
+
+// Tạo phiếu kiểm kho
+export async function taoPhieuKiemKho(phieuKiemData) {
+  const { maKho, maNhanVien, chuDe, ghiNhan, trangThai } = phieuKiemData;
+  return await callApi('Mb_KiemKho', 'add', {
+    maKho, maNhanVien, chuDe, ghiNhan, trangThai
+  });
+}
+
+// Tạo chi tiết phiếu kiểm kho
+export async function taoChiTietPhieuKiemKho(chiTietData) {
+  const { maKiemKho, maSanPham, slPM, donViKiem, soLuongThucTe, donViTT } = chiTietData;
+  return await callApi('Mb_ChiTietPK', 'add', {
+    maKiemKho, maSanPham, slPM, donViKiem, soLuongThucTe, donViTT
+  });
+}
+
+// Cập nhật chi tiết phiếu kiểm kho
+export async function updateChiTietPhieuKiemKho(updateData) {
+  const { maKiemKho, maSanPham, soLuongThucTe, donViTT } = updateData;
+  return await callApi('Mb_ChiTietPK', 'edit', {
+    maKiemKho, maSanPham, soLuongThucTe, donViTT
+  });
+}
+
+// Xóa chi tiết phiếu kiểm kho
+export async function xoaChiTietPhieuKiemKho(deleteData) {
+  const { maKiemKho, maSanPham } = deleteData;
+  return await callApi('Mb_ChiTietPK', 'delete', { maKiemKho, maSanPham });
+}
+
+// Chỉnh sửa trạng thái phiếu kiểm kho
+export async function chinhSuaTrangThaiPK(dsMaPK) {
+  return await callApi('Mb_KiemKho', 'chinhSuaTrangThai_PK', { dsMaPK });
+}
+
+// Lấy thông tin phiếu kiểm by ID
+export async function layThongTinPhieuKiemByID(maPK) {
+  return await callApi('Mb_KiemKho', 'layThongTinPhieuKiemByID', { maPK });
+}
+
+// -------------------- Additional Functions from features/banhang --------------------
+
+// Load sản phẩm theo mã danh mục
+export async function loadSanPhamTheoMaDanhMucSp(maDm) {
+  return await callApi('sl_lv0007', 'loadSanPhamTheoDmSp', { maDm });
+}
+
+// Tạo hóa đơn
+export async function taoHoaDon(maBan) {
+  return await callApi('sl_lv0013', 'taoHoaDon', { maBan });
+}
+
+// Tạo chi tiết hóa đơn
+export async function taoCthd(maHd, maSp, soLuong) {
+  return await callApi('sl_lv0014', 'taoCtHd', { maHd, maSp, soLuong });
+}
+
+// Load danh sách chi tiết hóa đơn
+export async function loadDsCthd(maHd) {
+  return await callApi('sl_lv0014', 'loadCtHd', { maHd });
+}
+
+// Load danh sách chi tiết hóa đơn V2
+export async function loadDsCthdV2(maHd) {
+  return await callApi('sl_lv0014', 'loadCtHdV2', { maHd });
+}
+
+// Xóa chi tiết hóa đơn
+export async function xoaCtHd(maCt) {
+  return await callApi('sl_lv0014', 'xoaCtHd', { maCt });
+}
+
+// Cập nhật chi tiết hóa đơn
+export async function capNhatCtHd(updateData) {
+  const { maCt, soLuong } = updateData;
+  return await callApi('sl_lv0014', 'capNhatCtHd', { maCt, soLuong });
+}
+
+// Thanh toán hóa đơn
+export async function thanhToanHoaDonBanhang(thanhToanData) {
+  const { maHd, tongTien, tienKhachDua, tienThua } = thanhToanData;
+  return await callApi('sl_lv0013', 'thanhToanHoaDon', { 
+    maHd, tongTien, tienKhachDua, tienThua 
+  });
+}
+
+// Chuyển bàn (corrected parameters)
+export async function chuyenBanCorrected(chuyenBanData) {
+  const { maHoaDonBanCanChuyen, maHoaDonBanChuyen, maBanChuyen } = chuyenBanData;
+  return await callApi('sl_lv0013', 'chuyenBan', { 
+    maHoaDonBanCanChuyen, maHoaDonBanChuyen, maBanChuyen 
+  });
+}
+
+// Load hóa đơn theo bàn
+export async function loadHoaDonTheoBan(maBan) {
+  return await callApi('sl_lv0013', 'loadHoaDonTheoBan', { maBan });
+}
+
+// Hủy hóa đơn
+export async function huyHoaDon(maHd) {
+  return await callApi('sl_lv0013', 'huyHoaDon', { maHd });
+}
+
+// -------------------- Additional missing functions from banhang --------------------
+
+// Thêm bàn
+export async function themBan(banData) {
+  const { lv002, lv004 } = banData;
+  return await callApi('sl_lv0009', 'themBan', { lv002, lv004 });
+}
+
+// Thêm khu vực
+export async function themKhuVuc(khuVucData) {
+  const { lv001, lv002 } = khuVucData;
+  return await callApi('sl_lv0008', 'themKhuVuc', { lv001, lv002 });
+}
+
+// Cập nhật hóa đơn (thanh toán contract)
+export async function capNhatHoaDon(mahd) {
+  return await callApi('Mb_thanhtoan', 'thanhToan_contract', { mahd });
+}
+
+// Cập nhật hóa đơn 2
+export async function capNhatHoaDon2(maHd, trangThai) {
+  return await callApi('sl_lv0013', 'capNhatHoaDon2', { maHd, trangThai });
+}
+
+// Cập nhật hóa đơn trạng thái 4
+export async function capNhatHoaDonTT4(maHd, trangThai) {
+  return await callApi('sl_lv0013', 'capNhatHoaDonTT4', { maHd, trangThai });
+}
+
+// Chuyển xuống bếp
+export async function chuyenXuongBep(maHd) {
+  return await callApi('sl_lv0013', 'chuyenXuongBep', { maHd });
+}
+
+// Lấy danh sách món chờ
+export async function layDsMonCho(data = {}) {
+  return await callApi('Mb_Oder', 'layDsMonDangChoOder', data);
+}
+
+// Lấy danh sách món nước
+export async function layDsMonNuoc(data = {}) {
+  return await callApi('Mb_Oder', 'layMonNuocTuBanDangBan', data);
+}
+
+// Lấy danh sách món ăn
+export async function layDsMonAn(data = {}) {
+  return await callApi('Mb_Oder', 'layMonAnTuBanDangBan', data);
+}
+
+// Chuyển món
+export async function chuyenMon(dsChiTietMonAn, maBanChuyen) {
+  return await callApi('sl_lv0013', 'chuyenMonAn', { dsChiTietMonAn, maBanChuyen });
+}
+
+// Lấy tất cả sản phẩm (alias)
+export async function layALLSanPham() {
+  return await callApi('Mb_sanPham', 'data');
+}
+
+// -------------------- Additional  functions from commented code in quan-ly --------------------
+
+// Lấy danh sách nguyên vật liệu (uncommented from quan-ly/index.js)
+export async function layDSNguyenLieuQuanLy() {
+  return await callApi('Mb_NguyenLieu', 'get_dsNVL');
 }

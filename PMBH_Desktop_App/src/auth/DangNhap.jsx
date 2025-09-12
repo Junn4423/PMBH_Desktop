@@ -37,11 +37,13 @@ const DangNhap = () => {
         setShowError(false);
         setErrorMessage('');
         
-        // Save login info if remember is checked
+        // Save/clear login credentials if remember is checked
         if (ghi_nho) {
           localStorage.setItem('remembered_user', tenDangNhap);
+          localStorage.setItem('remembered_password', matKhau);
         } else {
           localStorage.removeItem('remembered_user');
+          localStorage.removeItem('remembered_password');
         }
 
         message.success(`Đăng nhập thành công! Chào mừng bạn!`);
@@ -64,9 +66,18 @@ const DangNhap = () => {
   };
 
   React.useEffect(() => {
-    // Load remembered username
+    // Load remembered credentials
     const rememberedUser = localStorage.getItem('remembered_user');
-    if (rememberedUser) {
+    const rememberedPassword = localStorage.getItem('remembered_password');
+    
+    if (rememberedUser && rememberedPassword) {
+      form.setFieldsValue({
+        tenDangNhap: rememberedUser,
+        matKhau: rememberedPassword,
+        ghi_nho: true
+      });
+    } else if (rememberedUser) {
+      // Chỉ có username, không có password
       form.setFieldsValue({
         tenDangNhap: rememberedUser,
         ghi_nho: true

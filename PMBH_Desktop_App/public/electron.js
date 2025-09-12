@@ -67,6 +67,17 @@ function createWindow() {
     }
   });
 
+  // Clear session data when window is closing
+  mainWindow.on('close', (event) => {
+    // Clear localStorage session data (not remembered credentials)
+    mainWindow.webContents.executeJavaScript(`
+      localStorage.removeItem('pmbh_user');
+      localStorage.removeItem('pmbh_token');
+    `).catch(() => {
+      // Ignore errors if webContents is already destroyed
+    });
+  });
+
   // Tạo menu
   const template = [
     {

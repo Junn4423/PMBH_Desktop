@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { Card, Table, Button, Modal, Form, Input, InputNumber, Select, Upload, Space, Typography, Image, message, Row, Col, Tag } from 'antd';
-import { PlusOutlined, EditOutlined, DeleteOutlined, UploadOutlined } from '@ant-design/icons';
+import { Card, Table, Button, Modal, Form, Input, InputNumber, Select, Upload, Space, Typography, Image, message, Row, Col, Tag, Spin } from 'antd';
+import { PlusOutlined, EditOutlined, DeleteOutlined, UploadOutlined, ReloadOutlined } from '@ant-design/icons';
+import { getLoaiSanPham, getAllSanPham, getSanPhamTheoIdLoai } from '../../services/apiServices';
 
 const { Title } = Typography;
 const { Option } = Select;
@@ -8,72 +9,38 @@ const { Option } = Select;
 const ThucDon = () => {
   const [products, setProducts] = useState([]);
   const [categories, setCategories] = useState([]);
+  const [loading, setLoading] = useState(false);
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [editingProduct, setEditingProduct] = useState(null);
   const [form] = Form.useForm();
 
   useEffect(() => {
-    // Dữ liệu mẫu danh mục
-    const sampleCategories = [
-      { id: 1, ten: 'Cà phê', moTa: 'Các loại cà phê' },
-      { id: 2, ten: 'Trà', moTa: 'Các loại trà' },
-      { id: 3, ten: 'Nước ép', moTa: 'Nước ép trái cây' },
-      { id: 4, ten: 'Bánh ngọt', moTa: 'Các loại bánh' },
-      { id: 5, ten: 'Khác', moTa: 'Món khác' }
-    ];
-
-    // Dữ liệu mẫu sản phẩm
-    const sampleProducts = [
-      {
-        id: 1,
-        ten: 'Cà phê đen',
-        gia: 15000,
-        danhMuc: 'Cà phê',
-        moTa: 'Cà phê đen truyền thống',
-        trangThai: 'active',
-        hinhAnh: null
-      },
-      {
-        id: 2,
-        ten: 'Cà phê sữa',
-        gia: 18000,
-        danhMuc: 'Cà phê',
-        moTa: 'Cà phê sữa đậm đà',
-        trangThai: 'active',
-        hinhAnh: null
-      },
-      {
-        id: 3,
-        ten: 'Trà sữa',
-        gia: 25000,
-        danhMuc: 'Trà',
-        moTa: 'Trà sữa thơm ngon',
-        trangThai: 'active',
-        hinhAnh: null
-      },
-      {
-        id: 4,
-        ten: 'Nước ép cam',
-        gia: 20000,
-        danhMuc: 'Nước ép',
-        moTa: 'Nước ép cam tươi',
-        trangThai: 'active',
-        hinhAnh: null
-      },
-      {
-        id: 5,
-        ten: 'Bánh tiramisu',
-        gia: 35000,
-        danhMuc: 'Bánh ngọt',
-        moTa: 'Bánh tiramisu Italy',
-        trangThai: 'active',
-        hinhAnh: null
-      }
-    ];
-
-    setCategories(sampleCategories);
-    setProducts(sampleProducts);
+    loadData();
   }, []);
+
+  const loadData = async () => {
+    setLoading(true);
+    try {
+      // Load categories và products đồng thời
+      const [categoriesResult, productsResult] = await Promise.all([
+        getLoaiSanPham(),
+        getAllSanPham()
+      ]);
+
+      if (categoriesResult && Array.isArray(categoriesResult)) {
+        setCategories(categoriesResult);
+      }
+
+      if (productsResult && Array.isArray(productsResult)) {
+        setProducts(productsResult);
+      }
+    } catch (error) {
+      console.error('Error loading menu data:', error);
+      message.error('Không thể tải dữ liệu thực đơn');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleAddNew = () => {
     setEditingProduct(null);
@@ -94,16 +61,29 @@ const ThucDon = () => {
       okText: 'Xóa',
       cancelText: 'Hủy',
       okType: 'danger',
-      onOk: () => {
-        setProducts(products.filter(product => product.id !== id));
-        message.success('Đã xóa món thành công');
+      onOk: async () => {
+        try {
+          // TODO: Implement API call để xóa sản phẩm
+          // await deleteSanPham(id);
+          
+          setProducts(products.filter(product => product.id !== id));
+          message.success('Đã xóa món thành công');
+        } catch (error) {
+          console.error('Error deleting product:', error);
+          message.error('Có lỗi xảy ra khi xóa món');
+        }
       }
     });
   };
 
   const handleSave = async (values) => {
     try {
+      setLoading(true);
+      
       if (editingProduct) {
+        // TODO: Implement API call để update sản phẩm
+        // await updateSanPham(editingProduct.id, values);
+        
         setProducts(products.map(product => 
           product.id === editingProduct.id 
             ? { ...product, ...values }
@@ -111,8 +91,11 @@ const ThucDon = () => {
         ));
         message.success('Đã cập nhật món thành công');
       } else {
+        // TODO: Implement API call để thêm sản phẩm mới
+        // const newProduct = await addSanPham(values);
+        
         const newProduct = {
-          id: Math.max(...products.map(p => p.id)) + 1,
+          id: Date.now(), // Temporary ID
           ...values,
           trangThai: 'active'
         };
@@ -123,7 +106,10 @@ const ThucDon = () => {
       setIsModalVisible(false);
       form.resetFields();
     } catch (error) {
-      message.error('Đã xảy ra lỗi');
+      console.error('Error saving product:', error);
+      message.error('Có lỗi xảy ra khi lưu món');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -146,31 +132,32 @@ const ThucDon = () => {
           fontWeight: 'bold',
           fontSize: '18px'
         }}>
-          {record.ten.charAt(0)}
+          {(record.tenSanPham || record.ten || 'N/A').charAt(0)}
         </div>
       ),
     },
     {
       title: 'Tên món',
-      dataIndex: 'ten',
-      key: 'ten',
-      sorter: (a, b) => a.ten.localeCompare(b.ten),
+      dataIndex: 'tenSanPham',
+      key: 'tenSanPham',
+      render: (text, record) => record.tenSanPham || record.ten || 'N/A',
+      sorter: (a, b) => (a.tenSanPham || a.ten || '').localeCompare(b.tenSanPham || b.ten || ''),
     },
     {
       title: 'Danh mục',
       dataIndex: 'danhMuc',
       key: 'danhMuc',
       filters: categories.map(cat => ({
-        text: cat.ten,
-        value: cat.ten,
+        text: cat.tenLoai || cat.ten || cat.name,
+        value: cat.id || cat.idLoai,
       })),
-      onFilter: (value, record) => record.danhMuc === value,
+      onFilter: (value, record) => record.idLoai === value || record.danhMuc === value,
     },
     {
       title: 'Giá',
       dataIndex: 'gia',
       key: 'gia',
-      render: (price) => `${price.toLocaleString()}đ`,
+      render: (price) => `${(price || 0).toLocaleString()}đ`,
       sorter: (a, b) => a.gia - b.gia,
     },
     {
@@ -220,30 +207,52 @@ const ThucDon = () => {
 
   return (
     <div className="thuc-don">
+      <style jsx>{`
+        .page-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          margin-bottom: 24px;
+        }
+        .page-header h2 {
+          margin: 0;
+        }
+      `}</style>
       <div className="page-header">
         <Title level={2}>Quản lý thực đơn</Title>
-        <Button
-          type="primary"
-          icon={<PlusOutlined />}
-          onClick={handleAddNew}
-        >
-          Thêm món mới
-        </Button>
+        <Space>
+          <Button
+            icon={<ReloadOutlined />}
+            onClick={loadData}
+            loading={loading}
+          >
+            Làm mới
+          </Button>
+          <Button
+            type="primary"
+            icon={<PlusOutlined />}
+            onClick={handleAddNew}
+          >
+            Thêm món mới
+          </Button>
+        </Space>
       </div>
 
       <Card>
-        <Table
-          columns={columns}
-          dataSource={products}
-          rowKey="id"
-          pagination={{
-            pageSize: 10,
-            showSizeChanger: true,
-            showQuickJumper: true,
-            showTotal: (total, range) => 
-              `${range[0]}-${range[1]} của ${total} món`,
-          }}
-        />
+        <Spin spinning={loading}>
+          <Table
+            columns={columns}
+            dataSource={products}
+            rowKey="id"
+            pagination={{
+              pageSize: 10,
+              showSizeChanger: true,
+              showQuickJumper: true,
+              showTotal: (total, range) => 
+                `${range[0]}-${range[1]} của ${total} món`,
+            }}
+          />
+        </Spin>
       </Card>
 
       <Modal
@@ -283,8 +292,8 @@ const ThucDon = () => {
               >
                 <Select placeholder="Chọn danh mục">
                   {categories.map(category => (
-                    <Option key={category.id} value={category.ten}>
-                      {category.ten}
+                    <Option key={category.id || category.idLoai} value={category.id || category.idLoai}>
+                      {category.tenLoai || category.ten || category.name}
                     </Option>
                   ))}
                 </Select>

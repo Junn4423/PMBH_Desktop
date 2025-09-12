@@ -1,6 +1,5 @@
 import axios from 'axios';
 import {url_api_services, url_login_api, url_api_logout, environment} from "./url";
-import { mockGmacLogin } from './gmacMockServer';
 
 const urlApi = url_api_services;
 const urlLoginApi = url_login_api;
@@ -60,25 +59,10 @@ async function getAuthToken(forceRefresh = false) {
       throw new Error("Invalid GMAC response");
     }
   } catch (error) {
-    console.warn("GMAC server not available, using mock authentication:", error.message);
-    
-    // Fallback to mock authentication for development
-    try {
-      const mockResult = await mockGmacLogin("admin", "123456");
-      authCache = {
-        token: mockResult.token,
-        code: mockResult.userCode || 'admin',
-        userId: mockResult.userId || 1
-      };
-      authExpiry = mockResult.expires;
-      console.log("Got auth token from mock server:", authCache);
-      return authCache;
-    } catch (mockError) {
-      console.error("Mock authentication also failed:", mockError);
-      authCache = null;
-      authExpiry = null;
-      throw new Error("Không thể đăng nhập: cả GMAC server và mock server đều không khả dụng");
-    }
+    console.error("GMAC server not available:", error.message);
+    authCache = null;
+    authExpiry = null;
+    throw new Error("Không thể kết nối đến server GMAC");
   }
 }
 

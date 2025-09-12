@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Row, Col, Card, Button, Modal, Form, Input, Select, InputNumber, Table, Space, Typography, Tag, message } from 'antd';
 import { PlusOutlined, EditOutlined, DeleteOutlined, TableOutlined } from '@ant-design/icons';
+import { loadBan, loadKhuVuc } from '../../services/apiServices';
 import './QuanLyBan.css';
 
 const { Title, Text } = Typography;
@@ -11,24 +12,47 @@ const QuanLyBan = () => {
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [editingTable, setEditingTable] = useState(null);
   const [form] = Form.useForm();
+  const [loading, setLoading] = useState(false);
+  const [khuVucList, setKhuVucList] = useState([]);
 
   useEffect(() => {
-    // Dữ liệu mẫu
-    const sampleTables = [
-      { id: 1, ten: 'Bàn 1', trangThai: 'available', soGhe: 2, khuVuc: 'Tầng 1', ghiChu: '' },
-      { id: 2, ten: 'Bàn 2', trangThai: 'occupied', soGhe: 4, khuVuc: 'Tầng 1', ghiChu: 'Khách VIP' },
-      { id: 3, ten: 'Bàn 3', trangThai: 'available', soGhe: 2, khuVuc: 'Tầng 1', ghiChu: '' },
-      { id: 4, ten: 'Bàn 4', trangThai: 'reserved', soGhe: 6, khuVuc: 'Tầng 1', ghiChu: 'Đặt trước' },
-      { id: 5, ten: 'Bàn 5', trangThai: 'available', soGhe: 4, khuVuc: 'Tầng 1', ghiChu: '' },
-      { id: 6, ten: 'Bàn 6', trangThai: 'available', soGhe: 2, khuVuc: 'Tầng 2', ghiChu: '' },
-      { id: 7, ten: 'Bàn 7', trangThai: 'occupied', soGhe: 8, khuVuc: 'Tầng 2', ghiChu: 'Đang phục vụ' },
-      { id: 8, ten: 'Bàn 8', trangThai: 'available', soGhe: 4, khuVuc: 'Tầng 2', ghiChu: '' },
-      { id: 9, ten: 'Bàn 9', trangThai: 'available', soGhe: 2, khuVuc: 'Sân vườn', ghiChu: '' },
-      { id: 10, ten: 'Bàn 10', trangThai: 'available', soGhe: 6, khuVuc: 'Sân vườn', ghiChu: '' },
-    ];
-    
-    setTables(sampleTables);
+    loadTablesData();
+    loadKhuVucData();
   }, []);
+
+  const loadTablesData = async () => {
+    setLoading(true);
+    try {
+      const data = await loadBan();
+      if (data && Array.isArray(data)) {
+        setTables(data);
+      } else {
+        console.log('No tables data received');
+        setTables([]);
+      }
+    } catch (error) {
+      console.error('Error loading tables:', error);
+      message.error('Không thể tải danh sách bàn');
+      setTables([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const loadKhuVucData = async () => {
+    try {
+      const data = await loadKhuVuc();
+      if (data && Array.isArray(data)) {
+        setKhuVucList(data);
+      } else {
+        console.log('No khu vuc data received');
+        setKhuVucList([]);
+      }
+    } catch (error) {
+      console.error('Error loading khu vuc:', error);
+      setKhuVucList([]);
+    }
+  };
 
   const getStatusColor = (status) => {
     switch (status) {
@@ -263,6 +287,7 @@ const QuanLyBan = () => {
           columns={columns}
           dataSource={tables}
           rowKey="id"
+          loading={loading}
           pagination={{
             pageSize: 10,
             showSizeChanger: true,
@@ -306,10 +331,11 @@ const QuanLyBan = () => {
             ]}
           >
             <Select placeholder="Chọn khu vực">
-              <Option value="Tầng 1">Tầng 1</Option>
-              <Option value="Tầng 2">Tầng 2</Option>
-              <Option value="Sân vườn">Sân vườn</Option>
-              <Option value="VIP">VIP</Option>
+              {khuVucList.map(khuVuc => (
+                <Option key={khuVuc.ID || khuVuc.id} value={khuVuc.TEN || khuVuc.ten}>
+                  {khuVuc.TEN || khuVuc.ten}
+                </Option>
+              ))}
             </Select>
           </Form.Item>
 
