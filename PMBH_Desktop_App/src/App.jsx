@@ -58,18 +58,6 @@ import QuanLyBanNhaHang from './pages/QuanLyBanNhaHang/QuanLyBanNhaHang';
 import SidebarMenu from './components/Layout/SidebarMenu/SidebarMenu';
 import HeaderBar from './components/Layout/HeaderBar/HeaderBar';
 
-// Import các features mới
-import { 
-  QuanLyTaiKhoan, 
-  QuanLyKho, 
-  QuanLyCaLamViec, 
-  QuanLyLuong, 
-  QuanLyThuChi, 
-  QuanLyHoaDon, 
-  BaoCaoThongKe, 
-  CaiDatHeThong 
-} from './features';
-
 const { Sider, Content } = Layout;
 
 function App() {
@@ -164,15 +152,6 @@ function App() {
             <Route path="/cho-nguoi-quan-ly" element={<ChoNguoiQuanLy />} />
             <Route path="/cho-nha-bep-ql" element={<ChoNhaBepQl />} />
             <Route path="/cho-quay-bar-ql" element={<ChoQuayBarQl />} />
-            
-            {/* Routes cho các features cũ (tạm thời giữ lại) */}
-            <Route path="/quan-ly-tai-khoan" element={<QuanLyTaiKhoan />} />
-            <Route path="/quan-ly-ca-lam-viec" element={<QuanLyCaLamViec />} />
-            <Route path="/quan-ly-luong" element={<QuanLyLuong />} />
-            <Route path="/quan-ly-thu-chi" element={<QuanLyThuChi />} />
-            <Route path="/quan-ly-hoa-don" element={<QuanLyHoaDon />} />
-            <Route path="/bao-cao-thong-ke" element={<BaoCaoThongKe />} />
-            <Route path="/cai-dat-he-thong" element={<CaiDatHeThong />} />
           </Routes>
         </Content>
       </Layout>
