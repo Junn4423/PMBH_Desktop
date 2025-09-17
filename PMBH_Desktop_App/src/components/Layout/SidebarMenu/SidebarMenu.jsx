@@ -174,21 +174,6 @@ const SidebarMenu = () => {
       ]
     },
     {
-      key: 'ban-hang',
-      icon: <ShoppingCart size={16} />,
-      label: 'Bán hàng',
-      children: [
-        {
-          key: '/ban-hang',
-          label: 'Giao diện bán hàng',
-        },
-        {
-          key: '/kitchen-system',
-          label: 'Hệ thống bếp',
-        }
-      ]
-    },
-    {
       key: 'ke-toan',
       icon: <Calculator size={16} />,
       label: 'Kế toán',

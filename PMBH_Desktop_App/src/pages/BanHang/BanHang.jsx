@@ -4,10 +4,7 @@ import {
   Row, 
   Col, 
   Card, 
-  Table, 
   Button, 
-  Modal, 
-  Input, 
   Select, 
   Typography, 
   message, 
@@ -15,6 +12,7 @@ import {
   Space,
   Divider,
   InputNumber,
+  Input,
   Popconfirm
 } from 'antd';
 import { 
@@ -27,13 +25,8 @@ import {
   Plus, 
   Minus,
   Search,
-  Filter,
-  RefreshCw,
-  ArrowRight,
-  CheckCircle,
-  Merge,
-  Split,
-  ArrowRightLeft
+  ArrowLeft,
+  CheckCircle
 } from 'lucide-react';
 
 // Import API services
@@ -50,10 +43,11 @@ import {
   chuyenXuongBep,
   xoaCtHd,
   capNhatCtHd,
+  loadTrangThaiBanTheoHoaDon,
+  loadDanhMucSp,
+  loadSanPhamTheoMaDanhMucSp,
   huyHoaDon,
-  gopBanBanhang,
-  tachBan,
-  chuyenBanCorrected
+  tinhTongTienHoaDon
 } from '../../services/apiServices';
 
 import './BanHang.css';
@@ -62,7 +56,17 @@ const { Title, Text } = Typography;
 const { Content, Sider } = Layout;
 const { Option } = Select;
 
+// View states based on flow requirements
+const VIEW_STATES = {
+  TABLES: 'tables',      // Initial view - show table grid
+  INVOICE: 'invoice',    // Show invoice UI after selecting table  
+  PRODUCTS: 'products'   // Show product grid after clicking "select items"
+};
+
 const BanHang = () => {
+  // View state management
+  const [currentView, setCurrentView] = useState(VIEW_STATES.TABLES);
+  
   // State quản lý bàn
   const [tables, setTables] = useState([]);
   const [areas, setAreas] = useState([]);
@@ -73,6 +77,7 @@ const BanHang = () => {
   const [categories, setCategories] = useState([]);
   const [products, setProducts] = useState([]);
   const [selectedCategory, setSelectedCategory] = useState('all');
+  const [searchTerm, setSearchTerm] = useState('');
   
   // State quản lý đơn hàng
   const [currentInvoice, setCurrentInvoice] = useState(null);
@@ -81,102 +86,332 @@ const BanHang = () => {
   
   // State UI
   const [loading, setLoading] = useState(false);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [paymentModalVisible, setPaymentModalVisible] = useState(false);
-  const [paymentAmount, setPaymentAmount] = useState(0);
-  const [customerPayment, setCustomerPayment] = useState(0);
-  
-  // Table management states
-  const [mergeModalVisible, setMergeModalVisible] = useState(false);
-  const [transferModalVisible, setTransferModalVisible] = useState(false);
-  const [targetTable, setTargetTable] = useState(null);
-  const [tableActionsVisible, setTableActionsVisible] = useState(false);
-  
+
+  // Helper functions cho table status
+  const getTableBadgeStatus = (status) => {
+    switch (status) {
+      case 'available': return 'success';
+      case 'occupied': return 'error';
+      case 'serving': return 'warning';
+      case 'checkout': return 'processing';
+      default: return 'default';
+    }
+  };
+
+  const getTableStatusText = (status) => {
+    switch (status) {
+      case 'available': return 'Trống';
+      case 'occupied': return 'Có khách';
+      case 'serving': return 'Đang phục vụ';
+      case 'checkout': return 'Thanh toán';
+      default: return 'Không xác định';
+    }
+  };
+
   // Load dữ liệu ban đầu
   useEffect(() => {
     loadInitialData();
   }, []);
+
+  // Auto-refresh table statuses trong Tables view
+  useEffect(() => {
+    let interval;
+    if (currentView === VIEW_STATES.TABLES && tables.length > 0) {
+      // Refresh mỗi 30 giây
+      interval = setInterval(() => {
+        loadTableStatuses(tables);
+      }, 30000);
+    }
+    
+    return () => {
+      if (interval) clearInterval(interval);
+    };
+  }, [currentView, tables]);
   
   // Tính toán tổng tiền khi invoice details thay đổi
   useEffect(() => {
-    const total = invoiceDetails.reduce((sum, item) => {
-      return sum + (parseFloat(item.soLuong || 0) * parseFloat(item.donGia || 0));
-    }, 0);
-    setOrderTotal(total);
-    setPaymentAmount(total);
+    if (invoiceDetails.length > 0) {
+      const total = invoiceDetails.reduce((sum, item) => {
+        return sum + (parseFloat(item.donGia || 0) * parseInt(item.soLuong || 0));
+      }, 0);
+      setOrderTotal(total);
+    } else {
+      setOrderTotal(0);
+    }
   }, [invoiceDetails]);
 
+  // Load dữ liệu ban đầu - chỉ tables và areas
   const loadInitialData = async () => {
+    await Promise.all([
+      loadTables(),
+      loadAreas()
+    ]);
+  };
+
+  // Load danh sách bàn với trạng thái
+  const loadTables = async () => {
     try {
       setLoading(true);
-      await Promise.all([
-        loadTables(),
-        loadAreas(),
-        loadProductCategories(),
-        loadProducts()
-      ]);
+      const tablesResponse = await loadBan();
+      console.log('Tables response:', tablesResponse);
+      
+      // Xử lý dữ liệu bàn - format: {"idBan":"1","tenBan":"Quầy 1","idKhuVuc":"NGOAI"}
+      let tablesData = [];
+      if (Array.isArray(tablesResponse)) {
+        tablesData = tablesResponse.map(table => ({
+          id: table.idBan,
+          name: table.tenBan,
+          areaId: table.idKhuVuc,
+          status: 'available' // Sẽ được cập nhật từ loadTableStatuses
+        }));
+      } else {
+        console.warn('Tables data is not in expected format:', tablesResponse);
+        tablesData = [];
+      }
+
+      setTables(tablesData);
+
+      // Load trạng thái bàn riêng biệt
+      await loadTableStatuses(tablesData);
     } catch (error) {
-      console.error('Error loading initial data:', error);
-      message.error('Không thể tải dữ liệu ban đầu');
+      console.error('Error loading tables:', error);
+      message.error('Không thể tải danh sách bàn');
     } finally {
       setLoading(false);
     }
   };
 
-  // Load danh sách bàn
-  const loadTables = async () => {
+  // Load trạng thái bàn theo hóa đơn
+  // Load trạng thái chi tiết cho từng bàn  
+  const loadTableStatuses = async (currentTables) => {
+    if (!currentTables || currentTables.length === 0) return;
+    
     try {
-      const response = await loadBan();
-      console.log('Tables response:', response);
+      const statusResponse = await loadTrangThaiBanTheoHoaDon();
+      console.log('=== DEBUG TABLE STATUS ===');
+      console.log('Table status response:', statusResponse);
+      console.log('Current tables:', currentTables);
       
-      // Xử lý dữ liệu bàn - format: {"idBan":"1","tenBan":"Quầy 1","idKhuVuc":"NGOAI"}
-      let tablesData = [];
-      if (Array.isArray(response)) {
-        tablesData = response.map(table => ({
-          id: table.idBan,
-          name: table.tenBan,
-          areaId: table.idKhuVuc,
-          status: 'available' // Có thể lấy từ API status
-        }));
-      } else {
-        console.warn('Tables data is not in expected format:', response);
-        tablesData = [];
-      }
+      if (Array.isArray(statusResponse)) {
+        console.log('Processing', statusResponse.length, 'status records');
+        
+        // Debug: Log first few items to see structure
+        if (statusResponse.length > 0) {
+          console.log('Sample status record:', statusResponse[0]);
+        }
+        
+        // Xử lý song song để load thông tin chi tiết cho từng bàn
+        const updatedTables = await Promise.all(
+          currentTables.map(async (table) => {
+            console.log(`Processing table ${table.id} (${table.name})`);
+            
+            // Try multiple field combinations to find table status
+            const tableStatus = statusResponse.find(status => {
+              const matches = status.maBan === table.id || 
+                             status.idBan === table.id ||
+                             status.ban_id === table.id ||
+                             status.table_id === table.id ||
+                             parseInt(status.maBan) === parseInt(table.id) ||
+                             parseInt(status.idBan) === parseInt(table.id);
+              if (matches) {
+                console.log(`Found status for table ${table.id}:`, status);
+              }
+              return matches;
+            });
+            
+            if (tableStatus) {
+              console.log(`Table ${table.id} has status record:`, tableStatus);
+              
+              // Check if table has active invoice
+              const hasActiveInvoice = tableStatus.maHoaDon || 
+                                     tableStatus.maHd || 
+                                     tableStatus.invoice_id ||
+                                     tableStatus.hoa_don_id;
+              
+              if (hasActiveInvoice) {
+                try {
+                  const invoiceId = tableStatus.maHoaDon || 
+                                  tableStatus.maHd || 
+                                  tableStatus.invoice_id ||
+                                  tableStatus.hoa_don_id;
+                  
+                  console.log(`Loading details for invoice ${invoiceId}`);
+                  
+                  // Load chi tiết hóa đơn để tính tổng tiền và lấy danh sách món
+                  const [invoiceDetails, totalAmountResponse] = await Promise.all([
+                    loadDsCthd(invoiceId),
+                    tinhTongTienHoaDon({ maHd: invoiceId }).catch(() => null)
+                  ]);
 
-      setTables(tablesData);
+                  // Determine status based on invoice state - FIXED LOGIC
+                  let status = 'occupied'; // Default to occupied if has active invoice
+                  const statusValue = tableStatus.trangThai || 
+                                    tableStatus.status || 
+                                    tableStatus.state ||
+                                    tableStatus.trang_thai;
+                  
+                  console.log(`Status value for table ${table.id}:`, statusValue);
+                  
+                  // CORRECTED LOGIC: If table has invoice, it cannot be available
+                  if (statusValue === '0' || statusValue === 0) {
+                    status = 'occupied'; // Có invoice nhưng chưa thanh toán
+                  } else if (statusValue === '1' || statusValue === 1 || statusValue === 'active') {
+                    status = 'occupied'; // Đang có khách
+                  } else if (statusValue === '2' || statusValue === 2) {
+                    status = 'serving'; // Đang phục vụ
+                  } else if (statusValue === '3' || statusValue === 3) {
+                    status = 'checkout'; // Chuẩn bị thanh toán
+                  } else {
+                    status = 'occupied'; // Default cho bất kỳ case nào có invoice
+                  }
+
+                  // Tính thời gian ngồi
+                  let sittingTime = '';
+                  const orderTime = tableStatus.gioVao || 
+                                  tableStatus.gio_vao || 
+                                  tableStatus.order_time ||
+                                  tableStatus.created_at;
+                                  
+                  if (orderTime) {
+                    try {
+                      const startTime = new Date(orderTime);
+                      const now = new Date();
+                      const diffMinutes = Math.floor((now - startTime) / 60000);
+                      const hours = Math.floor(diffMinutes / 60);
+                      const minutes = diffMinutes % 60;
+                      sittingTime = hours > 0 ? `${hours}h ${minutes}m` : `${minutes}m`;
+                    } catch (timeError) {
+                      console.error('Error calculating sitting time:', timeError);
+                      sittingTime = '';
+                    }
+                  }
+
+                  const result = {
+                    ...table,
+                    status,
+                    invoiceId,
+                    customerCount: tableStatus.soKhach || tableStatus.so_khach || 0,
+                    orderTime: orderTime || null,
+                    sittingTime,
+                    totalAmount: totalAmountResponse || 0,
+                    itemCount: Array.isArray(invoiceDetails) ? invoiceDetails.length : 0,
+                    orderItems: Array.isArray(invoiceDetails) ? invoiceDetails.slice(0, 3) : []
+                  };
+                  
+                  console.log(`Final result for table ${table.id}:`, result);
+                  return result;
+                } catch (error) {
+                  console.error(`Error loading details for table ${table.id}:`, error);
+                  return {
+                    ...table,
+                    status: 'occupied',
+                    invoiceId: hasActiveInvoice,
+                    customerCount: tableStatus.soKhach || tableStatus.so_khach || 0,
+                    orderTime: tableStatus.gioVao || tableStatus.gio_vao || null,
+                    sittingTime: '',
+                    totalAmount: 0,
+                    itemCount: 0,
+                    orderItems: []
+                  };
+                }
+              } else {
+                // Has status record but no active invoice - table might be reserved or cleaned
+                const statusValue = tableStatus.trangThai || 
+                                  tableStatus.status || 
+                                  tableStatus.state ||
+                                  tableStatus.trang_thai;
+                
+                let status = 'available'; // Default available if no invoice
+                console.log(`Table ${table.id} no invoice, status value: ${statusValue}`);
+                
+                // Only set occupied if explicitly marked as occupied without invoice
+                if (statusValue === '1' || statusValue === 1 || statusValue === 'occupied') {
+                  status = 'occupied'; // Bàn được đặt trước hoặc đang dọn dẹp
+                } else if (statusValue === '2' || statusValue === 2) {
+                  status = 'serving'; // Rare case
+                } else if (statusValue === '3' || statusValue === 3) {
+                  status = 'checkout'; // Rare case
+                } // else remains available
+                
+                console.log(`Table ${table.id} no invoice, final status: ${status}`);
+                
+                return {
+                  ...table,
+                  status,
+                  invoiceId: null,
+                  customerCount: 0,
+                  orderTime: null,
+                  sittingTime: '',
+                  totalAmount: 0,
+                  itemCount: 0,
+                  orderItems: []
+                };
+              }
+            } else {
+              console.log(`No status record found for table ${table.id}, marking as available`);
+            }
+            
+            return {
+              ...table,
+              status: 'available',
+              invoiceId: null,
+              customerCount: 0,
+              orderTime: null,
+              sittingTime: '',
+              totalAmount: 0,
+              itemCount: 0,
+              orderItems: []
+            };
+          })
+        );
+        
+        console.log('=== FINAL UPDATED TABLES ===');
+        console.log(updatedTables);
+        setTables(updatedTables);
+      } else {
+        console.warn('Status response is not an array:', statusResponse);
+      }
     } catch (error) {
-      console.error('Error loading tables:', error);
-      message.error('Không thể tải danh sách bàn');
+      console.error('Error loading table statuses:', error);
+      // Don't show error message for status loading failure
     }
   };
 
   // Load danh sách khu vực
   const loadAreas = async () => {
     try {
-      const result = await loadKhuVuc();
-      console.log('Khu vuc response:', result);
+      const areasResponse = await loadKhuVuc();
+      console.log('Areas response:', areasResponse);
       
-      // API trả về trực tiếp là array, không có .data
-      if (Array.isArray(result) && result.length > 0) {
-        setAreas(result);
-        console.log('Set khu vuc list:', result);
-      } else {
-        console.warn('Khu vuc data format:', result);
-        message.warning('Không có dữ liệu khu vực');
+      // Xử lý dữ liệu areas tương tự như BanHangOld
+      let areasData = [];
+      if (Array.isArray(areasResponse)) {
+        areasData = areasResponse;
+      } else if (areasResponse && areasResponse.success && areasResponse.data) {
+        if (Array.isArray(areasResponse.data)) {
+          areasData = areasResponse.data;
+        } else if (typeof areasResponse.data === 'object') {
+          areasData = Object.values(areasResponse.data);
+        }
+      } else if (areasResponse && typeof areasResponse === 'object') {
+        areasData = Object.values(areasResponse);
       }
+
+      setAreas(areasData);
     } catch (error) {
-      console.error('Error loading khu vuc:', error);
+      console.error('Error loading areas:', error);
       message.error('Không thể tải danh sách khu vực');
     }
   };
 
-  // Load danh mục sản phẩm
+  // Load danh mục sản phẩm (chỉ khi cần)
   const loadProductCategories = async () => {
     try {
-      const categoriesResponse = await getLoaiSanPham();
+      // Sử dụng API mới loadDanhMucSp thay vì getLoaiSanPham
+      const categoriesResponse = await loadDanhMucSp();
       console.log('Categories response:', categoriesResponse);
       
-      // Xử lý dữ liệu categories
+      // Xử lý dữ liệu categories theo mobile logic pattern
       let categoriesData = [];
       if (Array.isArray(categoriesResponse)) {
         categoriesData = categoriesResponse;
@@ -190,22 +425,45 @@ const BanHang = () => {
         categoriesData = Object.values(categoriesResponse);
       }
 
-      // Map categories to consistent format
+      // Map categories to consistent format following mobile logic
       const mappedCategories = categoriesData.map(cat => ({
-        value: cat.idLoaiSp || cat.id || cat.maLoai,
-        label: cat.tenLoaiSp || cat.ten || cat.tenLoai,
+        value: cat.maDanhMucSp || cat.idLoaiSp || cat.id || cat.maLoai,
+        label: cat.tenDanhMucSp || cat.tenLoaiSp || cat.ten || cat.tenLoai,
         // Keep original fields for backward compatibility
-        maDm: cat.idLoaiSp || cat.id || cat.maLoai,
-        ten: cat.tenLoaiSp || cat.ten || cat.tenLoai
+        maDm: cat.maDanhMucSp || cat.idLoaiSp || cat.id || cat.maLoai,
+        ten: cat.tenDanhMucSp || cat.tenLoaiSp || cat.ten || cat.tenLoai
       }));
 
       setCategories(mappedCategories);
     } catch (error) {
       console.error('Error loading categories:', error);
+      // Fallback to old API if new one fails
+      try {
+        const fallbackResponse = await getLoaiSanPham();
+        console.log('Fallback categories response:', fallbackResponse);
+        // Process fallback response with same logic
+        let categoriesData = [];
+        if (Array.isArray(fallbackResponse)) {
+          categoriesData = fallbackResponse;
+        } else if (fallbackResponse && typeof fallbackResponse === 'object') {
+          categoriesData = Object.values(fallbackResponse);
+        }
+        
+        const mappedCategories = categoriesData.map(cat => ({
+          value: cat.idLoaiSp || cat.id || cat.maLoai,
+          label: cat.tenLoaiSp || cat.ten || cat.tenLoai,
+          maDm: cat.idLoaiSp || cat.id || cat.maLoai,
+          ten: cat.tenLoaiSp || cat.ten || cat.tenLoai
+        }));
+        
+        setCategories(mappedCategories);
+      } catch (fallbackError) {
+        console.error('Error loading categories (fallback):', fallbackError);
+      }
     }
   };
 
-  // Load sản phẩm
+  // Load sản phẩm (chỉ khi cần)
   const loadProducts = async () => {
     try {
       const productsResponse = await getAllSanPham();
@@ -241,31 +499,78 @@ const BanHang = () => {
     }
   };
 
-  // Chọn bàn và load hóa đơn hiện tại
+  // FLOW 1: Chọn bàn và chuyển sang view hóa đơn
   const handleTableSelect = async (table) => {
     try {
       setSelectedTable(table);
       setLoading(true);
       
-      // Load hóa đơn hiện tại của bàn
-      const invoiceResponse = await loadHoaDonTheoBan(table.id);
-      
-      if (invoiceResponse && invoiceResponse.length > 0) {
-        const invoice = invoiceResponse[0];
+      // Ưu tiên sử dụng dữ liệu đã có từ table object
+      if (table.invoiceId && table.status !== 'available') {
+        console.log(`Using existing invoice data for table ${table.id}:`, table.invoiceId);
+        
+        // Tạo invoice object từ dữ liệu có sẵn
+        const invoice = {
+          maHd: table.invoiceId,
+          maBan: table.id,
+          tenBan: table.name
+        };
         setCurrentInvoice(invoice);
         
         // Load chi tiết hóa đơn
-        const detailsResponse = await loadDsCthd(invoice.maHd);
+        const detailsResponse = await loadDsCthd(table.invoiceId);
         if (Array.isArray(detailsResponse)) {
           setInvoiceDetails(detailsResponse);
         }
+        
+        message.success(`Đã chọn bàn ${table.name} - Hóa đơn #${table.invoiceId}`);
       } else {
-        setCurrentInvoice(null);
-        setInvoiceDetails([]);
+        // Fallback: Load hóa đơn từ API nếu không có dữ liệu sẵn
+        console.log(`Loading invoice from API for table ${table.id}`);
+        const invoiceResponse = await loadHoaDonTheoBan({ maBan: table.id });
+        
+        if (invoiceResponse && invoiceResponse.length > 0) {
+          const invoice = invoiceResponse[0];
+          setCurrentInvoice(invoice);
+          
+          // Load chi tiết hóa đơn
+          const detailsResponse = await loadDsCthd(invoice.maHd);
+          if (Array.isArray(detailsResponse)) {
+            setInvoiceDetails(detailsResponse);
+          }
+          
+          message.success(`Đã chọn bàn ${table.name} - Hóa đơn #${invoice.maHd}`);
+        } else {
+          setCurrentInvoice(null);
+          setInvoiceDetails([]);
+          message.info(`Bàn ${table.name} trống - Sẵn sàng tạo đơn mới`);
+        }
       }
+      
+      // Chuyển sang view hóa đơn
+      setCurrentView(VIEW_STATES.INVOICE);
     } catch (error) {
       console.error('Error selecting table:', error);
-      message.error('Không thể tải thông tin bàn');
+      message.error('Không thể tải thông tin bàn: ' + (error.message || 'Lỗi không xác định'));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // FLOW 2: Chuyển sang view chọn sản phẩm
+  const handleSelectItems = async () => {
+    try {
+      setLoading(true);
+      // Load categories và products khi cần
+      await Promise.all([
+        loadProductCategories(),
+        loadProducts()
+      ]);
+      
+      setCurrentView(VIEW_STATES.PRODUCTS);
+    } catch (error) {
+      console.error('Error loading products:', error);
+      message.error('Không thể tải danh sách sản phẩm');
     } finally {
       setLoading(false);
     }
@@ -282,14 +587,22 @@ const BanHang = () => {
       setLoading(true);
       const response = await taoHoaDon(selectedTable.id);
       
-      if (response && response.maHd) {
-        setCurrentInvoice(response);
+      if (response && response.success && response.message) {
+        // API trả về mã hóa đơn trong message
+        const newInvoice = {
+          maHd: response.message,
+          maBan: selectedTable.id,
+          tenBan: selectedTable.name
+        };
+        setCurrentInvoice(newInvoice);
         setInvoiceDetails([]);
-        message.success('Đã tạo hóa đơn mới');
+        message.success(`Đã tạo hóa đơn mới: ${response.message}`);
+      } else {
+        throw new Error('Không thể tạo hóa đơn');
       }
     } catch (error) {
       console.error('Error creating invoice:', error);
-      message.error('Không thể tạo hóa đơn mới');
+      message.error('Không thể tạo hóa đơn mới: ' + (error.message || 'Lỗi không xác định'));
     } finally {
       setLoading(false);
     }
@@ -297,13 +610,26 @@ const BanHang = () => {
 
   // Thêm sản phẩm vào hóa đơn
   const addProductToOrder = async (product) => {
+    if (!selectedTable) {
+      message.error('Vui lòng chọn bàn trước');
+      return;
+    }
+
+    // Nếu chưa có hóa đơn, tạo mới
     if (!currentInvoice) {
-      // Tạo hóa đơn mới nếu chưa có
       await createNewInvoice();
-      if (!currentInvoice) return;
+      // Đợi một chút để đảm bảo state đã cập nhật
+      await new Promise(resolve => setTimeout(resolve, 100));
+    }
+
+    // Kiểm tra lại sau khi tạo hóa đơn
+    if (!currentInvoice || !currentInvoice.maHd) {
+      message.error('Không thể tạo hóa đơn, vui lòng thử lại');
+      return;
     }
 
     try {
+      setLoading(true);
       const response = await taoCthd(currentInvoice.maHd, product.id, 1);
       
       if (response) {
@@ -313,10 +639,45 @@ const BanHang = () => {
           setInvoiceDetails(detailsResponse);
         }
         message.success(`Đã thêm ${product.ten} vào đơn hàng`);
+        
+        // Quay lại view hóa đơn sau khi thêm sản phẩm
+        setCurrentView(VIEW_STATES.INVOICE);
       }
     } catch (error) {
       console.error('Error adding product:', error);
-      message.error('Không thể thêm sản phẩm');
+      message.error('Không thể thêm sản phẩm: ' + (error.message || 'Lỗi không xác định'));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Hủy hóa đơn
+  const cancelInvoice = async () => {
+    if (!currentInvoice) {
+      message.error('Không có hóa đơn để hủy');
+      return;
+    }
+
+    try {
+      setLoading(true);
+      await huyHoaDon(currentInvoice.maHd);
+      
+      message.success('Đã hủy hóa đơn thành công');
+      
+      // Reset và quay về trang chọn bàn
+      setCurrentInvoice(null);
+      setInvoiceDetails([]);
+      setSelectedTable(null);
+      setCurrentView(VIEW_STATES.TABLES);
+      
+      // Refresh table data to update status
+      await loadTables();
+      
+    } catch (error) {
+      console.error('Error canceling invoice:', error);
+      message.error('Không thể hủy hóa đơn: ' + (error.message || 'Lỗi không xác định'));
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -328,33 +689,57 @@ const BanHang = () => {
     }
 
     try {
-      await capNhatCtHd({ maCt: item.maCt, soLuong: newQuantity });
+      setLoading(true);
+      
+      // Sử dụng API mới capNhatCtHd thay vì gọi trực tiếp
+      await capNhatCtHd({ 
+        maCt: item.maCt, 
+        soLuong: newQuantity,
+        ghiChu: item.ghiChu || '' // Giữ nguyên ghi chú cũ
+      });
       
       // Reload chi tiết hóa đơn
       const detailsResponse = await loadDsCthd(currentInvoice.maHd);
       if (Array.isArray(detailsResponse)) {
         setInvoiceDetails(detailsResponse);
       }
+      
+      message.success('Đã cập nhật số lượng');
     } catch (error) {
       console.error('Error updating quantity:', error);
-      message.error('Không thể cập nhật số lượng');
+      message.error('Không thể cập nhật số lượng: ' + (error.message || 'Lỗi không xác định'));
+    } finally {
+      setLoading(false);
     }
   };
 
   // Xóa sản phẩm khỏi đơn hàng
   const removeProductFromOrder = async (maCt) => {
     try {
-      await xoaCtHd(maCt);
+      setLoading(true);
+      
+      console.log('=== REMOVING PRODUCT ===');
+      console.log('maCt to remove:', maCt);
+      console.log('currentInvoice:', currentInvoice);
+      
+      // Sử dụng API mới xoaCtHd với object parameter
+      const deleteResponse = await xoaCtHd({ maCt });
+      console.log('Delete response:', deleteResponse);
       
       // Reload chi tiết hóa đơn
       const detailsResponse = await loadDsCthd(currentInvoice.maHd);
+      console.log('Reloaded invoice details:', detailsResponse);
+      
       if (Array.isArray(detailsResponse)) {
         setInvoiceDetails(detailsResponse);
       }
-      message.success('Đã xóa sản phẩm');
+      
+      message.success('Đã xóa sản phẩm khỏi hóa đơn');
     } catch (error) {
       console.error('Error removing product:', error);
-      message.error('Không thể xóa sản phẩm');
+      message.error('Không thể xóa sản phẩm: ' + (error.message || 'Lỗi không xác định'));
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -366,11 +751,22 @@ const BanHang = () => {
     }
 
     try {
-      await chuyenXuongBep(currentInvoice.maHd);
+      setLoading(true);
+      
+      // Sử dụng API mới chuyenXuongBep với object parameter
+      await chuyenXuongBep({ maHd: currentInvoice.maHd });
       message.success('Đã chuyển đơn hàng xuống bếp');
+      
+      // Refresh invoice details để cập nhật trạng thái
+      const detailsResponse = await loadDsCthd(currentInvoice.maHd);
+      if (Array.isArray(detailsResponse)) {
+        setInvoiceDetails(detailsResponse);
+      }
     } catch (error) {
       console.error('Error sending to kitchen:', error);
-      message.error('Không thể chuyển xuống bếp');
+      message.error('Không thể chuyển xuống bếp: ' + (error.message || 'Lỗi không xác định'));
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -381,108 +777,52 @@ const BanHang = () => {
       return;
     }
 
-    if (customerPayment < paymentAmount) {
-      message.error('Số tiền khách đưa không đủ');
-      return;
-    }
-
     try {
-      const change = customerPayment - paymentAmount;
+      setLoading(true);
       
+      // Tính toán tổng tiền từ server để đảm bảo chính xác
+      const totalResponse = await tinhTongTienHoaDon(currentInvoice.maHd);
+      const serverTotal = totalResponse && totalResponse.tongTien ? 
+        parseFloat(totalResponse.tongTien) : orderTotal;
+
+      // Thanh toán với số tiền chính xác
       await thanhToanHoaDonBanhang({
         maHd: currentInvoice.maHd,
-        tongTien: paymentAmount,
-        tienKhachDua: customerPayment,
-        tienThua: change
+        tongTien: serverTotal,
+        tienKhachDua: serverTotal, // Simplified payment - customer pays exact amount
+        tienThua: 0
       });
 
       message.success('Thanh toán thành công');
-      setPaymentModalVisible(false);
       
-      // Reset đơn hàng
+      // Reset và quay về trang chọn bàn
       setCurrentInvoice(null);
       setInvoiceDetails([]);
       setSelectedTable(null);
+      setCurrentView(VIEW_STATES.TABLES);
+      
+      // Refresh table data to update status
+      await loadTables();
       
     } catch (error) {
       console.error('Error processing payment:', error);
-      message.error('Không thể xử lý thanh toán');
+      message.error('Không thể xử lý thanh toán: ' + (error.message || 'Lỗi không xác định'));
+    } finally {
+      setLoading(false);
     }
   };
 
-  // Gộp bàn
-  const mergeTables = async () => {
-    if (!currentInvoice || !targetTable) {
-      message.error('Vui lòng chọn bàn để gộp');
-      return;
-    }
-
-    try {
-      await gopBanBanhang(currentInvoice.maHd, targetTable.id);
-      message.success(`Đã gộp bàn ${selectedTable.name} vào ${targetTable.name}`);
-      setMergeModalVisible(false);
-      setTargetTable(null);
-      
-      // Reload thông tin bàn
-      await handleTableSelect(targetTable);
-    } catch (error) {
-      console.error('Error merging tables:', error);
-      message.error('Không thể gộp bàn');
-    }
-  };
-
-  // Tách bàn
-  const splitTable = async () => {
-    if (!currentInvoice) {
-      message.error('Không có hóa đơn để tách bàn');
-      return;
-    }
-
-    try {
-      await tachBan(currentInvoice.maHd);
-      message.success('Đã tách bàn thành công');
-      
-      // Reload thông tin bàn
-      await handleTableSelect(selectedTable);
-    } catch (error) {
-      console.error('Error splitting table:', error);
-      message.error('Không thể tách bàn');
-    }
-  };
-
-  // Chuyển bàn
-  const transferTable = async () => {
-    if (!currentInvoice || !targetTable) {
-      message.error('Vui lòng chọn bàn để chuyển');
-      return;
-    }
-
-    try {
-      // Load hóa đơn của bàn đích (nếu có)
-      const targetInvoiceResponse = await loadHoaDonTheoBan(targetTable.id);
-      let targetInvoiceId = null;
-      
-      if (targetInvoiceResponse && targetInvoiceResponse.length > 0) {
-        targetInvoiceId = targetInvoiceResponse[0].maHd;
-      }
-
-      await chuyenBanCorrected({
-        maHoaDonBanCanChuyen: currentInvoice.maHd,
-        maHoaDonBanChuyen: targetInvoiceId,
-        maBanChuyen: targetTable.id
-      });
-
-      message.success(`Đã chuyển bàn từ ${selectedTable.name} sang ${targetTable.name}`);
-      setTransferModalVisible(false);
-      setTargetTable(null);
-      
-      // Reset và chọn bàn đích
+  // Quay lại view trước
+  const handleGoBack = () => {
+    if (currentView === VIEW_STATES.INVOICE) {
+      setCurrentView(VIEW_STATES.TABLES);
+      setSelectedTable(null);
       setCurrentInvoice(null);
       setInvoiceDetails([]);
-      await handleTableSelect(targetTable);
-    } catch (error) {
-      console.error('Error transferring table:', error);
-      message.error('Không thể chuyển bàn');
+    } else if (currentView === VIEW_STATES.PRODUCTS) {
+      setCurrentView(VIEW_STATES.INVOICE);
+      setSelectedCategory('all');
+      setSearchTerm('');
     }
   };
 
@@ -498,390 +838,302 @@ const BanHang = () => {
     return matchesSearch && matchesCategory;
   });
 
-  return (
-    <Layout className="ban-hang-new-layout">
-      {/* Sidebar - Danh sách bàn */}
-      <Sider width={300} className="ban-hang-sidebar">
-        <div className="sidebar-header">
-          <Title level={4}>Danh sách bàn</Title>
-          <Select
-            value={selectedArea}
-            onChange={setSelectedArea}
-            style={{ width: '100%', marginTop: 8 }}
-            placeholder="Chọn khu vực"
-          >
-            <Option value="all">Tất cả khu vực</Option>
-            {areas.map(area => (
-              <Option key={area.idKhuVuc} value={area.idKhuVuc}>
-                {area.ten}
-              </Option>
-            ))}
-          </Select>
-        </div>
-        
-        <div className="tables-grid">
-          {filteredTables.map(table => (
-            <Card
-              key={table.id}
-              className={`table-card ${selectedTable?.id === table.id ? 'selected' : ''}`}
-              onClick={() => handleTableSelect(table)}
-              hoverable
-            >
-              <div className="table-info">
-                <Coffee size={20} />
-                <span>{table.name}</span>
-              </div>
-              <Badge 
-                status={table.status === 'occupied' ? 'error' : 'success'} 
-                text={table.status === 'occupied' ? 'Có khách' : 'Trống'}
-              />
-            </Card>
+  // RENDER VIEWS BASED ON FLOW
+  const renderTablesView = () => (
+    <div className="tables-view">
+      <div className="view-header">
+        <Title level={3}>Chọn bàn để bán hàng</Title>
+        <Select
+          value={selectedArea}
+          onChange={setSelectedArea}
+          style={{ width: 200 }}
+          placeholder="Chọn khu vực"
+        >
+          <Option value="all">Tất cả khu vực</Option>
+          {areas.map(area => (
+            <Option key={area.idKhuVuc} value={area.idKhuVuc}>
+              {area.ten}
+            </Option>
           ))}
-        </div>
-      </Sider>
-
-      {/* Main Content */}
-      <Layout>
-        <Content className="ban-hang-content">
-          <Row gutter={16} style={{ height: '100%' }}>
-            {/* Cột trái - Danh sách sản phẩm */}
-            <Col span={14} className="products-section">
-              <Card title="Danh sách món" className="products-card">
-                <div className="products-filter">
-                  <Input
-                    placeholder="Tìm món..."
-                    prefix={<Search size={16} />}
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    style={{ marginBottom: 16 }}
-                  />
-                  
-                  <Select
-                    value={selectedCategory}
-                    onChange={setSelectedCategory}
-                    style={{ width: '100%', marginBottom: 16 }}
-                    placeholder="Chọn danh mục"
-                  >
-                    <Option value="all">Tất cả danh mục</Option>
-                    {categories.map(category => (
-                      <Option key={category.maDm} value={category.maDm}>
-                        {category.ten}
-                      </Option>
-                    ))}
-                  </Select>
-                </div>
-
-                <Row gutter={[12, 12]}>
-                  {filteredProducts.map(product => (
-                    <Col span={8} key={product.id}>
-                      <Card
-                        className="product-card"
-                        hoverable
-                        onClick={() => addProductToOrder(product)}
-                      >
-                        <div className="product-info">
-                          <Title level={5} className="product-name">
-                            {product.ten}
-                          </Title>
-                          <Text className="product-price">
-                            {parseFloat(product.gia || 0).toLocaleString('vi-VN')} đ
-                          </Text>
-                        </div>
-                      </Card>
-                    </Col>
-                  ))}
-                </Row>
-              </Card>
-            </Col>
-
-            {/* Cột phải - Đơn hàng hiện tại */}
-            <Col span={10} className="order-section">
-              <Card 
-                title={
-                  <div className="order-header">
-                    <span>Đơn hàng {selectedTable ? `- ${selectedTable.name}` : ''}</span>
-                    {!currentInvoice && selectedTable && (
-                      <Button 
-                        type="primary" 
-                        size="small"
-                        onClick={createNewInvoice}
-                      >
-                        Tạo hóa đơn
-                      </Button>
-                    )}
-                  </div>
-                }
-                className="order-card"
-              >
-                {!selectedTable ? (
-                  <div className="empty-state">
-                    <Users size={48} />
-                    <Text>Vui lòng chọn bàn để bắt đầu</Text>
-                  </div>
-                ) : !currentInvoice ? (
-                  <div className="empty-state">
-                    <ShoppingCart size={48} />
-                    <Text>Chưa có hóa đơn cho bàn này</Text>
-                  </div>
-                ) : (
-                  <>
-                    <div className="order-items">
-                      {invoiceDetails.map(item => (
-                        <div key={item.maCt} className="order-item">
-                          <div className="item-info">
-                            <Text strong>{item.tenSp}</Text>
-                            <Text type="secondary">
-                              {parseFloat(item.donGia || 0).toLocaleString('vi-VN')} đ
-                            </Text>
-                          </div>
-                          
-                          <div className="item-controls">
-                            <Button
-                              size="small"
-                              icon={<Minus size={12} />}
-                              onClick={() => updateProductQuantity(item, parseInt(item.soLuong) - 1)}
-                            />
-                            <InputNumber
-                              size="small"
-                              value={item.soLuong}
-                              min={1}
-                              style={{ width: 60, margin: '0 4px' }}
-                              onChange={(value) => updateProductQuantity(item, value)}
-                            />
-                            <Button
-                              size="small"
-                              icon={<Plus size={12} />}
-                              onClick={() => updateProductQuantity(item, parseInt(item.soLuong) + 1)}
-                            />
-                            <Button
-                              size="small"
-                              danger
-                              icon={<Trash2 size={12} />}
-                              onClick={() => removeProductFromOrder(item.maCt)}
-                              style={{ marginLeft: 8 }}
-                            />
-                          </div>
+        </Select>
+      </div>
+      
+      <div className="tables-grid">
+        {filteredTables.map(table => (
+          <Card
+            key={table.id}
+            className={`table-card ${table.status}`}
+            onClick={() => handleTableSelect(table)}
+            hoverable={false}
+            bodyStyle={{ padding: 0, height: '100%' }}
+          >
+            <div className="table-header">
+              <div className="table-icon">
+                <Coffee size={24} />
+              </div>
+            </div>
+            
+            <div className="table-info">
+              <Title level={5}>{table.name}</Title>
+              <div className="table-status">
+                <Badge 
+                  status={getTableBadgeStatus(table.status)} 
+                  text={getTableStatusText(table.status)}
+                />
+              </div>
+              
+              {/* Hiển thị thông tin chi tiết nếu bàn có khách */}
+              {table.status !== 'available' && (
+                <div className="table-details">
+                  {table.sittingTime && (
+                    <div className="detail-row">
+                      <span className="detail-label">Thời gian:</span>
+                      <span className="detail-value">{table.sittingTime}</span>
+                    </div>
+                  )}
+                  {table.totalAmount > 0 && (
+                    <div className="detail-row">
+                      <span className="detail-label">Tổng tiền:</span>
+                      <span className="detail-value">{table.totalAmount.toLocaleString()}đ</span>
+                    </div>
+                  )}
+                  {table.itemCount > 0 && (
+                    <div className="detail-row">
+                      <span className="detail-label">Số món:</span>
+                      <span className="detail-value">{table.itemCount}</span>
+                    </div>
+                  )}
+                  {table.orderItems && table.orderItems.length > 0 && (
+                    <div className="order-preview">
+                      {table.orderItems.map((item, index) => (
+                        <div key={index} className="order-item">
+                          {item.tenSp || item.ten} ({item.soLuong})
                         </div>
                       ))}
+                      {table.itemCount > 3 && (
+                        <div className="order-more">
+                          ...và {table.itemCount - 3} món khác
+                        </div>
+                      )}
                     </div>
+                  )}
+                </div>
+              )}
+            </div>
+          </Card>
+        ))}
+      </div>
+    </div>
+  );
 
-                    <Divider />
-
-                    <div className="order-summary">
-                      <div className="total-row">
-                        <Text strong>Tổng cộng: </Text>
-                        <Text strong className="total-amount">
-                          {orderTotal.toLocaleString('vi-VN')} đ
-                        </Text>
-                      </div>
-                    </div>
-
-                    <div className="order-actions">
-                      <div className="table-management-actions">
-                        <Space wrap>
-                          <Button
-                            size="small"
-                            icon={<Merge size={14} />}
-                            onClick={() => setMergeModalVisible(true)}
-                            disabled={!currentInvoice}
-                          >
-                            Gộp bàn
-                          </Button>
-                          <Button
-                            size="small"
-                            icon={<Split size={14} />}
-                            onClick={splitTable}
-                            disabled={!currentInvoice}
-                          >
-                            Tách bàn
-                          </Button>
-                          <Button
-                            size="small"
-                            icon={<ArrowRightLeft size={14} />}
-                            onClick={() => setTransferModalVisible(true)}
-                            disabled={!currentInvoice}
-                          >
-                            Chuyển bàn
-                          </Button>
-                        </Space>
-                      </div>
-                      
-                      <Button
-                        type="default"
-                        icon={<Clock size={16} />}
-                        onClick={sendToKitchen}
-                        style={{ marginBottom: 8 }}
-                        block
-                      >
-                        Chuyển xuống bếp
-                      </Button>
-                      
-                      <Button
-                        type="primary"
-                        icon={<CreditCard size={16} />}
-                        onClick={() => setPaymentModalVisible(true)}
-                        disabled={invoiceDetails.length === 0}
-                        block
-                      >
-                        Thanh toán
-                      </Button>
-                    </div>
-                  </>
-                )}
-              </Card>
-            </Col>
-          </Row>
-        </Content>
-      </Layout>
-
-      {/* Payment Modal */}
-      <Modal
-        title="Thanh toán hóa đơn"
-        open={paymentModalVisible}
-        onCancel={() => setPaymentModalVisible(false)}
-        footer={[
-          <Button key="cancel" onClick={() => setPaymentModalVisible(false)}>
-            Hủy
-          </Button>,
+  const renderInvoiceView = () => {
+    console.log('=== INVOICE VIEW DEBUG ===');
+    console.log('currentInvoice:', currentInvoice);
+    console.log('invoiceDetails:', invoiceDetails);
+    console.log('selectedTable:', selectedTable);
+    
+    return (
+      <div className="invoice-view">
+        <div className="view-header">
           <Button 
-            key="pay" 
-            type="primary" 
-            onClick={processPayment}
-            disabled={customerPayment < paymentAmount}
+            icon={<ArrowLeft size={16} />}
+            onClick={handleGoBack}
           >
-            Thanh toán
+            Quay lại
           </Button>
-        ]}
-      >
-        <div className="payment-content">
-          <div className="payment-summary">
-            <Row justify="space-between">
-              <Text>Tổng tiền:</Text>
-              <Text strong>{paymentAmount.toLocaleString('vi-VN')} đ</Text>
-            </Row>
+          <Title level={3}>
+            Hóa đơn - {selectedTable?.name}
+            {currentInvoice && ` (#${currentInvoice.maHd})`}
+          </Title>
+          <Button 
+            type="primary"
+            icon={<ShoppingCart size={16} />}
+            onClick={handleSelectItems}
+          >
+            Chọn món
+          </Button>
+        </div>
+
+        {!currentInvoice ? (
+          <div className="empty-invoice">
+            <Users size={48} />
+            <Text>Chưa có hóa đơn cho bàn này</Text>
+            <Button type="primary" onClick={createNewInvoice}>
+              Tạo hóa đơn mới
+            </Button>
+          </div>
+        ) : (
+          <div className="invoice-content">
+            <div className="invoice-info">
+              <Text strong>Mã hóa đơn: {currentInvoice.maHd}</Text>
+              <br />
+              <Text>Bàn: {selectedTable?.name}</Text>
+            </div>
+            
+            <div className="invoice-items">
+              {invoiceDetails.length === 0 ? (
+                <div className="empty-items">
+                  <ShoppingCart size={48} />
+                  <Text>Chưa có món nào trong đơn hàng</Text>
+                </div>
+              ) : (
+              invoiceDetails.map(item => (
+                <div key={item.maCt} className="invoice-item">
+                  <div className="item-info">
+                    <Title level={5}>{item.tenSp}</Title>
+                    <Text type="secondary">
+                      {parseFloat(item.donGia || 0).toLocaleString('vi-VN')} đ
+                    </Text>
+                  </div>
+                  
+                  <div className="item-controls">
+                    <Button
+                      size="small"
+                      icon={<Minus size={12} />}
+                      onClick={() => updateProductQuantity(item, parseInt(item.soLuong) - 1)}
+                    />
+                    <InputNumber
+                      size="small"
+                      value={item.soLuong}
+                      min={1}
+                      style={{ width: 60, margin: '0 8px' }}
+                      onChange={(value) => updateProductQuantity(item, value)}
+                    />
+                    <Button
+                      size="small"
+                      icon={<Plus size={12} />}
+                      onClick={() => updateProductQuantity(item, parseInt(item.soLuong) + 1)}
+                    />
+                    <Popconfirm
+                      title="Xác nhận xóa món này?"
+                      onConfirm={() => removeProductFromOrder(item.maCt)}
+                    >
+                      <Button
+                        size="small"
+                        danger
+                        icon={<Trash2 size={12} />}
+                        style={{ marginLeft: 8 }}
+                      />
+                    </Popconfirm>
+                  </div>
+                </div>
+              ))
+            )}
           </div>
 
           <Divider />
 
-          <div className="payment-input">
-            <Text>Tiền khách đưa:</Text>
-            <InputNumber
-              style={{ width: '100%', marginTop: 8 }}
-              value={customerPayment}
-              onChange={setCustomerPayment}
-              formatter={value => `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
-              parser={value => value.replace(/\$\s?|(,*)/g, '')}
-              min={0}
-            />
-          </div>
-
-          {customerPayment >= paymentAmount && (
-            <div className="change-amount">
-              <Row justify="space-between">
-                <Text>Tiền thừa:</Text>
-                <Text strong className="change">
-                  {(customerPayment - paymentAmount).toLocaleString('vi-VN')} đ
-                </Text>
-              </Row>
+          <div className="invoice-summary">
+            <div className="total-row">
+              <Text strong>Tổng cộng: </Text>
+              <Text strong className="total-amount">
+                {orderTotal.toLocaleString('vi-VN')} đ
+              </Text>
             </div>
-          )}
-        </div>
-      </Modal>
+          </div>
 
-      {/* Merge Tables Modal */}
-      <Modal
-        title="Gộp bàn"
-        open={mergeModalVisible}
-        onCancel={() => {
-          setMergeModalVisible(false);
-          setTargetTable(null);
-        }}
-        footer={[
-          <Button key="cancel" onClick={() => {
-            setMergeModalVisible(false);
-            setTargetTable(null);
-          }}>
-            Hủy
-          </Button>,
-          <Button 
-            key="merge" 
-            type="primary" 
-            onClick={mergeTables}
-            disabled={!targetTable}
-          >
-            Gộp bàn
-          </Button>
-        ]}
-      >
-        <div className="table-selection-content">
-          <Text>Chọn bàn để gộp vào:</Text>
-          <div className="table-selection-grid">
-            {filteredTables
-              .filter(table => table.id !== selectedTable?.id)
-              .map(table => (
-                <Card
-                  key={table.id}
-                  className={`table-select-card ${targetTable?.id === table.id ? 'selected' : ''}`}
-                  onClick={() => setTargetTable(table)}
-                  hoverable
-                >
-                  <div className="table-info">
-                    <Coffee size={16} />
-                    <span>{table.name}</span>
-                  </div>
-                </Card>
-              ))}
+          <div className="invoice-actions">
+            <Button
+              icon={<Clock size={16} />}
+              onClick={sendToKitchen}
+              style={{ marginBottom: 8 }}
+              block
+            >
+              Chuyển xuống bếp
+            </Button>
+            
+            <Button
+              type="primary"
+              icon={<CreditCard size={16} />}
+              onClick={processPayment}
+              disabled={invoiceDetails.length === 0}
+              block
+            >
+              Thanh toán
+            </Button>
           </div>
         </div>
-      </Modal>
+      )}
+    </div>
+  );
+};
 
-      {/* Transfer Table Modal */}
-      <Modal
-        title="Chuyển bàn"
-        open={transferModalVisible}
-        onCancel={() => {
-          setTransferModalVisible(false);
-          setTargetTable(null);
-        }}
-        footer={[
-          <Button key="cancel" onClick={() => {
-            setTransferModalVisible(false);
-            setTargetTable(null);
-          }}>
-            Hủy
-          </Button>,
-          <Button 
-            key="transfer" 
-            type="primary" 
-            onClick={transferTable}
-            disabled={!targetTable}
-          >
-            Chuyển bàn
-          </Button>
-        ]}
-      >
-        <div className="table-selection-content">
-          <Text>Chọn bàn đích để chuyển:</Text>
-          <div className="table-selection-grid">
-            {filteredTables
-              .filter(table => table.id !== selectedTable?.id)
-              .map(table => (
-                <Card
-                  key={table.id}
-                  className={`table-select-card ${targetTable?.id === table.id ? 'selected' : ''}`}
-                  onClick={() => setTargetTable(table)}
-                  hoverable
-                >
-                  <div className="table-info">
-                    <Coffee size={16} />
-                    <span>{table.name}</span>
-                  </div>
-                </Card>
-              ))}
-          </div>
+  const renderProductsView = () => (
+    <Layout className="products-view">
+      {/* Sidebar categories */}
+      <Sider width={250} className="categories-sidebar">
+        <div className="sidebar-header">
+          <Title level={4}>Danh mục</Title>
         </div>
-      </Modal>
+        <div className="categories-list">
+          <div 
+            className={`category-item ${selectedCategory === 'all' ? 'active' : ''}`}
+            onClick={() => setSelectedCategory('all')}
+          >
+            Tất cả món
+          </div>
+          {categories.map(category => (
+            <div
+              key={category.maDm}
+              className={`category-item ${selectedCategory === category.maDm ? 'active' : ''}`}
+              onClick={() => setSelectedCategory(category.maDm)}
+            >
+              {category.ten}
+            </div>
+          ))}
+        </div>
+      </Sider>
+
+      {/* Main products grid */}
+      <Content className="products-content">
+        <div className="view-header">
+          <Button 
+            icon={<ArrowLeft size={16} />}
+            onClick={handleGoBack}
+          >
+            Quay lại hóa đơn
+          </Button>
+          <Title level={3}>Chọn món - {selectedTable?.name}</Title>
+          <Input
+            placeholder="Tìm món..."
+            prefix={<Search size={16} />}
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            style={{ width: 300 }}
+          />
+        </div>
+
+        <div className="products-grid">
+          {filteredProducts.map(product => (
+            <Card
+              key={product.id}
+              className="product-card"
+              onClick={() => addProductToOrder(product)}
+              hoverable
+            >
+              <div className="product-icon">
+                <Coffee size={32} />
+              </div>
+              <div className="product-info">
+                <Title level={5}>{product.ten}</Title>
+                <Text className="product-price">
+                  {parseFloat(product.gia || 0).toLocaleString('vi-VN')} đ
+                </Text>
+              </div>
+            </Card>
+          ))}
+        </div>
+      </Content>
     </Layout>
+  );
+
+  // Main render
+  return (
+    <div className="banhang-container">
+      {currentView === VIEW_STATES.TABLES && renderTablesView()}
+      {currentView === VIEW_STATES.INVOICE && renderInvoiceView()}
+      {currentView === VIEW_STATES.PRODUCTS && renderProductsView()}
+    </div>
   );
 };
 

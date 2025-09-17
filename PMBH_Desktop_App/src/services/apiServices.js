@@ -139,6 +139,11 @@ export async function getTongChiTietHoaDon() {
   return await callApi('Mb_TongCthd', 'data');
 }
 
+// Lấy chi tiết hóa đơn theo mã hóa đơn
+export async function getChiTietHoaDonTheoMaHD(maHd) {
+  return await callApi('Mb_LayCthd_', 'layCtHd', { maHd });
+}
+
 // Gộp bàn
 export async function gopBan(idDonHang, idBanGop) {
   return await callApi('m_GopBan', 'add', { idDonHang, idBanGop });
@@ -160,6 +165,11 @@ export async function taoDonHang(idBan) {
 }
 
 // -------------------- Functions from index_NChung.php --------------------
+
+//Lấy mã hóa, tên bàn, vị trí, trạng thái từ bàn đang bán
+export async function getMaHoaDonTuBanDangBan(banId) {
+  return await callApi('m_loadBan', 'load', { banId });
+}
 
 // Lấy danh sách món đang chờ order
 export async function getDsMonDangChoOrder() {
@@ -632,11 +642,6 @@ export async function loadKhuVucBanhang(data = {}) {
   return await callApi('sl_lv0008', 'loadKhuVuc', data);
 }
 
-// Load trạng thái bàn theo hóa đơn
-export async function loadTrangThaiBanTheoHoaDon(data = {}) {
-  return await callApi('sl_lv0013', 'loadTrangThaiBanTheoHoaDon', data);
-}
-
 // Gộp bàn
 export async function gopBanBanhang(maHoaDon, idBanGop) {
   return await callApi('sl_lv0013', 'gopBan', { maHoaDon, idBanGop });
@@ -645,11 +650,6 @@ export async function gopBanBanhang(maHoaDon, idBanGop) {
 // Tách bàn
 export async function tachBan(maHoaDon) {
   return await callApi('sl_lv0013', 'tachBan', { maHoaDon });
-}
-
-// Load danh mục sản phẩm từ banhang
-export async function loadDanhMucSpBanhang(data = {}) {
-  return await callApi('sl_lv0006', 'loadDanhMucSp', data);
 }
 
 // Load sản phẩm từ banhang
@@ -732,11 +732,6 @@ export async function layThongTinPhieuKiemByID(maPK) {
 
 // -------------------- Additional Functions from features/banhang --------------------
 
-// Load sản phẩm theo mã danh mục
-export async function loadSanPhamTheoMaDanhMucSp(maDm) {
-  return await callApi('sl_lv0007', 'loadSanPhamTheoDmSp', { maDm });
-}
-
 // Tạo hóa đơn
 export async function taoHoaDon(maBan) {
   return await callApi('sl_lv0013', 'taoHoaDon', { maBan });
@@ -758,22 +753,11 @@ export async function loadDsCthdV2(maHd) {
 }
 
 // Xóa chi tiết hóa đơn
-export async function xoaCtHd(maCt) {
-  return await callApi('sl_lv0014', 'xoaCtHd', { maCt });
-}
-
-// Cập nhật chi tiết hóa đơn
-export async function capNhatCtHd(updateData) {
-  const { maCt, soLuong } = updateData;
-  return await callApi('sl_lv0014', 'capNhatCtHd', { maCt, soLuong });
-}
-
-// Thanh toán hóa đơn
-export async function thanhToanHoaDonBanhang(thanhToanData) {
-  const { maHd, tongTien, tienKhachDua, tienThua } = thanhToanData;
-  return await callApi('sl_lv0013', 'thanhToanHoaDon', { 
-    maHd, tongTien, tienKhachDua, tienThua 
-  });
+export async function xoaCtHd(data) {
+  // Support both direct maCt parameter and object parameter
+  const maCt = typeof data === 'object' && data.maCt ? data.maCt : data;
+  // FIXED: Use correct function name from mobile logic pattern
+  return await callApi('sl_lv0014', 'xoaCthd', { maCt });
 }
 
 // Chuyển bàn (corrected parameters)
@@ -789,18 +773,7 @@ export async function loadHoaDonTheoBan(maBan) {
   return await callApi('sl_lv0013', 'loadHoaDonTheoBan', { maBan });
 }
 
-// Hủy hóa đơn
-export async function huyHoaDon(maHd) {
-  return await callApi('sl_lv0013', 'huyHoaDon', { maHd });
-}
-
 // -------------------- Additional missing functions from banhang --------------------
-
-// Thêm bàn
-export async function themBan(banData) {
-  const { lv002, lv004 } = banData;
-  return await callApi('sl_lv0009', 'themBan', { lv002, lv004 });
-}
 
 // Thêm khu vực
 export async function themKhuVuc(khuVucData) {
@@ -821,11 +794,6 @@ export async function capNhatHoaDon2(maHd, trangThai) {
 // Cập nhật hóa đơn trạng thái 4
 export async function capNhatHoaDonTT4(maHd, trangThai) {
   return await callApi('sl_lv0013', 'capNhatHoaDonTT4', { maHd, trangThai });
-}
-
-// Chuyển xuống bếp
-export async function chuyenXuongBep(maHd) {
-  return await callApi('sl_lv0013', 'chuyenXuongBep', { maHd });
 }
 
 // Lấy danh sách món chờ
@@ -858,4 +826,129 @@ export async function layALLSanPham() {
 // Lấy danh sách nguyên vật liệu (uncommented from quan-ly/index.js)
 export async function layDSNguyenLieuQuanLy() {
   return await callApi('Mb_NguyenLieu', 'get_dsNVL');
+}
+
+// ==================== MISSING API FUNCTIONS - SALES SYSTEM COMPLETION ====================
+
+// Thanh toán hóa đơn bán hàng - Process payment for sales invoice
+export async function thanhToanHoaDonBanhang(paymentData) {
+  const { maHd, tongTien, tienKhachDua, tienThua } = paymentData;
+  return await callApi('sl_lv0013', 'thanhToanHoaDon', { 
+    maHd, 
+    tongTien, 
+    tienKhachDua, 
+    tienThua 
+  });
+}
+
+// Chuyển xuống bếp - Send order to kitchen
+export async function chuyenXuongBep(maHd) {
+  return await callApi('sl_lv0013', 'chuyenXuongBep', { maHd });
+}
+
+// Cập nhật số lượng chi tiết hóa đơn - Update invoice detail quantity
+export async function capNhatCtHd(updateData) {
+  const { maCt, soLuong } = updateData;
+  return await callApi('sl_lv0014', 'MB_UpdateQty', { 
+    maCTHD: maCt, 
+    vQty: soLuong 
+  });
+}
+
+// Load trạng thái bàn theo hóa đơn - Get table status based on invoices
+export async function loadTrangThaiBanTheoHoaDon(data = {}) {
+  return await callApi('sl_lv0013', 'loadTrangThaiBanTheoHoaDon', data);
+}
+
+// Load danh mục sản phẩm - Get product categories (following mobile pattern)
+export async function loadDanhMucSp(data = {}) {
+  return await callApi('sl_lv0006', 'loadDanhMucSp', data);
+}
+
+// Load sản phẩm theo mã danh mục - Get products by category ID
+export async function loadSanPhamTheoMaDanhMucSp(maDm) {
+  return await callApi('sl_lv0007', 'loadSanPhamTheoDmSp', { maDm });
+}
+
+// Thêm bàn mới - Add new table
+export async function themBan(banData) {
+  const { lv002, lv004 } = banData; // tenBan, maKhuVuc
+  return await callApi('sl_lv0009', 'themBan', { lv002, lv004 });
+}
+
+// Xóa bàn - Delete table
+export async function xoaBan(maBan) {
+  return await callApi('sl_lv0009', 'xoaBan', { maBan });
+}
+
+// Sửa bàn - Edit table
+export async function suaBan(banData) {
+  const { maBan, tenBan, maKhuVuc } = banData;
+  return await callApi('sl_lv0009', 'suaBan', { maBan, tenBan, maKhuVuc });
+}
+
+// Hủy hóa đơn - Cancel invoice
+export async function huyHoaDon(maHd) {
+  return await callApi('sl_lv0013', 'huyHoaDon', { maHd });
+}
+
+// Load chi tiết hóa đơn V3 (enhanced version) - Get enhanced invoice details
+export async function loadDsCthdV3(maHd) {
+  return await callApi('sl_lv0014', 'loadCtHdV3', { maHd });
+}
+
+// Cập nhật trạng thái đơn hàng - Update order status
+export async function capNhatTrangThaiDonHang(maHd, trangThai) {
+  return await callApi('sl_lv0013', 'capNhatTrangThai', { maHd, trangThai });
+}
+
+// Lấy lịch sử hóa đơn theo bàn - Get invoice history for table
+export async function layLichSuHoaDonTheoBan(maBan, fromDate, toDate) {
+  return await callApi('sl_lv0013', 'layLichSuHoaDon', { 
+    maBan, 
+    fromDate, 
+    toDate 
+  });
+}
+
+// Tạo hóa đơn tạm (draft) - Create draft invoice
+export async function taoHoaDonTam(maBan) {
+  return await callApi('sl_lv0013', 'taoHoaDonTam', { maBan });
+}
+
+// Chuyển hóa đơn tạm thành chính thức - Convert draft to official invoice
+export async function chuyenHoaDonTamThanhChinhThuc(maHd) {
+  return await callApi('sl_lv0013', 'chuyenHdTamThanhChinhThuc', { maHd });
+}
+
+// Sao chép hóa đơn - Copy invoice to another table
+export async function saoChepHoaDon(maHdGoc, maBanMoi) {
+  return await callApi('sl_lv0013', 'saoChepHoaDon', { maHdGoc, maBanMoi });
+}
+
+// Tính toán tổng tiền hóa đơn - Calculate invoice total
+export async function tinhTongTienHoaDon(maHd) {
+  return await callApi('sl_lv0013', 'tinhTongTien', { maHd });
+}
+
+// Load thông tin chi tiết bàn (extended) - Get detailed table information
+export async function loadThongTinChiTietBan(maBan) {
+  return await callApi('sl_lv0009', 'loadThongTinChiTiet', { maBan });
+}
+
+// Đặt bàn trước - Reserve table
+export async function datBanTruoc(banData) {
+  const { maBan, tenKhach, soDienThoai, thoiGianDat, ghiChu } = banData;
+  return await callApi('sl_lv0009', 'datBanTruoc', { 
+    maBan, 
+    tenKhach, 
+    soDienThoai, 
+    thoiGianDat, 
+    ghiChu 
+  });
+}
+
+// Hủy đặt bàn - Cancel table reservation
+export async function huyDatBan(maBan) {
+  return await callApi('sl_lv0009', 'huyDatBan', { maBan });
 }
