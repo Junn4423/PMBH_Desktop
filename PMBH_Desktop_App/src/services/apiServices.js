@@ -196,11 +196,6 @@ export async function getThongTinDonHang(banid) {
   return await callApi('m_CheckTrangThai', 'layThongTinDonHang', { banid });
 }
 
-// Cập nhật trạng thái món
-export async function updateTrangThaiMon(itemId) {
-  return await callApi('m_updateTrangThaiMon', 'updateTrangThaiMon', { itemId });
-}
-
 // Thêm nhân sự
 export async function addNhanSu(data) {
   return await callApi('hr_NhanSu', 'add', data);
@@ -796,21 +791,6 @@ export async function capNhatHoaDonTT4(maHd, trangThai) {
   return await callApi('sl_lv0013', 'capNhatHoaDonTT4', { maHd, trangThai });
 }
 
-// Lấy danh sách món chờ
-export async function layDsMonCho(data = {}) {
-  return await callApi('Mb_Oder', 'layDsMonDangChoOder', data);
-}
-
-// Lấy danh sách món nước
-export async function layDsMonNuoc(data = {}) {
-  return await callApi('Mb_Oder', 'layMonNuocTuBanDangBan', data);
-}
-
-// Lấy danh sách món ăn
-export async function layDsMonAn(data = {}) {
-  return await callApi('Mb_Oder', 'layMonAnTuBanDangBan', data);
-}
-
 // Chuyển món
 export async function chuyenMon(dsChiTietMonAn, maBanChuyen) {
   return await callApi('sl_lv0013', 'chuyenMonAn', { dsChiTietMonAn, maBanChuyen });
@@ -951,4 +931,36 @@ export async function datBanTruoc(banData) {
 // Hủy đặt bàn - Cancel table reservation
 export async function huyDatBan(maBan) {
   return await callApi('sl_lv0009', 'huyDatBan', { maBan });
+}
+
+// -------------------- Kitchen Order System APIs --------------------
+
+// Lấy danh sách món đang chờ làm - Get pending orders
+export async function layDsMonCho() {
+  return await callApi('Mb_Oder', 'layDsMonDangChoOder');
+}
+
+// Lấy danh sách món nước từ bàn đang bán - Get drink orders from active tables
+export async function layDsMonNuoc() {
+  return await callApi('Mb_Oder', 'layMonNuocTuBanDangBan');
+}
+
+// Lấy danh sách món ăn từ bàn đang bán - Get food orders from active tables
+export async function layDsMonAn() {
+  return await callApi('Mb_Oder', 'layMonAnTuBanDangBan');
+}
+
+// Cập nhật trạng thái món - Update dish status (toggles between pending/completed)
+export async function updateTrangThaiMon(itemId) {
+  return await callApi('m_updateTrangThaiMon', 'updateTrangThaiMon', { itemId });
+}
+
+// Lấy danh sách chi tiết món theo trạng thái - Get dish details by status
+export async function layDsMonTheoTrangThai(trangThai) {
+  return await callApi('Mb_Oder', 'layDsMonTheoTrangThai', { trangThai });
+}
+
+// Lấy danh sách món đã xong - Get completed orders
+export async function layDsMonDaXong() {
+  return await callApi('Mb_Oder', 'layDsMonDaXong');
 }

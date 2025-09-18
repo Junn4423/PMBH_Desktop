@@ -13,7 +13,9 @@ import {
   Divider,
   InputNumber,
   Input,
-  Popconfirm
+  Popconfirm,
+  Modal,
+  Table
 } from 'antd';
 import { 
   Coffee, 
@@ -26,7 +28,14 @@ import {
   Minus,
   Search,
   ArrowLeft,
-  CheckCircle
+  CheckCircle,
+  Edit3,
+  X,
+  Printer,
+  History,
+  Save,
+  FileText,
+  Copy
 } from 'lucide-react';
 
 // Import API services
@@ -47,7 +56,12 @@ import {
   loadDanhMucSp,
   loadSanPhamTheoMaDanhMucSp,
   huyHoaDon,
-  tinhTongTienHoaDon
+  tinhTongTienHoaDon,
+  layLichSuHoaDonTheoBan,
+  taoHoaDonTam,
+  chuyenHoaDonTamThanhChinhThuc,
+  saoChepHoaDon,
+  loadDsCthdV3
 } from '../../services/apiServices';
 
 import './BanHang.css';
@@ -84,8 +98,24 @@ const BanHang = () => {
   const [invoiceDetails, setInvoiceDetails] = useState([]);
   const [orderTotal, setOrderTotal] = useState(0);
   
+  // State cho Enhanced Invoice Management
+  const [invoiceHistory, setInvoiceHistory] = useState([]);
+  const [showInvoiceHistory, setShowInvoiceHistory] = useState(false);
+  const [editingInvoice, setEditingInvoice] = useState(false);
+  const [draftInvoices, setDraftInvoices] = useState([]);
+  const [invoiceSummary, setInvoiceSummary] = useState({
+    subtotal: 0,
+    tax: 0,
+    discount: 0,
+    total: 0
+  });
+  
   // State UI
   const [loading, setLoading] = useState(false);
+  const [lastRefresh, setLastRefresh] = useState(null);
+  const [autoRefreshEnabled, setAutoRefreshEnabled] = useState(true);
+  const [lastAction, setLastAction] = useState(null); // Track last user action
+  const [quickRefreshEnabled, setQuickRefreshEnabled] = useState(false); // For post-action refresh
 
   // Helper functions cho table status
   const getTableBadgeStatus = (status) => {
@@ -98,12 +128,35 @@ const BanHang = () => {
     }
   };
 
+  // Helper function để lấy màu sắc theo theme cho table status
+  const getTableStatusColor = (status) => {
+    switch (status) {
+      case 'available': return '#77d4fb';  // Light blue - available
+      case 'occupied': return '#197dd3';   // Main blue - occupied
+      case 'serving': return '#bdbcc4';    // Gray - serving
+      case 'checkout': return '#4b4344';   // Dark - checkout
+      default: return '#bdbcc4';
+    }
+  };
+
+  // Helper function để lấy text màu
+  const getTableStatusTextColor = (status) => {
+    switch (status) {
+      case 'available': return '#4b4344';
+      case 'occupied': return '#ffffff';
+      case 'serving': return '#4b4344';
+      case 'checkout': return '#ffffff';
+      default: return '#4b4344';
+    }
+  };
+
+  // Helper function để lấy text trạng thái
   const getTableStatusText = (status) => {
     switch (status) {
       case 'available': return 'Trống';
       case 'occupied': return 'Có khách';
       case 'serving': return 'Đang phục vụ';
-      case 'checkout': return 'Thanh toán';
+      case 'checkout': return 'Chờ thanh toán';
       default: return 'Không xác định';
     }
   };
@@ -112,6 +165,89 @@ const BanHang = () => {
   useEffect(() => {
     loadInitialData();
   }, []);
+
+  // Auto refresh effect cho real-time table status
+  useEffect(() => {
+    let intervalId;
+    
+    if (autoRefreshEnabled && currentView === VIEW_STATES.TABLES) {
+      // Auto refresh mỗi 30 giây khi đang ở view TABLES
+      intervalId = setInterval(() => {
+        console.log('Auto refreshing table status...');
+        refreshTableStatusOnly();
+      }, 30000); // 30 seconds
+    }
+
+    return () => {
+      if (intervalId) {
+        clearInterval(intervalId);
+      }
+    };
+  }, [autoRefreshEnabled, currentView]);
+
+  // Quick refresh effect sau khi có action
+  useEffect(() => {
+    let quickIntervalId;
+    
+    if (quickRefreshEnabled && currentView === VIEW_STATES.TABLES) {
+      // Quick refresh mỗi 2 giây trong 10 giây sau action
+      quickIntervalId = setInterval(() => {
+        console.log('Quick refreshing after action...');
+        refreshTableStatusOnly();
+      }, 2000); // 2 seconds
+    }
+
+    return () => {
+      if (quickIntervalId) {
+        clearInterval(quickIntervalId);
+      }
+    };
+  }, [quickRefreshEnabled, currentView]);
+
+  // Manual refresh handler
+  const handleManualRefresh = async () => {
+    setLastRefresh(new Date());
+    await loadTables();
+    message.success('Đã cập nhật trạng thái bàn');
+  };
+
+  // Refresh chỉ trạng thái bàn (không reload toàn bộ)
+  const refreshTableStatusOnly = async () => {
+    if (tables.length === 0) return;
+    
+    try {
+      setLoading(true);
+      await loadTableStatuses(tables);
+      setLastRefresh(new Date());
+      console.log('Table status refreshed at:', new Date().toLocaleTimeString());
+    } catch (error) {
+      console.error('Error refreshing table status:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Trigger quick refresh sau khi có action
+  const triggerQuickRefresh = (actionType) => {
+    console.log(`Action triggered: ${actionType}, starting quick refresh...`);
+    setLastAction({ type: actionType, timestamp: new Date() });
+    setQuickRefreshEnabled(true);
+    
+    // Refresh ngay lập tức
+    setTimeout(() => {
+      refreshTableStatusOnly();
+    }, 500); // 0.5 giây
+
+    // Refresh lần 2 sau 2 giây để đảm bảo
+    setTimeout(() => {
+      refreshTableStatusOnly();
+    }, 2000); // 2 giây
+
+    // Tắt quick refresh sau 10 giây
+    setTimeout(() => {
+      setQuickRefreshEnabled(false);
+    }, 10000);
+  };
 
   // Auto-refresh table statuses trong Tables view
   useEffect(() => {
@@ -549,6 +685,9 @@ const BanHang = () => {
       
       // Chuyển sang view hóa đơn
       setCurrentView(VIEW_STATES.INVOICE);
+      
+      // Trigger quick refresh sau khi chọn bàn
+      triggerQuickRefresh('TABLE_SELECT');
     } catch (error) {
       console.error('Error selecting table:', error);
       message.error('Không thể tải thông tin bàn: ' + (error.message || 'Lỗi không xác định'));
@@ -597,6 +736,9 @@ const BanHang = () => {
         setCurrentInvoice(newInvoice);
         setInvoiceDetails([]);
         message.success(`Đã tạo hóa đơn mới: ${response.message}`);
+        
+        // Trigger quick refresh sau khi tạo hóa đơn mới
+        triggerQuickRefresh('CREATE_INVOICE');
       } else {
         throw new Error('Không thể tạo hóa đơn');
       }
@@ -640,42 +782,15 @@ const BanHang = () => {
         }
         message.success(`Đã thêm ${product.ten} vào đơn hàng`);
         
+        // Trigger quick refresh sau khi thêm sản phẩm
+        triggerQuickRefresh('ADD_PRODUCT');
+        
         // Quay lại view hóa đơn sau khi thêm sản phẩm
         setCurrentView(VIEW_STATES.INVOICE);
       }
     } catch (error) {
       console.error('Error adding product:', error);
       message.error('Không thể thêm sản phẩm: ' + (error.message || 'Lỗi không xác định'));
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Hủy hóa đơn
-  const cancelInvoice = async () => {
-    if (!currentInvoice) {
-      message.error('Không có hóa đơn để hủy');
-      return;
-    }
-
-    try {
-      setLoading(true);
-      await huyHoaDon(currentInvoice.maHd);
-      
-      message.success('Đã hủy hóa đơn thành công');
-      
-      // Reset và quay về trang chọn bàn
-      setCurrentInvoice(null);
-      setInvoiceDetails([]);
-      setSelectedTable(null);
-      setCurrentView(VIEW_STATES.TABLES);
-      
-      // Refresh table data to update status
-      await loadTables();
-      
-    } catch (error) {
-      console.error('Error canceling invoice:', error);
-      message.error('Không thể hủy hóa đơn: ' + (error.message || 'Lỗi không xác định'));
     } finally {
       setLoading(false);
     }
@@ -705,6 +820,9 @@ const BanHang = () => {
       }
       
       message.success('Đã cập nhật số lượng');
+      
+      // Trigger quick refresh sau khi cập nhật số lượng
+      triggerQuickRefresh('UPDATE_QUANTITY');
     } catch (error) {
       console.error('Error updating quantity:', error);
       message.error('Không thể cập nhật số lượng: ' + (error.message || 'Lỗi không xác định'));
@@ -735,6 +853,9 @@ const BanHang = () => {
       }
       
       message.success('Đã xóa sản phẩm khỏi hóa đơn');
+      
+      // Trigger quick refresh sau khi xóa sản phẩm
+      triggerQuickRefresh('REMOVE_PRODUCT');
     } catch (error) {
       console.error('Error removing product:', error);
       message.error('Không thể xóa sản phẩm: ' + (error.message || 'Lỗi không xác định'));
@@ -756,6 +877,9 @@ const BanHang = () => {
       // Sử dụng API mới chuyenXuongBep với object parameter
       await chuyenXuongBep({ maHd: currentInvoice.maHd });
       message.success('Đã chuyển đơn hàng xuống bếp');
+      
+      // Trigger quick refresh sau khi chuyển xuống bếp
+      triggerQuickRefresh('SEND_TO_KITCHEN');
       
       // Refresh invoice details để cập nhật trạng thái
       const detailsResponse = await loadDsCthd(currentInvoice.maHd);
@@ -795,6 +919,9 @@ const BanHang = () => {
 
       message.success('Thanh toán thành công');
       
+      // Trigger quick refresh sau khi thanh toán
+      triggerQuickRefresh('PAYMENT_COMPLETE');
+      
       // Reset và quay về trang chọn bàn
       setCurrentInvoice(null);
       setInvoiceDetails([]);
@@ -812,6 +939,303 @@ const BanHang = () => {
     }
   };
 
+  // ===== ENHANCED INVOICE MANAGEMENT FUNCTIONS =====
+  
+  // Copy invoice
+  const copyInvoice = async (maHd) => {
+    try {
+      const result = await api.saoChepHoaDon(maHd, selectedTable.name);
+      if (result.success) {
+        message.success('Sao chép hóa đơn thành công!');
+        // Refresh current invoice data
+        await loadInvoiceData();
+        await triggerTableRefresh();
+      } else {
+        message.error('Không thể sao chép hóa đơn: ' + (result.message || 'Lỗi không xác định'));
+      }
+    } catch (error) {
+      console.error('Error copying invoice:', error);
+      message.error('Lỗi khi sao chép hóa đơn');
+    }
+  };
+
+  // Reprint invoice
+  const reprintInvoice = async (invoice) => {
+    try {
+      // Here you would integrate with your printing system
+      console.log('Reprinting invoice:', invoice);
+      message.success('Đang chuẩn bị in hóa đơn...');
+      
+      // Example print action - replace with actual print implementation
+      window.print();
+    } catch (error) {
+      console.error('Error reprinting invoice:', error);
+      message.error('Lỗi khi in lại hóa đơn');
+    }
+  };
+
+  // Edit invoice details
+  const editInvoiceDetails = () => {
+    if (!selectedTable?.currentInvoice) {
+      message.error('Không có hóa đơn để chỉnh sửa');
+      return;
+    }
+    
+    setEditingInvoice(true);
+    message.info('Chế độ chỉnh sửa hóa đơn đã được kích hoạt');
+  };
+
+  // Save invoice edits
+  const saveInvoiceEdits = async () => {
+    try {
+      setLoading(true);
+      
+      // Calculate updated summary
+      const updatedSummary = calculateInvoiceSummary();
+      
+      // Update invoice with new data
+      await api.capNhatHoaDon(selectedTable.currentInvoice.maHd, {
+        chiTietMon: invoiceItems,
+        tongTien: updatedSummary.total,
+        thue: updatedSummary.tax,
+        giamGia: updatedSummary.discount
+      });
+      
+      setEditingInvoice(false);
+      message.success('Đã lưu thay đổi hóa đơn');
+      
+      // Refresh data
+      await loadInvoiceData();
+      await triggerTableRefresh();
+      
+    } catch (error) {
+      console.error('Error saving invoice edits:', error);
+      message.error('Lỗi khi lưu thay đổi hóa đơn');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Cancel invoice edits
+  const cancelInvoiceEdits = () => {
+    setEditingInvoice(false);
+    // Reload original invoice data
+    loadInvoiceData();
+    message.info('Đã hủy chỉnh sửa hóa đơn');
+  };
+
+  // Cancel/Hủy hóa đơn
+  const cancelInvoice = async () => {
+    if (!currentInvoice) {
+      message.error('Không có hóa đơn để hủy');
+      return;
+    }
+
+    try {
+      setLoading(true);
+      await huyHoaDon(currentInvoice.maHd);
+      message.success('Đã hủy hóa đơn thành công');
+      
+      // Trigger quick refresh sau khi hủy hóa đơn
+      triggerQuickRefresh('CANCEL_INVOICE');
+      
+      // Reset và quay về trang chọn bàn
+      setCurrentInvoice(null);
+      setInvoiceDetails([]);
+      setSelectedTable(null);
+      setCurrentView(VIEW_STATES.TABLES);
+      
+      // Refresh table data to update status
+      await loadTables();
+      
+    } catch (error) {
+      console.error('Error canceling invoice:', error);
+      message.error('Không thể hủy hóa đơn: ' + (error.message || 'Lỗi không xác định'));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Load lịch sử hóa đơn theo bàn
+  const loadInvoiceHistory = async () => {
+    if (!selectedTable) {
+      message.error('Vui lòng chọn bàn');
+      return;
+    }
+
+    try {
+      setLoading(true);
+      const today = new Date();
+      const fromDate = new Date(today.setDate(today.getDate() - 30)); // 30 ngày trước
+      const toDate = new Date(); // Hôm nay
+
+      const historyResponse = await layLichSuHoaDonTheoBan(
+        selectedTable.id, 
+        fromDate.toISOString().split('T')[0], 
+        toDate.toISOString().split('T')[0]
+      );
+
+      if (Array.isArray(historyResponse)) {
+        setInvoiceHistory(historyResponse);
+        setShowInvoiceHistory(true);
+        message.success(`Đã tải ${historyResponse.length} hóa đơn trong 30 ngày qua`);
+      } else {
+        setInvoiceHistory([]);
+        message.info('Không có lịch sử hóa đơn');
+      }
+    } catch (error) {
+      console.error('Error loading invoice history:', error);
+      message.error('Không thể tải lịch sử hóa đơn: ' + (error.message || 'Lỗi không xác định'));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Tạo hóa đơn tạm (draft)
+  const createDraftInvoice = async () => {
+    if (!selectedTable) {
+      message.error('Vui lòng chọn bàn');
+      return;
+    }
+
+    try {
+      setLoading(true);
+      const draftResponse = await taoHoaDonTam(selectedTable.id);
+      
+      if (draftResponse && draftResponse.success) {
+        const newDraft = {
+          maHd: draftResponse.message,
+          maBan: selectedTable.id,
+          tenBan: selectedTable.name,
+          isDraft: true
+        };
+        setCurrentInvoice(newDraft);
+        setInvoiceDetails([]);
+        message.success(`Đã tạo hóa đơn tạm: ${draftResponse.message}`);
+        
+        // Trigger quick refresh sau khi tạo draft
+        triggerQuickRefresh('CREATE_DRAFT');
+      } else {
+        throw new Error('Không thể tạo hóa đơn tạm');
+      }
+    } catch (error) {
+      console.error('Error creating draft invoice:', error);
+      message.error('Không thể tạo hóa đơn tạm: ' + (error.message || 'Lỗi không xác định'));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Chuyển hóa đơn tạm thành chính thức
+  const convertDraftToOfficial = async () => {
+    if (!currentInvoice || !currentInvoice.isDraft) {
+      message.error('Không có hóa đơn tạm để chuyển đổi');
+      return;
+    }
+
+    try {
+      setLoading(true);
+      await chuyenHoaDonTamThanhChinhThuc(currentInvoice.maHd);
+      
+      // Update current invoice to remove draft status
+      setCurrentInvoice(prev => ({ ...prev, isDraft: false }));
+      message.success('Đã chuyển hóa đơn tạm thành chính thức');
+      
+      // Trigger quick refresh sau khi chuyển đổi
+      triggerQuickRefresh('CONVERT_DRAFT');
+      
+    } catch (error) {
+      console.error('Error converting draft to official:', error);
+      message.error('Không thể chuyển đổi hóa đơn: ' + (error.message || 'Lỗi không xác định'));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Tính toán invoice summary với thuế, giảm giá
+  const calculateInvoiceSummary = () => {
+    if (!invoiceDetails || invoiceDetails.length === 0) {
+      setInvoiceSummary({ subtotal: 0, tax: 0, discount: 0, total: 0 });
+      return;
+    }
+
+    const subtotal = invoiceDetails.reduce((sum, item) => {
+      const price = parseFloat(item.donGia || item.gia || 0);
+      const quantity = parseInt(item.soLuong || 0);
+      return sum + (price * quantity);
+    }, 0);
+
+    // Tính thuế VAT 10% (có thể config sau)
+    const tax = subtotal * 0.1;
+    
+    // Giảm giá mặc định 0% (có thể config sau)
+    const discount = 0;
+    
+    const total = subtotal + tax - discount;
+
+    setInvoiceSummary({
+      subtotal,
+      tax,
+      discount,
+      total
+    });
+  };
+
+  // In hóa đơn
+  const printInvoice = () => {
+    if (!currentInvoice || invoiceDetails.length === 0) {
+      message.error('Không có hóa đơn để in');
+      return;
+    }
+
+    // Tạo content để in
+    const printContent = `
+      <div style="font-family: Arial; padding: 20px;">
+        <h2 style="text-align: center;">HÓA ĐƠN BÁN HÀNG</h2>
+        <p><strong>Bàn:</strong> ${selectedTable?.name}</p>
+        <p><strong>Mã hóa đơn:</strong> ${currentInvoice.maHd}</p>
+        <p><strong>Thời gian:</strong> ${new Date().toLocaleString()}</p>
+        <hr>
+        <table style="width: 100%; border-collapse: collapse;">
+          <tr style="background: #f5f5f5;">
+            <th style="border: 1px solid #ddd; padding: 8px;">Tên món</th>
+            <th style="border: 1px solid #ddd; padding: 8px;">SL</th>
+            <th style="border: 1px solid #ddd; padding: 8px;">Đơn giá</th>
+            <th style="border: 1px solid #ddd; padding: 8px;">Thành tiền</th>
+          </tr>
+          ${invoiceDetails.map(item => `
+            <tr>
+              <td style="border: 1px solid #ddd; padding: 8px;">${item.tenSp || item.ten}</td>
+              <td style="border: 1px solid #ddd; padding: 8px; text-align: center;">${item.soLuong}</td>
+              <td style="border: 1px solid #ddd; padding: 8px; text-align: right;">${(parseFloat(item.donGia || item.gia || 0)).toLocaleString()}đ</td>
+              <td style="border: 1px solid #ddd; padding: 8px; text-align: right;">${(parseFloat(item.donGia || item.gia || 0) * parseInt(item.soLuong)).toLocaleString()}đ</td>
+            </tr>
+          `).join('')}
+        </table>
+        <hr>
+        <div style="text-align: right; margin-top: 20px;">
+          <p><strong>Tạm tính:</strong> ${invoiceSummary.subtotal.toLocaleString()}đ</p>
+          <p><strong>Thuế VAT (10%):</strong> ${invoiceSummary.tax.toLocaleString()}đ</p>
+          <p><strong>Giảm giá:</strong> ${invoiceSummary.discount.toLocaleString()}đ</p>
+          <h3><strong>Tổng cộng:</strong> ${invoiceSummary.total.toLocaleString()}đ</h3>
+        </div>
+      </div>
+    `;
+
+    // Mở window mới để in
+    const printWindow = window.open('', '_blank');
+    printWindow.document.write(printContent);
+    printWindow.document.close();
+    printWindow.print();
+    
+    message.success('Đã gửi hóa đơn đến máy in');
+  };
+
+  // Effect để tính toán invoice summary khi invoiceDetails thay đổi
+  useEffect(() => {
+    calculateInvoiceSummary();
+  }, [invoiceDetails]);
+
   // Quay lại view trước
   const handleGoBack = () => {
     if (currentView === VIEW_STATES.INVOICE) {
@@ -819,6 +1243,9 @@ const BanHang = () => {
       setSelectedTable(null);
       setCurrentInvoice(null);
       setInvoiceDetails([]);
+      
+      // Trigger quick refresh khi quay về tables view
+      triggerQuickRefresh('BACK_TO_TABLES');
     } else if (currentView === VIEW_STATES.PRODUCTS) {
       setCurrentView(VIEW_STATES.INVOICE);
       setSelectedCategory('all');
@@ -842,20 +1269,53 @@ const BanHang = () => {
   const renderTablesView = () => (
     <div className="tables-view">
       <div className="view-header">
-        <Title level={3}>Chọn bàn để bán hàng</Title>
-        <Select
-          value={selectedArea}
-          onChange={setSelectedArea}
-          style={{ width: 200 }}
-          placeholder="Chọn khu vực"
-        >
-          <Option value="all">Tất cả khu vực</Option>
-          {areas.map(area => (
-            <Option key={area.idKhuVuc} value={area.idKhuVuc}>
-              {area.ten}
-            </Option>
-          ))}
-        </Select>
+        <div className="header-left">
+          <Title level={3}>Chọn bàn để bán hàng</Title>
+          <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+            {lastRefresh && (
+              <Text type="secondary" style={{ fontSize: '12px' }}>
+                Cập nhật lần cuối: {lastRefresh.toLocaleTimeString()}
+              </Text>
+            )}
+            {quickRefreshEnabled && (
+              <Text
+                type="primary"
+                icon={<refresh-ccw size={8} />}
+                onClick={processPayment}
+                disabled={invoiceDetails.length === 0}
+                style={{ fontSize: '11px', fontWeight: 'bold' }}>
+                Đang cập nhật real-time...
+              </Text>
+            )}
+            {lastAction && (
+              <Text type="info" style={{ fontSize: '10px' }}>
+                Hành động: {lastAction.type}
+              </Text>
+            )}
+          </div>
+        </div>
+        <div className="header-right">
+          <Button 
+            onClick={handleManualRefresh}
+            loading={loading}
+            style={{ marginRight: 8 }}
+          >
+            Làm mới
+          </Button>
+          <Select
+            value={selectedArea}
+            onChange={setSelectedArea}
+            style={{ width: 200 }}
+            placeholder="Chọn khu vực"
+          >
+            <Option value="all">Tất cả khu vực</Option>
+            {areas.map(area => (
+              <Option key={area.idKhuVuc} value={area.idKhuVuc}>
+                {area.ten}
+              </Option>
+            ))}
+          </Select>
+        </div>
       </div>
       
       <div className="tables-grid">
@@ -865,53 +1325,117 @@ const BanHang = () => {
             className={`table-card ${table.status}`}
             onClick={() => handleTableSelect(table)}
             hoverable={false}
-            bodyStyle={{ padding: 0, height: '100%' }}
+            bodyStyle={{ 
+              padding: 0, 
+              height: '100%',
+              backgroundColor: getTableStatusColor(table.status),
+              color: getTableStatusTextColor(table.status)
+            }}
+            style={{
+              backgroundColor: getTableStatusColor(table.status),
+              borderColor: getTableStatusColor(table.status),
+              cursor: 'pointer'
+            }}
           >
-            <div className="table-header">
+            <div className="table-header" style={{ 
+              backgroundColor: 'rgba(0,0,0,0.1)', 
+              padding: '8px',
+              textAlign: 'center'
+            }}>
               <div className="table-icon">
-                <Coffee size={24} />
+                <Coffee 
+                  size={24} 
+                  color={getTableStatusTextColor(table.status)}
+                />
               </div>
             </div>
             
-            <div className="table-info">
-              <Title level={5}>{table.name}</Title>
-              <div className="table-status">
-                <Badge 
-                  status={getTableBadgeStatus(table.status)} 
-                  text={getTableStatusText(table.status)}
-                />
+            <div className="table-info" style={{ 
+              padding: '12px',
+              color: getTableStatusTextColor(table.status)
+            }}>
+              <Title 
+                level={5} 
+                style={{ 
+                  margin: '0 0 8px 0', 
+                  color: getTableStatusTextColor(table.status),
+                  textAlign: 'center'
+                }}
+              >
+                {table.name}
+              </Title>
+              <div className="table-status" style={{ textAlign: 'center', marginBottom: '8px' }}>
+                <Text style={{ 
+                  color: getTableStatusTextColor(table.status),
+                  fontWeight: 'bold',
+                  fontSize: '13px'
+                }}>
+                  {getTableStatusText(table.status)}
+                </Text>
               </div>
               
               {/* Hiển thị thông tin chi tiết nếu bàn có khách */}
               {table.status !== 'available' && (
-                <div className="table-details">
+                <div className="table-details" style={{ 
+                  fontSize: '12px',
+                  color: getTableStatusTextColor(table.status),
+                  background: 'rgba(255,255,255,0.1)',
+                  padding: '8px',
+                  borderRadius: '4px',
+                  marginTop: '8px'
+                }}>
                   {table.sittingTime && (
-                    <div className="detail-row">
-                      <span className="detail-label">Thời gian:</span>
-                      <span className="detail-value">{table.sittingTime}</span>
+                    <div style={{ 
+                      display: 'flex', 
+                      justifyContent: 'space-between',
+                      marginBottom: '4px'
+                    }}>
+                      <span>Thời gian:</span>
+                      <span style={{ fontWeight: 'bold' }}>
+                        {table.sittingTime}
+                      </span>
                     </div>
                   )}
                   {table.totalAmount > 0 && (
-                    <div className="detail-row">
-                      <span className="detail-label">Tổng tiền:</span>
-                      <span className="detail-value">{table.totalAmount.toLocaleString()}đ</span>
+                    <div style={{ 
+                      display: 'flex', 
+                      justifyContent: 'space-between',
+                      marginBottom: '4px'
+                    }}>
+                      <span>Tổng tiền:</span>
+                      <span style={{ fontWeight: 'bold' }}>
+                        {table.totalAmount.toLocaleString()}đ
+                      </span>
                     </div>
                   )}
                   {table.itemCount > 0 && (
-                    <div className="detail-row">
-                      <span className="detail-label">Số món:</span>
-                      <span className="detail-value">{table.itemCount}</span>
+                    <div style={{ 
+                      display: 'flex', 
+                      justifyContent: 'space-between',
+                      marginBottom: '4px'
+                    }}>
+                      <span>Số món:</span>
+                      <span style={{ fontWeight: 'bold' }}>
+                        {table.itemCount}
+                      </span>
                     </div>
                   )}
                   {table.orderItems && table.orderItems.length > 0 && (
-                    <div className="order-preview">
+                    <div style={{ 
+                      marginTop: '8px',
+                      fontSize: '11px',
+                      opacity: 0.9
+                    }}>
                       {table.orderItems.map((item, index) => (
-                        <div key={index} className="order-item">
-                          {item.tenSp || item.ten} ({item.soLuong})
+                        <div key={index} style={{ marginBottom: '2px' }}>
+                          • {item.tenSp || item.ten} ({item.soLuong})
                         </div>
                       ))}
                       {table.itemCount > 3 && (
-                        <div className="order-more">
+                        <div style={{ 
+                          fontStyle: 'italic',
+                          marginTop: '4px'
+                        }}>
                           ...và {table.itemCount - 3} món khác
                         </div>
                       )}
@@ -935,32 +1459,123 @@ const BanHang = () => {
     return (
       <div className="invoice-view">
         <div className="view-header">
-          <Button 
-            icon={<ArrowLeft size={16} />}
-            onClick={handleGoBack}
-          >
-            Quay lại
-          </Button>
-          <Title level={3}>
-            Hóa đơn - {selectedTable?.name}
-            {currentInvoice && ` (#${currentInvoice.maHd})`}
-          </Title>
-          <Button 
-            type="primary"
-            icon={<ShoppingCart size={16} />}
-            onClick={handleSelectItems}
-          >
-            Chọn món
-          </Button>
+          <div className="header-left">
+            <Button 
+              icon={<ArrowLeft size={16} />}
+              onClick={handleGoBack}
+            >
+              Quay lại
+            </Button>
+            <Title level={3} style={{ margin: '0 16px' }}>
+              Hóa đơn - {selectedTable?.name}
+              {currentInvoice && ` (#${currentInvoice.maHd})`}
+              {currentInvoice?.isDraft && <Text type="warning"> (Tạm)</Text>}
+              {editingInvoice && <Text type="danger"> - ĐANG CHỈNH SỬA</Text>}
+            </Title>
+          </div>
+          
+          <div className="header-right">
+            <Space>
+              {/* Enhanced Invoice Management Buttons */}
+              <Button 
+                icon={<History size={16} />}
+                onClick={loadInvoiceHistory}
+                title="Lịch sử hóa đơn"
+              >
+                Lịch sử
+              </Button>
+              
+              {currentInvoice && (
+                <>
+                  {editingInvoice ? (
+                    <>
+                      <Button 
+                        type="primary"
+                        icon={<Save size={16} />}
+                        onClick={saveInvoiceEdits}
+                        title="Lưu chỉnh sửa"
+                      >
+                        Lưu
+                      </Button>
+                      
+                      <Button 
+                        icon={<X size={16} />}
+                        onClick={cancelInvoiceEdits}
+                        title="Hủy chỉnh sửa"
+                      >
+                        Hủy sửa
+                      </Button>
+                    </>
+                  ) : (
+                    <Button 
+                      icon={<Edit3 size={16} />}
+                      onClick={editInvoiceDetails}
+                      title="Chỉnh sửa hóa đơn"
+                    >
+                      Sửa
+                    </Button>
+                  )}
+                  
+                  <Button 
+                    icon={<Printer size={16} />}
+                    onClick={printInvoice}
+                    disabled={invoiceDetails.length === 0}
+                    title="In hóa đơn"
+                  >
+                    In
+                  </Button>
+                  
+                  {currentInvoice.isDraft && (
+                    <Button 
+                      type="default"
+                      icon={<CheckCircle size={16} />}
+                      onClick={convertDraftToOfficial}
+                      title="Chuyển thành chính thức"
+                    >
+                      Chính thức
+                    </Button>
+                  )}
+                  
+                  {!editingInvoice && (
+                    <Button 
+                      danger
+                      icon={<X size={16} />}
+                      onClick={cancelInvoice}
+                      title="Hủy hóa đơn"
+                    >
+                      Hủy HĐ
+                    </Button>
+                  )}
+                </>
+              )}
+              
+              <Button 
+                type="primary"
+                icon={<ShoppingCart size={16} />}
+                onClick={handleSelectItems}
+                disabled={editingInvoice}
+              >
+                Chọn món
+              </Button>
+            </Space>
+          </div>
         </div>
 
         {!currentInvoice ? (
           <div className="empty-invoice">
             <Users size={48} />
             <Text>Chưa có hóa đơn cho bàn này</Text>
-            <Button type="primary" onClick={createNewInvoice}>
-              Tạo hóa đơn mới
-            </Button>
+            <Space>
+              <Button type="primary" onClick={createNewInvoice}>
+                Tạo hóa đơn mới
+              </Button>
+              <Button 
+                icon={<Save size={16} />}
+                onClick={createDraftInvoice}
+              >
+                Tạo hóa đơn tạm
+              </Button>
+            </Space>
           </div>
         ) : (
           <div className="invoice-content">
@@ -1024,11 +1639,46 @@ const BanHang = () => {
           <Divider />
 
           <div className="invoice-summary">
+            {/* Enhanced Invoice Summary với thuế, giảm giá */}
+            <div className="summary-details">
+              <div className="summary-row">
+                <Text>Tạm tính:</Text>
+                <Text>{invoiceSummary.subtotal.toLocaleString('vi-VN')} đ</Text>
+              </div>
+              
+              <div className="summary-row">
+                <Text>Thuế VAT (10%):</Text>
+                <Text>{invoiceSummary.tax.toLocaleString('vi-VN')} đ</Text>
+              </div>
+              
+              {invoiceSummary.discount > 0 && (
+                <div className="summary-row">
+                  <Text type="success">Giảm giá:</Text>
+                  <Text type="success">-{invoiceSummary.discount.toLocaleString('vi-VN')} đ</Text>
+                </div>
+              )}
+            </div>
+            
+            <Divider style={{ margin: '12px 0' }} />
+            
             <div className="total-row">
-              <Text strong>Tổng cộng: </Text>
-              <Text strong className="total-amount">
-                {orderTotal.toLocaleString('vi-VN')} đ
+              <Text strong style={{ fontSize: '16px' }}>Tổng cộng: </Text>
+              <Text strong className="total-amount" style={{ fontSize: '18px', color: '#197dd3' }}>
+                {invoiceSummary.total.toLocaleString('vi-VN')} đ
               </Text>
+            </div>
+            
+            {/* Thông tin thêm */}
+            <div className="invoice-meta">
+              <Space split={<Divider type="vertical" />}>
+                <Text type="secondary">Số món: {invoiceDetails.length}</Text>
+                <Text type="secondary">
+                  Thời gian: {new Date().toLocaleTimeString()}
+                </Text>
+                {currentInvoice?.isDraft && (
+                  <Text type="warning">Hóa đơn tạm</Text>
+                )}
+              </Space>
             </div>
           </div>
 
@@ -1133,6 +1783,96 @@ const BanHang = () => {
       {currentView === VIEW_STATES.TABLES && renderTablesView()}
       {currentView === VIEW_STATES.INVOICE && renderInvoiceView()}
       {currentView === VIEW_STATES.PRODUCTS && renderProductsView()}
+      
+      {/* Enhanced Invoice Management Modals */}
+      
+      {/* Invoice History Modal */}
+      <Modal
+        title={`Lịch sử hóa đơn - ${selectedTable?.name}`}
+        open={showInvoiceHistory}
+        onCancel={() => setShowInvoiceHistory(false)}
+        width={800}
+        footer={[
+          <Button key="close" onClick={() => setShowInvoiceHistory(false)}>
+            Đóng
+          </Button>
+        ]}
+      >
+        <Table
+          dataSource={invoiceHistory}
+          columns={[
+            {
+              title: 'Mã HĐ',
+              dataIndex: 'maHd',
+              key: 'maHd',
+              width: 100
+            },
+            {
+              title: 'Ngày',
+              dataIndex: 'ngayTao',
+              key: 'ngayTao',
+              width: 120,
+              render: (date) => new Date(date).toLocaleDateString('vi-VN')
+            },
+            {
+              title: 'Thời gian',
+              dataIndex: 'gioTao',
+              key: 'gioTao',
+              width: 100,
+              render: (time) => time ? new Date(time).toLocaleTimeString('vi-VN') : ''
+            },
+            {
+              title: 'Tổng tiền',
+              dataIndex: 'tongTien',
+              key: 'tongTien',
+              width: 120,
+              render: (amount) => `${parseFloat(amount || 0).toLocaleString('vi-VN')} đ`
+            },
+            {
+              title: 'Trạng thái',
+              dataIndex: 'trangThai',
+              key: 'trangThai',
+              width: 100,
+              render: (status) => {
+                const statusMap = {
+                  '0': 'Tạm',
+                  '1': 'Hoàn thành',
+                  '2': 'Đã hủy'
+                };
+                return statusMap[status] || status;
+              }
+            },
+            {
+              title: 'Thao tác',
+              key: 'actions',
+              width: 120,
+              render: (_, record) => (
+                <Space>
+                  <Button 
+                    size="small" 
+                    icon={<Copy size={12} />}
+                    title="Sao chép"
+                    onClick={() => copyInvoice(record.maHd)}
+                  />
+                  <Button 
+                    size="small" 
+                    icon={<Printer size={12} />}
+                    title="In lại"
+                    onClick={() => reprintInvoice(record)}
+                  />
+                </Space>
+              )
+            }
+          ]}
+          pagination={{
+            pageSize: 10,
+            showSizeChanger: false,
+            showTotal: (total) => `Tổng ${total} hóa đơn`
+          }}
+          rowKey="maHd"
+          size="small"
+        />
+      </Modal>
     </div>
   );
 };

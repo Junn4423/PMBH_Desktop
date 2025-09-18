@@ -1,378 +1,413 @@
 import React, { useState, useEffect } from 'react';
 import { 
   Card, 
-  Row, 
-  Col, 
   Typography, 
   Button, 
   Badge, 
-  Modal, 
-  Select, 
   message, 
   Space,
-  Divider,
-  List,
-  Tag
+  Tabs,
+  Modal
 } from 'antd';
 import { 
   ChefHat, 
   Clock, 
-  Coffee, 
-  ArrowRight, 
+  Users,
   CheckCircle, 
   RefreshCw,
-  AlertCircle
+  RotateCcw,
+  Timer
 } from 'lucide-react';
 
 // Import API services
 import {
   layDsMonCho,
-  layDsMonAn,
-  layDsMonNuoc,
-  chuyenMon,
-  loadBanBanhang
+  layDsMonDaXong,
+  updateTrangThaiMon
 } from '../../services/apiServices';
 
 import './BepBar.css';
 
 const { Title, Text } = Typography;
-const { Option } = Select;
+const { TabPane } = Tabs;
 
-const KitchenSystem = () => {
+const BepBar = () => {
   // State quản lý đơn hàng bếp
-  const [waitingOrders, setWaitingOrders] = useState([]);
-  const [foodOrders, setFoodOrders] = useState([]);
-  const [beverageOrders, setBeverageOrders] = useState([]);
-  const [tables, setTables] = useState([]);
+  const [pendingOrders, setPendingOrders] = useState([]);
+  const [completedOrders, setCompletedOrders] = useState([]);
+  const [activeTab, setActiveTab] = useState('pending');
   
   // State UI
   const [loading, setLoading] = useState(false);
-  const [refreshInterval, setRefreshInterval] = useState(null);
-  const [transferModalVisible, setTransferModalVisible] = useState(false);
-  const [selectedItems, setSelectedItems] = useState([]);
-  const [targetTable, setTargetTable] = useState(null);
+  const [autoRefresh, setAutoRefresh] = useState(true);
 
-  // Load dữ liệu ban đầu
-  useEffect(() => {
-    loadKitchenData();
-    loadTables();
-    
-    // Tự động refresh mỗi 30 giây
-    const interval = setInterval(() => {
-      loadKitchenData();
-    }, 30000);
-    
-    setRefreshInterval(interval);
-    
-    return () => {
-      if (interval) clearInterval(interval);
-    };
-  }, []);
-
-  // Load dữ liệu bếp
-  const loadKitchenData = async () => {
+  // Load danh sách món đang chờ làm
+  const loadPendingOrders = async () => {
     try {
-      setLoading(true);
-      const [waitingResponse, foodResponse, beverageResponse] = await Promise.all([
-        layDsMonCho(),
-        layDsMonAn(),
-        layDsMonNuoc()
-      ]);
-
-      if (Array.isArray(waitingResponse)) {
-        setWaitingOrders(waitingResponse);
-      }
+      console.log('Loading pending orders...');
+      const response = await layDsMonCho();
       
-      if (Array.isArray(foodResponse)) {
-        setFoodOrders(foodResponse);
-      }
-      
-      if (Array.isArray(beverageResponse)) {
-        setBeverageOrders(beverageResponse);
+      if (Array.isArray(response)) {
+        setPendingOrders(response);
+        console.log(`Pending orders loaded: ${response.length} items`);
+        if (response.length > 0) {
+          console.log('First pending order structure:', response[0]);
+          console.log('Available fields:', Object.keys(response[0]));
+        }
+      } else {
+        console.log('Pending orders response not array:', response);
+        setPendingOrders([]);
       }
     } catch (error) {
+      console.error('Error loading pending orders:', error);
+      message.error('Không thể tải danh sách món chờ làm');
+      setPendingOrders([]);
+    }
+  };
+
+  // Load danh sách món đã xong
+  const loadCompletedOrders = async () => {
+    try {
+      console.log('Loading completed orders...');
+      const response = await layDsMonDaXong();
+      
+      if (Array.isArray(response)) {
+        setCompletedOrders(response);
+        console.log(`Completed orders loaded: ${response.length} items`);
+        if (response.length > 0) {
+          console.log('First completed order structure:', response[0]);
+          console.log('Available fields:', Object.keys(response[0]));
+        }
+      } else {
+        console.log('Completed orders response not array:', response);
+        setCompletedOrders([]);
+      }
+    } catch (error) {
+      console.error('Error loading completed orders:', error);
+      message.error('Không thể tải danh sách món đã xong');
+      setCompletedOrders([]);
+    }
+  };
+
+  // Load tất cả dữ liệu
+  const loadAllData = async () => {
+    console.log('=== LOADING ALL KITCHEN DATA ===');
+    setLoading(true);
+    
+    try {
+      // Clear existing data first to avoid stale state
+      setPendingOrders([]);
+      setCompletedOrders([]);
+      
+      // Force reload both lists
+      await Promise.all([
+        loadPendingOrders(),
+        loadCompletedOrders()
+      ]);
+      
+      console.log('All kitchen data loaded successfully');
+    } catch (error) {
       console.error('Error loading kitchen data:', error);
-      message.error('Không thể tải dữ liệu bếp');
     } finally {
       setLoading(false);
     }
   };
 
-  // Load danh sách bàn
-  const loadTables = async () => {
+  // Hoàn thành món - Mark dish as completed
+  const completeOrder = async (idCthd, dishName) => {
     try {
-      const response = await loadBanBanhang();
-      if (Array.isArray(response)) {
-        setTables(response.map(table => ({
-          id: table.idBan,
-          name: table.tenBan,
-          areaId: table.idKhuVuc
-        })));
+      console.log('=== COMPLETING ORDER ===');
+      console.log('Attempting to complete order with idCthd:', idCthd);
+      console.log('Dish name:', dishName);
+      
+      setLoading(true);
+      
+      // Clear current state to force fresh data
+      setPendingOrders([]);
+      setCompletedOrders([]);
+      
+      const result = await updateTrangThaiMon(idCthd);
+      console.log('API response for complete:', result);
+      
+      message.success(`Đã hoàn thành món: ${dishName} (ID: ${idCthd})`);
+      console.log('Order completed, clearing cache and reloading data...');
+      
+      // Force immediate reload with longer delay to ensure DB consistency
+      setTimeout(async () => {
+        console.log('Executing delayed reload after completion...');
+        await loadAllData();
+      }, 1000); // Increased delay to 1 second
+      
+    } catch (error) {
+      console.error('Error completing order:', error);
+      message.error('Không thể hoàn thành món');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Hoàn lại món - Revert order back to pending
+  const revertOrder = async (idCthd, dishName) => {
+    Modal.confirm({
+      title: 'Xác nhận hoàn lại món',
+      content: `Bạn có chắc muốn hoàn lại món "${dishName}" về trạng thái chờ làm?`,
+      onOk: async () => {
+        try {
+          console.log('=== REVERTING ORDER ===');
+          console.log('Attempting to revert order with idCthd:', idCthd);
+          console.log('Dish name:', dishName);
+          
+          setLoading(true);
+          
+          // Clear current state to force fresh data
+          setPendingOrders([]);
+          setCompletedOrders([]);
+          
+          const result = await updateTrangThaiMon(idCthd);
+          console.log('API response for revert:', result);
+          
+          message.success(`Đã hoàn lại món: ${dishName} (ID: ${idCthd})`);
+          console.log('Order reverted, clearing cache and reloading data...');
+          
+          // Force immediate reload with longer delay to ensure DB consistency
+          setTimeout(async () => {
+            console.log('Executing delayed reload after revert...');
+            await loadAllData();
+          }, 1000); // Increased delay to 1 second
+          
+        } catch (error) {
+          console.error('Error reverting order:', error);
+          message.error('Không thể hoàn lại món');
+        } finally {
+          setLoading(false);
+        }
       }
-    } catch (error) {
-      console.error('Error loading tables:', error);
-    }
-  };
-
-  // Refresh thủ công
-  const handleRefresh = () => {
-    loadKitchenData();
-    message.success('Đã cập nhật dữ liệu');
-  };
-
-  // Chuyển món
-  const handleTransferDishes = async () => {
-    if (selectedItems.length === 0 || !targetTable) {
-      message.error('Vui lòng chọn món và bàn đích');
-      return;
-    }
-
-    try {
-      await chuyenMon(selectedItems, targetTable.id);
-      message.success(`Đã chuyển ${selectedItems.length} món sang ${targetTable.name}`);
-      
-      setTransferModalVisible(false);
-      setSelectedItems([]);
-      setTargetTable(null);
-      
-      // Reload dữ liệu
-      loadKitchenData();
-    } catch (error) {
-      console.error('Error transferring dishes:', error);
-      message.error('Không thể chuyển món');
-    }
-  };
-
-  // Format thời gian
-  const formatTime = (timeString) => {
-    if (!timeString) return '';
-    const time = new Date(timeString);
-    return time.toLocaleTimeString('vi-VN', { 
-      hour: '2-digit', 
-      minute: '2-digit' 
     });
   };
 
-  // Tính thời gian chờ
-  const getWaitingTime = (orderTime) => {
-    if (!orderTime) return 0;
-    const now = new Date();
-    const order = new Date(orderTime);
-    return Math.floor((now - order) / (1000 * 60)); // phút
-  };
-
-  // Render order card
-  const renderOrderCard = (order, type) => {
-    const waitingMinutes = getWaitingTime(order.thoiGianDat);
-    const isUrgent = waitingMinutes > 15;
+  // Auto refresh
+  useEffect(() => {
+    let intervalId;
     
-    return (
-      <Card
-        key={`${type}-${order.id || order.maCt}`}
-        className={`kitchen-order-card ${isUrgent ? 'urgent' : ''}`}
-        size="small"
-      >
-        <div className="order-header">
-          <div className="table-info">
-            <Coffee size={16} />
-            <Text strong>{order.tenBan || order.ban}</Text>
-          </div>
-          <div className="time-info">
-            <Clock size={14} />
-            <Text type="secondary">{formatTime(order.thoiGianDat)}</Text>
-          </div>
-        </div>
+    if (autoRefresh) {
+      // Auto refresh mỗi 15 giây
+      intervalId = setInterval(() => {
+        console.log('Auto refreshing kitchen data...');
+        loadAllData();
+      }, 15000); // 15 seconds
+    }
 
-        <div className="order-content">
-          <Text strong className="dish-name">{order.tenMon || order.ten}</Text>
-          <div className="order-details">
-            <Tag color={type === 'food' ? 'orange' : 'blue'}>
-              {type === 'food' ? 'Món ăn' : 'Đồ uống'}
-            </Tag>
-            <Text>SL: {order.soLuong}</Text>
+    return () => {
+      if (intervalId) {
+        clearInterval(intervalId);
+      }
+    };
+  }, [autoRefresh]);
+
+  // Load initial data
+  useEffect(() => {
+    loadAllData();
+  }, []);
+
+  // Render Order Item
+  const renderOrderItem = (order, isPending = true) => (
+    <Card
+      key={`${order.idCthd}-${order.banOrder}`}
+      className="kitchen-order-item"
+      style={{
+        borderLeft: `4px solid ${isPending ? '#197dd3' : '#77d4fb'}`,
+        marginBottom: '12px'
+      }}
+    >
+      <div className="order-row">
+        <div className="order-main-info">
+          <div className="order-header-info">
+            <div className="table-info">
+              <Users size={16} style={{ color: '#197dd3' }} />
+              <Text strong style={{ color: '#197dd3' }}>
+                {order.banOrder}
+              </Text>
+            </div>
+            <div className="time-info">
+              <Clock size={14} style={{ color: '#bdbcc4' }} />
+              <Text type="secondary" style={{ fontSize: '12px' }}>
+                {order.thoiGian}
+              </Text>
+            </div>
           </div>
-        </div>
-
-        <div className="order-footer">
-          <Badge 
-            status={isUrgent ? 'error' : 'processing'} 
-            text={`${waitingMinutes} phút`} 
-          />
-          {order.ghiChu && (
-            <Text type="secondary" className="note">
-              {order.ghiChu}
-            </Text>
-          )}
-        </div>
-      </Card>
-    );
-  };
-
-  return (
-    <div className="kitchen-system">
-      {/* Header */}
-      <div className="kitchen-header">
-        <div>
-          <Title level={3} style={{ margin: 0, color: '#4b4344' }}>
-            Hệ thống bếp
-          </Title>
-          <Text type="secondary">
-            {waitingOrders.length + foodOrders.length + beverageOrders.length} đơn hàng đang xử lý
-          </Text>
+          
+          <div className="dish-info">
+            <Title level={4} style={{ margin: '8px 0 4px 0', color: '#4b4344' }}>
+              {order.tenNuoc}
+            </Title>
+            <div className="dish-details">
+              <Text><strong>Số lượng:</strong> {order.soLuong}</Text>
+              <Text style={{ marginLeft: '16px' }}>
+                <strong>Giá:</strong> {parseInt(order.gia).toLocaleString('vi-VN')}đ
+              </Text>
+              <Text style={{ marginLeft: '16px' }}>
+                <strong>Thành tiền:</strong> {(parseInt(order.gia) * parseInt(order.soLuong)).toLocaleString('vi-VN')}đ
+              </Text>
+            </div>
+          </div>
         </div>
         
-        <Space>
-          <Button 
-            icon={<ArrowRight size={16} />}
-            onClick={() => setTransferModalVisible(true)}
-            disabled={selectedItems.length === 0}
-          >
-            Chuyển món ({selectedItems.length})
-          </Button>
-          <Button 
-            icon={<RefreshCw size={16} />}
-            onClick={handleRefresh}
-            loading={loading}
-          >
-            Cập nhật
-          </Button>
-        </Space>
-      </div>
-
-      {/* Kitchen Sections */}
-      <Row gutter={16} className="kitchen-content">
-        {/* Món đang chờ */}
-        <Col span={8}>
-          <Card 
-            title={
-              <div className="section-title">
-                <AlertCircle size={20} />
-                <span>Món đang chờ ({waitingOrders.length})</span>
-              </div>
-            }
-            className="kitchen-section waiting-section"
-          >
-            <div className="orders-list">
-              {waitingOrders.map(order => renderOrderCard(order, 'waiting'))}
-              {waitingOrders.length === 0 && (
-                <div className="empty-state">
-                  <Text type="secondary">Không có món đang chờ</Text>
-                </div>
-              )}
-            </div>
-          </Card>
-        </Col>
-
-        {/* Món ăn */}
-        <Col span={8}>
-          <Card 
-            title={
-              <div className="section-title">
-                <ChefHat size={20} />
-                <span>Món ăn ({foodOrders.length})</span>
-              </div>
-            }
-            className="kitchen-section food-section"
-          >
-            <div className="orders-list">
-              {foodOrders.map(order => renderOrderCard(order, 'food'))}
-              {foodOrders.length === 0 && (
-                <div className="empty-state">
-                  <Text type="secondary">Không có món ăn</Text>
-                </div>
-              )}
-            </div>
-          </Card>
-        </Col>
-
-        {/* Đồ uống */}
-        <Col span={8}>
-          <Card 
-            title={
-              <div className="section-title">
-                <Coffee size={20} />
-                <span>Đồ uống ({beverageOrders.length})</span>
-              </div>
-            }
-            className="kitchen-section beverage-section"
-          >
-            <div className="orders-list">
-              {beverageOrders.map(order => renderOrderCard(order, 'beverage'))}
-              {beverageOrders.length === 0 && (
-                <div className="empty-state">
-                  <Text type="secondary">Không có đồ uống</Text>
-                </div>
-              )}
-            </div>
-          </Card>
-        </Col>
-      </Row>
-
-      {/* Transfer Dishes Modal */}
-      <Modal
-        title="Chuyển món"
-        open={transferModalVisible}
-        onCancel={() => {
-          setTransferModalVisible(false);
-          setSelectedItems([]);
-          setTargetTable(null);
-        }}
-        footer={[
-          <Button key="cancel" onClick={() => {
-            setTransferModalVisible(false);
-            setSelectedItems([]);
-            setTargetTable(null);
-          }}>
-            Hủy
-          </Button>,
-          <Button 
-            key="transfer" 
-            type="primary" 
-            onClick={handleTransferDishes}
-            disabled={selectedItems.length === 0 || !targetTable}
-          >
-            Chuyển món
-          </Button>
-        ]}
-      >
-        <div className="transfer-content">
-          <div className="selected-items">
-            <Text strong>Món đã chọn ({selectedItems.length}):</Text>
-            <List
-              size="small"
-              dataSource={selectedItems}
-              renderItem={item => (
-                <List.Item>
-                  <Text>{item.tenMon || item.ten} - SL: {item.soLuong}</Text>
-                </List.Item>
-              )}
-            />
-          </div>
-
-          <Divider />
-
-          <div className="table-selection">
-            <Text strong>Chọn bàn đích:</Text>
-            <Select
-              style={{ width: '100%', marginTop: 8 }}
-              placeholder="Chọn bàn"
-              value={targetTable?.id}
-              onChange={(value) => {
-                const table = tables.find(t => t.id === value);
-                setTargetTable(table);
+        <div className="order-actions">
+          {isPending ? (
+            <Button
+              type="primary"
+              size="large"
+              icon={<CheckCircle size={16} />}
+              onClick={() => {
+                console.log('Complete button clicked for order:', order);
+                console.log('idCthd:', order.idCthd, 'tenNuoc:', order.tenNuoc);
+                completeOrder(order.idCthd, order.tenNuoc);
+              }}
+              style={{
+                backgroundColor: '#77d4fb',
+                borderColor: '#77d4fb',
+                color: '#4b4344',
+                fontWeight: 'bold'
               }}
             >
-              {tables.map(table => (
-                <Option key={table.id} value={table.id}>
-                  {table.name}
-                </Option>
-              ))}
-            </Select>
-          </div>
+              Hoàn thành
+            </Button>
+          ) : (
+            <Button
+              type="default"
+              size="large"
+              icon={<RotateCcw size={16} />}
+              onClick={() => revertOrder(order.idCthd, order.tenNuoc)}
+              style={{
+                borderColor: '#197dd3',
+                color: '#197dd3',
+                fontWeight: 'bold'
+              }}
+            >
+              Hoàn lại
+            </Button>
+          )}
         </div>
-      </Modal>
+      </div>
+    </Card>
+  );
+
+  return (
+    <div className="bep-bar-container">
+      <div className="view-header">
+        <div className="header-left">
+          <Title level={2} style={{ margin: '0', color: '#4b4344' }}>
+            <ChefHat size={32} style={{ marginRight: 12 }} />
+            Bếp & Bar
+          </Title>
+          <Text type="secondary">Quản lý đơn hàng nhà bếp</Text>
+        </div>
+        
+        <div className="header-right">
+          <Space>
+            <Button
+              icon={<Timer size={16} />}
+              onClick={() => setAutoRefresh(!autoRefresh)}
+              type={autoRefresh ? 'primary' : 'default'}
+            >
+              {autoRefresh ? 'Tắt tự động' : 'Bật tự động'}
+            </Button>
+            
+            <Button 
+              onClick={loadAllData}
+              loading={loading}
+              icon={<RefreshCw size={16} />}
+              type="primary"
+            >
+              Làm mới
+            </Button>
+
+            <Button 
+              onClick={() => {
+                console.log('=== FORCE CLEAR & RELOAD ===');
+                setPendingOrders([]);
+                setCompletedOrders([]);
+                setTimeout(() => loadAllData(), 100);
+              }}
+              icon={<RefreshCw size={16} />}
+              danger
+            >
+              Force Reload
+            </Button>
+          </Space>
+        </div>
+      </div>
+
+      <div className="kitchen-content">
+        <Tabs 
+          activeKey={activeTab} 
+          onChange={setActiveTab}
+          size="large"
+          className="kitchen-tabs"
+        >
+          <TabPane 
+            tab={
+              <span>
+                <Clock size={16} style={{ marginRight: 6 }} />
+                Món chờ làm
+                <Badge count={pendingOrders.length} style={{ marginLeft: 8, backgroundColor: '#197dd3' }} />
+              </span>
+            } 
+            key="pending"
+          >
+            <div className="orders-container">
+              {loading && pendingOrders.length === 0 ? (
+                <div className="loading-container">
+                  <Clock size={48} />
+                  <Text>Đang tải danh sách món chờ làm...</Text>
+                </div>
+              ) : pendingOrders.length === 0 ? (
+                <div className="empty-container">
+                  <ChefHat size={48} />
+                  <Text>Không có món nào cần làm</Text>
+                  <Text type="secondary">Tất cả món đã được hoàn thành</Text>
+                </div>
+              ) : (
+                <div className="orders-list">
+                  {pendingOrders.map(order => renderOrderItem(order, true))}
+                </div>
+              )}
+            </div>
+          </TabPane>
+
+          <TabPane 
+            tab={
+              <span>
+                <CheckCircle size={16} style={{ marginRight: 6 }} />
+                Món đã xong
+                <Badge count={completedOrders.length} style={{ marginLeft: 8, backgroundColor: '#77d4fb' }} />
+              </span>
+            } 
+            key="completed"
+          >
+            <div className="orders-container">
+              {loading && completedOrders.length === 0 ? (
+                <div className="loading-container">
+                  <Clock size={48} />
+                  <Text>Đang tải danh sách món đã xong...</Text>
+                </div>
+              ) : completedOrders.length === 0 ? (
+                <div className="empty-container">
+                  <CheckCircle size={48} />
+                  <Text>Chưa có món nào hoàn thành</Text>
+                  <Text type="secondary">Các món đã hoàn thành sẽ xuất hiện ở đây</Text>
+                </div>
+              ) : (
+                <div className="orders-list">
+                  {completedOrders.map(order => renderOrderItem(order, false))}
+                </div>
+              )}
+            </div>
+          </TabPane>
+        </Tabs>
+      </div>
     </div>
   );
 };
 
-export default KitchenSystem;
+export default BepBar;
