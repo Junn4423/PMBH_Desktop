@@ -104,56 +104,61 @@ switch ($vtable) {
         break;
 
     case 'm_loadBan':
-        include("../cafe/clsall/sl_lv0013.php");
+    include("../cafe/clsall/sl_lv0013.php");
 
-        if (!function_exists('loadBanWithFilter')) {
-            function loadBanWithFilter($filter)
-            {
-                $filterCondition = "";
-                if ($filter === 'trong') {
-                    $filterCondition = "AND lv004 = 'trong'";
-                } elseif ($filter === 'ngoai') {
-                    $filterCondition = "AND lv004 = 'ngoai'";
-                }
-
-                $sql = "
-                    SELECT 
-                        lv0013.lv001 AS maHoaDon,
-                        lv0009.lv002 AS tenBan,
-                        lv0009.lv004 AS viTri,
-                        lv0054.lv002 AS trangThai
-                    FROM sl_lv0013 AS lv0013
-                    LEFT JOIN sl_lv0009 AS lv0009 ON lv0013.lv007 = lv0009.lv001
-                    LEFT JOIN sl_lv0054 AS lv0054 ON lv0013.lv011 = lv0054.lv001
-                    WHERE 1=1 $filterCondition
-                    ORDER BY lv0013.lv001 ASC
-                ";
-
-                $result = db_query($sql);
-
-                $data = [];
-                $i = 1;
-                while ($row = db_fetch_array($result)) {
-                    $data[$i] = $row;
-                    $i++;
-                }
-
-                return $data;
+    if (!function_exists('loadBanWithFilter')) {
+        function loadBanWithFilter($filter)
+        {
+            $filterCondition = "";
+            if ($filter === 'trong') {
+                $filterCondition = "AND lv004 = 'trong'";
+            } elseif ($filter === 'ngoai') {
+                $filterCondition = "AND lv004 = 'ngoai'";
             }
+
+            $sql = "
+                SELECT 
+                    lv0013.lv001 AS maHoaDon,
+                    lv0009.lv002 AS tenBan,
+                    lv0009.lv004 AS viTri,
+                    lv0054.lv002 AS trangThai
+                FROM sl_lv0013 AS lv0013
+                LEFT JOIN sl_lv0009 AS lv0009 ON lv0013.lv007 = lv0009.lv001
+                LEFT JOIN sl_lv0054 AS lv0054 ON lv0013.lv011 = lv0054.lv001
+                WHERE 1=1 $filterCondition
+                ORDER BY lv0013.lv001 ASC
+            ";
+
+            // chỉ lấy dữ liệu associative
+            $result = db_query($sql);
+            $data   = [];
+
+            while ($row = db_fetch_array($result, MYSQLI_ASSOC)) {
+                $data[] = [
+                    'maHoaDon'  => $row['maHoaDon'],
+                    'tenBan'    => $row['tenBan'],
+                    'viTri'     => $row['viTri'],
+                    'trangThai' => $row['trangThai'],
+                ];
+            }
+
+            return $data;
         }
+    }
 
-        $filter = isset($input['filter']) ? $input['filter'] : (isset($_POST['filter']) ? $_POST['filter'] : null);
+    $filter = isset($input['filter']) ? $input['filter'] : ($_POST['filter'] ?? null);
 
-        switch ($vfun) {
-            case 'load':
-                $data = loadBanWithFilter($filter); // Gọi hàm và lấy dữ liệu
-                $vOutput = array('success' => true, 'data' => $data);
-                break;
+    switch ($vfun) {
+        case 'load':
+            $data    = loadBanWithFilter($filter);
+            $vOutput = ['success' => true, 'data' => $data];
+            break;
 
-            default:
-                $vOutput = array('success' => false, 'message' => 'Hành động không hợp lệ.');
-                break;
-        }
-        break;
+        default:
+            $vOutput = ['success' => false, 'message' => 'Hành động không hợp lệ.'];
+            break;
+    }
+    break;
+
 }
 ?>

@@ -1753,44 +1753,65 @@ class sl_lv0014 extends lv_controler
 	// }
 	function updateTrangThaiMon($cthdId)
 	{
-		require_once("../cafe/clsall/wh_lv0034.php");
-		require_once("../cafe/clsall/wh_lv0010.php");
-		require_once("../cafe/clsall/wh_lv0011.php");
-		$lvwh_lv0034=new wh_lv0034($_SESSION['ERPSOFV2RRight'],$_SESSION['ERPSOFV2RUserID'],'wh0034');
-		$lvwh_lv0034->LV_LoadUser($_SESSION['ERPSOFV2RUserID']);
-		$vsql="update sl_lv0014 set lv019='1',lv030=IF(lv030<1,1,(lv030+1)) where lv001 = '".$cthdId."' and (select A.lv011 from sl_lv0013 A where A.lv001=sl_lv0014.lv002)<=0";
-		$vresult=db_query($vsql);
-		$vsql2 = "select A.lv001 from sl_lv0013 A join sl_lv0014 B on A.lv001 = B.lv002 where B.lv001 = '".$cthdId."' limit 1";
-		$vresult2 = db_query($vsql2);
-		if ($row = db_fetch_array($vresult2)) {
-			$donHangId = $row['sl001'];
-		} else {
-			// Nếu không tìm thấy, bạn có thể đặt mặc định hoặc ném lỗi
-			$donHangId = '';
-		}
-		$lvwh_lv0010=new wh_lv0010($_SESSION['ERPSOFV2RRight'],$_SESSION['ERPSOFV2RUserID'],'Wh0010');
-		$lvwh_lv0011=new wh_lv0011($_SESSION['ERPSOFV2RRight'],$_SESSION['ERPSOFV2RUserID'],'Wh0011');
-		if($lvwh_lv0010->LV_CheckDataBEPBAR('',$cthdId))
-		{
-			$vWarehouseID=$lvwh_lv0034->lv003;
-			$lvwh_lv0010->lv001=str_replace(" ","",'PX-'.str_replace(":","",str_replace("/","",$lvwh_lv0010->DateCurrent))."-".rand(0,100));
-			$lvwh_lv0010->lv002=$vWarehouseID;
-			$lvwh_lv0010->lv003=getInfor($_SESSION['ERPSOFV2RUserID'],2);
-			$lvwh_lv0010->lv004='';
-			$lvwh_lv0010->lv005='CONTRACT';
-			$lvwh_lv0010->lv006=$donHangId;;
-			$lvwh_lv0010->lv007=0;	
-			$lvwh_lv0010->lv008='';
-			$lvwh_lv0010->lv009='';
-			$lvwh_lv0010->lv010='';
-			$lvwh_lv0010->lv011=getInfor($_SESSION['ERPSOFV2RUserID'],2);
-			$vresult=$lvwh_lv0010->LV_Insert();
-			if($vresult)
-			{
-				$vresult1=$lvwh_lv0011->LV_InsertTempSLDetail($lvwh_lv0010->lv001,$cthdId,$vWarehouseID);
+		// First, get current status to toggle
+		$checkSql = "SELECT lv019 FROM sl_lv0014 WHERE lv001 = '".$cthdId."'";
+		$checkResult = db_query($checkSql);
+		
+		if ($row = db_fetch_array($checkResult, MYSQLI_ASSOC)) {
+			$currentStatus = $row['lv019'];
+			// Toggle status: if 0 make it 1, if 1 make it 0
+			$newStatus = ($currentStatus == '0') ? '1' : '0';
+			
+			if ($newStatus == '1') {
+				// Setting to completed - run original logic
+				require_once("../cafe/clsall/wh_lv0034.php");
+				require_once("../cafe/clsall/wh_lv0010.php");
+				require_once("../cafe/clsall/wh_lv0011.php");
+				$lvwh_lv0034=new wh_lv0034($_SESSION['ERPSOFV2RRight'],$_SESSION['ERPSOFV2RUserID'],'wh0034');
+				$lvwh_lv0034->LV_LoadUser($_SESSION['ERPSOFV2RUserID']);
+				$vsql="update sl_lv0014 set lv019='1',lv030=IF(lv030<1,1,(lv030+1)) where lv001 = '".$cthdId."' and (select A.lv011 from sl_lv0013 A where A.lv001=sl_lv0014.lv002)<=0";
+				$vresult=db_query($vsql);
+				$vsql2 = "select A.lv001 from sl_lv0013 A join sl_lv0014 B on A.lv001 = B.lv002 where B.lv001 = '".$cthdId."' limit 1";
+				$vresult2 = db_query($vsql2);
+				if ($row = db_fetch_array($vresult2)) {
+					$donHangId = $row['lv001'];
+				} else {
+					// Nếu không tìm thấy, bạn có thể đặt mặc định hoặc ném lỗi
+					$donHangId = '';
+				}
+				$lvwh_lv0010=new wh_lv0010($_SESSION['ERPSOFV2RRight'],$_SESSION['ERPSOFV2RUserID'],'Wh0010');
+				$lvwh_lv0011=new wh_lv0011($_SESSION['ERPSOFV2RRight'],$_SESSION['ERPSOFV2RUserID'],'Wh0011');
+				if($lvwh_lv0010->LV_CheckDataBEPBAR('',$cthdId))
+				{
+					$vWarehouseID=$lvwh_lv0034->lv003;
+					$lvwh_lv0010->lv001=str_replace(" ","",'PX-'.str_replace(":","",str_replace("/","",$lvwh_lv0010->DateCurrent))."-".rand(0,100));
+					$lvwh_lv0010->lv002=$vWarehouseID;
+					$lvwh_lv0010->lv003=getInfor($_SESSION['ERPSOFV2RUserID'],2);
+					$lvwh_lv0010->lv004='';
+					$lvwh_lv0010->lv005='CONTRACT';
+					$lvwh_lv0010->lv006=$donHangId;;
+					$lvwh_lv0010->lv007=0;	
+					$lvwh_lv0010->lv008='';
+					$lvwh_lv0010->lv009='';
+					$lvwh_lv0010->lv010='';
+					$lvwh_lv0010->lv011=getInfor($_SESSION['ERPSOFV2RUserID'],2);
+					$vresult=$lvwh_lv0010->LV_Insert();
+					if($vresult)
+					{
+						$vresult1=$lvwh_lv0011->LV_InsertTempSLDetail($lvwh_lv0010->lv001,$cthdId,$vWarehouseID);
+					}
+				}
+			} else {
+				// Setting to pending - simple update
+				$vsql="UPDATE sl_lv0014 SET lv019='0' WHERE lv001 = '".$cthdId."' AND (SELECT A.lv011 FROM sl_lv0013 A WHERE A.lv001=sl_lv0014.lv002)<=0";
+				$vresult=db_query($vsql);
 			}
+			
+			// Return success response
+			return array('success' => true, 'newStatus' => $newStatus, 'message' => 'Status updated successfully');
+		} else {
+			return array('success' => false, 'message' => 'Item not found');
 		}
-		$vresult=db_query($vsql);
 	}
 
 	function layCthd($idHd)

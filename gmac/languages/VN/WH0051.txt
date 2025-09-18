@@ -12,7 +12,7 @@ Thêm không được, lỗi:
 Sửa thành công.
 Sửa không được, lỗi: 
 ...//Bắt đầu từ phần hiển thị thông tin trong bảng
-Danh Sách Sản Phẩm Đóng Gói
+Danh Sách Sản Phẩm Đóng Gói 
 Mã 
 Tên sản phẩm đóng gói
 Trọng lượng

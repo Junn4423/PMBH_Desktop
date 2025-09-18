@@ -39,15 +39,14 @@ class lv_controler
 	{
 		$inputJSON = file_get_contents('php://input');
 		$input = json_decode($inputJSON, true);
-
 		$vToken = isset($_SERVER['HTTP_X_USER_TOKEN'])
 			? $_SERVER['HTTP_X_USER_TOKEN']
 			: (isset($_POST['code']) ? $_POST['code'] : $_GET['code']);
 
+
 		$vCode = isset($_SERVER['HTTP_X_USER_CODE'])
 			? $_SERVER['HTTP_X_USER_CODE']
 			: (isset($_POST['token']) ? $_POST['token'] : $_GET['token']);
-		
 		if ($this->CheckStaff_Valid($vCode, $vToken)) {
 			echo '';
 		} else {

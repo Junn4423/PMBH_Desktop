@@ -1,3 +1,8 @@
+#ĐỌC SERVICES FOLDER XEM API CALL
+#ĐỌC TOÀN BỘ FOLDER ban-hang-mobile-logic để HIỂU CÁCH GỌI API VÀ HỌC THEO CÁCH XỬ LÝ DỮ LIỆU (VÌ ĐÂY LÀ PHIÊN BẢN MOBILE NHƯNG SỬ DỤNG CHUNG SOURCE BACKEND PHP)  
+#HÃY YÊU CẦU PHẦN OUTPUT JSON CỦA POSTMAN API NẾU NHƯ BẠN CẦN ĐỂ HIỂU CÁCH XỬ LÝ DỮ LIỆU - TÔI SẼ GỬI CHO BẠN
+#ĐỌC KĨ CÁC CHỨC NĂNG ĐÃ CODE
+#ĐỌC KĨ CẤU TRÚC THƯ MỤC VÀ CÁCH TỔ CHỨC CODE ĐỂ TRÁNH TẠO FILE SAI VỊ TRÍ
 #KHÔNG THÊM AUTO ICONS - WINDOW ICONS VÀO UI
 #KHÔNG MOCK DATA
 #CHỈ CODE TRÊN SCRIPT PMBH_Desktop_App, CÒN 2 SCRIPT Backup_Sql_MB VÀ gmac KHÔNG ĐƯỢC CHỈNH SỬA HAY THÊM XÓA BẤT CỨ GÌ, CHỈ ĐƯỢC ĐỌC
@@ -16,4 +21,5 @@
 ##services.sof.vn\index_NChung.php
 #SAU ĐÓ CÁC PAGES SẼ GỌI CÁC HÀM ĐÃ GỌI API Ở TRÊN
 #DÙNG AXIOS ĐỂ GỌI API
-#KHÔNG ĐƯỢC CODE TRÊN FILE PHP!!!!!!!!!!!!!
+#KHÔNG ĐƯỢC TỰ Ý CODE TRÊN FILE PHP NẾU CHƯA CÓ HIỆU LỆNH!!!!!!!!!!!!
+#NẾU CÓ API MỚI CẦN VIẾT Ở BACKEND THÌ VIẾT CASE Ở FILE index_NChung.php sau đó call ở file js của project!

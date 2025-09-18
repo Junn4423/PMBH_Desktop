@@ -758,7 +758,7 @@ class   sl_lv0007 extends lv_controler
 	}
 
 	function mb_layDS_NVL_TheoMaKho($maKho){
-		$vsql="Select * from sl_lv0007 where (lv003 in ('nuocngot','thuocla') or lv001 like 'NL%') and lv016 = '$maKho'";
+		$vsql="Select * from sl_lv0007 wherel (lv003 in ('nuocngot','thuocla') or lv001 like 'NL%') and lv016 = '$maKho'";
 		//SELECT * FROM sl_lv0007 WHERE (lv003 IN ('nuocngot', 'thuocla') OR lv001 LIKE 'NL%') and lv016 = '$maKho'
 		$vresult=db_query($vsql);
 		return $vresult;
