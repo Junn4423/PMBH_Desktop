@@ -828,11 +828,9 @@ export async function chuyenXuongBep(maHd) {
 
 // Cập nhật số lượng chi tiết hóa đơn - Update invoice detail quantity
 export async function capNhatCtHd(updateData) {
-  const { maCt, soLuong } = updateData;
-  return await callApi('sl_lv0014', 'MB_UpdateQty', { 
-    maCTHD: maCt, 
-    vQty: soLuong 
-  });
+  // Backend chưa support update quantity trực tiếp
+  // Tạm thời return thông báo lỗi để thông báo cho user
+  throw new Error('Để thay đổi số lượng, vui lòng xóa món và thêm lại với số lượng mong muốn');
 }
 
 // Load trạng thái bàn theo hóa đơn - Get table status based on invoices

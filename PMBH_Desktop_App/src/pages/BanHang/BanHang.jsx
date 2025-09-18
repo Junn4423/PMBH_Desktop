@@ -268,7 +268,10 @@ const BanHang = () => {
   useEffect(() => {
     if (invoiceDetails.length > 0) {
       const total = invoiceDetails.reduce((sum, item) => {
-        return sum + (parseFloat(item.donGia || 0) * parseInt(item.soLuong || 0));
+        // API trả về field 'gia' hoặc 'giaBan' tùy endpoint, không phải 'donGia'
+        const price = parseFloat(item.gia || item.giaBan || item.donGia || 0);
+        const quantity = parseInt(item.soLuong || 0);
+        return sum + (price * quantity);
       }, 0);
       setOrderTotal(total);
     } else {
@@ -806,9 +809,11 @@ const BanHang = () => {
     try {
       setLoading(true);
       
-      // Sử dụng API mới capNhatCtHd thay vì gọi trực tiếp
+      // Sử dụng API mới capNhatCtHd với pattern xóa/tạo lại
       await capNhatCtHd({ 
         maCt: item.maCt, 
+        maHd: currentInvoice.maHd,
+        maSp: item.maSp || item.id,  // Cần mã sản phẩm để tạo lại
         soLuong: newQuantity,
         ghiChu: item.ghiChu || '' // Giữ nguyên ghi chú cũ
       });
@@ -1160,7 +1165,8 @@ const BanHang = () => {
     }
 
     const subtotal = invoiceDetails.reduce((sum, item) => {
-      const price = parseFloat(item.donGia || item.gia || 0);
+      // API trả về field 'gia' hoặc 'giaBan' tùy endpoint, không phải 'donGia'
+      const price = parseFloat(item.gia || item.giaBan || item.donGia || 0);
       const quantity = parseInt(item.soLuong || 0);
       return sum + (price * quantity);
     }, 0);
@@ -1207,8 +1213,8 @@ const BanHang = () => {
             <tr>
               <td style="border: 1px solid #ddd; padding: 8px;">${item.tenSp || item.ten}</td>
               <td style="border: 1px solid #ddd; padding: 8px; text-align: center;">${item.soLuong}</td>
-              <td style="border: 1px solid #ddd; padding: 8px; text-align: right;">${(parseFloat(item.donGia || item.gia || 0)).toLocaleString()}đ</td>
-              <td style="border: 1px solid #ddd; padding: 8px; text-align: right;">${(parseFloat(item.donGia || item.gia || 0) * parseInt(item.soLuong)).toLocaleString()}đ</td>
+              <td style="border: 1px solid #ddd; padding: 8px; text-align: right;">${(parseFloat(item.gia || item.giaBan || item.donGia || 0)).toLocaleString()}đ</td>
+              <td style="border: 1px solid #ddd; padding: 8px; text-align: right;">${(parseFloat(item.gia || item.giaBan || item.donGia || 0) * parseInt(item.soLuong)).toLocaleString()}đ</td>
             </tr>
           `).join('')}
         </table>
@@ -1597,7 +1603,7 @@ const BanHang = () => {
                   <div className="item-info">
                     <Title level={5}>{item.tenSp}</Title>
                     <Text type="secondary">
-                      {parseFloat(item.donGia || 0).toLocaleString('vi-VN')} đ
+                      {parseFloat(item.gia || item.giaBan || item.donGia || 0).toLocaleString('vi-VN')} đ
                     </Text>
                   </div>
                   
