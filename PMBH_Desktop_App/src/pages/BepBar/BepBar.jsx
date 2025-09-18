@@ -121,22 +121,15 @@ const BepBar = () => {
       console.log('Dish name:', dishName);
       
       setLoading(true);
-      
-      // Clear current state to force fresh data
-      setPendingOrders([]);
-      setCompletedOrders([]);
-      
       const result = await updateTrangThaiMon(idCthd);
       console.log('API response for complete:', result);
       
       message.success(`Đã hoàn thành món: ${dishName} (ID: ${idCthd})`);
-      console.log('Order completed, clearing cache and reloading data...');
       
-      // Force immediate reload with longer delay to ensure DB consistency
+      // Hot reload hệ thống ngay sau khi tương tác
       setTimeout(async () => {
-        console.log('Executing delayed reload after completion...');
         await loadAllData();
-      }, 1000); // Increased delay to 1 second
+      }, 500);
       
     } catch (error) {
       console.error('Error completing order:', error);
@@ -158,22 +151,16 @@ const BepBar = () => {
           console.log('Dish name:', dishName);
           
           setLoading(true);
-          
-          // Clear current state to force fresh data
-          setPendingOrders([]);
-          setCompletedOrders([]);
-          
           const result = await updateTrangThaiMon(idCthd);
           console.log('API response for revert:', result);
           
           message.success(`Đã hoàn lại món: ${dishName} (ID: ${idCthd})`);
-          console.log('Order reverted, clearing cache and reloading data...');
           
-          // Force immediate reload with longer delay to ensure DB consistency
+          // Hot reload hệ thống ngay sau khi tương tác
           setTimeout(async () => {
-            console.log('Executing delayed reload after revert...');
+            console.log('Hot reloading after revert action...');
             await loadAllData();
-          }, 1000); // Increased delay to 1 second
+          }, 500);
           
         } catch (error) {
           console.error('Error reverting order:', error);
@@ -320,19 +307,6 @@ const BepBar = () => {
               type="primary"
             >
               Làm mới
-            </Button>
-
-            <Button 
-              onClick={() => {
-                console.log('=== FORCE CLEAR & RELOAD ===');
-                setPendingOrders([]);
-                setCompletedOrders([]);
-                setTimeout(() => loadAllData(), 100);
-              }}
-              icon={<RefreshCw size={16} />}
-              danger
-            >
-              Force Reload
             </Button>
           </Space>
         </div>
