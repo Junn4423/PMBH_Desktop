@@ -4,7 +4,9 @@
 .banhang-container {
   height: 100vh;
   background-color: #f5f5f5;
-  padding: 20px;
+  padding: 12px;
+  width: 100%;
+  max-width: none;
 }
 
 /* ============================================
@@ -14,8 +16,8 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 24px;
-  padding: 16px 0;
+  margin-bottom: 20px;
+  padding: 12px 0;
 }
 
 .view-header h3 {
@@ -35,21 +37,43 @@
   gap: 8px;
 }
 
+/* Back Button Row */
+.back-button-row {
+  margin-bottom: 16px;
+  padding: 0;
+}
+
+.back-button {
+  background: #f8f9fa;
+  border: 1px solid #e9ecef;
+  border-radius: 8px;
+  color: #4b4344;
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
+.back-button:hover {
+  background: #197dd3;
+  border-color: #197dd3;
+  color: white;
+  transform: translateX(-2px);
+}
+
 /* ============================================
    TABLES VIEW (FLOW STEP 1)
 ============================================ */
 .tables-view {
-  max-width: 1200px;
-  margin: 0 auto;
+  width: 100%;
+  margin: 0;
+  padding: 0;
 }
 
 .tables-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-  gap: 20px;
-  padding: 20px 0;
-  max-width: 1400px;
-  margin: 0 auto;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 16px;
+  padding: 12px 0;
+  width: 100%;
 }
 
 .table-card {
@@ -59,7 +83,7 @@
   padding: 16px;
   cursor: pointer;
   transition: all 0.3s ease;
-  height: 180px;
+  min-height: 140px;
   display: flex;
   flex-direction: column;
   position: relative;
@@ -172,31 +196,38 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  margin-bottom: 12px;
+  margin-bottom: 8px;
+  gap: 8px;
 }
 
 .table-icon {
-  margin-right: 8px;
   color: #197dd3;
+  display: flex;
+  align-items: center;
 }
 
 .table-info {
   flex: 1;
   display: flex;
   flex-direction: column;
+  align-items: center;
   text-align: center;
   position: relative;
   z-index: 1;
+  gap: 4px;
 }
 
 .table-info h5 {
-  margin: 0 0 8px 0;
+  margin: 0;
   font-size: 16px;
   font-weight: 600;
+  line-height: 1.2;
 }
 
 .table-status {
-  margin-bottom: 12px;
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.2;
 }
 
 /* Table details styling for occupied tables */
@@ -308,8 +339,9 @@
    INVOICE VIEW (FLOW STEP 2)
 ============================================ */
 .invoice-view {
-  max-width: 800px;
-  margin: 0 auto;
+  width: 100%;
+  max-width: none;
+  margin: 0;
 }
 
 .empty-invoice {
@@ -318,18 +350,65 @@
   padding: 60px 40px;
   text-align: center;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
 }
 
 .empty-invoice svg {
   color: #bdbcc4;
-  margin-bottom: 16px;
 }
 
 .empty-invoice span {
-  display: block;
-  margin-bottom: 20px;
   color: #4b4344;
   font-size: 16px;
+  margin: 0;
+}
+
+/* Empty Invoice Buttons */
+.empty-invoice .ant-space {
+  width: 100%;
+  max-width: 500px;
+}
+
+.invoice-button {
+  height: 48px;
+  border-radius: 8px;
+  font-weight: 500;
+  font-size: 15px;
+  width: 180px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: all 0.2s ease;
+}
+
+.invoice-button-primary {
+  background: #197dd3 !important;
+  border-color: #197dd3 !important;
+  color: white !important;
+}
+
+.invoice-button-primary:hover {
+  background: #77d4fb !important;
+  border-color: #77d4fb !important;
+  color: white !important;
+  transform: translateY(-1px);
+}
+
+.invoice-button-secondary {
+  background: white !important;
+  border: 2px solid #197dd3 !important;
+  color: #197dd3 !important;
+}
+
+.invoice-button-secondary:hover {
+  background: #f8f9fa !important;
+  border-color: #197dd3 !important;
+  color: #197dd3 !important;
+  transform: translateY(-1px);
 }
 
 .invoice-content {
@@ -1081,4 +1160,112 @@
 .order-items::-webkit-scrollbar-thumb:hover,
 .table-selection-grid::-webkit-scrollbar-thumb:hover {
   background: #197dd3;
+}
+
+/* ============================================
+   TABLE OPERATIONS
+============================================ */
+
+/* Table Operations Buttons */
+.table-operations-buttons {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.table-operations-buttons .ant-btn {
+  border-radius: 6px;
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
+.table-operations-buttons .ant-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(25, 125, 211, 0.15);
+}
+
+/* Table Selection Cards in Modals */
+.table-select-card {
+  border-radius: 8px;
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+.table-select-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(25, 125, 211, 0.15);
+}
+
+.table-select-card.selected {
+  border-color: #197dd3 !important;
+  background-color: #f0f8ff !important;
+  box-shadow: 0 4px 12px rgba(25, 125, 211, 0.25);
+}
+
+.table-select-card .ant-card-body {
+  padding: 16px;
+  text-align: center;
+}
+
+.table-select-card .ant-badge {
+  font-size: 14px;
+  font-weight: 500;
+}
+
+/* Table Operations Modal Styling */
+.table-operations-modal .ant-modal-header {
+  background: linear-gradient(135deg, #197dd3, #77d4fb);
+  border-bottom: none;
+}
+
+.table-operations-modal .ant-modal-title {
+  color: white;
+  font-weight: 600;
+}
+
+.table-operations-modal .ant-modal-close {
+  color: white;
+}
+
+.table-operations-modal .ant-modal-close:hover {
+  color: #f0f0f0;
+}
+
+/* Operation Confirmation Text */
+.operation-confirmation {
+  text-align: center;
+  padding: 20px;
+}
+
+.operation-confirmation .confirmation-text {
+  font-size: 16px;
+  margin-bottom: 8px;
+}
+
+.operation-confirmation .warning-text {
+  color: #faad14;
+  font-size: 14px;
+}
+
+/* Empty State for Table Selection */
+.empty-table-selection {
+  text-align: center;
+  padding: 40px 20px;
+  color: #999;
+}
+
+.empty-table-selection .empty-icon {
+  font-size: 48px;
+  margin-bottom: 16px;
+  color: #d9d9d9;
+}
+
+.empty-table-selection .empty-text {
+  font-size: 16px;
+  margin-bottom: 8px;
+}
+
+.empty-table-selection .empty-subtext {
+  font-size: 14px;
+  color: #bdbcc4;
 }

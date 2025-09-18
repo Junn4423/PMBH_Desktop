@@ -35,7 +35,10 @@ import {
   History,
   Save,
   FileText,
-  Copy
+  Copy,
+  Merge,
+  Split,
+  ArrowRight
 } from 'lucide-react';
 
 // Import API services
@@ -61,7 +64,10 @@ import {
   taoHoaDonTam,
   chuyenHoaDonTamThanhChinhThuc,
   saoChepHoaDon,
-  loadDsCthdV3
+  loadDsCthdV3,
+  gopBanBanhang,
+  tachBan,
+  chuyenBanCorrected
 } from '../../services/apiServices';
 
 import './BanHang.css';
@@ -126,6 +132,13 @@ const BanHang = () => {
   const [autoRefreshEnabled, setAutoRefreshEnabled] = useState(true);
   const [lastAction, setLastAction] = useState(null); // Track last user action
   const [quickRefreshEnabled, setQuickRefreshEnabled] = useState(false); // For post-action refresh
+
+  // State cho Table Operations
+  const [showMergeTableModal, setShowMergeTableModal] = useState(false);
+  const [showSplitTableModal, setShowSplitTableModal] = useState(false);
+  const [showTransferTableModal, setShowTransferTableModal] = useState(false);
+  const [selectedTargetTable, setSelectedTargetTable] = useState(null);
+  const [availableTablesForOperation, setAvailableTablesForOperation] = useState([]);
 
   // Helper functions cho table status
   const getTableBadgeStatus = (status) => {
@@ -1143,6 +1156,127 @@ const BanHang = () => {
     }
   };
 
+  // ===== TABLE OPERATIONS FUNCTIONS =====
+  
+  // Load danh sách bàn có thể thực hiện operation
+  const loadAvailableTablesForOperation = async () => {
+    try {
+      // Lấy tất cả bàn có hóa đơn đang mở (để gộp/chuyển)
+      const allTablesWithInvoices = tables.filter(table => table.status === 'occupied');
+      setAvailableTablesForOperation(allTablesWithInvoices);
+    } catch (error) {
+      console.error('Error loading available tables:', error);
+      message.error('Không thể tải danh sách bàn');
+    }
+  };
+
+  // Gộp bàn
+  const handleMergeTable = async () => {
+    if (!currentInvoice || !selectedTargetTable) {
+      message.error('Vui lòng chọn bàn đích để gộp');
+      return;
+    }
+
+    try {
+      setLoading(true);
+      await gopBanBanhang(currentInvoice.maHoaDon, selectedTargetTable.maBan);
+      
+      message.success(`Đã gộp bàn ${selectedTable.tenBan} vào bàn ${selectedTargetTable.tenBan}`);
+      
+      // Reset states
+      setShowMergeTableModal(false);
+      setSelectedTargetTable(null);
+      
+      // Refresh data
+      await loadDsHoaDon();
+      refreshTableStatusOnly();
+      
+    } catch (error) {
+      console.error('Error merging tables:', error);
+      message.error('Không thể gộp bàn: ' + (error.message || 'Lỗi không xác định'));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Tách bàn  
+  const handleSplitTable = async () => {
+    if (!currentInvoice) {
+      message.error('Không có hóa đơn để tách');
+      return;
+    }
+
+    try {
+      setLoading(true);
+      await tachBan(currentInvoice.maHoaDon);
+      
+      message.success(`Đã tách bàn ${selectedTable.tenBan}`);
+      
+      // Reset states
+      setShowSplitTableModal(false);
+      
+      // Refresh data
+      await loadDsHoaDon();
+      refreshTableStatusOnly();
+      
+    } catch (error) {
+      console.error('Error splitting table:', error);
+      message.error('Không thể tách bàn: ' + (error.message || 'Lỗi không xác định'));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Chuyển bàn
+  const handleTransferTable = async () => {
+    if (!currentInvoice || !selectedTargetTable) {
+      message.error('Vui lòng chọn bàn đích để chuyển');
+      return;
+    }
+
+    try {
+      setLoading(true);
+      
+      const chuyenBanData = {
+        maHoaDonBanCanChuyen: currentInvoice.maHoaDon,
+        maHoaDonBanChuyen: '', // Để trống vì chuyển sang bàn trống
+        maBanChuyen: selectedTargetTable.maBan
+      };
+      
+      await chuyenBanCorrected(chuyenBanData);
+      
+      message.success(`Đã chuyển từ bàn ${selectedTable.tenBan} sang bàn ${selectedTargetTable.tenBan}`);
+      
+      // Reset states
+      setShowTransferTableModal(false);
+      setSelectedTargetTable(null);
+      
+      // Refresh data và chọn bàn mới
+      await loadDsHoaDon();
+      refreshTableStatusOnly();
+      setSelectedTable(selectedTargetTable);
+      
+    } catch (error) {
+      console.error('Error transferring table:', error);
+      message.error('Không thể chuyển bàn: ' + (error.message || 'Lỗi không xác định'));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Mở modal operations và load data
+  const openMergeTableModal = () => {
+    loadAvailableTablesForOperation();
+    setShowMergeTableModal(true);
+  };
+
+  const openTransferTableModal = () => {
+    loadAvailableTablesForOperation();
+    setShowTransferTableModal(true);
+  };
+
+  // ===== END TABLE OPERATIONS =====
+
   // Tạo hóa đơn tạm (draft)
   const createDraftInvoice = async () => {
     if (!selectedTable) {
@@ -1390,113 +1524,106 @@ const BanHang = () => {
               cursor: 'pointer'
             }}
           >
-            <div className="table-header" style={{ 
-              backgroundColor: 'rgba(0,0,0,0.1)', 
-              padding: '8px',
-              textAlign: 'center'
-            }}>
+            <div className="table-header">
               <div className="table-icon">
                 <Coffee 
                   size={24} 
                   color={getTableStatusTextColor(table.status)}
                 />
               </div>
+              <div className="table-info">
+                <Title 
+                  level={5} 
+                  style={{ 
+                    margin: 0, 
+                    color: getTableStatusTextColor(table.status),
+                    fontSize: '16px',
+                    fontWeight: 600
+                  }}
+                >
+                  {table.name}
+                </Title>
+                <div className="table-status">
+                  <Text style={{ 
+                    color: getTableStatusTextColor(table.status),
+                    fontWeight: '500',
+                    fontSize: '14px'
+                  }}>
+                    {getTableStatusText(table.status)}
+                  </Text>
+                </div>
+              </div>
             </div>
             
-            <div className="table-info" style={{ 
-              padding: '12px',
-              color: getTableStatusTextColor(table.status)
-            }}>
-              <Title 
-                level={5} 
-                style={{ 
-                  margin: '0 0 8px 0', 
-                  color: getTableStatusTextColor(table.status),
-                  textAlign: 'center'
-                }}
-              >
-                {table.name}
-              </Title>
-              <div className="table-status" style={{ textAlign: 'center', marginBottom: '8px' }}>
-                <Text style={{ 
-                  color: getTableStatusTextColor(table.status),
-                  fontWeight: 'bold',
-                  fontSize: '13px'
-                }}>
-                  {getTableStatusText(table.status)}
-                </Text>
+            {/* Hiển thị thông tin chi tiết nếu bàn có khách */}
+            {table.status !== 'available' && (
+              <div className="table-details" style={{ 
+                fontSize: '12px',
+                color: getTableStatusTextColor(table.status),
+                background: 'rgba(255,255,255,0.1)',
+                padding: '8px',
+                borderRadius: '4px',
+                marginTop: '8px'
+              }}>
+                {table.sittingTime && (
+                  <div style={{ 
+                    display: 'flex', 
+                    justifyContent: 'space-between',
+                    marginBottom: '4px'
+                  }}>
+                    <span>Thời gian:</span>
+                    <span style={{ fontWeight: 'bold' }}>
+                      {table.sittingTime}
+                    </span>
+                  </div>
+                )}
+                {table.totalAmount > 0 && (
+                  <div style={{ 
+                    display: 'flex', 
+                    justifyContent: 'space-between',
+                    marginBottom: '4px'
+                  }}>
+                    <span>Tổng tiền:</span>
+                    <span style={{ fontWeight: 'bold' }}>
+                      {table.totalAmount.toLocaleString()}đ
+                    </span>
+                  </div>
+                )}
+                {table.itemCount > 0 && (
+                  <div style={{ 
+                    display: 'flex', 
+                    justifyContent: 'space-between',
+                    marginBottom: '4px'
+                  }}>
+                    <span>Số món:</span>
+                    <span style={{ fontWeight: 'bold' }}>
+                      {table.itemCount}
+                    </span>
+                  </div>
+                )}
+                {table.orderItems && table.orderItems.length > 0 && (
+                  <div style={{ 
+                    marginTop: '8px',
+                    fontSize: '11px',
+                    opacity: 0.9
+                  }}>
+                    {table.orderItems.map((item, index) => (
+                      <div key={index} style={{ marginBottom: '2px' }}>
+                        • {item.tenSp || item.ten} ({item.soLuong})
+                      </div>
+                    ))}
+                    {table.itemCount > 3 && (
+                      <div style={{ 
+                        fontStyle: 'italic',
+                        marginTop: '4px'
+                      }}>
+                        ...và {table.itemCount - 3} món khác
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
-              
-              {/* Hiển thị thông tin chi tiết nếu bàn có khách */}
-              {table.status !== 'available' && (
-                <div className="table-details" style={{ 
-                  fontSize: '12px',
-                  color: getTableStatusTextColor(table.status),
-                  background: 'rgba(255,255,255,0.1)',
-                  padding: '8px',
-                  borderRadius: '4px',
-                  marginTop: '8px'
-                }}>
-                  {table.sittingTime && (
-                    <div style={{ 
-                      display: 'flex', 
-                      justifyContent: 'space-between',
-                      marginBottom: '4px'
-                    }}>
-                      <span>Thời gian:</span>
-                      <span style={{ fontWeight: 'bold' }}>
-                        {table.sittingTime}
-                      </span>
-                    </div>
-                  )}
-                  {table.totalAmount > 0 && (
-                    <div style={{ 
-                      display: 'flex', 
-                      justifyContent: 'space-between',
-                      marginBottom: '4px'
-                    }}>
-                      <span>Tổng tiền:</span>
-                      <span style={{ fontWeight: 'bold' }}>
-                        {table.totalAmount.toLocaleString()}đ
-                      </span>
-                    </div>
-                  )}
-                  {table.itemCount > 0 && (
-                    <div style={{ 
-                      display: 'flex', 
-                      justifyContent: 'space-between',
-                      marginBottom: '4px'
-                    }}>
-                      <span>Số món:</span>
-                      <span style={{ fontWeight: 'bold' }}>
-                        {table.itemCount}
-                      </span>
-                    </div>
-                  )}
-                  {table.orderItems && table.orderItems.length > 0 && (
-                    <div style={{ 
-                      marginTop: '8px',
-                      fontSize: '11px',
-                      opacity: 0.9
-                    }}>
-                      {table.orderItems.map((item, index) => (
-                        <div key={index} style={{ marginBottom: '2px' }}>
-                          • {item.tenSp || item.ten} ({item.soLuong})
-                        </div>
-                      ))}
-                      {table.itemCount > 3 && (
-                        <div style={{ 
-                          fontStyle: 'italic',
-                          marginTop: '4px'
-                        }}>
-                          ...và {table.itemCount - 3} món khác
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
+            )}
           </Card>
         ))}
       </div>
@@ -1511,15 +1638,20 @@ const BanHang = () => {
     
     return (
       <div className="invoice-view">
+        {/* Back Button Row */}
+        <div className="back-button-row">
+          <Button 
+            icon={<ArrowLeft size={16} />}
+            onClick={handleGoBack}
+            className="back-button"
+          >
+            Quay lại
+          </Button>
+        </div>
+        
         <div className="view-header">
           <div className="header-left">
-            <Button 
-              icon={<ArrowLeft size={16} />}
-              onClick={handleGoBack}
-            >
-              Quay lại
-            </Button>
-            <Title level={3} style={{ margin: '0 16px' }}>
+            <Title level={3} style={{ margin: 0 }}>
               Hóa đơn - {selectedTable?.name}
               {currentInvoice && ` (#${currentInvoice.maHd})`}
               {currentInvoice?.isDraft && <Text type="warning"> (Tạm)</Text>}
@@ -1529,6 +1661,40 @@ const BanHang = () => {
           
           <div className="header-right">
             <Space>
+              {/* Table Operations Buttons */}
+              {currentInvoice && (
+                <Space.Compact>
+                  <Button 
+                    icon={<Merge size={16} />}
+                    onClick={openMergeTableModal}
+                    title="Gộp bàn này với bàn khác"
+                    disabled={loading}
+                  >
+                    Gộp bàn
+                  </Button>
+                  
+                  <Button 
+                    icon={<Split size={16} />}
+                    onClick={() => setShowSplitTableModal(true)}
+                    title="Tách bàn này"
+                    disabled={loading}
+                  >
+                    Tách bàn
+                  </Button>
+                  
+                  <Button 
+                    icon={<ArrowRight size={16} />}
+                    onClick={openTransferTableModal}
+                    title="Chuyển sang bàn khác"
+                    disabled={loading}
+                  >
+                    Chuyển bàn
+                  </Button>
+                </Space.Compact>
+              )}
+              
+              <Divider type="vertical" />
+              
               {/* Enhanced Invoice Management Buttons */}
               <Button 
                 icon={<History size={16} />}
@@ -1618,14 +1784,20 @@ const BanHang = () => {
           <div className="empty-invoice">
             <Users size={48} />
             <Text>Chưa có hóa đơn cho bàn này</Text>
-            <Space>
-              <Button type="primary" onClick={createNewInvoice}>
+            <Space size="large" style={{ textAlign: 'center' }}>
+              <Button 
+                onClick={createNewInvoice}
+                size="large"
+                className="invoice-button invoice-button-primary"
+              >
                 Tạo hóa đơn mới
               </Button>
               <Button 
-                icon={<Save size={16} />}
                 onClick={createDraftInvoice}
+                size="large"
+                className="invoice-button invoice-button-secondary"
               >
+                <Save size={16} />
                 Tạo hóa đơn tạm
               </Button>
             </Space>
@@ -1793,13 +1965,18 @@ const BanHang = () => {
 
       {/* Main products grid */}
       <Content className="products-content">
-        <div className="view-header">
+        {/* Back Button Row */}
+        <div className="back-button-row">
           <Button 
             icon={<ArrowLeft size={16} />}
             onClick={handleGoBack}
+            className="back-button"
           >
             Quay lại hóa đơn
           </Button>
+        </div>
+        
+        <div className="view-header">
           <Title level={3}>Chọn món - {selectedTable?.name}</Title>
           <Input
             placeholder="Tìm món..."
@@ -1929,6 +2106,125 @@ const BanHang = () => {
           rowKey="maHd"
           size="small"
         />
+      </Modal>
+
+      {/* Table Operations Modals */}
+      
+      {/* Modal Gộp Bàn */}
+      <Modal
+        title={`Gộp bàn ${selectedTable?.tenBan || ''} với bàn khác`}
+        open={showMergeTableModal}
+        onOk={handleMergeTable}
+        onCancel={() => {
+          setShowMergeTableModal(false);
+          setSelectedTargetTable(null);
+        }}
+        confirmLoading={loading}
+        okText="Gộp bàn"
+        cancelText="Hủy"
+        width={600}
+      >
+        <div style={{ marginBottom: 16 }}>
+          <Text>Chọn bàn đích để gộp:</Text>
+        </div>
+        
+        <Row gutter={[12, 12]}>
+          {availableTablesForOperation
+            .filter(table => table.maBan !== selectedTable?.maBan) // Không hiển thị bàn hiện tại
+            .map(table => (
+              <Col span={8} key={table.maBan}>
+                <Card
+                  hoverable
+                  className={`table-select-card ${selectedTargetTable?.maBan === table.maBan ? 'selected' : ''}`}
+                  onClick={() => setSelectedTargetTable(table)}
+                  style={{
+                    border: selectedTargetTable?.maBan === table.maBan ? '2px solid #197dd3' : '1px solid #d9d9d9',
+                    backgroundColor: selectedTargetTable?.maBan === table.maBan ? '#f0f8ff' : 'white'
+                  }}
+                >
+                  <div style={{ textAlign: 'center' }}>
+                    <Badge 
+                      status={getTableBadgeStatus(table.status)} 
+                      text={table.tenBan}
+                    />
+                  </div>
+                </Card>
+              </Col>
+            ))}
+        </Row>
+        
+        {availableTablesForOperation.filter(table => table.maBan !== selectedTable?.maBan).length === 0 && (
+          <div style={{ textAlign: 'center', padding: '20px', color: '#999' }}>
+            Không có bàn nào khác để gộp
+          </div>
+        )}
+      </Modal>
+
+      {/* Modal Tách Bàn */}
+      <Modal
+        title={`Tách bàn ${selectedTable?.tenBan || ''}`}
+        open={showSplitTableModal}
+        onOk={handleSplitTable}
+        onCancel={() => setShowSplitTableModal(false)}
+        confirmLoading={loading}
+        okText="Tách bàn"
+        cancelText="Hủy"
+      >
+        <div style={{ padding: '20px 0' }}>
+          <Text>Bạn có chắc chắn muốn tách bàn <strong>{selectedTable?.tenBan}</strong> không?</Text>
+          <br />
+          <Text type="secondary">Thao tác này sẽ tách các món ăn trong hóa đơn ra thành các hóa đơn riêng biệt.</Text>
+        </div>
+      </Modal>
+
+      {/* Modal Chuyển Bàn */}
+      <Modal
+        title={`Chuyển từ bàn ${selectedTable?.tenBan || ''} sang bàn khác`}
+        open={showTransferTableModal}
+        onOk={handleTransferTable}
+        onCancel={() => {
+          setShowTransferTableModal(false);
+          setSelectedTargetTable(null);
+        }}
+        confirmLoading={loading}
+        okText="Chuyển bàn"
+        cancelText="Hủy"
+        width={600}
+      >
+        <div style={{ marginBottom: 16 }}>
+          <Text>Chọn bàn đích để chuyển:</Text>
+        </div>
+        
+        <Row gutter={[12, 12]}>
+          {tables
+            .filter(table => table.maBan !== selectedTable?.maBan && table.status === 'available') // Chỉ bàn trống
+            .map(table => (
+              <Col span={8} key={table.maBan}>
+                <Card
+                  hoverable
+                  className={`table-select-card ${selectedTargetTable?.maBan === table.maBan ? 'selected' : ''}`}
+                  onClick={() => setSelectedTargetTable(table)}
+                  style={{
+                    border: selectedTargetTable?.maBan === table.maBan ? '2px solid #197dd3' : '1px solid #d9d9d9',
+                    backgroundColor: selectedTargetTable?.maBan === table.maBan ? '#f0f8ff' : 'white'
+                  }}
+                >
+                  <div style={{ textAlign: 'center' }}>
+                    <Badge 
+                      status={getTableBadgeStatus(table.status)} 
+                      text={table.tenBan}
+                    />
+                  </div>
+                </Card>
+              </Col>
+            ))}
+        </Row>
+        
+        {tables.filter(table => table.maBan !== selectedTable?.maBan && table.status === 'available').length === 0 && (
+          <div style={{ textAlign: 'center', padding: '20px', color: '#999' }}>
+            Không có bàn trống để chuyển
+          </div>
+        )}
       </Modal>
 
       {/* Modal chọn số lượng khi thêm sản phẩm */}
