@@ -98,6 +98,16 @@ const BanHang = () => {
   const [invoiceDetails, setInvoiceDetails] = useState([]);
   const [orderTotal, setOrderTotal] = useState(0);
   
+  // State cho modal chọn số lượng
+  const [showQuantityModal, setShowQuantityModal] = useState(false);
+  const [selectedProductForAdd, setSelectedProductForAdd] = useState(null);
+  const [quantityToAdd, setQuantityToAdd] = useState(1);
+  
+  // State cho modal update số lượng
+  const [showUpdateQuantityModal, setShowUpdateQuantityModal] = useState(false);
+  const [selectedItemForUpdate, setSelectedItemForUpdate] = useState(null);
+  const [newQuantityForUpdate, setNewQuantityForUpdate] = useState(1);
+  
   // State cho Enhanced Invoice Management
   const [invoiceHistory, setInvoiceHistory] = useState([]);
   const [showInvoiceHistory, setShowInvoiceHistory] = useState(false);
@@ -753,10 +763,22 @@ const BanHang = () => {
     }
   };
 
-  // Thêm sản phẩm vào hóa đơn
-  const addProductToOrder = async (product) => {
+  // Thêm sản phẩm vào hóa đơn với modal chọn số lượng
+  const addProductToOrder = (product) => {
     if (!selectedTable) {
       message.error('Vui lòng chọn bàn trước');
+      return;
+    }
+
+    // Mở modal chọn số lượng
+    setSelectedProductForAdd(product);
+    setQuantityToAdd(1);
+    setShowQuantityModal(true);
+  };
+
+  // Xác nhận thêm sản phẩm với số lượng đã chọn
+  const confirmAddProduct = async () => {
+    if (!selectedProductForAdd || !selectedTable) {
       return;
     }
 
@@ -775,7 +797,7 @@ const BanHang = () => {
 
     try {
       setLoading(true);
-      const response = await taoCthd(currentInvoice.maHd, product.id, 1);
+      const response = await taoCthd(currentInvoice.maHd, selectedProductForAdd.id, quantityToAdd);
       
       if (response) {
         // Reload chi tiết hóa đơn
@@ -783,13 +805,18 @@ const BanHang = () => {
         if (Array.isArray(detailsResponse)) {
           setInvoiceDetails(detailsResponse);
         }
-        message.success(`Đã thêm ${product.ten} vào đơn hàng`);
+        message.success(`Đã thêm ${selectedProductForAdd.ten} (x${quantityToAdd}) vào đơn hàng`);
         
         // Trigger quick refresh sau khi thêm sản phẩm
         triggerQuickRefresh('ADD_PRODUCT');
         
         // Quay lại view hóa đơn sau khi thêm sản phẩm
         setCurrentView(VIEW_STATES.INVOICE);
+        
+        // Đóng modal
+        setShowQuantityModal(false);
+        setSelectedProductForAdd(null);
+        setQuantityToAdd(1);
       }
     } catch (error) {
       console.error('Error adding product:', error);
@@ -799,24 +826,39 @@ const BanHang = () => {
     }
   };
 
-  // Cập nhật số lượng sản phẩm
-  const updateProductQuantity = async (item, newQuantity) => {
+  // Cập nhật số lượng sản phẩm - mở modal
+  const updateProductQuantity = (item, newQuantity) => {
     if (newQuantity <= 0) {
-      await removeProductFromOrder(item.maCt);
+      removeProductFromOrder(item.maCt);
+      return;
+    }
+
+    // Mở modal để nhập số lượng mới
+    setSelectedItemForUpdate(item);
+    setNewQuantityForUpdate(newQuantity);
+    setShowUpdateQuantityModal(true);
+  };
+
+  // Xác nhận update số lượng bằng cách xóa và thêm lại
+  const confirmUpdateQuantity = async () => {
+    if (!selectedItemForUpdate || !currentInvoice) {
       return;
     }
 
     try {
       setLoading(true);
       
-      // Sử dụng API mới capNhatCtHd với pattern xóa/tạo lại
-      await capNhatCtHd({ 
-        maCt: item.maCt, 
-        maHd: currentInvoice.maHd,
-        maSp: item.maSp || item.id,  // Cần mã sản phẩm để tạo lại
-        soLuong: newQuantity,
-        ghiChu: item.ghiChu || '' // Giữ nguyên ghi chú cũ
-      });
+      // Bước 1: Xóa item hiện tại
+      await xoaCtHd({ maCt: selectedItemForUpdate.maCt });
+      
+      // Bước 2: Tìm sản phẩm gốc để lấy mã sản phẩm
+      const foundProduct = products.find(p => p.ten === selectedItemForUpdate.tenSp);
+      if (!foundProduct) {
+        throw new Error('Không tìm thấy thông tin sản phẩm');
+      }
+      
+      // Bước 3: Thêm lại với số lượng mới
+      await taoCthd(currentInvoice.maHd, foundProduct.id, newQuantityForUpdate);
       
       // Reload chi tiết hóa đơn
       const detailsResponse = await loadDsCthd(currentInvoice.maHd);
@@ -828,6 +870,11 @@ const BanHang = () => {
       
       // Trigger quick refresh sau khi cập nhật số lượng
       triggerQuickRefresh('UPDATE_QUANTITY');
+      
+      // Đóng modal
+      setShowUpdateQuantityModal(false);
+      setSelectedItemForUpdate(null);
+      setNewQuantityForUpdate(1);
     } catch (error) {
       console.error('Error updating quantity:', error);
       message.error('Không thể cập nhật số lượng: ' + (error.message || 'Lỗi không xác định'));
@@ -1613,13 +1660,17 @@ const BanHang = () => {
                       icon={<Minus size={12} />}
                       onClick={() => updateProductQuantity(item, parseInt(item.soLuong) - 1)}
                     />
-                    <InputNumber
+                    <Button
                       size="small"
-                      value={item.soLuong}
-                      min={1}
-                      style={{ width: 60, margin: '0 8px' }}
-                      onChange={(value) => updateProductQuantity(item, value)}
-                    />
+                      style={{ width: 80, margin: '0 8px' }}
+                      onClick={() => {
+                        setSelectedItemForUpdate(item);
+                        setNewQuantityForUpdate(parseInt(item.soLuong));
+                        setShowUpdateQuantityModal(true);
+                      }}
+                    >
+                      {item.soLuong}
+                    </Button>
                     <Button
                       size="small"
                       icon={<Plus size={12} />}
@@ -1878,6 +1929,120 @@ const BanHang = () => {
           rowKey="maHd"
           size="small"
         />
+      </Modal>
+
+      {/* Modal chọn số lượng khi thêm sản phẩm */}
+      <Modal
+        title={`Thêm ${selectedProductForAdd?.ten || ''}`}
+        open={showQuantityModal}
+        onOk={confirmAddProduct}
+        onCancel={() => {
+          setShowQuantityModal(false);
+          setSelectedProductForAdd(null);
+          setQuantityToAdd(1);
+        }}
+        okText="Thêm vào đơn"
+        cancelText="Hủy"
+        width={400}
+      >
+        <div style={{ textAlign: 'center', padding: '20px 0' }}>
+          <div style={{ marginBottom: 16 }}>
+            <Text strong style={{ fontSize: 16 }}>
+              {selectedProductForAdd?.ten}
+            </Text>
+            <br />
+            <Text type="secondary">
+              Giá: {selectedProductForAdd?.gia?.toLocaleString('vi-VN')} đ
+            </Text>
+          </div>
+          
+          <div style={{ marginBottom: 20 }}>
+            <Text>Số lượng:</Text>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', marginTop: 8 }}>
+              <Button
+                icon={<Minus size={16} />}
+                onClick={() => setQuantityToAdd(Math.max(1, quantityToAdd - 1))}
+                disabled={quantityToAdd <= 1}
+              />
+              <InputNumber
+                value={quantityToAdd}
+                min={1}
+                style={{ width: 80, margin: '0 12px' }}
+                onChange={(value) => setQuantityToAdd(value || 1)}
+              />
+              <Button
+                icon={<Plus size={16} />}
+                onClick={() => setQuantityToAdd(quantityToAdd + 1)}
+              />
+            </div>
+          </div>
+          
+          <div>
+            <Text strong>
+              Tổng: {((selectedProductForAdd?.gia || 0) * quantityToAdd).toLocaleString('vi-VN')} đ
+            </Text>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Modal cập nhật số lượng */}
+      <Modal
+        title={`Cập nhật số lượng: ${selectedItemForUpdate?.tenSp || ''}`}
+        open={showUpdateQuantityModal}
+        onOk={confirmUpdateQuantity}
+        onCancel={() => {
+          setShowUpdateQuantityModal(false);
+          setSelectedItemForUpdate(null);
+          setNewQuantityForUpdate(1);
+        }}
+        okText="Cập nhật"
+        cancelText="Hủy"
+        width={400}
+      >
+        <div style={{ textAlign: 'center', padding: '20px 0' }}>
+          <div style={{ marginBottom: 16 }}>
+            <Text strong style={{ fontSize: 16 }}>
+              {selectedItemForUpdate?.tenSp}
+            </Text>
+            <br />
+            <Text type="secondary">
+              Giá: {parseFloat(selectedItemForUpdate?.gia || selectedItemForUpdate?.giaBan || 0).toLocaleString('vi-VN')} đ
+            </Text>
+          </div>
+          
+          <div style={{ marginBottom: 20 }}>
+            <Text>Số lượng mới:</Text>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', marginTop: 8 }}>
+              <Button
+                icon={<Minus size={16} />}
+                onClick={() => setNewQuantityForUpdate(Math.max(1, newQuantityForUpdate - 1))}
+                disabled={newQuantityForUpdate <= 1}
+              />
+              <InputNumber
+                value={newQuantityForUpdate}
+                min={1}
+                style={{ width: 80, margin: '0 12px' }}
+                onChange={(value) => setNewQuantityForUpdate(value || 1)}
+              />
+              <Button
+                icon={<Plus size={16} />}
+                onClick={() => setNewQuantityForUpdate(newQuantityForUpdate + 1)}
+              />
+            </div>
+          </div>
+          
+          <div>
+            <Text strong>
+              Tổng mới: {(parseFloat(selectedItemForUpdate?.gia || selectedItemForUpdate?.giaBan || 0) * newQuantityForUpdate).toLocaleString('vi-VN')} đ
+            </Text>
+          </div>
+          
+          <div style={{ marginTop: 16, padding: 12, backgroundColor: '#fff2e8', borderRadius: 6 }}>
+            <Text type="warning" style={{ fontSize: 12 }}>
+              ⚠️ Món sẽ được xóa và thêm lại với số lượng mới
+            </Text>
+          </div>
+        </div>
       </Modal>
     </div>
   );

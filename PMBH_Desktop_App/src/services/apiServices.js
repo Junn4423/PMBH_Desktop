@@ -828,9 +828,9 @@ export async function chuyenXuongBep(maHd) {
 
 // Cập nhật số lượng chi tiết hóa đơn - Update invoice detail quantity
 export async function capNhatCtHd(updateData) {
-  // Backend chưa support update quantity trực tiếp
-  // Tạm thời return thông báo lỗi để thông báo cho user
-  throw new Error('Để thay đổi số lượng, vui lòng xóa món và thêm lại với số lượng mong muốn');
+  // Function này đã được thay thế bằng UI modal để xử lý update quantity
+  // Không sử dụng nữa
+  return { success: true, message: 'Please use modal to update quantity' };
 }
 
 // Load trạng thái bàn theo hóa đơn - Get table status based on invoices
