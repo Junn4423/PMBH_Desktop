@@ -43,7 +43,6 @@ const ChonSanPham = ({ onAddToCart }) => {
 
       // Load danh mục sản phẩm
       const categoriesResponse = await getLoaiSanPham();
-      console.log('Categories response:', categoriesResponse);
       
       // Xử lý dữ liệu categories
       let categoriesData = [];
@@ -70,7 +69,6 @@ const ChonSanPham = ({ onAddToCart }) => {
 
       // Load tất cả sản phẩm
       const productsResponse = await getAllSanPham();
-      console.log('Products response:', productsResponse);
       
       // Xử lý dữ liệu products
       let productsData = [];

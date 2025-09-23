@@ -9,7 +9,6 @@ const urlLogoutApi = url_api_logout;
 const GMAC_LOGIN_URL = 'http://192.168.1.92/gmac/login.sof.vn/index.php';
 
 // Debug environment
-console.log('API Login Environment:', environment);
 
 // -------------------- Authentication helpers --------------------
 let authCache = null; // Lưu token sau lần đăng nhập đầu tiên
@@ -18,12 +17,9 @@ let authExpiry = null; // Thời gian hết hạn token
 async function getAuthToken(forceRefresh = false) {
   // Check if cached token is still valid
   if (authCache && authExpiry && Date.now() < authExpiry && !forceRefresh) {
-    console.log("Using cached auth token");
     return authCache;
   }
 
-  console.log("Getting fresh auth token...");
-  console.log("Login URL:", GMAC_LOGIN_URL);
 
   const payload = {
     txtUserName: "admin",
@@ -53,7 +49,6 @@ async function getAuthToken(forceRefresh = false) {
       };
       // Set expiry to 1 hour from now
       authExpiry = Date.now() + (60 * 60 * 1000);
-      console.log("Got auth token from GMAC:", authCache);
       return authCache;
     } else {
       throw new Error("Invalid GMAC response");
@@ -85,21 +80,17 @@ export async function getAuthHeaders(forceRefresh = false) {
 }
 
 async function callApiWithAuth(payload, retryCount = 0) {
-  console.log("Calling API with auth:", payload, "retry count:", retryCount);
 
   try {
     const headers = await getAuthHeaders(retryCount > 0); // Force refresh on retry
-    console.log("Using headers:", headers);
 
     const res = await axios.post(urlApi, payload, { headers });
 
     const result = res.data;
-    console.log("API response:", result);
     return result;
   } catch (error) {
     // If we get 401 and haven't retried yet, clear cache and retry
     if (error.response && error.response.status === 401 && retryCount === 0) {
-      console.log("Got 401, clearing auth cache and retrying...");
       authCache = null; // Clear cached token
       authExpiry = null;
       return callApiWithAuth(payload, 1); // Retry once
@@ -110,7 +101,6 @@ async function callApiWithAuth(payload, retryCount = 0) {
 
 export async function login(username, password) {
   try {
-    console.log("Login attempt:", { username, loginUrl: GMAC_LOGIN_URL });
     
     const payload = {
       txtUserName: username,
@@ -124,7 +114,6 @@ export async function login(username, password) {
       },
     });
 
-    console.log("Login response:", res.data);
     const result = res.data;
 
     // Check if we have token and code (GMAC format)
@@ -135,7 +124,6 @@ export async function login(username, password) {
         userId: result.userId || 1
       };
       authExpiry = Date.now() + (60 * 60 * 1000); // 1 hour
-      console.log("Login successful:", authCache);
       return { 
         success: true, 
         token: result.token, 

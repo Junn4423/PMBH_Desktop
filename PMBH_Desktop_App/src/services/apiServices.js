@@ -19,7 +19,6 @@ export async function callApi(table, func, additionalData = {}, retryCount = 0) 
     const res = await axios.post(urlApi, payload, { headers });
     
     // Log response để debug
-    console.log(`API Response for ${table}.${func}:`, res.data);
     
     // Đảm bảo trả về array nếu dữ liệu là null hoặc undefined
     if (res.data === null || res.data === undefined) {
@@ -31,7 +30,6 @@ export async function callApi(table, func, additionalData = {}, retryCount = 0) 
   } catch (error) {
     // If we get 401 or auth error and haven't retried yet, retry with fresh token
     if ((error.response?.status === 401 || error.message.includes('token')) && retryCount === 0) {
-      console.log('Auth error, retrying with fresh token...');
       return callApi(table, func, additionalData, 1);
     }
     

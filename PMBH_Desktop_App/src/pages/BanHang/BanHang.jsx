@@ -218,7 +218,6 @@ const BanHang = () => {
     if (autoRefreshEnabled && currentView === VIEW_STATES.TABLES) {
       // Auto refresh mỗi 30 giây khi đang ở view TABLES
       intervalId = setInterval(() => {
-        console.log('Auto refreshing table status...');
         refreshTableStatusOnly();
       }, 30000); // 30 seconds
     }
@@ -237,7 +236,6 @@ const BanHang = () => {
     if (quickRefreshEnabled && currentView === VIEW_STATES.TABLES) {
       // Quick refresh mỗi 2 giây trong 10 giây sau action
       quickIntervalId = setInterval(() => {
-        console.log('Quick refreshing after action...');
         refreshTableStatusOnly();
       }, 2000); // 2 seconds
     }
@@ -264,7 +262,6 @@ const BanHang = () => {
       setLoading(true);
       await loadTableStatuses(tables);
       setLastRefresh(new Date());
-      console.log('Table status refreshed at:', new Date().toLocaleTimeString());
     } catch (error) {
       console.error('Error refreshing table status:', error);
     } finally {
@@ -274,7 +271,6 @@ const BanHang = () => {
 
   // Trigger quick refresh sau khi có action
   const triggerQuickRefresh = (actionType) => {
-    console.log(`Action triggered: ${actionType}, starting quick refresh...`);
     setLastAction({ type: actionType, timestamp: new Date() });
     setQuickRefreshEnabled(true);
     
@@ -331,7 +327,6 @@ const BanHang = () => {
     
     // Make payment test available globally for debugging
     window.testPaymentAPI = quickPaymentTest;
-    console.log('[DEV] Payment test available: window.testPaymentAPI("HD68CD00A5E8AC2")');
     
     await Promise.all([
       loadTables(),
@@ -344,7 +339,6 @@ const BanHang = () => {
     try {
       setLoading(true);
       const tablesResponse = await loadBan();
-      console.log('Tables response:', tablesResponse);
       
       let tablesData = [];
       if (Array.isArray(tablesResponse)) {
@@ -378,35 +372,22 @@ const BanHang = () => {
     try {
       // Sử dụng API getChiTietHoaDonRong để lấy chi tiết hóa đơn kể cả hóa đơn rỗng
       const statusResponse = await getChiTietHoaDonRong();
-      console.log('=== DEBUG TABLE STATUS ===');
-      console.log('Table status response:', statusResponse);
-      console.log('Current tables:', currentTables);
       
       if (Array.isArray(statusResponse)) {
-        console.log('Processing', statusResponse.length, 'status records');
         
-        // Debug: Log first few items to see structure
-        if (statusResponse.length > 0) {
-          console.log('Sample status record:', statusResponse[0]);
-        }
-        
-        // Xử lý song song để load thông tin chi tiết cho từng bàn
         const updatedTables = await Promise.all(
           currentTables.map(async (table) => {
-            console.log(`Processing table ${table.id} (${table.name})`);
             
             // Tìm hóa đơn theo idBan
             const tableInvoice = statusResponse.find(invoice => {
               const matches = invoice.idBan === table.id || 
                              parseInt(invoice.idBan) === parseInt(table.id);
               if (matches) {
-                console.log(`Found invoice for table ${table.id}:`, invoice);
               }
               return matches;
             });
             
             if (tableInvoice) {
-              console.log(`Table ${table.id} has invoice:`, tableInvoice);
               
               // Bàn có hóa đơn (kể cả hóa đơn rỗng với tongTien = 0)
               const invoiceId = tableInvoice.idDonHang;
@@ -450,7 +431,6 @@ const BanHang = () => {
                   isEmptyInvoice: totalAmount === 0 // Đánh dấu hóa đơn rỗng
                 };
                 
-                console.log(`Final result for table ${table.id}:`, result);
                 return result;
               } catch (error) {
                 console.error(`Error loading details for table ${table.id}:`, error);
@@ -468,7 +448,6 @@ const BanHang = () => {
                 };
               }
             } else {
-              console.log(`No invoice found for table ${table.id}, marking as available`);
               // Bàn không có hóa đơn = bàn trống
               return {
                 ...table,
@@ -486,8 +465,6 @@ const BanHang = () => {
           })
         );
         
-        console.log('=== FINAL UPDATED TABLES ===');
-        console.log(updatedTables);
         setTables(updatedTables);
       } else {
         console.warn('Status response is not an array:', statusResponse);
@@ -502,7 +479,6 @@ const BanHang = () => {
   const loadAreas = async () => {
     try {
       const areasResponse = await loadKhuVuc();
-      console.log('Areas response:', areasResponse);
       
       // Xử lý dữ liệu areas tương tự như BanHangOld
       let areasData = [];
@@ -530,7 +506,6 @@ const BanHang = () => {
     try {
       // Sử dụng API mới loadDanhMucSp thay vì getLoaiSanPham
       const categoriesResponse = await loadDanhMucSp();
-      console.log('Categories response:', categoriesResponse);
       
       // Xử lý dữ liệu categories theo mobile logic pattern
       let categoriesData = [];
@@ -561,7 +536,6 @@ const BanHang = () => {
       // Fallback to old API if new one fails
       try {
         const fallbackResponse = await getLoaiSanPham();
-        console.log('Fallback categories response:', fallbackResponse);
         // Process fallback response with same logic
         let categoriesData = [];
         if (Array.isArray(fallbackResponse)) {
@@ -588,7 +562,6 @@ const BanHang = () => {
   const loadProducts = async () => {
     try {
       const productsResponse = await getAllSanPham();
-      console.log('Products response:', productsResponse);
 
       // Xử lý dữ liệu products tương tự như categories
       let productsData = [];
@@ -629,7 +602,6 @@ const BanHang = () => {
       // Kiểm tra bàn có hóa đơn hay không
       if (table.invoiceId && table.status === 'occupied') {
         // Bàn có hóa đơn - load hóa đơn đó lên (kể cả hóa đơn rỗng)
-        console.log(`Loading existing invoice for table ${table.id}: ${table.invoiceId}`);
         
         // Tạo invoice object từ dữ liệu có sẵn
         const invoice = {
@@ -656,10 +628,8 @@ const BanHang = () => {
         }
       } else {
         // Bàn trống - tự động tạo hóa đơn mới và chuyển sang chọn món
-        console.log(`Creating new invoice for empty table ${table.id}`);
         
         const response = await taoHoaDon(table.id);
-        console.log('Create invoice response:', response);
         
         if (response && response.success && response.message) {
           const newInvoice = {
@@ -667,7 +637,6 @@ const BanHang = () => {
             maBan: table.id,
             tenBan: table.name
           };
-          console.log('Setting new invoice:', newInvoice);
           setCurrentInvoice(newInvoice);
           setInvoiceDetails([]);
           
@@ -676,8 +645,13 @@ const BanHang = () => {
           // Trigger refresh để cập nhật trạng thái bàn
           triggerQuickRefresh('INVOICE_CREATE');
           
+          // Load products và categories trước khi chuyển sang view chọn món
+          await Promise.all([
+            loadProductCategories(),
+            loadProducts()
+          ]);
+          
           // Tự động chuyển sang view chọn món cho bàn trống
-          console.log('Switching to products view for new invoice');
           setCurrentView(VIEW_STATES.PRODUCTS);
           return; // Kết thúc hàm tại đây để không chuyển sang INVOICE view
         } else {
@@ -878,17 +852,12 @@ const BanHang = () => {
     try {
       setLoading(true);
       
-      console.log('=== REMOVING PRODUCT ===');
-      console.log('maCt to remove:', maCt);
-      console.log('currentInvoice:', currentInvoice);
       
       // Sử dụng API mới xoaCtHd với object parameter
       const deleteResponse = await xoaCtHd({ maCt });
-      console.log('Delete response:', deleteResponse);
       
       // Reload chi tiết hóa đơn
       const detailsResponse = await getChiTietHoaDonTheoMaHD(currentInvoice.maHd);
-      console.log('Reloaded invoice details:', detailsResponse);
       
       if (Array.isArray(detailsResponse)) {
         setInvoiceDetails(detailsResponse);
@@ -976,7 +945,6 @@ const BanHang = () => {
     
     try {
       const statusResponse = await layTrangThaiDonHangRealtime(currentInvoice.maHd);
-      console.log('Real-time order status:', statusResponse);
       
       // Update order status state
       setOrderStatus(statusResponse);
@@ -1010,12 +978,10 @@ const BanHang = () => {
     try {
       setPaymentLoading(true);
 
-      console.log('[BanHang] Processing enhanced payment:', paymentData);
 
       // The PaymentModal already called thanhToanHoaDon successfully
       // We just need to handle post-payment cleanup
 
-      console.log('[BanHang] Payment completed, cleaning up...');
 
       // Trigger refresh to update table status
       triggerQuickRefresh('PAYMENT_COMPLETE');
@@ -1027,7 +993,6 @@ const BanHang = () => {
       setCurrentView(VIEW_STATES.TABLES);
       setShowPaymentModal(false);
       
-      console.log('[BanHang] Payment cleanup completed');
       
     } catch (error) {
       console.error('[BanHang] Enhanced payment error:', error);
@@ -1039,18 +1004,12 @@ const BanHang = () => {
 
   // Open payment modal
   const openPaymentModal = () => {
-    console.log('[DEBUG] Current invoice:', currentInvoice);
-    console.log('[DEBUG] Invoice details length:', invoiceDetails.length);
-    console.log('[DEBUG] Order total:', orderTotal);
-    console.log('[DEBUG] Payment button clicked - openPaymentModal called');
     
     if (!currentInvoice || invoiceDetails.length === 0) {
-      console.log('[DEBUG] No invoice or empty details - showing error');
       message.error('Không có đơn hàng để thanh toán');
       return;
     }
 
-    console.log('[DEBUG] Opening payment modal...');
     setShowPaymentModal(true);
   };
 
@@ -1123,7 +1082,6 @@ const BanHang = () => {
   const reprintInvoice = async (invoice) => {
     try {
       // Here you would integrate with your printing system
-      console.log('Reprinting invoice:', invoice);
       message.success('Đang chuẩn bị in hóa đơn...');
       
       // Example print action - replace with actual print implementation
@@ -1726,10 +1684,6 @@ const BanHang = () => {
   );
 
   const renderInvoiceView = () => {
-    console.log('=== INVOICE VIEW DEBUG ===');
-    console.log('currentInvoice:', currentInvoice);
-    console.log('invoiceDetails:', invoiceDetails);
-    console.log('selectedTable:', selectedTable);
     
     return (
       <div className="invoice-view">
