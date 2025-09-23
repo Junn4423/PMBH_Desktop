@@ -52,10 +52,12 @@ import {
   loadDsCthd,
   loadHoaDonTheoBan,
   thanhToanHoaDonBanhang,
+  thanhToanHoaDonChiTiet,
   chuyenXuongBep,
   xoaCtHd,
   capNhatCtHd,
-  loadTrangThaiBanTheoHoaDon,
+  getChiTietHoaDonRong,
+  getChiTietHoaDonTheoMaHD,
   loadDanhMucSp,
   loadSanPhamTheoMaDanhMucSp,
   huyHoaDon,
@@ -67,8 +69,21 @@ import {
   loadDsCthdV3,
   gopBanBanhang,
   tachBan,
-  chuyenBanCorrected
+  chuyenBanCorrected,
+  capNhatTrangThaiDonHang,
+  xacNhanDonHang,
+  layTrangThaiDonHangRealtime,
+  inHoaDonThanhToan
 } from '../../services/apiServices';
+
+// Import components
+import ChonSanPham from './ChonSanPham';
+import PaymentModal from '../../components/Payment/PaymentModal';
+import ReceiptPrinter from '../../components/Print/ReceiptPrinter';
+import OrderStatus from '../../components/Order/OrderStatus';
+
+// Debug utilities
+import { debugAPIFunctions, testPaymentAPI as quickPaymentTest } from '../../utils/debugAPI';
 
 import './BanHang.css';
 
@@ -125,6 +140,13 @@ const BanHang = () => {
     discount: 0,
     total: 0
   });
+
+  // State cho Enhanced Payment System
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [paymentLoading, setPaymentLoading] = useState(false);
+  
+  // State cho Order Status Tracking
+  const [orderStatus, setOrderStatus] = useState(null);
   
   // State UI
   const [loading, setLoading] = useState(false);
@@ -293,7 +315,7 @@ const BanHang = () => {
       const total = invoiceDetails.reduce((sum, item) => {
         // API trả về field 'gia' hoặc 'giaBan' tùy endpoint, không phải 'donGia'
         const price = parseFloat(item.gia || item.giaBan || item.donGia || 0);
-        const quantity = parseInt(item.soLuong || 0);
+        const quantity = parseInt(item.sl || item.soLuong || 0); // API trả về 'sl' cho quantity
         return sum + (price * quantity);
       }, 0);
       setOrderTotal(total);
@@ -304,6 +326,13 @@ const BanHang = () => {
 
   // Load dữ liệu ban đầu - chỉ tables và areas
   const loadInitialData = async () => {
+    // Debug API functions availability
+    debugAPIFunctions();
+    
+    // Make payment test available globally for debugging
+    window.testPaymentAPI = quickPaymentTest;
+    console.log('[DEV] Payment test available: window.testPaymentAPI("HD68CD00A5E8AC2")');
+    
     await Promise.all([
       loadTables(),
       loadAreas()
@@ -317,7 +346,6 @@ const BanHang = () => {
       const tablesResponse = await loadBan();
       console.log('Tables response:', tablesResponse);
       
-      // Xử lý dữ liệu bàn - format: {"idBan":"1","tenBan":"Quầy 1","idKhuVuc":"NGOAI"}
       let tablesData = [];
       if (Array.isArray(tablesResponse)) {
         tablesData = tablesResponse.map(table => ({
@@ -343,13 +371,13 @@ const BanHang = () => {
     }
   };
 
-  // Load trạng thái bàn theo hóa đơn
-  // Load trạng thái chi tiết cho từng bàn  
+  // Load trạng thái bàn theo hóa đơn - sử dụng API getChiTietHoaDonRong
   const loadTableStatuses = async (currentTables) => {
     if (!currentTables || currentTables.length === 0) return;
     
     try {
-      const statusResponse = await loadTrangThaiBanTheoHoaDon();
+      // Sử dụng API getChiTietHoaDonRong để lấy chi tiết hóa đơn kể cả hóa đơn rỗng
+      const statusResponse = await getChiTietHoaDonRong();
       console.log('=== DEBUG TABLE STATUS ===');
       console.log('Table status response:', statusResponse);
       console.log('Current tables:', currentTables);
@@ -367,163 +395,94 @@ const BanHang = () => {
           currentTables.map(async (table) => {
             console.log(`Processing table ${table.id} (${table.name})`);
             
-            // Try multiple field combinations to find table status
-            const tableStatus = statusResponse.find(status => {
-              const matches = status.maBan === table.id || 
-                             status.idBan === table.id ||
-                             status.ban_id === table.id ||
-                             status.table_id === table.id ||
-                             parseInt(status.maBan) === parseInt(table.id) ||
-                             parseInt(status.idBan) === parseInt(table.id);
+            // Tìm hóa đơn theo idBan
+            const tableInvoice = statusResponse.find(invoice => {
+              const matches = invoice.idBan === table.id || 
+                             parseInt(invoice.idBan) === parseInt(table.id);
               if (matches) {
-                console.log(`Found status for table ${table.id}:`, status);
+                console.log(`Found invoice for table ${table.id}:`, invoice);
               }
               return matches;
             });
             
-            if (tableStatus) {
-              console.log(`Table ${table.id} has status record:`, tableStatus);
+            if (tableInvoice) {
+              console.log(`Table ${table.id} has invoice:`, tableInvoice);
               
-              // Check if table has active invoice
-              const hasActiveInvoice = tableStatus.maHoaDon || 
-                                     tableStatus.maHd || 
-                                     tableStatus.invoice_id ||
-                                     tableStatus.hoa_don_id;
+              // Bàn có hóa đơn (kể cả hóa đơn rỗng với tongTien = 0)
+              const invoiceId = tableInvoice.idDonHang;
+              const totalAmount = parseFloat(tableInvoice.tongTien) || 0;
               
-              if (hasActiveInvoice) {
-                try {
-                  const invoiceId = tableStatus.maHoaDon || 
-                                  tableStatus.maHd || 
-                                  tableStatus.invoice_id ||
-                                  tableStatus.hoa_don_id;
-                  
-                  console.log(`Loading details for invoice ${invoiceId}`);
-                  
-                  // Load chi tiết hóa đơn để tính tổng tiền và lấy danh sách món
-                  const [invoiceDetails, totalAmountResponse] = await Promise.all([
-                    loadDsCthd(invoiceId),
-                    tinhTongTienHoaDon({ maHd: invoiceId }).catch(() => null)
-                  ]);
-
-                  // Determine status based on invoice state - FIXED LOGIC
-                  let status = 'occupied'; // Default to occupied if has active invoice
-                  const statusValue = tableStatus.trangThai || 
-                                    tableStatus.status || 
-                                    tableStatus.state ||
-                                    tableStatus.trang_thai;
-                  
-                  console.log(`Status value for table ${table.id}:`, statusValue);
-                  
-                  // CORRECTED LOGIC: If table has invoice, it cannot be available
-                  if (statusValue === '0' || statusValue === 0) {
-                    status = 'occupied'; // Có invoice nhưng chưa thanh toán
-                  } else if (statusValue === '1' || statusValue === 1 || statusValue === 'active') {
-                    status = 'occupied'; // Đang có khách
-                  } else if (statusValue === '2' || statusValue === 2) {
-                    status = 'serving'; // Đang phục vụ
-                  } else if (statusValue === '3' || statusValue === 3) {
-                    status = 'checkout'; // Chuẩn bị thanh toán
-                  } else {
-                    status = 'occupied'; // Default cho bất kỳ case nào có invoice
+              try {
+                // Load chi tiết hóa đơn để lấy danh sách món
+                const invoiceDetails = await getChiTietHoaDonTheoMaHD(invoiceId);
+                
+                // Tính thời gian ngồi
+                let sittingTime = '';
+                if (tableInvoice.thoiGian) {
+                  try {
+                    const startTime = new Date(tableInvoice.thoiGian);
+                    const now = new Date();
+                    const diffMinutes = Math.floor((now - startTime) / 60000);
+                    const hours = Math.floor(diffMinutes / 60);
+                    const minutes = diffMinutes % 60;
+                    sittingTime = hours > 0 ? `${hours}h ${minutes}m` : `${minutes}m`;
+                  } catch (timeError) {
+                    console.error('Error calculating sitting time:', timeError);
+                    sittingTime = '';
                   }
-
-                  // Tính thời gian ngồi
-                  let sittingTime = '';
-                  const orderTime = tableStatus.gioVao || 
-                                  tableStatus.gio_vao || 
-                                  tableStatus.order_time ||
-                                  tableStatus.created_at;
-                                  
-                  if (orderTime) {
-                    try {
-                      const startTime = new Date(orderTime);
-                      const now = new Date();
-                      const diffMinutes = Math.floor((now - startTime) / 60000);
-                      const hours = Math.floor(diffMinutes / 60);
-                      const minutes = diffMinutes % 60;
-                      sittingTime = hours > 0 ? `${hours}h ${minutes}m` : `${minutes}m`;
-                    } catch (timeError) {
-                      console.error('Error calculating sitting time:', timeError);
-                      sittingTime = '';
-                    }
-                  }
-
-                  const result = {
-                    ...table,
-                    status,
-                    invoiceId,
-                    customerCount: tableStatus.soKhach || tableStatus.so_khach || 0,
-                    orderTime: orderTime || null,
-                    sittingTime,
-                    totalAmount: totalAmountResponse || 0,
-                    itemCount: Array.isArray(invoiceDetails) ? invoiceDetails.length : 0,
-                    orderItems: Array.isArray(invoiceDetails) ? invoiceDetails.slice(0, 3) : []
-                  };
-                  
-                  console.log(`Final result for table ${table.id}:`, result);
-                  return result;
-                } catch (error) {
-                  console.error(`Error loading details for table ${table.id}:`, error);
-                  return {
-                    ...table,
-                    status: 'occupied',
-                    invoiceId: hasActiveInvoice,
-                    customerCount: tableStatus.soKhach || tableStatus.so_khach || 0,
-                    orderTime: tableStatus.gioVao || tableStatus.gio_vao || null,
-                    sittingTime: '',
-                    totalAmount: 0,
-                    itemCount: 0,
-                    orderItems: []
-                  };
                 }
-              } else {
-                // Has status record but no active invoice - table might be reserved or cleaned
-                const statusValue = tableStatus.trangThai || 
-                                  tableStatus.status || 
-                                  tableStatus.state ||
-                                  tableStatus.trang_thai;
+
+                // Tính số món (những món có sl > 0)
+                const itemsWithQuantity = Array.isArray(invoiceDetails) 
+                  ? invoiceDetails.filter(item => parseInt(item.sl) > 0) 
+                  : [];
+
+                const result = {
+                  ...table,
+                  status: 'occupied', // Bàn có hóa đơn luôn là occupied
+                  invoiceId,
+                  customerCount: 0, // API không trả về soKhach
+                  orderTime: tableInvoice.thoiGian || null,
+                  sittingTime,
+                  totalAmount,
+                  itemCount: itemsWithQuantity.length,
+                  orderItems: itemsWithQuantity.slice(0, 3),
+                  isEmptyInvoice: totalAmount === 0 // Đánh dấu hóa đơn rỗng
+                };
                 
-                let status = 'available'; // Default available if no invoice
-                console.log(`Table ${table.id} no invoice, status value: ${statusValue}`);
-                
-                // Only set occupied if explicitly marked as occupied without invoice
-                if (statusValue === '1' || statusValue === 1 || statusValue === 'occupied') {
-                  status = 'occupied'; // Bàn được đặt trước hoặc đang dọn dẹp
-                } else if (statusValue === '2' || statusValue === 2) {
-                  status = 'serving'; // Rare case
-                } else if (statusValue === '3' || statusValue === 3) {
-                  status = 'checkout'; // Rare case
-                } // else remains available
-                
-                console.log(`Table ${table.id} no invoice, final status: ${status}`);
-                
+                console.log(`Final result for table ${table.id}:`, result);
+                return result;
+              } catch (error) {
+                console.error(`Error loading details for table ${table.id}:`, error);
                 return {
                   ...table,
-                  status,
-                  invoiceId: null,
+                  status: 'occupied',
+                  invoiceId,
                   customerCount: 0,
-                  orderTime: null,
+                  orderTime: tableInvoice.thoiGian || null,
                   sittingTime: '',
-                  totalAmount: 0,
+                  totalAmount,
                   itemCount: 0,
-                  orderItems: []
+                  orderItems: [],
+                  isEmptyInvoice: totalAmount === 0
                 };
               }
             } else {
-              console.log(`No status record found for table ${table.id}, marking as available`);
+              console.log(`No invoice found for table ${table.id}, marking as available`);
+              // Bàn không có hóa đơn = bàn trống
+              return {
+                ...table,
+                status: 'available',
+                invoiceId: null,
+                customerCount: 0,
+                orderTime: null,
+                sittingTime: '',
+                totalAmount: 0,
+                itemCount: 0,
+                orderItems: [],
+                isEmptyInvoice: false
+              };
             }
-            
-            return {
-              ...table,
-              status: 'available',
-              invoiceId: null,
-              customerCount: 0,
-              orderTime: null,
-              sittingTime: '',
-              totalAmount: 0,
-              itemCount: 0,
-              orderItems: []
-            };
           })
         );
         
@@ -661,15 +620,16 @@ const BanHang = () => {
     }
   };
 
-  // FLOW 1: Chọn bàn và chuyển sang view hóa đơn
+  // FLOW 1: Chọn bàn và xử lý tự động tạo/load hóa đơn
   const handleTableSelect = async (table) => {
     try {
       setSelectedTable(table);
       setLoading(true);
       
-      // Ưu tiên sử dụng dữ liệu đã có từ table object
-      if (table.invoiceId && table.status !== 'available') {
-        console.log(`Using existing invoice data for table ${table.id}:`, table.invoiceId);
+      // Kiểm tra bàn có hóa đơn hay không
+      if (table.invoiceId && table.status === 'occupied') {
+        // Bàn có hóa đơn - load hóa đơn đó lên (kể cả hóa đơn rỗng)
+        console.log(`Loading existing invoice for table ${table.id}: ${table.invoiceId}`);
         
         // Tạo invoice object từ dữ liệu có sẵn
         const invoice = {
@@ -680,43 +640,60 @@ const BanHang = () => {
         setCurrentInvoice(invoice);
         
         // Load chi tiết hóa đơn
-        const detailsResponse = await loadDsCthd(table.invoiceId);
+        const detailsResponse = await getChiTietHoaDonTheoMaHD(table.invoiceId);
         if (Array.isArray(detailsResponse)) {
-          setInvoiceDetails(detailsResponse);
+          // Lọc chỉ những món có số lượng > 0
+          const itemsWithQuantity = detailsResponse.filter(item => parseInt(item.sl) > 0);
+          setInvoiceDetails(itemsWithQuantity);
+        } else {
+          setInvoiceDetails([]);
         }
         
-        message.success(`Đã chọn bàn ${table.name} - Hóa đơn #${table.invoiceId}`);
-      } else {
-        // Fallback: Load hóa đơn từ API nếu không có dữ liệu sẵn
-        console.log(`Loading invoice from API for table ${table.id}`);
-        const invoiceResponse = await loadHoaDonTheoBan({ maBan: table.id });
-        
-        if (invoiceResponse && invoiceResponse.length > 0) {
-          const invoice = invoiceResponse[0];
-          setCurrentInvoice(invoice);
-          
-          // Load chi tiết hóa đơn
-          const detailsResponse = await loadDsCthd(invoice.maHd);
-          if (Array.isArray(detailsResponse)) {
-            setInvoiceDetails(detailsResponse);
-          }
-          
-          message.success(`Đã chọn bàn ${table.name} - Hóa đơn #${invoice.maHd}`);
+        if (table.isEmptyInvoice) {
+          message.success(`Đã load hóa đơn rỗng cho bàn ${table.name} - Sẵn sàng chọn món`);
         } else {
-          setCurrentInvoice(null);
+          message.success(`Đã load hóa đơn cho bàn ${table.name} - #${table.invoiceId}`);
+        }
+      } else {
+        // Bàn trống - tự động tạo hóa đơn mới và chuyển sang chọn món
+        console.log(`Creating new invoice for empty table ${table.id}`);
+        
+        const response = await taoHoaDon(table.id);
+        console.log('Create invoice response:', response);
+        
+        if (response && response.success && response.message) {
+          const newInvoice = {
+            maHd: response.message, // API trả về mã hóa đơn trong field message
+            maBan: table.id,
+            tenBan: table.name
+          };
+          console.log('Setting new invoice:', newInvoice);
+          setCurrentInvoice(newInvoice);
           setInvoiceDetails([]);
-          message.info(`Bàn ${table.name} trống - Sẵn sàng tạo đơn mới`);
+          
+          message.success(`Đã tạo hóa đơn mới cho bàn ${table.name} - #${response.message}`);
+          
+          // Trigger refresh để cập nhật trạng thái bàn
+          triggerQuickRefresh('INVOICE_CREATE');
+          
+          // Tự động chuyển sang view chọn món cho bàn trống
+          console.log('Switching to products view for new invoice');
+          setCurrentView(VIEW_STATES.PRODUCTS);
+          return; // Kết thúc hàm tại đây để không chuyển sang INVOICE view
+        } else {
+          console.error('Invalid response from taoHoaDon:', response);
+          throw new Error('Không thể tạo hóa đơn mới');
         }
       }
       
-      // Chuyển sang view hóa đơn
+      // Chuyển sang view hóa đơn cho bàn có hóa đơn
       setCurrentView(VIEW_STATES.INVOICE);
       
       // Trigger quick refresh sau khi chọn bàn
       triggerQuickRefresh('TABLE_SELECT');
     } catch (error) {
       console.error('Error selecting table:', error);
-      message.error('Không thể tải thông tin bàn: ' + (error.message || 'Lỗi không xác định'));
+      message.error('Không thể xử lý bàn: ' + (error.message || 'Lỗi không xác định'));
     } finally {
       setLoading(false);
     }
@@ -814,7 +791,7 @@ const BanHang = () => {
       
       if (response) {
         // Reload chi tiết hóa đơn
-        const detailsResponse = await loadDsCthd(currentInvoice.maHd);
+        const detailsResponse = await getChiTietHoaDonTheoMaHD(currentInvoice.maHd);
         if (Array.isArray(detailsResponse)) {
           setInvoiceDetails(detailsResponse);
         }
@@ -874,7 +851,7 @@ const BanHang = () => {
       await taoCthd(currentInvoice.maHd, foundProduct.id, newQuantityForUpdate);
       
       // Reload chi tiết hóa đơn
-      const detailsResponse = await loadDsCthd(currentInvoice.maHd);
+      const detailsResponse = await getChiTietHoaDonTheoMaHD(currentInvoice.maHd);
       if (Array.isArray(detailsResponse)) {
         setInvoiceDetails(detailsResponse);
       }
@@ -910,7 +887,7 @@ const BanHang = () => {
       console.log('Delete response:', deleteResponse);
       
       // Reload chi tiết hóa đơn
-      const detailsResponse = await loadDsCthd(currentInvoice.maHd);
+      const detailsResponse = await getChiTietHoaDonTheoMaHD(currentInvoice.maHd);
       console.log('Reloaded invoice details:', detailsResponse);
       
       if (Array.isArray(detailsResponse)) {
@@ -947,7 +924,7 @@ const BanHang = () => {
       triggerQuickRefresh('SEND_TO_KITCHEN');
       
       // Refresh invoice details để cập nhật trạng thái
-      const detailsResponse = await loadDsCthd(currentInvoice.maHd);
+      const detailsResponse = await getChiTietHoaDonTheoMaHD(currentInvoice.maHd);
       if (Array.isArray(detailsResponse)) {
         setInvoiceDetails(detailsResponse);
       }
@@ -959,7 +936,125 @@ const BanHang = () => {
     }
   };
 
-  // Thanh toán hóa đơn
+  // ===== ENHANCED ORDER PROCESSING WORKFLOW =====
+  
+  // Confirm order before sending to kitchen
+  const confirmOrder = async () => {
+    if (!currentInvoice || invoiceDetails.length === 0) {
+      message.error('Không có đơn hàng để xác nhận');
+      return;
+    }
+
+    try {
+      setLoading(true);
+      
+      // Confirm order with current user
+      await xacNhanDonHang(currentInvoice.maHd, 'current_user'); // Replace with actual user ID
+      
+      message.success('Đã xác nhận đơn hàng');
+      
+      // Update order status
+      await capNhatTrangThaiDonHang(currentInvoice.maHd, 'confirmed');
+      
+      // Refresh invoice details
+      const detailsResponse = await getChiTietHoaDonTheoMaHD(currentInvoice.maHd);
+      if (Array.isArray(detailsResponse)) {
+        setInvoiceDetails(detailsResponse);
+      }
+      
+    } catch (error) {
+      console.error('Error confirming order:', error);
+      message.error('Không thể xác nhận đơn hàng: ' + (error.message || 'Lỗi không xác định'));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Track order status in real-time
+  const trackOrderStatus = async () => {
+    if (!currentInvoice) return;
+    
+    try {
+      const statusResponse = await layTrangThaiDonHangRealtime(currentInvoice.maHd);
+      console.log('Real-time order status:', statusResponse);
+      
+      // Update order status state
+      setOrderStatus(statusResponse);
+      
+      // Update UI based on status
+      // This could trigger notifications or UI updates
+      
+    } catch (error) {
+      console.error('Error tracking order status:', error);
+      // Don't show error message for tracking failures to avoid spam
+    }
+  };
+
+  // Auto-track order status every 30 seconds
+  useEffect(() => {
+    let trackingInterval;
+    
+    if (currentInvoice && currentView === VIEW_STATES.INVOICE) {
+      trackingInterval = setInterval(trackOrderStatus, 30000); // Track every 30 seconds
+    }
+    
+    return () => {
+      if (trackingInterval) {
+        clearInterval(trackingInterval);
+      }
+    };
+  }, [currentInvoice, currentView]);
+
+  // Enhanced payment processing with detailed tracking
+  const processPaymentEnhanced = async (paymentData) => {
+    try {
+      setPaymentLoading(true);
+
+      console.log('[BanHang] Processing enhanced payment:', paymentData);
+
+      // The PaymentModal already called thanhToanHoaDon successfully
+      // We just need to handle post-payment cleanup
+
+      console.log('[BanHang] Payment completed, cleaning up...');
+
+      // Trigger refresh to update table status
+      triggerQuickRefresh('PAYMENT_COMPLETE');
+      
+      // Clear current invoice state
+      setCurrentInvoice(null);
+      setInvoiceDetails([]);
+      setSelectedTable(null);
+      setCurrentView(VIEW_STATES.TABLES);
+      setShowPaymentModal(false);
+      
+      console.log('[BanHang] Payment cleanup completed');
+      
+    } catch (error) {
+      console.error('[BanHang] Enhanced payment error:', error);
+      message.error('Không thể xử lý thanh toán: ' + (error.message || 'Lỗi không xác định'));
+    } finally {
+      setPaymentLoading(false);
+    }
+  };
+
+  // Open payment modal
+  const openPaymentModal = () => {
+    console.log('[DEBUG] Current invoice:', currentInvoice);
+    console.log('[DEBUG] Invoice details length:', invoiceDetails.length);
+    console.log('[DEBUG] Order total:', orderTotal);
+    console.log('[DEBUG] Payment button clicked - openPaymentModal called');
+    
+    if (!currentInvoice || invoiceDetails.length === 0) {
+      console.log('[DEBUG] No invoice or empty details - showing error');
+      message.error('Không có đơn hàng để thanh toán');
+      return;
+    }
+
+    console.log('[DEBUG] Opening payment modal...');
+    setShowPaymentModal(true);
+  };
+
+  // Legacy payment function (kept for compatibility)
   const processPayment = async () => {
     if (!currentInvoice || invoiceDetails.length === 0) {
       message.error('Không có đơn hàng để thanh toán');
@@ -1348,7 +1443,7 @@ const BanHang = () => {
     const subtotal = invoiceDetails.reduce((sum, item) => {
       // API trả về field 'gia' hoặc 'giaBan' tùy endpoint, không phải 'donGia'
       const price = parseFloat(item.gia || item.giaBan || item.donGia || 0);
-      const quantity = parseInt(item.soLuong || 0);
+      const quantity = parseInt(item.sl || item.soLuong || 0);
       return sum + (price * quantity);
     }, 0);
 
@@ -1393,9 +1488,9 @@ const BanHang = () => {
           ${invoiceDetails.map(item => `
             <tr>
               <td style="border: 1px solid #ddd; padding: 8px;">${item.tenSp || item.ten}</td>
-              <td style="border: 1px solid #ddd; padding: 8px; text-align: center;">${item.soLuong}</td>
+              <td style="border: 1px solid #ddd; padding: 8px; text-align: center;">${item.sl || item.soLuong}</td>
               <td style="border: 1px solid #ddd; padding: 8px; text-align: right;">${(parseFloat(item.gia || item.giaBan || item.donGia || 0)).toLocaleString()}đ</td>
-              <td style="border: 1px solid #ddd; padding: 8px; text-align: right;">${(parseFloat(item.gia || item.giaBan || item.donGia || 0) * parseInt(item.soLuong)).toLocaleString()}đ</td>
+              <td style="border: 1px solid #ddd; padding: 8px; text-align: right;">${(parseFloat(item.gia || item.giaBan || item.donGia || 0) * parseInt(item.sl || item.soLuong)).toLocaleString()}đ</td>
             </tr>
           `).join('')}
         </table>
@@ -1609,7 +1704,7 @@ const BanHang = () => {
                   }}>
                     {table.orderItems.map((item, index) => (
                       <div key={index} style={{ marginBottom: '2px' }}>
-                        • {item.tenSp || item.ten} ({item.soLuong})
+                        • {item.tenSp || item.ten} ({item.sl || item.soLuong})
                       </div>
                     ))}
                     {table.itemCount > 3 && (
@@ -1657,6 +1752,14 @@ const BanHang = () => {
               {currentInvoice?.isDraft && <Text type="warning"> (Tạm)</Text>}
               {editingInvoice && <Text type="danger"> - ĐANG CHỈNH SỬA</Text>}
             </Title>
+            {currentInvoice && (
+              <div style={{ marginTop: 8 }}>
+                <OrderStatus 
+                  invoice={currentInvoice}
+                  realTimeStatus={orderStatus}
+                />
+              </div>
+            )}
           </div>
           
           <div className="header-right">
@@ -1783,24 +1886,10 @@ const BanHang = () => {
         {!currentInvoice ? (
           <div className="empty-invoice">
             <Users size={48} />
-            <Text>Chưa có hóa đơn cho bàn này</Text>
-            <Space size="large" style={{ textAlign: 'center' }}>
-              <Button 
-                onClick={createNewInvoice}
-                size="large"
-                className="invoice-button invoice-button-primary"
-              >
-                Tạo hóa đơn mới
-              </Button>
-              <Button 
-                onClick={createDraftInvoice}
-                size="large"
-                className="invoice-button invoice-button-secondary"
-              >
-                <Save size={16} />
-                Tạo hóa đơn tạm
-              </Button>
-            </Space>
+            <Text>Không có hóa đơn nào được chọn</Text>
+            <Text type="secondary" style={{ marginTop: 8 }}>
+              Chọn một bàn để bắt đầu hoặc xem hóa đơn
+            </Text>
           </div>
         ) : (
           <div className="invoice-content">
@@ -1830,23 +1919,23 @@ const BanHang = () => {
                     <Button
                       size="small"
                       icon={<Minus size={12} />}
-                      onClick={() => updateProductQuantity(item, parseInt(item.soLuong) - 1)}
+                      onClick={() => updateProductQuantity(item, parseInt(item.sl || item.soLuong) - 1)}
                     />
                     <Button
                       size="small"
                       style={{ width: 80, margin: '0 8px' }}
                       onClick={() => {
                         setSelectedItemForUpdate(item);
-                        setNewQuantityForUpdate(parseInt(item.soLuong));
+                        setNewQuantityForUpdate(parseInt(item.sl || item.soLuong));
                         setShowUpdateQuantityModal(true);
                       }}
                     >
-                      {item.soLuong}
+                      {item.sl || item.soLuong}
                     </Button>
                     <Button
                       size="small"
                       icon={<Plus size={12} />}
-                      onClick={() => updateProductQuantity(item, parseInt(item.soLuong) + 1)}
+                      onClick={() => updateProductQuantity(item, parseInt(item.sl || item.soLuong) + 1)}
                     />
                     <Popconfirm
                       title="Xác nhận xóa món này?"
@@ -1921,14 +2010,23 @@ const BanHang = () => {
               Chuyển xuống bếp
             </Button>
             
+            <div style={{ marginBottom: 8 }}>
+              <ReceiptPrinter
+                invoice={currentInvoice}
+                invoiceDetails={invoiceDetails}
+                orderTotal={orderTotal}
+                paymentDetails={null}
+              />
+            </div>
+            
             <Button
               type="primary"
               icon={<CreditCard size={16} />}
-              onClick={processPayment}
+              onClick={openPaymentModal}
               disabled={invoiceDetails.length === 0}
               block
             >
-              Thanh toán
+              Thanh toán ({orderTotal.toLocaleString('vi-VN')} đ)
             </Button>
           </div>
         </div>
@@ -2340,6 +2438,16 @@ const BanHang = () => {
           </div>
         </div>
       </Modal>
+
+      {/* Enhanced Payment Modal */}
+      <PaymentModal
+        visible={showPaymentModal}
+        onCancel={() => setShowPaymentModal(false)}
+        onConfirm={processPaymentEnhanced}
+        invoice={currentInvoice}
+        orderTotal={orderTotal}
+        loading={paymentLoading}
+      />
     </div>
   );
 };

@@ -134,9 +134,13 @@ export async function getDanhSachBan() {
   return await callApi('Mb_LayDsBan', 'data');
 }
 
-// Lấy tổng chi tiết hóa đơn
+// Lấy tổng chi tiết hóa đơn - hóa đơn có món - chưa thanh toán và thanh toán rồi
 export async function getTongChiTietHoaDon() {
   return await callApi('Mb_TongCthd', 'data');
+}
+// Lấy chi tiết hóa đơn - kể cả hóa đơn rỗng
+export async function getChiTietHoaDonRong() {
+  return await callApi('Mb_TongCthdRong', 'data');
 }
 
 // Lấy chi tiết hóa đơn theo mã hóa đơn
@@ -808,9 +812,60 @@ export async function layDSNguyenLieuQuanLy() {
   return await callApi('Mb_NguyenLieu', 'get_dsNVL');
 }
 
-// ==================== MISSING API FUNCTIONS - SALES SYSTEM COMPLETION ====================
+// ==================== ENHANCED PAYMENT SYSTEM ====================
 
-// Thanh toán hóa đơn bán hàng - Process payment for sales invoice
+// Thanh toán hóa đơn với phương thức chi tiết - Enhanced payment processing
+export async function thanhToanHoaDonChiTiet(paymentData) {
+  const { 
+    maHd, 
+    tongTien, 
+    tienKhachDua, 
+    tienThua, 
+    phuongThucThanhToan,
+    ghiChu,
+    ngayThanhToan 
+  } = paymentData;
+  
+  return await callApi('sl_lv0013', 'thanhToanHoaDonChiTiet', { 
+    maHd, 
+    tongTien, 
+    tienKhachDua, 
+    tienThua,
+    phuongThucThanhToan,
+    ghiChu,
+    ngayThanhToan
+  });
+}
+
+// Lấy lịch sử thanh toán - Get payment history
+export async function layLichSuThanhToan(maHd) {
+  return await callApi('sl_lv0013', 'layLichSuThanhToan', { maHd });
+}
+
+// Lưu thông tin thanh toán - Save payment information
+export async function luuThongTinThanhToan(paymentInfo) {
+  return await callApi('sl_lv0013', 'luuThongTinThanhToan', paymentInfo);
+}
+
+// In hóa đơn thanh toán - Print payment receipt
+export async function inHoaDonThanhToan(maHd, paymentDetails) {
+  return await callApi('sl_lv0013', 'inHoaDonThanhToan', { 
+    maHd, 
+    paymentDetails 
+  });
+}
+
+// Hủy thanh toán (nếu cần) - Cancel payment
+export async function huyThanhToan(maHd, reason) {
+  return await callApi('sl_lv0013', 'huyThanhToan', { 
+    maHd, 
+    reason 
+  });
+}
+
+// ==================== LEGACY PAYMENT FUNCTION ====================
+
+// Thanh toán hóa đơn bán hàng - Process payment for sales invoice (Legacy)
 export async function thanhToanHoaDonBanhang(paymentData) {
   const { maHd, tongTien, tienKhachDua, tienThua } = paymentData;
   return await callApi('sl_lv0013', 'thanhToanHoaDon', { 
@@ -824,6 +879,69 @@ export async function thanhToanHoaDonBanhang(paymentData) {
 // Chuyển xuống bếp - Send order to kitchen
 export async function chuyenXuongBep(maHd) {
   return await callApi('sl_lv0013', 'chuyenXuongBep', { maHd });
+}
+
+// ==================== ORDER PROCESSING SYSTEM COMPLETION ====================
+
+// Xác nhận đơn hàng - Confirm order
+export async function xacNhanDonHang(maHd, nguoiXacNhan) {
+  return await callApi('sl_lv0013', 'xacNhanDonHang', { 
+    maHd, 
+    nguoiXacNhan,
+    thoiGianXacNhan: new Date().toISOString()
+  });
+}
+
+// Bắt đầu chuẩn bị - Start preparation
+export async function batDauChuanBi(maHd, maNhanVienBep) {
+  return await callApi('sl_lv0013', 'batDauChuanBi', { 
+    maHd, 
+    maNhanVienBep,
+    thoiGianBatDau: new Date().toISOString()
+  });
+}
+
+// Hoàn thành chuẩn bị - Complete preparation
+export async function hoanThanhChuanBi(maHd, danhSachMon) {
+  return await callApi('sl_lv0013', 'hoanThanhChuanBi', { 
+    maHd, 
+    danhSachMon,
+    thoiGianHoanThanh: new Date().toISOString()
+  });
+}
+
+// Thông báo món sẵn sàng - Notify order ready
+export async function thongBaoMonSanSang(maHd, maBan) {
+  return await callApi('sl_lv0013', 'thongBaoMonSanSang', { 
+    maHd, 
+    maBan,
+    thoiGianSanSang: new Date().toISOString()
+  });
+}
+
+// Giao món cho khách - Deliver order to customer
+export async function giaoMonChoKhach(maHd, maBan, nhanVienGiao) {
+  return await callApi('sl_lv0013', 'giaoMonChoKhach', { 
+    maHd, 
+    maBan,
+    nhanVienGiao,
+    thoiGianGiao: new Date().toISOString()
+  });
+}
+
+// Theo dõi trạng thái đơn hàng real-time - Track order status
+export async function layTrangThaiDonHangRealtime(maHd) {
+  return await callApi('sl_lv0013', 'layTrangThaiRealtime', { maHd });
+}
+
+// Cập nhật trạng thái từng món - Update individual item status
+export async function capNhatTrangThaiMon(idCthd, trangThaiMoi, ghiChu) {
+  return await callApi('sl_lv0014', 'capNhatTrangThaiMon', { 
+    idCthd, 
+    trangThaiMoi,
+    ghiChu,
+    thoiGianCapNhat: new Date().toISOString()
+  });
 }
 
 // Cập nhật số lượng chi tiết hóa đơn - Update invoice detail quantity

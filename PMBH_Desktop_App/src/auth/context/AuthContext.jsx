@@ -92,30 +92,7 @@ export const AuthProvider = ({ children }) => {
 
   // Check authentication on app load
   useEffect(() => {
-    const checkAuth = () => {
-      try {
-        const token = localStorage.getItem('authToken');
-        const user = localStorage.getItem('user');
-        const permissions = localStorage.getItem('permissions');
-
-        if (token && user) {
-          dispatch({
-            type: AUTH_ACTIONS.LOGIN_SUCCESS,
-            payload: {
-              user: JSON.parse(user),
-              permissions: permissions ? JSON.parse(permissions) : []
-            }
-          });
-        }
-      } catch (error) {
-        console.error('Error checking authentication:', error);
-        localStorage.removeItem('authToken');
-        localStorage.removeItem('user');
-        localStorage.removeItem('permissions');
-      }
-    };
-
-    checkAuth();
+    // Note: Auto-authentication removed - user must login manually each session
   }, []);
 
   // Login function
@@ -139,11 +116,7 @@ export const AuthProvider = ({ children }) => {
     try {
       // TODO: Call logout API if needed
       
-      // Clear localStorage
-      localStorage.removeItem('authToken');
-      localStorage.removeItem('user');
-      localStorage.removeItem('permissions');
-      localStorage.removeItem('rememberLogin');
+      // Note: No localStorage cleanup needed since app doesn't persist user data
 
       dispatch({ type: AUTH_ACTIONS.LOGOUT });
     } catch (error) {
