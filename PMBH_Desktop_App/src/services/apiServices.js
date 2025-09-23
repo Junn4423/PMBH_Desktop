@@ -874,6 +874,42 @@ export async function thanhToanHoaDonBanhang(paymentData) {
   });
 }
 
+// Tra tiền (hoàn tất thanh toán) - Final payment completion
+// Tương ứng với function tratien(donhangid, bangid, opt) trong sl_lv0201.php
+export async function tratien(donhangid, bangid, trangthai, cusid = '') {
+  return await callApi('sl_lv0201', 'ajaxaproval', { 
+    donhangid,  // Mã hóa đơn
+    bangid,     // ID bàn 
+    trangthai,  // 1=chờ thanh toán, 2=thanh toán hoàn tất, 3=kích hoạt chờ thanh toán, 4=hủy bill, 5=báo bill
+    cusid       // Mã khách hàng (optional)
+  });
+}
+
+// Check trạng thái bàn sau thanh toán - Check table status after payment  
+export async function checkBangStatus(bangid) {
+  return await callApi('sl_lv0201', 'ajaxbangid', { 
+    bangid      // ID bàn cần check
+  });
+}
+
+// Cập nhật hóa đơn - Update invoice status (backend function capNhatHd)
+export async function capNhatHd(idHd) {
+  return await callApi('sl_lv0013', 'capNhatHd', { idHd });
+}
+
+// Cập nhật hóa đơn V2 - Update invoice status with flexible state
+export async function capNhatHdV2(idHd, trangThai) {
+  return await callApi('sl_lv0013', 'capNhatHdV2', { idHd, trangThai });
+}
+
+// Check và refresh trạng thái bàn - Check and refresh table status (CRITICAL for clearing invoices)
+export async function ajaxBangId(bangid) {
+  return await callApi('sl_lv0201', 'ajaxbangid', { 
+    bangid,
+    ajaxbangid: 'ajaxcheck'
+  });
+}
+
 // Chuyển xuống bếp - Send order to kitchen
 export async function chuyenXuongBep(maHd) {
   return await callApi('sl_lv0013', 'chuyenXuongBep', { maHd });

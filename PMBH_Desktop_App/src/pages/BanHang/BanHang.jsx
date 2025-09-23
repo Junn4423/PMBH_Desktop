@@ -53,6 +53,10 @@ import {
   loadHoaDonTheoBan,
   thanhToanHoaDonBanhang,
   thanhToanHoaDonChiTiet,
+  tratien,
+  ajaxBangId,
+  capNhatHd,
+  capNhatHdV2,
   chuyenXuongBep,
   xoaCtHd,
   capNhatCtHd,
@@ -978,10 +982,46 @@ const BanHang = () => {
     try {
       setPaymentLoading(true);
 
-
-      // The PaymentModal already called thanhToanHoaDon successfully
-      // We just need to handle post-payment cleanup
-
+      // Quy trình thanh toán theo backend:
+      // Bước 1: PaymentModal đã gọi thanhToanHoaDonChiTiet (tương ứng với việc tính tiền)
+      // Bước 2: Gọi tratien với trangThai=3 để kích hoạt chế độ chờ thanh toán (lv011=1)
+      // Bước 3: Gọi tratien với trangThai=2 để hoàn tất thanh toán (lv011=2) và xóa khỏi hệ thống
+      // Bước 4: Check trạng thái bàn để refresh UI (giống web GMAC)
+      
+      if (currentInvoice && selectedTable) {
+        try {
+          // Bước 2: Kích hoạt chế độ chờ thanh toán (tương ứng với bangtitlewaitmini trên web)
+          const activateResponse = await tratien(
+            currentInvoice.maHd, 
+            selectedTable.id, 
+            3, // opt=3: Kích hoạt chế độ chờ thanh toán
+            '' // cusid rỗng
+          );
+          console.log('Activate waiting payment response:', activateResponse);
+          
+          // Bước 3: Hoàn tất thanh toán và xóa khỏi hệ thống
+          const finalizeResponse = await tratien(
+            currentInvoice.maHd, 
+            selectedTable.id, 
+            2, // opt=2: Thanh toán hoàn tất, xóa khỏi hệ thống
+            '' // cusid rỗng
+          );
+          console.log('Finalize payment response:', finalizeResponse);
+          
+          // Bước 4: Check trạng thái bàn sau thanh toán (ajaxbangid) - Giống web GMAC
+          const statusResponse = await ajaxBangId(selectedTable.id);
+          console.log('Table status check response:', statusResponse);
+          
+          if (finalizeResponse && finalizeResponse.success !== false) {
+            message.success('Thanh toán hoàn tất và hóa đơn đã được xóa khỏi hệ thống');
+          } else {
+            message.warning('Thanh toán hoàn tất nhưng có thể cần refresh để cập nhật trạng thái bàn');
+          }
+        } catch (tratienError) {
+          console.error('Error calling tratien:', tratienError);
+          message.warning('Thanh toán hoàn tất nhưng có thể cần refresh để cập nhật trạng thái bàn');
+        }
+      }
 
       // Trigger refresh to update table status
       triggerQuickRefresh('PAYMENT_COMPLETE');
