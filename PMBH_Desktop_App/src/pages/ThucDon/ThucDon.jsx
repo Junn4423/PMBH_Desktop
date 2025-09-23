@@ -2,6 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { Card, Table, Button, Modal, Form, Input, InputNumber, Select, Upload, Space, Typography, Image, message, Row, Col, Tag, Spin } from 'antd';
 import { PlusOutlined, EditOutlined, DeleteOutlined, UploadOutlined, ReloadOutlined } from '@ant-design/icons';
 import { getLoaiSanPham, getAllSanPham, getSanPhamTheoIdLoai } from '../../services/apiServices';
+import SimpleImagePlaceholder from '../../components/common/SimpleImagePlaceholder';
+import ProductImagePlaceholder from '../../components/common/ProductImagePlaceholder';
+import ImageUploadPlaceholder from '../../components/common/ImageUploadPlaceholder';
+import { DEFAULT_IMAGES, PLACEHOLDER_CONFIG } from '../../constants';
 
 const { Title } = Typography;
 const { Option } = Select;
@@ -120,20 +124,14 @@ const ThucDon = () => {
       key: 'hinhAnh',
       width: 80,
       render: (image, record) => (
-        <div style={{ 
-          width: 60, 
-          height: 60, 
-          borderRadius: '50%',
-          background: 'linear-gradient(135deg, #1890ff, #096dd9)',
-          color: 'white',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          fontWeight: 'bold',
-          fontSize: '18px'
-        }}>
-          {(record.tenSanPham || record.ten || 'N/A').charAt(0)}
-        </div>
+        <ProductImagePlaceholder
+          src={image && image !== DEFAULT_IMAGES.PRODUCT ? image : null}
+          fallbackText={record.tenSanPham || record.ten}
+          size={PLACEHOLDER_CONFIG.PRODUCT_IMAGE.SIZE.MEDIUM}
+          shape={PLACEHOLDER_CONFIG.PRODUCT_IMAGE.SHAPE.CIRCLE}
+          variant={PLACEHOLDER_CONFIG.PRODUCT_IMAGE.VARIANT.GRADIENT}
+          alt={`Hình ảnh ${record.tenSanPham || record.ten}`}
+        />
       ),
     },
     {
@@ -347,16 +345,18 @@ const ThucDon = () => {
             name="hinhAnh"
             label="Hình ảnh"
           >
-            <Upload
-              listType="picture-card"
-              maxCount={1}
-              beforeUpload={() => false}
-            >
-              <div>
-                <UploadOutlined />
-                <div style={{ marginTop: 8 }}>Tải ảnh</div>
-              </div>
-            </Upload>
+            <ImageUploadPlaceholder
+              fallbackText={form.getFieldValue('tenSanPham') || 'Sản phẩm'}
+              size={120}
+              shape="rounded"
+              variant="gradient"
+              maxSizeMB={5}
+              resizeOptions={{
+                maxWidth: 800,
+                maxHeight: 600,
+                quality: 0.8
+              }}
+            />
           </Form.Item>
 
           <Form.Item>

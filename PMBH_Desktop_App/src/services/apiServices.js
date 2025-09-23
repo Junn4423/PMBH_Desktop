@@ -1114,3 +1114,142 @@ export async function layDsMonTheoTrangThai(trangThai) {
 export async function layDsMonDaXong() {
   return await callApi('Mb_Oder', 'layDsMonDaXong');
 }
+
+// -------------------- Enhanced Table Management APIs --------------------
+
+// Gộp bàn - Enhanced merge table function
+export async function gopBanEnhanced(maHoaDonBanChinh, maBanGop, bangId) {
+  try {
+    console.log('gopBanEnhanced params:', { maHoaDonBanChinh, maBanGop, bangId });
+    
+    const params = new URLSearchParams({
+      class: 'sl_lv0013',
+      action: 'gopBan',
+      idDonHang: maHoaDonBanChinh,
+      idBanGop: maBanGop,
+      bangid: bangId,
+      donhangid: maHoaDonBanChinh
+    });
+
+    const response = await fetch(`${GMAC_BASE_URL}/services.sof.vn/index_NChung.php?${params}`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    const responseText = await response.text();
+    console.log('gopBanEnhanced response text:', responseText);
+    
+    // Kiểm tra nếu response là HTML error
+    if (responseText.includes('<br />') || responseText.includes('<b>')) {
+      throw new Error('Backend trả về lỗi HTML: ' + responseText.substring(0, 200));
+    }
+    
+    try {
+      const result = JSON.parse(responseText);
+      console.log('gopBanEnhanced result:', result);
+      return result;
+    } catch (parseError) {
+      console.error('JSON parse error:', parseError);
+      throw new Error('Response không phải JSON hợp lệ: ' + responseText.substring(0, 100));
+    }
+  } catch (error) {
+    console.error('Error in gopBanEnhanced:', error);
+    throw error;
+  }
+}
+
+// Chuyển bàn - Enhanced transfer table function  
+export async function chuyenBanEnhanced(maHoaDonBanCanChuyen, maBanChuyen) {
+  try {
+    console.log('chuyenBanEnhanced params:', { maHoaDonBanCanChuyen, maBanChuyen });
+    
+    const params = new URLSearchParams({
+      class: 'sl_lv0013',
+      action: 'chuyenBan',
+      maHdBanCanChuyen: maHoaDonBanCanChuyen,
+      maHdBanChuyen: '', // Để trống khi chuyển sang bàn trống
+      maBanChuyen: maBanChuyen
+    });
+
+    const response = await fetch(`${GMAC_BASE_URL}/services.sof.vn/index_NChung.php?${params}`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    const responseText = await response.text();
+    console.log('chuyenBanEnhanced response text:', responseText);
+    
+    // Kiểm tra nếu response là HTML error
+    if (responseText.includes('<br />') || responseText.includes('<b>')) {
+      throw new Error('Backend trả về lỗi HTML: ' + responseText.substring(0, 200));
+    }
+    
+    try {
+      const result = JSON.parse(responseText);
+      console.log('chuyenBanEnhanced result:', result);
+      return result;
+    } catch (parseError) {
+      console.error('JSON parse error:', parseError);
+      throw new Error('Response không phải JSON hợp lệ: ' + responseText.substring(0, 100));
+    }
+  } catch (error) {
+    console.error('Error in chuyenBanEnhanced:', error);
+    throw error;
+  }
+}
+
+// Tách bàn - Enhanced split table function
+export async function tachBanEnhanced(maHoaDon) {
+  try {
+    console.log('tachBanEnhanced params:', { maHoaDon });
+    
+    const params = new URLSearchParams({
+      class: 'sl_lv0013',
+      action: 'tachBan',
+      maHoaDon: maHoaDon
+    });
+
+    const response = await fetch(`${GMAC_BASE_URL}/services.sof.vn/index_NChung.php?${params}`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    const responseText = await response.text();
+    console.log('tachBanEnhanced response text:', responseText);
+    
+    // Kiểm tra nếu response là HTML error
+    if (responseText.includes('<br />') || responseText.includes('<b>')) {
+      throw new Error('Backend trả về lỗi HTML: ' + responseText.substring(0, 200));
+    }
+    
+    try {
+      const result = JSON.parse(responseText);
+      console.log('tachBanEnhanced result:', result);
+      return result;
+    } catch (parseError) {
+      console.error('JSON parse error:', parseError);
+      throw new Error('Response không phải JSON hợp lệ: ' + responseText.substring(0, 100));
+    }
+  } catch (error) {
+    console.error('Error in tachBanEnhanced:', error);
+    throw error;
+  }
+}

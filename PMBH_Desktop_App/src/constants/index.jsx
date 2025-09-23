@@ -169,6 +169,36 @@ export const TABLE_SEAT_OPTIONS = [
   { value: 12, label: '12 ghế' },
 ];
 
+// Đường dẫn hình ảnh mặc định
+export const DEFAULT_IMAGES = {
+  PRODUCT: '/images/default-product.svg',
+  USER_AVATAR: '/images/default-avatar.png',
+  CATEGORY: '/images/default-category.jpg',
+  NO_IMAGE: '/images/no-image.svg'
+};
+
+// Placeholder cấu hình
+export const PLACEHOLDER_CONFIG = {
+  PRODUCT_IMAGE: {
+    SIZE: {
+      SMALL: 40,
+      MEDIUM: 60,
+      LARGE: 80,
+      XLARGE: 120
+    },
+    SHAPE: {
+      CIRCLE: 'circle',
+      SQUARE: 'square',
+      ROUNDED: 'rounded'
+    },
+    VARIANT: {
+      GRADIENT: 'gradient',
+      SOLID: 'solid',
+      OUTLINED: 'outlined'
+    }
+  }
+};
+
 // Đơn vị tiền tệ
 export const CURRENCY = 'VND';
 export const CURRENCY_SYMBOL = 'đ';

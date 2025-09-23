@@ -41,6 +41,9 @@ import {
   ArrowRight
 } from 'lucide-react';
 
+// Import constants
+import { DEFAULT_IMAGES, PLACEHOLDER_CONFIG } from '../../constants';
+
 // Import API services
 import {
   loadBan,
@@ -77,7 +80,10 @@ import {
   capNhatTrangThaiDonHang,
   xacNhanDonHang,
   layTrangThaiDonHangRealtime,
-  inHoaDonThanhToan
+  inHoaDonThanhToan,
+  gopBanEnhanced,
+  chuyenBanEnhanced,
+  tachBanEnhanced
 } from '../../services/apiServices';
 
 // Import components
@@ -85,11 +91,16 @@ import ChonSanPham from './ChonSanPham';
 import PaymentModal from '../../components/Payment/PaymentModal';
 import ReceiptPrinter from '../../components/Print/ReceiptPrinter';
 import OrderStatus from '../../components/Order/OrderStatus';
+import TableMergeModal from '../../components/TableOperations/TableMergeModal';
+import TableTransferModal from '../../components/TableOperations/TableTransferModal';
+import TableSplitModal from '../../components/TableOperations/TableSplitModal';
+import TableMergeAnimation from '../../components/TableOperations/TableMergeAnimation';
 
 // Debug utilities
 import { debugAPIFunctions, testPaymentAPI as quickPaymentTest } from '../../utils/debugAPI';
 
 import './BanHang.css';
+import '../../styles/components/TableOperations.css';
 
 const { Title, Text } = Typography;
 const { Content, Sider } = Layout;
@@ -165,6 +176,11 @@ const BanHang = () => {
   const [showTransferTableModal, setShowTransferTableModal] = useState(false);
   const [selectedTargetTable, setSelectedTargetTable] = useState(null);
   const [availableTablesForOperation, setAvailableTablesForOperation] = useState([]);
+  
+  // State cho Animation
+  const [showMergeAnimation, setShowMergeAnimation] = useState(false);
+  const [animationTables, setAnimationTables] = useState({ source: null, target: null });
+  const [operationInProgress, setOperationInProgress] = useState(false);
 
   // Helper functions cho table status
   const getTableBadgeStatus = (status) => {
@@ -348,7 +364,9 @@ const BanHang = () => {
       if (Array.isArray(tablesResponse)) {
         tablesData = tablesResponse.map(table => ({
           id: table.idBan,
+          maBan: table.idBan,  // Thêm maBan để phù hợp với modal
           name: table.tenBan,
+          tenBan: table.tenBan,  // Thêm tenBan để phù hợp với modal
           areaId: table.idKhuVuc,
           status: 'available' // Sẽ được cập nhật từ loadTableStatuses
         }));
@@ -361,6 +379,52 @@ const BanHang = () => {
 
       // Load trạng thái bàn riêng biệt
       await loadTableStatuses(tablesData);
+      
+      // TEMPORARY: Add mock data for testing if no tables loaded
+      if (tablesData.length === 0) {
+        const mockTables = [
+          {
+            id: 'ban01',
+            maBan: 'ban01',
+            name: 'Bàn 1',
+            tenBan: 'Bàn 1',
+            areaId: 'kv01',
+            status: 'occupied',
+            invoiceId: 'hd01',
+            customerCount: 2,
+            totalAmount: 150000
+          },
+          {
+            id: 'ban02',
+            maBan: 'ban02',
+            name: 'Bàn 2',
+            tenBan: 'Bàn 2',
+            areaId: 'kv01',
+            status: 'available'
+          },
+          {
+            id: 'ban03',
+            maBan: 'ban03',
+            name: 'Bàn 3',
+            tenBan: 'Bàn 3',
+            areaId: 'kv01',
+            status: 'occupied',
+            invoiceId: 'hd03',
+            customerCount: 4,
+            totalAmount: 230000
+          },
+          {
+            id: 'ban04',
+            maBan: 'ban04',
+            name: 'Bàn 4',
+            tenBan: 'Bàn 4',
+            areaId: 'kv01',
+            status: 'available'
+          }
+        ];
+        console.log('Using mock tables for testing:', mockTables);
+        setTables(mockTables);
+      }
     } catch (error) {
       console.error('Error loading tables:', error);
       message.error('Không thể tải danh sách bàn');
@@ -499,6 +563,16 @@ const BanHang = () => {
       }
 
       setAreas(areasData);
+      
+      // TEMPORARY: Add mock areas for testing if no areas loaded
+      if (areasData.length === 0) {
+        const mockAreas = [
+          { id: 'kv01', ten: 'Khu vực 1' },
+          { id: 'kv02', ten: 'Khu vực 2' }
+        ];
+        console.log('Using mock areas for testing:', mockAreas);
+        setAreas(mockAreas);
+      }
     } catch (error) {
       console.error('Error loading areas:', error);
       message.error('Không thể tải danh sách khu vực');
@@ -588,7 +662,7 @@ const BanHang = () => {
         gia: product.giaBan || product.gia || product.donGia || 0,
         danhMuc: product.danhMuc || product.maLoai,
         moTa: product.moTa || product.ghiChu || '',
-        hinhAnh: product.hinhAnh || '/images/default-product.jpg'
+        hinhAnh: product.hinhAnh || DEFAULT_IMAGES.PRODUCT
       }));
 
       setProducts(mappedProducts);
@@ -600,6 +674,7 @@ const BanHang = () => {
   // FLOW 1: Chọn bàn và xử lý tự động tạo/load hóa đơn
   const handleTableSelect = async (table) => {
     try {
+      console.log('Selected table:', table);
       setSelectedTable(table);
       setLoading(true);
       
@@ -1251,6 +1326,52 @@ const BanHang = () => {
 
   // ===== TABLE OPERATIONS FUNCTIONS =====
   
+  // Function to reload current table's invoice data
+  const loadDsHoaDon = async () => {
+    if (!selectedTable) {
+      console.log('No selected table to reload invoice for');
+      return;
+    }
+
+    try {
+      // Reload table data to get updated status and invoice ID
+      await loadTables();
+      
+      // Find the updated table info
+      const updatedTable = tables.find(t => t.id === selectedTable.id);
+      if (updatedTable) {
+        // Update current invoice data if table has invoice
+        if (updatedTable.invoiceId && updatedTable.status === 'occupied') {
+          const invoice = {
+            maHd: updatedTable.invoiceId,
+            maBan: updatedTable.id,
+            tenBan: updatedTable.name
+          };
+          setCurrentInvoice(invoice);
+          
+          // Load chi tiết hóa đơn
+          const detailsResponse = await getChiTietHoaDonTheoMaHD(updatedTable.invoiceId);
+          if (Array.isArray(detailsResponse)) {
+            const itemsWithQuantity = detailsResponse.filter(item => parseInt(item.sl) > 0);
+            setInvoiceDetails(itemsWithQuantity);
+          } else {
+            setInvoiceDetails([]);
+          }
+        } else {
+          // Table is now empty
+          setCurrentInvoice(null);
+          setInvoiceDetails([]);
+        }
+        
+        // Update selected table with new data
+        setSelectedTable(updatedTable);
+      }
+    } catch (error) {
+      console.error('Error reloading invoice data:', error);
+      message.error('Không thể tải lại dữ liệu hóa đơn: ' + (error.message || 'Lỗi không xác định'));
+    }
+  };
+  
   // Load danh sách bàn có thể thực hiện operation
   const loadAvailableTablesForOperation = async () => {
     try {
@@ -1263,36 +1384,67 @@ const BanHang = () => {
     }
   };
 
-  // Gộp bàn
-  const handleMergeTable = async () => {
-    if (!currentInvoice || !selectedTargetTable) {
-      message.error('Vui lòng chọn bàn đích để gộp');
+  // Enhanced Gộp bàn với animation
+  const handleMergeTable = async (targetTable) => {
+    console.log('handleMergeTable called with:', { 
+      targetTable, 
+      selectedTable, 
+      currentInvoice,
+      selectedTableInvoiceId: selectedTable?.invoiceId 
+    });
+    
+    if (!selectedTable?.invoiceId || !targetTable) {
+      message.error('Vui lòng chọn bàn có hóa đơn và bàn đích để gộp');
       return;
     }
 
     try {
+      setOperationInProgress(true);
       setLoading(true);
-      await gopBanBanhang(currentInvoice.maHoaDon, selectedTargetTable.maBan);
+
+      // Gọi API gộp bàn enhanced - sử dụng invoiceId từ selectedTable
+      const result = await gopBanEnhanced(
+        selectedTable.invoiceId, 
+        targetTable.maBan, 
+        selectedTable.maBan  // Thêm tham số bangId
+      );
       
-      message.success(`Đã gộp bàn ${selectedTable.tenBan} vào bàn ${selectedTargetTable.tenBan}`);
-      
-      // Reset states
-      setShowMergeTableModal(false);
-      setSelectedTargetTable(null);
-      
-      // Refresh data
-      await loadDsHoaDon();
-      refreshTableStatusOnly();
+      if (result && result.success !== false) {
+        // Thiết lập animation
+        setAnimationTables({
+          source: selectedTable,
+          target: targetTable
+        });
+        setShowMergeAnimation(true);
+        
+        message.success(`Đã gộp bàn ${selectedTable.tenBan} vào bàn ${targetTable.tenBan}`);
+        
+        // Reset modal states
+        setShowMergeTableModal(false);
+        setSelectedTargetTable(null);
+        
+        // Delay để chạy animation xong rồi mới refresh
+        setTimeout(async () => {
+          await loadDsHoaDon();
+          refreshTableStatusOnly();
+          setSelectedTable(targetTable);
+          setOperationInProgress(false);
+        }, 2500); // Animation kéo dài 2s + 0.5s buffer
+        
+      } else {
+        throw new Error(result?.message || 'Gộp bàn thất bại');
+      }
       
     } catch (error) {
       console.error('Error merging tables:', error);
       message.error('Không thể gộp bàn: ' + (error.message || 'Lỗi không xác định'));
+      setOperationInProgress(false);
     } finally {
       setLoading(false);
     }
   };
 
-  // Tách bàn  
+  // Enhanced Tách bàn  
   const handleSplitTable = async () => {
     if (!currentInvoice) {
       message.error('Không có hóa đơn để tách');
@@ -1300,72 +1452,100 @@ const BanHang = () => {
     }
 
     try {
+      setOperationInProgress(true);
       setLoading(true);
-      await tachBan(currentInvoice.maHoaDon);
       
-      message.success(`Đã tách bàn ${selectedTable.tenBan}`);
+      // Gọi API tách bàn enhanced
+      const result = await tachBanEnhanced(currentInvoice.maHoaDon);
       
-      // Reset states
-      setShowSplitTableModal(false);
-      
-      // Refresh data
-      await loadDsHoaDon();
-      refreshTableStatusOnly();
+      if (result && result.success !== false) {
+        message.success(`Đã tách bàn ${selectedTable.tenBan}`);
+        
+        // Reset states
+        setShowSplitTableModal(false);
+        
+        // Refresh data
+        await loadDsHoaDon();
+        refreshTableStatusOnly();
+        
+      } else {
+        throw new Error(result?.message || 'Tách bàn thất bại');
+      }
       
     } catch (error) {
       console.error('Error splitting table:', error);
       message.error('Không thể tách bàn: ' + (error.message || 'Lỗi không xác định'));
     } finally {
       setLoading(false);
+      setOperationInProgress(false);
     }
   };
 
-  // Chuyển bàn
-  const handleTransferTable = async () => {
-    if (!currentInvoice || !selectedTargetTable) {
-      message.error('Vui lòng chọn bàn đích để chuyển');
+  // Enhanced Chuyển bàn
+  const handleTransferTable = async (targetTable) => {
+    console.log('handleTransferTable called with:', { 
+      targetTable, 
+      selectedTable, 
+      currentInvoice,
+      selectedTableInvoiceId: selectedTable?.invoiceId 
+    });
+    
+    if (!selectedTable?.invoiceId || !targetTable) {
+      message.error('Vui lòng chọn bàn có hóa đơn và bàn đích để chuyển');
       return;
     }
 
     try {
+      setOperationInProgress(true);
       setLoading(true);
       
-      const chuyenBanData = {
-        maHoaDonBanCanChuyen: currentInvoice.maHoaDon,
-        maHoaDonBanChuyen: '', // Để trống vì chuyển sang bàn trống
-        maBanChuyen: selectedTargetTable.maBan
-      };
+      // Gọi API chuyển bàn enhanced - sử dụng invoiceId từ selectedTable
+      const result = await chuyenBanEnhanced(selectedTable.invoiceId, targetTable.maBan);
       
-      await chuyenBanCorrected(chuyenBanData);
-      
-      message.success(`Đã chuyển từ bàn ${selectedTable.tenBan} sang bàn ${selectedTargetTable.tenBan}`);
-      
-      // Reset states
-      setShowTransferTableModal(false);
-      setSelectedTargetTable(null);
-      
-      // Refresh data và chọn bàn mới
-      await loadDsHoaDon();
-      refreshTableStatusOnly();
-      setSelectedTable(selectedTargetTable);
+      if (result && result.success !== false) {
+        message.success(`Đã chuyển từ bàn ${selectedTable.tenBan} sang bàn ${targetTable.tenBan}`);
+        
+        // Reset states
+        setShowTransferTableModal(false);
+        setSelectedTargetTable(null);
+        
+        // Refresh data và chọn bàn mới
+        await loadDsHoaDon();
+        refreshTableStatusOnly();
+        setSelectedTable(targetTable);
+        
+      } else {
+        throw new Error(result?.message || 'Chuyển bàn thất bại');
+      }
       
     } catch (error) {
       console.error('Error transferring table:', error);
       message.error('Không thể chuyển bàn: ' + (error.message || 'Lỗi không xác định'));
     } finally {
       setLoading(false);
+      setOperationInProgress(false);
     }
   };
 
   // Mở modal operations và load data
   const openMergeTableModal = () => {
+    console.log('Opening merge modal with tables:', tables);
+    console.log('Current selected table:', selectedTable);
     loadAvailableTablesForOperation();
     setShowMergeTableModal(true);
   };
 
   const openTransferTableModal = () => {
+    console.log('Opening transfer modal with tables:', tables);
+    console.log('Current selected table:', selectedTable);
     loadAvailableTablesForOperation();
     setShowTransferTableModal(true);
+  };
+
+  // Animation completion handler
+  const handleAnimationComplete = () => {
+    setShowMergeAnimation(false);
+    setAnimationTables({ source: null, target: null });
   };
 
   // ===== END TABLE OPERATIONS =====
@@ -1765,7 +1945,7 @@ const BanHang = () => {
                     icon={<Merge size={16} />}
                     onClick={openMergeTableModal}
                     title="Gộp bàn này với bàn khác"
-                    disabled={loading}
+                    disabled={loading || operationInProgress}
                   >
                     Gộp bàn
                   </Button>
@@ -1774,7 +1954,7 @@ const BanHang = () => {
                     icon={<Split size={16} />}
                     onClick={() => setShowSplitTableModal(true)}
                     title="Tách bàn này"
-                    disabled={loading}
+                    disabled={loading || operationInProgress}
                   >
                     Tách bàn
                   </Button>
@@ -1783,7 +1963,7 @@ const BanHang = () => {
                     icon={<ArrowRight size={16} />}
                     onClick={openTransferTableModal}
                     title="Chuyển sang bàn khác"
-                    disabled={loading}
+                    disabled={loading || operationInProgress}
                   >
                     Chuyển bàn
                   </Button>
@@ -2202,122 +2382,46 @@ const BanHang = () => {
 
       {/* Table Operations Modals */}
       
-      {/* Modal Gộp Bàn */}
-      <Modal
-        title={`Gộp bàn ${selectedTable?.tenBan || ''} với bàn khác`}
-        open={showMergeTableModal}
-        onOk={handleMergeTable}
+      {/* Enhanced Table Operations Modals */}
+      <TableMergeModal
+        visible={showMergeTableModal}
         onCancel={() => {
           setShowMergeTableModal(false);
           setSelectedTargetTable(null);
         }}
-        confirmLoading={loading}
-        okText="Gộp bàn"
-        cancelText="Hủy"
-        width={600}
-      >
-        <div style={{ marginBottom: 16 }}>
-          <Text>Chọn bàn đích để gộp:</Text>
-        </div>
-        
-        <Row gutter={[12, 12]}>
-          {availableTablesForOperation
-            .filter(table => table.maBan !== selectedTable?.maBan) // Không hiển thị bàn hiện tại
-            .map(table => (
-              <Col span={8} key={table.maBan}>
-                <Card
-                  hoverable
-                  className={`table-select-card ${selectedTargetTable?.maBan === table.maBan ? 'selected' : ''}`}
-                  onClick={() => setSelectedTargetTable(table)}
-                  style={{
-                    border: selectedTargetTable?.maBan === table.maBan ? '2px solid #197dd3' : '1px solid #d9d9d9',
-                    backgroundColor: selectedTargetTable?.maBan === table.maBan ? '#f0f8ff' : 'white'
-                  }}
-                >
-                  <div style={{ textAlign: 'center' }}>
-                    <Badge 
-                      status={getTableBadgeStatus(table.status)} 
-                      text={table.tenBan}
-                    />
-                  </div>
-                </Card>
-              </Col>
-            ))}
-        </Row>
-        
-        {availableTablesForOperation.filter(table => table.maBan !== selectedTable?.maBan).length === 0 && (
-          <div style={{ textAlign: 'center', padding: '20px', color: '#999' }}>
-            Không có bàn nào khác để gộp
-          </div>
-        )}
-      </Modal>
+        onConfirm={handleMergeTable}
+        selectedTable={selectedTable}
+        tables={tables}
+        loading={loading || operationInProgress}
+      />
 
-      {/* Modal Tách Bàn */}
-      <Modal
-        title={`Tách bàn ${selectedTable?.tenBan || ''}`}
-        open={showSplitTableModal}
-        onOk={handleSplitTable}
+      <TableSplitModal
+        visible={showSplitTableModal}
         onCancel={() => setShowSplitTableModal(false)}
-        confirmLoading={loading}
-        okText="Tách bàn"
-        cancelText="Hủy"
-      >
-        <div style={{ padding: '20px 0' }}>
-          <Text>Bạn có chắc chắn muốn tách bàn <strong>{selectedTable?.tenBan}</strong> không?</Text>
-          <br />
-          <Text type="secondary">Thao tác này sẽ tách các món ăn trong hóa đơn ra thành các hóa đơn riêng biệt.</Text>
-        </div>
-      </Modal>
+        onConfirm={handleSplitTable}
+        selectedTable={selectedTable}
+        loading={loading || operationInProgress}
+      />
 
-      {/* Modal Chuyển Bàn */}
-      <Modal
-        title={`Chuyển từ bàn ${selectedTable?.tenBan || ''} sang bàn khác`}
-        open={showTransferTableModal}
-        onOk={handleTransferTable}
+      <TableTransferModal
+        visible={showTransferTableModal}
         onCancel={() => {
           setShowTransferTableModal(false);
           setSelectedTargetTable(null);
         }}
-        confirmLoading={loading}
-        okText="Chuyển bàn"
-        cancelText="Hủy"
-        width={600}
-      >
-        <div style={{ marginBottom: 16 }}>
-          <Text>Chọn bàn đích để chuyển:</Text>
-        </div>
-        
-        <Row gutter={[12, 12]}>
-          {tables
-            .filter(table => table.maBan !== selectedTable?.maBan && table.status === 'available') // Chỉ bàn trống
-            .map(table => (
-              <Col span={8} key={table.maBan}>
-                <Card
-                  hoverable
-                  className={`table-select-card ${selectedTargetTable?.maBan === table.maBan ? 'selected' : ''}`}
-                  onClick={() => setSelectedTargetTable(table)}
-                  style={{
-                    border: selectedTargetTable?.maBan === table.maBan ? '2px solid #197dd3' : '1px solid #d9d9d9',
-                    backgroundColor: selectedTargetTable?.maBan === table.maBan ? '#f0f8ff' : 'white'
-                  }}
-                >
-                  <div style={{ textAlign: 'center' }}>
-                    <Badge 
-                      status={getTableBadgeStatus(table.status)} 
-                      text={table.tenBan}
-                    />
-                  </div>
-                </Card>
-              </Col>
-            ))}
-        </Row>
-        
-        {tables.filter(table => table.maBan !== selectedTable?.maBan && table.status === 'available').length === 0 && (
-          <div style={{ textAlign: 'center', padding: '20px', color: '#999' }}>
-            Không có bàn trống để chuyển
-          </div>
-        )}
-      </Modal>
+        onConfirm={handleTransferTable}
+        selectedTable={selectedTable}
+        tables={tables}
+        loading={loading || operationInProgress}
+      />
+
+      {/* Table Merge Animation */}
+      <TableMergeAnimation
+        sourceTable={animationTables.source}
+        targetTable={animationTables.target}
+        isVisible={showMergeAnimation}
+        onComplete={handleAnimationComplete}
+      />
 
       {/* Modal chọn số lượng khi thêm sản phẩm */}
       <Modal

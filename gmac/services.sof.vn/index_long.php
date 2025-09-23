@@ -42,7 +42,7 @@ switch ($vtable) {
                 break;
         }
         break;
-
+// lấy hóa đơn thanh toán và chưa thanh toán ( có món)
     case "Mb_TongCthd":
 
         include("../cafe/clsall/sl_lv0013.php");
@@ -61,6 +61,27 @@ switch ($vtable) {
                 break;
         }
         break;
+
+
+// lấy tất cả hóa đơn kể cả rỗng
+    case "Mb_TongCthdRong":
+
+    include("../cafe/clsall/sl_lv0013.php");
+    $mobile = new sl_lv0013($_SESSION['ERPSOFV2RRight'], $_SESSION['ERPSOFV2RUserID'], 'Tc0002');
+    switch ($vfun) {
+        case 'add':
+        case 'edit':
+        case 'delete':
+        case 'apr':
+        case 'unapr':
+            break;
+        case 'data':
+            $vOutput = $mobile->loadHoaDonRong();
+            break;
+        default:
+            break;
+    }
+    break;
 
 
     case "m_GopBan":

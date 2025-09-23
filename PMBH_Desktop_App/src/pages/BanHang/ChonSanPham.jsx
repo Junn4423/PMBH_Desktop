@@ -2,6 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { Card, Row, Col, Input, Select, Typography, Spin, message } from 'antd';
 import { Search } from 'lucide-react';
 import { getAllSanPham, getLoaiSanPham } from '../../services/apiServices';
+import SimpleImagePlaceholder from '../../components/common/SimpleImagePlaceholder';
+import ProductImagePlaceholder from '../../components/common/ProductImagePlaceholder';
+import { DEFAULT_IMAGES, PLACEHOLDER_CONFIG } from '../../constants';
 
 const { Text } = Typography;
 const { Option } = Select;
@@ -90,7 +93,7 @@ const ChonSanPham = ({ onAddToCart }) => {
         gia: product.giaBan || product.gia || product.donGia || 0,
         danhMuc: product.danhMuc || product.maLoai,
         moTa: product.moTa || product.ghiChu || '',
-        hinhAnh: product.hinhAnh || '/images/default-product.jpg'
+        hinhAnh: product.hinhAnh || DEFAULT_IMAGES.PRODUCT
       }));
 
       setProducts(formattedProducts);
@@ -170,20 +173,15 @@ const ChonSanPham = ({ onAddToCart }) => {
                 }}
               >
                 <div style={{ textAlign: 'center' }}>
-                  <div style={{
-                    width: '60px',
-                    height: '60px',
-                    borderRadius: '50%',
-                    background: '#197dd3',
-                    color: '#fff',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    fontSize: '24px',
-                    fontWeight: 'bold',
-                    margin: '0 auto 12px'
-                  }}>
-                    {product.ten && product.ten.charAt ? product.ten.charAt(0) : '?'}
+                  <div style={{ margin: '0 auto 12px' }}>
+                    <ProductImagePlaceholder
+                      src={product.hinhAnh && product.hinhAnh !== DEFAULT_IMAGES.PRODUCT ? product.hinhAnh : null}
+                      fallbackText={product.ten}
+                      size={PLACEHOLDER_CONFIG.PRODUCT_IMAGE.SIZE.MEDIUM}
+                      shape={PLACEHOLDER_CONFIG.PRODUCT_IMAGE.SHAPE.CIRCLE}
+                      variant={PLACEHOLDER_CONFIG.PRODUCT_IMAGE.VARIANT.GRADIENT}
+                      alt={`Hình ảnh ${product.ten}`}
+                    />
                   </div>
                   <Text strong style={{ display: 'block', marginBottom: '8px' }}>
                     {product.ten || 'Không có tên'}

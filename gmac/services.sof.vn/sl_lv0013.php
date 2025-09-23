@@ -2361,6 +2361,7 @@ class sl_lv0013 extends lv_controler
 	// code Long
 
 	//tinh tong tien theo trang thai dang ban va dang don, de ht len ban
+	//tinh tong tien theo trang thai dang ban va dang don, de ht len ban
 	function Mb_HoaDonBan()
 	{
 		$vArrRe = [];
@@ -2376,6 +2377,38 @@ class sl_lv0013 extends lv_controler
 				"idBan" => $vrow["maBan"],
 				"thoiGian" => $vrow["thoiGian"],
 				"tenBanGop" => $vrow["tenBanGop"]
+			];
+		}
+		return $vArrRe;
+	}
+
+	// hàm load cả hóa đơn rỗng
+	function loadHoaDonRong()
+	{
+		$vArrRe = [];
+		$vsql = "
+			SELECT
+				hd.lv001 AS idDonHang,
+				hd.lv011 AS trangThai,
+				hd.lv007 AS maBan,
+				hd.lv004 AS thoiGian,
+				b.lv002  AS tenBanGop,
+				COALESCE(SUM(cthd.lv004 * cthd.lv006), 0) AS tongTien
+			FROM sl_lv0013 hd
+			LEFT JOIN sl_lv0014 cthd ON cthd.lv002 = hd.lv001
+			LEFT JOIN sl_lv0009 b    ON hd.lv024 = b.lv001
+			WHERE hd.lv011 IN (0,1)
+			GROUP BY hd.lv001, hd.lv011, hd.lv007, hd.lv004, b.lv002
+		";
+		$vresult = db_query($vsql);
+		while ($vrow = db_fetch_array($vresult, MYSQLI_ASSOC)) {
+			$vArrRe[] = [
+				"idDonHang"  => $vrow["idDonHang"],
+				"tongTien"   => $vrow["tongTien"],
+				"trangThai"  => $vrow["trangThai"],
+				"idBan"      => $vrow["maBan"],
+				"thoiGian"   => $vrow["thoiGian"],
+				"tenBanGop"  => $vrow["tenBanGop"],
 			];
 		}
 		return $vArrRe;
@@ -2826,6 +2859,65 @@ class sl_lv0013 extends lv_controler
 			'success' => $success,
 			'message' => $finalMessage,
 		];
+	}
+// Hàm hủy/xóa hóa đơn theo mã hóa đơn
+	function huyHoaDon($maHd)
+	{
+		// Kiểm tra xem hóa đơn có tồn tại không
+		$sqlCheck = "SELECT lv001, lv011 FROM sl_lv0013 WHERE lv001 = '$maHd'";
+		$result = db_query($sqlCheck);
+		
+		if (!$result || mysqli_num_rows($result) == 0) {
+			return [
+				'success' => false,
+				'message' => 'Hóa đơn không tồn tại'
+			];
+		}
+		
+		$row = db_fetch_array($result);
+		$trangThai = $row['lv011'];
+		
+		// Chỉ cho phép hủy hóa đơn ở trạng thái chưa thanh toán (0: chờ, 1: đang phục vụ)
+		if ($trangThai != 0 && $trangThai != 1) {
+			return [
+				'success' => false,
+				'message' => 'Không thể hủy hóa đơn đã thanh toán hoặc đã hoàn thành'
+			];
+		}
+		
+		// Bắt đầu transaction
+		db_query("START TRANSACTION");
+		
+		try {
+			// Xóa chi tiết hóa đơn trước
+			$sqlDeleteCthd = "DELETE FROM sl_lv0014 WHERE lv002 = '$maHd'";
+			if (!db_query($sqlDeleteCthd)) {
+				throw new Exception('Lỗi khi xóa chi tiết hóa đơn');
+			}
+			
+			// Xóa hóa đơn
+			$sqlDeleteHd = "DELETE FROM sl_lv0013 WHERE lv001 = '$maHd'";
+			if (!db_query($sqlDeleteHd)) {
+				throw new Exception('Lỗi khi xóa hóa đơn');
+			}
+			
+			// Commit transaction
+			db_query("COMMIT");
+			
+			return [
+				'success' => true,
+				'message' => 'Hủy hóa đơn thành công'
+			];
+			
+		} catch (Exception $e) {
+			// Rollback transaction nếu có lỗi
+			db_query("ROLLBACK");
+			
+			return [
+				'success' => false,
+				'message' => 'Lỗi khi hủy hóa đơn: ' . $e->getMessage()
+			];
+		}
 	}
 
 }

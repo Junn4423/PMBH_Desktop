@@ -2381,9 +2381,37 @@ class sl_lv0013 extends lv_controler
 		return $vArrRe;
 	}
 
-
-
-
+	// hàm load cả hóa đơn rỗng
+	function loadHoaDonRong()
+	{
+		$vArrRe = [];
+		$vsql = "
+			SELECT
+				hd.lv001 AS idDonHang,
+				hd.lv011 AS trangThai,
+				hd.lv007 AS maBan,
+				hd.lv004 AS thoiGian,
+				b.lv002  AS tenBanGop,
+				COALESCE(SUM(cthd.lv004 * cthd.lv006), 0) AS tongTien
+			FROM sl_lv0013 hd
+			LEFT JOIN sl_lv0014 cthd ON cthd.lv002 = hd.lv001
+			LEFT JOIN sl_lv0009 b    ON hd.lv024 = b.lv001
+			WHERE hd.lv011 IN (0,1)
+			GROUP BY hd.lv001, hd.lv011, hd.lv007, hd.lv004, b.lv002
+		";
+		$vresult = db_query($vsql);
+		while ($vrow = db_fetch_array($vresult, MYSQLI_ASSOC)) {
+			$vArrRe[] = [
+				"idDonHang"  => $vrow["idDonHang"],
+				"tongTien"   => $vrow["tongTien"],
+				"trangThai"  => $vrow["trangThai"],
+				"idBan"      => $vrow["maBan"],
+				"thoiGian"   => $vrow["thoiGian"],
+				"tenBanGop"  => $vrow["tenBanGop"],
+			];
+		}
+		return $vArrRe;
+	}
 
 
 	// ham dung de gop ban

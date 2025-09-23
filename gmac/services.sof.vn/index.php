@@ -133,6 +133,11 @@ switch ($vtable) {
 				$vOutput = $sl_lv0013->chuyenMonAn($dsChiTietMonAn, $maBanChuyen);
 				break;
 
+			case 'huyHoaDon':
+				$maHd = $input['maHd'] ?? $_POST['maHd'] ?? "";
+				$vOutput = $sl_lv0013->huyHoaDon($maHd);
+				break;
+
 			default:
 				break;
 		}
