@@ -1,0 +1,10 @@
+/* ProductCard.css */
+.product-description {
+  font-size: 12px;
+  margin-top: 4px;
+  display: block;
+  height: 16px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}

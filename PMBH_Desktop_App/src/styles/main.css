@@ -23,6 +23,7 @@
 /* ==================== UTILITY STYLES ==================== */
 /* Các utility classes và helper functions */
 
+@import './utils/background.css';      /* Background utilities */
 /* @import './utils/animations.css'; */   /* Animations & Transitions */
 /* @import './utils/helpers.css'; */      /* Helper classes */
 /* @import './utils/responsive.css'; */   /* Responsive utilities */
@@ -34,6 +35,7 @@
 @import './components/forms.css';      /* Form elements */
 @import './components/cards.css';      /* Cards */
 @import './components/tables.css';     /* Tables */
+@import './components/product-card.css'; /* Product cards */
 @import './components/theme-selector.css'; /* Theme selector */
 /* @import './components/modals.css'; */     /* Modals & Dialogs */
 /* @import './components/navigation.css'; */ /* Navigation */

@@ -1,6 +1,6 @@
 import React from 'react';
 import { Button, Modal, message } from 'antd';
-import { LogoutOutlined, ExclamationCircleOutlined } from '@ant-design/icons';
+import { LogOut, AlertCircle } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 
 const { confirm } = Modal;
@@ -11,7 +11,7 @@ const DangXuat = () => {
   const handleLogout = () => {
     confirm({
       title: 'Xác nhận đăng xuất',
-      icon: <ExclamationCircleOutlined />,
+  icon: <AlertCircle size={18} style={{ color: '#faad14' }} />,
       content: `Bạn có chắc chắn muốn đăng xuất khỏi tài khoản "${user?.username}"?`,
       okText: 'Đăng xuất',
       cancelText: 'Hủy',
@@ -30,7 +30,7 @@ const DangXuat = () => {
   return (
     <Button
       type="text"
-      icon={<LogoutOutlined />}
+  icon={<LogOut size={16} />}
       onClick={handleLogout}
       className="dang-xuat-button"
     >

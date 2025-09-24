@@ -1,0 +1,53 @@
+// Tables & Restaurant - Table and restaurant text
+Table
+Area
+Floor
+Table Number
+Table Name
+Table Position
+Table Type
+Seat Count
+Table Status
+Empty Table
+Table in Use
+Table Waiting for Payment
+Reserved Table
+Table Reservation
+Cancel Reservation
+Transfer Table
+Merge Tables
+Split Table
+Service
+Service Time
+Service Staff
+VIP Area
+Regular Area
+Garden
+Indoor
+Outdoor
+Ground Floor
+Upper Floor
+Capacity
+Round Table
+Square Table
+Rectangular Table
+Single Chair
+Double Chair
+Sofa
+Booth
+Bar Counter
+High Table
+Low Table
+Private Table
+Private Room
+Open Space
+Quiet Corner
+Window Seat
+Great View
+Air Conditioning
+Fan
+WiFi Available
+Phone Charging
+Family Friendly
+Date Friendly
+Work Friendly

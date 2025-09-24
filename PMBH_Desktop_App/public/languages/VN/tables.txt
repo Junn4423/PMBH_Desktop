@@ -1,0 +1,53 @@
+// Tables & Restaurant - Text bàn và nhà hàng
+Bàn
+Khu vực
+Tầng
+Số bàn
+Tên bàn
+Vị trí bàn
+Loại bàn
+Số chỗ ngồi
+Trạng thái bàn
+Bàn trống
+Bàn đang sử dụng
+Bàn chờ thanh toán
+Bàn đã đặt
+Đặt bàn
+Hủy đặt bàn
+Chuyển bàn
+Gộp bàn
+Tách bàn
+Phục vụ
+Thời gian phục vụ
+Nhân viên phục vụ
+Khu vực VIP
+Khu vực thường
+Sân vườn
+Trong nhà
+Ngoài trời
+Tầng trệt
+Tầng lầu
+Sức chứa
+Bàn tròn
+Bàn vuông
+Bàn chữ nhật
+Ghế đơn
+Ghế đôi
+Sofa
+Booth
+Quầy bar
+Bàn cao
+Bàn thấp
+Bàn riêng
+Phòng riêng
+Không gian mở
+Góc yên tĩnh
+Gần cửa sổ
+View đẹp
+Điều hòa
+Quạt
+Có wifi
+Sạc điện thoại
+Phù hợp gia đình
+Phù hợp hẹn hò
+Phù hợp công việc

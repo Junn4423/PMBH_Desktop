@@ -1,0 +1,53 @@
+// Products & Inventory - Product and inventory text
+Product
+Product Category
+Product Catalog
+Product Code
+Product Name
+Selling Price
+Cost Price
+Member Price
+Unit of Measure
+Origin
+Brand
+Product Description
+Image
+Product Status
+In Stock
+Out of Stock
+Discontinued
+Stock Quantity
+Minimum Stock
+Maximum Stock
+Stock Alert
+Stock Check
+Stock Entry
+Stock Exit
+Entry Voucher
+Exit Voucher
+Stock Check Voucher
+Entry Reason
+Exit Reason
+Supplier
+Warehouse
+Warehouse Location
+Raw Materials
+Finished Products
+Semi-Finished Products
+Recipe
+Standard Quantity
+Unit Conversion
+Barcode
+QR Code
+Expiry Date
+Batch
+Serial Number
+Product Properties
+Can Sell
+Cannot Sell
+Product Attributes
+Size
+Color
+Dimensions
+Weight
+Volume

@@ -88,6 +88,7 @@ import {
 
 // Import components
 import ChonSanPham from './ChonSanPham';
+import ProductCard from '../../components/common/ProductCard';
 import PaymentModal from '../../components/Payment/PaymentModal';
 import ReceiptPrinter from '../../components/Print/ReceiptPrinter';
 import OrderStatus from '../../components/Order/OrderStatus';
@@ -103,7 +104,7 @@ import './BanHang.css';
 import '../../styles/components/TableOperations.css';
 
 const { Title, Text } = Typography;
-const { Content, Sider } = Layout;
+const { Content } = Layout;
 const { Option } = Select;
 
 // View states based on flow requirements
@@ -283,7 +284,7 @@ const BanHang = () => {
       await loadTableStatuses(tables);
       setLastRefresh(new Date());
     } catch (error) {
-      console.error('Error refreshing table status:', error);
+  // Silent console
     } finally {
       setLoading(false);
     }
@@ -371,7 +372,7 @@ const BanHang = () => {
           status: 'available' // Sẽ được cập nhật từ loadTableStatuses
         }));
       } else {
-        console.warn('Tables data is not in expected format:', tablesResponse);
+  // Silent console
         tablesData = [];
       }
 
@@ -422,11 +423,11 @@ const BanHang = () => {
             status: 'available'
           }
         ];
-        console.log('Using mock tables for testing:', mockTables);
+  // Silent console
         setTables(mockTables);
       }
     } catch (error) {
-      console.error('Error loading tables:', error);
+  // Silent console
       message.error('Không thể tải danh sách bàn');
     } finally {
       setLoading(false);
@@ -476,7 +477,7 @@ const BanHang = () => {
                     const minutes = diffMinutes % 60;
                     sittingTime = hours > 0 ? `${hours}h ${minutes}m` : `${minutes}m`;
                   } catch (timeError) {
-                    console.error('Error calculating sitting time:', timeError);
+                    // Silent console
                     sittingTime = '';
                   }
                 }
@@ -501,7 +502,7 @@ const BanHang = () => {
                 
                 return result;
               } catch (error) {
-                console.error(`Error loading details for table ${table.id}:`, error);
+                // Silent console
                 return {
                   ...table,
                   status: 'occupied',
@@ -535,10 +536,10 @@ const BanHang = () => {
         
         setTables(updatedTables);
       } else {
-        console.warn('Status response is not an array:', statusResponse);
+  // Silent console
       }
     } catch (error) {
-      console.error('Error loading table statuses:', error);
+  // Silent console
       // Don't show error message for status loading failure
     }
   };
@@ -563,76 +564,71 @@ const BanHang = () => {
       }
 
       setAreas(areasData);
-      
-      // TEMPORARY: Add mock areas for testing if no areas loaded
-      if (areasData.length === 0) {
-        const mockAreas = [
-          { id: 'kv01', ten: 'Khu vực 1' },
-          { id: 'kv02', ten: 'Khu vực 2' }
-        ];
-        console.log('Using mock areas for testing:', mockAreas);
-        setAreas(mockAreas);
-      }
     } catch (error) {
-      console.error('Error loading areas:', error);
+  // console.error('Error loading areas:', error);
       message.error('Không thể tải danh sách khu vực');
     }
   };
 
-  // Load danh mục sản phẩm (chỉ khi cần)
+  // Load danh mục sản phẩm (chỉ khi cần) - Enhanced with debugging
   const loadProductCategories = async () => {
     try {
-      // Sử dụng API mới loadDanhMucSp thay vì getLoaiSanPham
-      const categoriesResponse = await loadDanhMucSp();
+  // Loading product categories
+      
+      // Try new API first
+      let categoriesResponse;
+      try {
+        categoriesResponse = await loadDanhMucSp();
+  // dev log suppressed
+      } catch (newApiError) {
+  // dev log suppressed
+        // Fallback to old API
+        categoriesResponse = await getLoaiSanPham();
+  // dev log suppressed
+      }
       
       // Xử lý dữ liệu categories theo mobile logic pattern
       let categoriesData = [];
       if (Array.isArray(categoriesResponse)) {
         categoriesData = categoriesResponse;
+        
       } else if (categoriesResponse && categoriesResponse.success && categoriesResponse.data) {
         if (Array.isArray(categoriesResponse.data)) {
           categoriesData = categoriesResponse.data;
+          
         } else if (typeof categoriesResponse.data === 'object') {
           categoriesData = Object.values(categoriesResponse.data);
+          
         }
       } else if (categoriesResponse && typeof categoriesResponse === 'object') {
         categoriesData = Object.values(categoriesResponse);
+        
       }
 
       // Map categories to consistent format following mobile logic
-      const mappedCategories = categoriesData.map(cat => ({
-        value: cat.maDanhMucSp || cat.idLoaiSp || cat.id || cat.maLoai,
-        label: cat.tenDanhMucSp || cat.tenLoaiSp || cat.ten || cat.tenLoai,
-        // Keep original fields for backward compatibility
-        maDm: cat.maDanhMucSp || cat.idLoaiSp || cat.id || cat.maLoai,
-        ten: cat.tenDanhMucSp || cat.tenLoaiSp || cat.ten || cat.tenLoai
-      }));
+      const mappedCategories = categoriesData
+        .filter(cat => cat && (cat.maDanhMucSp || cat.idLoaiSp || cat.id || cat.maLoai))
+        .map(cat => ({
+          value: cat.maDanhMucSp || cat.idLoaiSp || cat.id || cat.maLoai,
+          label: cat.tenDanhMucSp || cat.tenLoaiSp || cat.ten || cat.tenLoai || 'Không có tên',
+          // Keep original fields for backward compatibility
+          maDm: cat.maDanhMucSp || cat.idLoaiSp || cat.id || cat.maLoai,
+          ten: cat.tenDanhMucSp || cat.tenLoaiSp || cat.ten || cat.tenLoai || 'Không có tên'
+        }));
 
       setCategories(mappedCategories);
-    } catch (error) {
-      console.error('Error loading categories:', error);
-      // Fallback to old API if new one fails
-      try {
-        const fallbackResponse = await getLoaiSanPham();
-        // Process fallback response with same logic
-        let categoriesData = [];
-        if (Array.isArray(fallbackResponse)) {
-          categoriesData = fallbackResponse;
-        } else if (fallbackResponse && typeof fallbackResponse === 'object') {
-          categoriesData = Object.values(fallbackResponse);
-        }
+      
+      
+      if (mappedCategories.length === 0) {
         
-        const mappedCategories = categoriesData.map(cat => ({
-          value: cat.idLoaiSp || cat.id || cat.maLoai,
-          label: cat.tenLoaiSp || cat.ten || cat.tenLoai,
-          maDm: cat.idLoaiSp || cat.id || cat.maLoai,
-          ten: cat.tenLoaiSp || cat.ten || cat.tenLoai
-        }));
-        
-        setCategories(mappedCategories);
-      } catch (fallbackError) {
-        console.error('Error loading categories (fallback):', fallbackError);
+        message.warning('Không tìm thấy danh mục sản phẩm');
       }
+    } catch (error) {
+      // Silent console
+      
+      // Tuân thủ .rules: không mock dữ liệu
+      message.error('Không thể tải danh mục sản phẩm.');
+      setCategories([]);
     }
   };
 
@@ -667,14 +663,14 @@ const BanHang = () => {
 
       setProducts(mappedProducts);
     } catch (error) {
-      console.error('Error loading products:', error);
+  // Silent console
     }
   };
 
   // FLOW 1: Chọn bàn và xử lý tự động tạo/load hóa đơn
   const handleTableSelect = async (table) => {
     try {
-      console.log('Selected table:', table);
+  // Silent console
       setSelectedTable(table);
       setLoading(true);
       
@@ -724,13 +720,8 @@ const BanHang = () => {
           // Trigger refresh để cập nhật trạng thái bàn
           triggerQuickRefresh('INVOICE_CREATE');
           
-          // Load products và categories trước khi chuyển sang view chọn món
-          await Promise.all([
-            loadProductCategories(),
-            loadProducts()
-          ]);
-          
           // Tự động chuyển sang view chọn món cho bàn trống
+          // Việc tải danh mục/sản phẩm sẽ do component ChonSanPham đảm nhiệm
           setCurrentView(VIEW_STATES.PRODUCTS);
           return; // Kết thúc hàm tại đây để không chuyển sang INVOICE view
         } else {
@@ -752,23 +743,9 @@ const BanHang = () => {
     }
   };
 
-  // FLOW 2: Chuyển sang view chọn sản phẩm
+  // FLOW 2: Chuyển sang view chọn sản phẩm (dữ liệu do ChonSanPham tự tải)
   const handleSelectItems = async () => {
-    try {
-      setLoading(true);
-      // Load categories và products khi cần
-      await Promise.all([
-        loadProductCategories(),
-        loadProducts()
-      ]);
-      
-      setCurrentView(VIEW_STATES.PRODUCTS);
-    } catch (error) {
-      console.error('Error loading products:', error);
-      message.error('Không thể tải danh sách sản phẩm');
-    } finally {
-      setLoading(false);
-    }
+    setCurrentView(VIEW_STATES.PRODUCTS);
   };
 
   // Tạo hóa đơn mới cho bàn
@@ -799,7 +776,7 @@ const BanHang = () => {
         throw new Error('Không thể tạo hóa đơn');
       }
     } catch (error) {
-      console.error('Error creating invoice:', error);
+  // Silent console
       message.error('Không thể tạo hóa đơn mới: ' + (error.message || 'Lỗi không xác định'));
     } finally {
       setLoading(false);
@@ -862,7 +839,7 @@ const BanHang = () => {
         setQuantityToAdd(1);
       }
     } catch (error) {
-      console.error('Error adding product:', error);
+  // Silent console
       message.error('Không thể thêm sản phẩm: ' + (error.message || 'Lỗi không xác định'));
     } finally {
       setLoading(false);
@@ -919,7 +896,7 @@ const BanHang = () => {
       setSelectedItemForUpdate(null);
       setNewQuantityForUpdate(1);
     } catch (error) {
-      console.error('Error updating quantity:', error);
+  // Silent console
       message.error('Không thể cập nhật số lượng: ' + (error.message || 'Lỗi không xác định'));
     } finally {
       setLoading(false);
@@ -947,7 +924,7 @@ const BanHang = () => {
       // Trigger quick refresh sau khi xóa sản phẩm
       triggerQuickRefresh('REMOVE_PRODUCT');
     } catch (error) {
-      console.error('Error removing product:', error);
+  // Silent console
       message.error('Không thể xóa sản phẩm: ' + (error.message || 'Lỗi không xác định'));
     } finally {
       setLoading(false);
@@ -977,7 +954,7 @@ const BanHang = () => {
         setInvoiceDetails(detailsResponse);
       }
     } catch (error) {
-      console.error('Error sending to kitchen:', error);
+  // Silent console
       message.error('Không thể chuyển xuống bếp: ' + (error.message || 'Lỗi không xác định'));
     } finally {
       setLoading(false);
@@ -1011,7 +988,7 @@ const BanHang = () => {
       }
       
     } catch (error) {
-      console.error('Error confirming order:', error);
+  // Silent console
       message.error('Không thể xác nhận đơn hàng: ' + (error.message || 'Lỗi không xác định'));
     } finally {
       setLoading(false);
@@ -1032,7 +1009,7 @@ const BanHang = () => {
       // This could trigger notifications or UI updates
       
     } catch (error) {
-      console.error('Error tracking order status:', error);
+  // Silent console
       // Don't show error message for tracking failures to avoid spam
     }
   };
@@ -1072,7 +1049,7 @@ const BanHang = () => {
             3, // opt=3: Kích hoạt chế độ chờ thanh toán
             '' // cusid rỗng
           );
-          console.log('Activate waiting payment response:', activateResponse);
+          // Silent console
           
           // Bước 3: Hoàn tất thanh toán và xóa khỏi hệ thống
           const finalizeResponse = await tratien(
@@ -1081,11 +1058,11 @@ const BanHang = () => {
             2, // opt=2: Thanh toán hoàn tất, xóa khỏi hệ thống
             '' // cusid rỗng
           );
-          console.log('Finalize payment response:', finalizeResponse);
+          // Silent console
           
           // Bước 4: Check trạng thái bàn sau thanh toán (ajaxbangid) - Giống web GMAC
           const statusResponse = await ajaxBangId(selectedTable.id);
-          console.log('Table status check response:', statusResponse);
+          // Silent console
           
           if (finalizeResponse && finalizeResponse.success !== false) {
             message.success('Thanh toán hoàn tất và hóa đơn đã được xóa khỏi hệ thống');
@@ -1093,7 +1070,7 @@ const BanHang = () => {
             message.warning('Thanh toán hoàn tất nhưng có thể cần refresh để cập nhật trạng thái bàn');
           }
         } catch (tratienError) {
-          console.error('Error calling tratien:', tratienError);
+          // Silent console
           message.warning('Thanh toán hoàn tất nhưng có thể cần refresh để cập nhật trạng thái bàn');
         }
       }
@@ -1110,7 +1087,7 @@ const BanHang = () => {
       
       
     } catch (error) {
-      console.error('[BanHang] Enhanced payment error:', error);
+  // Silent console
       message.error('Không thể xử lý thanh toán: ' + (error.message || 'Lỗi không xác định'));
     } finally {
       setPaymentLoading(false);
@@ -1166,7 +1143,7 @@ const BanHang = () => {
       await loadTables();
       
     } catch (error) {
-      console.error('Error processing payment:', error);
+  // Silent console
       message.error('Không thể xử lý thanh toán: ' + (error.message || 'Lỗi không xác định'));
     } finally {
       setLoading(false);
@@ -1188,7 +1165,7 @@ const BanHang = () => {
         message.error('Không thể sao chép hóa đơn: ' + (result.message || 'Lỗi không xác định'));
       }
     } catch (error) {
-      console.error('Error copying invoice:', error);
+  // Silent console
       message.error('Lỗi khi sao chép hóa đơn');
     }
   };
@@ -1202,7 +1179,7 @@ const BanHang = () => {
       // Example print action - replace with actual print implementation
       window.print();
     } catch (error) {
-      console.error('Error reprinting invoice:', error);
+  // Silent console
       message.error('Lỗi khi in lại hóa đơn');
     }
   };
@@ -1242,7 +1219,7 @@ const BanHang = () => {
       await triggerTableRefresh();
       
     } catch (error) {
-      console.error('Error saving invoice edits:', error);
+  // Silent console
       message.error('Lỗi khi lưu thay đổi hóa đơn');
     } finally {
       setLoading(false);
@@ -1282,7 +1259,7 @@ const BanHang = () => {
       await loadTables();
       
     } catch (error) {
-      console.error('Error canceling invoice:', error);
+  // Silent console
       message.error('Không thể hủy hóa đơn: ' + (error.message || 'Lỗi không xác định'));
     } finally {
       setLoading(false);
@@ -1317,7 +1294,7 @@ const BanHang = () => {
         message.info('Không có lịch sử hóa đơn');
       }
     } catch (error) {
-      console.error('Error loading invoice history:', error);
+  // Silent console
       message.error('Không thể tải lịch sử hóa đơn: ' + (error.message || 'Lỗi không xác định'));
     } finally {
       setLoading(false);
@@ -1329,7 +1306,7 @@ const BanHang = () => {
   // Function to reload current table's invoice data
   const loadDsHoaDon = async () => {
     if (!selectedTable) {
-      console.log('No selected table to reload invoice for');
+  // Silent console
       return;
     }
 
@@ -1367,7 +1344,7 @@ const BanHang = () => {
         setSelectedTable(updatedTable);
       }
     } catch (error) {
-      console.error('Error reloading invoice data:', error);
+  // Silent console
       message.error('Không thể tải lại dữ liệu hóa đơn: ' + (error.message || 'Lỗi không xác định'));
     }
   };
@@ -1379,19 +1356,14 @@ const BanHang = () => {
       const allTablesWithInvoices = tables.filter(table => table.status === 'occupied');
       setAvailableTablesForOperation(allTablesWithInvoices);
     } catch (error) {
-      console.error('Error loading available tables:', error);
+  // Silent console
       message.error('Không thể tải danh sách bàn');
     }
   };
 
   // Enhanced Gộp bàn với animation
   const handleMergeTable = async (targetTable) => {
-    console.log('handleMergeTable called with:', { 
-      targetTable, 
-      selectedTable, 
-      currentInvoice,
-      selectedTableInvoiceId: selectedTable?.invoiceId 
-    });
+    // Silent console
     
     if (!selectedTable?.invoiceId || !targetTable) {
       message.error('Vui lòng chọn bàn có hóa đơn và bàn đích để gộp');
@@ -1436,7 +1408,7 @@ const BanHang = () => {
       }
       
     } catch (error) {
-      console.error('Error merging tables:', error);
+  // Silent console
       message.error('Không thể gộp bàn: ' + (error.message || 'Lỗi không xác định'));
       setOperationInProgress(false);
     } finally {
@@ -1473,7 +1445,7 @@ const BanHang = () => {
       }
       
     } catch (error) {
-      console.error('Error splitting table:', error);
+  // Silent console
       message.error('Không thể tách bàn: ' + (error.message || 'Lỗi không xác định'));
     } finally {
       setLoading(false);
@@ -1483,12 +1455,7 @@ const BanHang = () => {
 
   // Enhanced Chuyển bàn
   const handleTransferTable = async (targetTable) => {
-    console.log('handleTransferTable called with:', { 
-      targetTable, 
-      selectedTable, 
-      currentInvoice,
-      selectedTableInvoiceId: selectedTable?.invoiceId 
-    });
+    // Silent console
     
     if (!selectedTable?.invoiceId || !targetTable) {
       message.error('Vui lòng chọn bàn có hóa đơn và bàn đích để chuyển');
@@ -1519,7 +1486,7 @@ const BanHang = () => {
       }
       
     } catch (error) {
-      console.error('Error transferring table:', error);
+  // Silent console
       message.error('Không thể chuyển bàn: ' + (error.message || 'Lỗi không xác định'));
     } finally {
       setLoading(false);
@@ -1529,15 +1496,13 @@ const BanHang = () => {
 
   // Mở modal operations và load data
   const openMergeTableModal = () => {
-    console.log('Opening merge modal with tables:', tables);
-    console.log('Current selected table:', selectedTable);
+  // Silent console
     loadAvailableTablesForOperation();
     setShowMergeTableModal(true);
   };
 
   const openTransferTableModal = () => {
-    console.log('Opening transfer modal with tables:', tables);
-    console.log('Current selected table:', selectedTable);
+  // Silent console
     loadAvailableTablesForOperation();
     setShowTransferTableModal(true);
   };
@@ -1578,7 +1543,7 @@ const BanHang = () => {
         throw new Error('Không thể tạo hóa đơn tạm');
       }
     } catch (error) {
-      console.error('Error creating draft invoice:', error);
+  // Silent console
       message.error('Không thể tạo hóa đơn tạm: ' + (error.message || 'Lỗi không xác định'));
     } finally {
       setLoading(false);
@@ -1604,7 +1569,7 @@ const BanHang = () => {
       triggerQuickRefresh('CONVERT_DRAFT');
       
     } catch (error) {
-      console.error('Error converting draft to official:', error);
+  // Silent console
       message.error('Không thể chuyển đổi hóa đơn: ' + (error.message || 'Lỗi không xác định'));
     } finally {
       setLoading(false);
@@ -2210,77 +2175,25 @@ const BanHang = () => {
 };
 
   const renderProductsView = () => (
-    <Layout className="products-view">
-      {/* Sidebar categories */}
-      <Sider width={250} className="categories-sidebar">
-        <div className="sidebar-header">
-          <Title level={4}>Danh mục</Title>
-        </div>
-        <div className="categories-list">
-          <div 
-            className={`category-item ${selectedCategory === 'all' ? 'active' : ''}`}
-            onClick={() => setSelectedCategory('all')}
-          >
-            Tất cả món
-          </div>
-          {categories.map(category => (
-            <div
-              key={category.maDm}
-              className={`category-item ${selectedCategory === category.maDm ? 'active' : ''}`}
-              onClick={() => setSelectedCategory(category.maDm)}
-            >
-              {category.ten}
-            </div>
-          ))}
-        </div>
-      </Sider>
+    <Content className="products-content">
+      {/* Back Button Row */}
+      <div className="back-button-row">
+        <Button 
+          icon={<ArrowLeft size={16} />}
+          onClick={handleGoBack}
+          className="back-button"
+        >
+          Quay lại hóa đơn
+        </Button>
+      </div>
+      
+      <div className="view-header">
+        <Title level={3}>Chọn món - {selectedTable?.name}</Title>
+      </div>
 
-      {/* Main products grid */}
-      <Content className="products-content">
-        {/* Back Button Row */}
-        <div className="back-button-row">
-          <Button 
-            icon={<ArrowLeft size={16} />}
-            onClick={handleGoBack}
-            className="back-button"
-          >
-            Quay lại hóa đơn
-          </Button>
-        </div>
-        
-        <div className="view-header">
-          <Title level={3}>Chọn món - {selectedTable?.name}</Title>
-          <Input
-            placeholder="Tìm món..."
-            prefix={<Search size={16} />}
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            style={{ width: 300 }}
-          />
-        </div>
-
-        <div className="products-grid">
-          {filteredProducts.map(product => (
-            <Card
-              key={product.id}
-              className="product-card"
-              onClick={() => addProductToOrder(product)}
-              hoverable
-            >
-              <div className="product-icon">
-                <Coffee size={32} />
-              </div>
-              <div className="product-info">
-                <Title level={5}>{product.ten}</Title>
-                <Text className="product-price">
-                  {parseFloat(product.gia || 0).toLocaleString('vi-VN')} đ
-                </Text>
-              </div>
-            </Card>
-          ))}
-        </div>
-      </Content>
-    </Layout>
+      {/* Delegate categories + products UI to ChonSanPham inside products-content */}
+      <ChonSanPham onAddToCart={addProductToOrder} />
+    </Content>
   );
 
   // Main render

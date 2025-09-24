@@ -1,0 +1,60 @@
+// Kitchen & Bar - Kitchen and bar text
+Kitchen
+Bar
+Kitchen
+Bar Counter
+Kitchen Order
+Bar Order
+Main Dish
+Side Dish
+Drinks
+Cocktail
+Mocktail
+Coffee
+Tea
+Soft Drinks
+Beer
+Wine
+Fast Food
+Slow Food
+Priority
+Urgent
+Normal
+Preparing
+Completed
+Delivered
+Cancel Item
+Kitchen Notes
+Special Request
+No Spicy
+Light Spicy
+Medium Spicy
+Very Spicy
+No Sugar
+Light Sugar
+Medium Sugar
+Heavy Sugar
+No Ice
+Light Ice
+Heavy Ice
+Hot
+Warm
+Cool
+Cold
+Separate Ice
+Vegetarian
+Non-Vegetarian
+No Onion
+No Garlic
+No MSG
+Diet
+Allergy
+Add Topping
+Add Seasoning
+Small Size
+Medium Size
+Large Size
+Combo
+Set Menu
+Special Item
+Signature Item

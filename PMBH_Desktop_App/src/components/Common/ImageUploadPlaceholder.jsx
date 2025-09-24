@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Upload, message, Modal } from 'antd';
-import { UploadOutlined, DeleteOutlined, EyeOutlined } from '@ant-design/icons';
+import { Upload as UploadIcon, Trash2, Eye } from 'lucide-react';
 import ProductImagePlaceholder from './ProductImagePlaceholder';
 import { PLACEHOLDER_CONFIG } from '../../constants';
 import { isValidImageFormat, isValidImageSize, resizeImage } from '../../utils/imageUtils';
@@ -60,7 +60,7 @@ const ImageUploadPlaceholder = ({
       message.success('Upload hình ảnh thành công!');
       return false; // Prevent default upload behavior
     } catch (error) {
-      console.error('Error uploading image:', error);
+  // Silent console for UI component; user will see message error
       message.error('Có lỗi xảy ra khi upload hình ảnh!');
       return false;
     } finally {
@@ -110,20 +110,20 @@ const ImageUploadPlaceholder = ({
                 disabled={uploading}
               >
                 <div className="upload-button" title="Upload hình ảnh">
-                  <UploadOutlined />
+                  <UploadIcon size={18} />
                 </div>
               </Upload>
             )}
             
             {value && showPreview && (
               <div className="preview-button" onClick={handlePreview} title="Xem hình ảnh">
-                <EyeOutlined />
+                <Eye size={18} />
               </div>
             )}
             
             {value && showDelete && (
               <div className="delete-button" onClick={handleDelete} title="Xóa hình ảnh">
-                <DeleteOutlined />
+                <Trash2 size={18} />
               </div>
             )}
           </div>

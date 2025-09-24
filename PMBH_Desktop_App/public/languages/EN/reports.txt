@@ -1,0 +1,50 @@
+// Reports - Report text
+Reports
+Statistics
+Charts
+Data Tables
+Revenue Report
+Sales Report
+Inventory Report
+Customer Report
+Staff Report
+Shift Report
+From Date
+To Date
+Month
+Quarter
+Year
+Today
+Yesterday
+This Week
+Last Week
+This Month
+Last Month
+Custom Time Range
+Revenue
+Profit
+Cost
+Cash
+Bank Transfer
+Credit Card
+Total Revenue
+Net Revenue
+Cost of Goods Sold
+Gross Profit
+Operating Expenses
+Net Profit
+Number of Orders
+Average Order Value
+New Customers
+Returning Customers
+Best Selling Products
+Slow Moving Products
+Outstanding Staff
+Export Report
+Print Report
+Email Report
+Save Report
+Excel Report
+PDF Report
+Word Report
+Report History

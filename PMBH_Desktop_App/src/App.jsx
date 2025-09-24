@@ -2,6 +2,7 @@ import React from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { Layout } from 'antd';
 import { useAuth } from './contexts/AuthContext';
+import { LanguageProvider } from './contexts/LanguageContext';
 import DangNhap from './auth/DangNhap';
 import TrangChu from './pages/TrangChu/TrangChu';
 import BanHang from './pages/BanHang/BanHang';
@@ -65,17 +66,28 @@ function App() {
   const { isAuthenticated } = useAuth();
 
   if (!isAuthenticated) {
-    return <DangNhap />;
+    return (
+      <LanguageProvider>
+        <DangNhap />
+      </LanguageProvider>
+    );
   }
 
   return (
-    <Layout style={{ minHeight: '100vh' }}>
-      <Sider width={250} theme="light">
-        <SidebarMenu />
-      </Sider>
+    <LanguageProvider>
+      <Layout style={{ minHeight: '100vh' }}>
+      <SidebarMenu />
+      <HeaderBar />
       <Layout>
-        <HeaderBar />
-        <Content style={{ padding: '20px', background: '#f0f2f5' }}>
+        <Content 
+          className="app-content" 
+          style={{ 
+            marginLeft: '250px', 
+            marginTop: '64px', 
+            padding: '20px',
+            minHeight: 'calc(100vh - 64px)'
+          }}
+        >
           <Routes>
             <Route path="/" element={<Navigate to="/trang-chu" replace />} />
             <Route path="/trang-chu" element={<TrangChu />} />
@@ -158,6 +170,7 @@ function App() {
         </Content>
       </Layout>
     </Layout>
+    </LanguageProvider>
   );
 }
 

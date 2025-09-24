@@ -1,6 +1,6 @@
 import React from 'react';
 import { Input } from 'antd';
-import { SearchOutlined } from '@ant-design/icons';
+import { Search } from 'lucide-react';
 
 const OTimKiem = ({
   placeholder = 'Tìm kiếm...',
@@ -25,7 +25,7 @@ const OTimKiem = ({
       enterButton={enterButton}
       loading={loading}
       className={className}
-      prefix={<SearchOutlined />}
+  prefix={<Search size={16} />}
       {...props}
     />
   );

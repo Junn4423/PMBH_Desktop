@@ -9,15 +9,7 @@ import {
 } from '../services/apiServices';
 
 export const debugAPIFunctions = () => {
-  console.log('=== DEBUG API FUNCTIONS ===');
-  
-  // Check if functions are defined
-  console.log('thanhToanHoaDonChiTiet:', typeof thanhToanHoaDonChiTiet);
-  console.log('capNhatTrangThaiDonHang:', typeof capNhatTrangThaiDonHang);
-  console.log('xacNhanDonHang:', typeof xacNhanDonHang);
-  console.log('layTrangThaiDonHangRealtime:', typeof layTrangThaiDonHangRealtime);
-  console.log('inHoaDonThanhToan:', typeof inHoaDonThanhToan);
-  
+  // Silent console
   return {
     thanhToanHoaDonChiTiet: typeof thanhToanHoaDonChiTiet === 'function',
     capNhatTrangThaiDonHang: typeof capNhatTrangThaiDonHang === 'function',
@@ -29,7 +21,7 @@ export const debugAPIFunctions = () => {
 
 export const testPaymentAPI = async (testData) => {
   try {
-    console.log('Testing payment API with data:', testData);
+    // Silent console
     
     // Test basic payment first
     const basicResult = await thanhToanHoaDonBanhang({
@@ -39,11 +31,11 @@ export const testPaymentAPI = async (testData) => {
       tienThua: testData.tienThua
     });
     
-    console.log('Basic payment result:', basicResult);
+    // Silent console
     return basicResult;
     
   } catch (error) {
-    console.error('Payment test failed:', error);
+    // Silent console
     throw error;
   }
 };

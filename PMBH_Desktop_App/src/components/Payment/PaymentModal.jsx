@@ -83,10 +83,7 @@ const PaymentModal = ({
         return;
       }
 
-      console.log('💰 [PaymentModal] Starting payment process...');
-      console.log('💰 [PaymentModal] Invoice ID:', invoice?.maHd);
-      console.log('💰 [PaymentModal] Order Total:', orderTotal);
-      console.log('💰 [PaymentModal] Customer Paid:', values.customerPaid);
+  // Silent console
 
       // Use simple original API call
       if (!invoice?.maHd) {
@@ -96,7 +93,7 @@ const PaymentModal = ({
 
       // Call the original working payment API
       const result = await thanhToanHoaDon(invoice.maHd);
-      console.log('💰 [PaymentModal] Payment API result:', result);
+  // Silent console
       
       if (result && (result.success !== false)) {
         message.success('Thanh toán thành công!');
@@ -117,7 +114,7 @@ const PaymentModal = ({
         message.error('Thanh toán thất bại: ' + (result?.error || 'Lỗi không xác định'));
       }
     } catch (error) {
-      console.error('💰 [PaymentModal] Payment error:', error);
+  // Silent console
       message.error('Lỗi thanh toán: ' + (error.message || 'Lỗi không xác định'));
     }
   };

@@ -20,23 +20,29 @@ function createWindow() {
     },
     icon: path.join(__dirname, 'assets/icon.png'),
     show: false,
-    titleBarStyle: 'default',
-    autoHideMenuBar: false
+    titleBarStyle: 'hidden',
+    autoHideMenuBar: true,
+    fullscreen: false,
+    maximizable: true,
+    frame: false
   });
 
   const loadURL = isDev
     ? 'http://localhost:3000'
     : `file://${path.join(__dirname, '../build/index.html')}`;
   
-  console.log('Loading URL:', loadURL);
-  console.log('isDev:', isDev);
-  console.log('__dirname:', __dirname);
+  if (isDev) {
+    console.log('Loading URL:', loadURL);
+    console.log('isDev:', isDev);
+    console.log('__dirname:', __dirname);
+  }
 
   mainWindow.loadURL(loadURL);
 
   mainWindow.once('ready-to-show', () => {
+    mainWindow.maximize();
     mainWindow.show();
-    console.log('Window shown successfully');
+  if (isDev) console.log('Window shown successfully');
     
     if (isDev) {
       mainWindow.webContents.openDevTools();
@@ -44,19 +50,19 @@ function createWindow() {
   });
 
   mainWindow.webContents.on('did-fail-load', (event, errorCode, errorDescription, validatedURL) => {
-    console.error('Failed to load:', errorCode, errorDescription, validatedURL);
+  if (isDev) console.error('Failed to load:', errorCode, errorDescription, validatedURL);
   });
 
   mainWindow.webContents.on('dom-ready', () => {
-    console.log('DOM ready');
+  if (isDev) console.log('DOM ready');
   });
 
   mainWindow.webContents.on('did-finish-load', () => {
-    console.log('Page finished loading');
+  if (isDev) console.log('Page finished loading');
   });
 
   mainWindow.webContents.on('console-message', (event, level, message, line, sourceId) => {
-    console.log(`Console [${level}]: ${message}`);
+  if (isDev) console.log(`Console [${level}]: ${message}`);
   });
 
   mainWindow.on('closed', () => {
@@ -140,6 +146,33 @@ app.on('activate', () => {
   if (BrowserWindow.getAllWindows().length === 0) {
     createWindow();
   }
+});
+
+// Window control IPC handlers
+ipcMain.handle('window-minimize', () => {
+  if (mainWindow) {
+    mainWindow.minimize();
+  }
+});
+
+ipcMain.handle('window-maximize', () => {
+  if (mainWindow) {
+    if (mainWindow.isMaximized()) {
+      mainWindow.restore();
+    } else {
+      mainWindow.maximize();
+    }
+  }
+});
+
+ipcMain.handle('window-close', () => {
+  if (mainWindow) {
+    mainWindow.close();
+  }
+});
+
+ipcMain.handle('app-quit', () => {
+  app.quit();
 });
 
 // IPC handlers

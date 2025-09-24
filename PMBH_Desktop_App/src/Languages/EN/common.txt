@@ -1,0 +1,47 @@
+// Common UI text - Common text for entire app
+Add New
+Add
+Edit
+Delete
+Save
+Cancel
+Close
+OK
+Confirm
+Back
+Refresh
+Search
+Filter
+View Details
+Select
+Deselect
+Select All
+Deselect All
+Previous Page
+Next Page
+First
+Last
+Show
+Hide
+Enable
+Disable
+Active
+Inactive
+Status
+Description
+Notes
+Created Date
+Updated Date
+Created By
+Updated By
+No.
+Code
+Name
+Vietnamese Name
+English Name
+Address
+Email
+Phone Number
+Fax
+Website
+Current Language:

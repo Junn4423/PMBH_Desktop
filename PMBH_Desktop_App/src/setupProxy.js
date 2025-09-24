@@ -1,7 +1,7 @@
 const { createProxyMiddleware } = require('http-proxy-middleware');
 
 module.exports = function(app) {
-  console.log('Setting up proxy middleware...');
+  // Silent console
 
   // Proxy cho API gmac - để xử lý CORS
   app.use(
@@ -17,10 +17,10 @@ module.exports = function(app) {
         res.end('Proxy error: ' + err.message);
       },
       onProxyReq: function (proxyReq, req, res) {
-        console.log('Proxying GMAC request:', req.method, req.url, '-> http://localhost' + req.url);
+  // Silent console
       },
       onProxyRes: function (proxyRes, req, res) {
-        console.log('Proxy response:', proxyRes.statusCode, req.url);
+  // Silent console
         // Add CORS headers
         proxyRes.headers['Access-Control-Allow-Origin'] = '*';
         proxyRes.headers['Access-Control-Allow-Methods'] = 'GET,PUT,POST,DELETE,OPTIONS';
@@ -30,5 +30,5 @@ module.exports = function(app) {
     })
   );
 
-  console.log('Proxy middleware setup complete');
+  // Silent console
 };

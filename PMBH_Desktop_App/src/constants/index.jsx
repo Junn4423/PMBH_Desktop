@@ -171,7 +171,7 @@ export const TABLE_SEAT_OPTIONS = [
 
 // Đường dẫn hình ảnh mặc định
 export const DEFAULT_IMAGES = {
-  PRODUCT: '/images/default-product.svg',
+  PRODUCT: '../assets/Img/cafe.png',
   USER_AVATAR: '/images/default-avatar.png',
   CATEGORY: '/images/default-category.jpg',
   NO_IMAGE: '/images/no-image.svg'

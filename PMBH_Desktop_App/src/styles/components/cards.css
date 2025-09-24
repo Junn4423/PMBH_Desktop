@@ -1,7 +1,48 @@
 /* ================================================================
    CARDS STYLES
-   Hệ thống card components toàn ứng dụng
+   Hệ thống card components toàn ứng dụng với theme #197dd3, #77d4fb, #bdbcc4, #4b4344
 ================================================================ */
+
+/* Ant Design Card Override */
+.ant-card {
+  background: linear-gradient(135deg, #197dd3 0%, #77d4fb 100%) !important;
+  border: none !important;
+  border-radius: 12px !important;
+  box-shadow: 0 4px 12px rgba(25, 125, 211, 0.15) !important;
+  color: white !important;
+}
+
+.ant-card-head {
+  background: rgba(255, 255, 255, 0.1) !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.2) !important;
+  color: white !important;
+}
+
+.ant-card-head-title {
+  color: white !important;
+  font-weight: 600 !important;
+}
+
+.ant-card-body {
+  color: white !important;
+}
+
+/* Table Cards trong BepBar */
+.ant-card.table-card {
+  background: linear-gradient(135deg, #197dd3 0%, #77d4fb 100%) !important;
+  border: 2px solid rgba(255, 255, 255, 0.2) !important;
+  color: white !important;
+}
+
+.ant-card.table-card.occupied {
+  background: linear-gradient(135deg, #4b4344 0%, #bdbcc4 100%) !important;
+  border-color: rgba(255, 255, 255, 0.3) !important;
+}
+
+.ant-card.table-card.available {
+  background: linear-gradient(135deg, #77d4fb 0%, #197dd3 100%) !important;
+  border-color: rgba(255, 255, 255, 0.4) !important;
+}
 
 /* Base Card Styles */
 .card {

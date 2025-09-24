@@ -15,6 +15,11 @@
   border-right: 1px solid #e8e8e8;
   display: flex;
   flex-direction: column;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 250px;
+  z-index: 1001;
 }
 
 .logo-section {
@@ -39,6 +44,26 @@
 .main-menu {
   flex: 1;
   padding: 16px 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+.main-menu::-webkit-scrollbar {
+  width: 6px;
+}
+
+.main-menu::-webkit-scrollbar-track {
+  background: rgba(25, 125, 211, 0.1);
+  border-radius: 3px;
+}
+
+.main-menu::-webkit-scrollbar-thumb {
+  background: linear-gradient(135deg, #197dd3, #77d4fb);
+  border-radius: 3px;
+}
+
+.main-menu::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(135deg, #77d4fb, #197dd3);
 }
 
 .main-menu .ant-menu-item,

@@ -1,0 +1,53 @@
+// Products & Inventory - Text sản phẩm và kho
+Sản phẩm
+Loại sản phẩm
+Danh mục sản phẩm
+Mã sản phẩm
+Tên sản phẩm
+Giá bán
+Giá vốn
+Giá thành viên
+Đơn vị tính
+Xuất xứ
+Thương hiệu
+Mô tả sản phẩm
+Hình ảnh
+Trạng thái sản phẩm
+Còn hàng
+Hết hàng
+Ngừng kinh doanh
+Số lượng tồn kho
+Tồn kho tối thiểu
+Tồn kho tối đa
+Cảnh báo tồn kho
+Kiểm kho
+Nhập kho
+Xuất kho
+Phiếu nhập
+Phiếu xuất
+Phiếu kiểm kho
+Lý do nhập
+Lý do xuất
+Nhà cung cấp
+Kho hàng
+Vị trí kho
+Nguyên liệu
+Thành phẩm
+Bán thành phẩm
+Công thức
+Định mức
+Đơn vị chuyển đổi
+Barcode
+QR Code
+Hạn sử dụng
+Lô hàng
+Serial
+Tính chất sản phẩm
+Có thể bán
+Không thể bán
+Thuộc tính sản phẩm
+Size
+Màu sắc
+Kích thước
+Trọng lượng
+Thể tích

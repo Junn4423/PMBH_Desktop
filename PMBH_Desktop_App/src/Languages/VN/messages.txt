@@ -1,0 +1,49 @@
+// Messages & Notifications - Text thông báo
+Thành công
+Lỗi
+Cảnh báo
+Thông tin
+Xác nhận
+Thông báo
+Đã lưu thành công
+Đã xóa thành công
+Đã cập nhật thành công
+Đã thêm thành công
+Lưu thất bại
+Xóa thất bại
+Cập nhật thất bại
+Thêm thất bại
+Vui lòng thử lại
+Có lỗi xảy ra
+Không thể kết nối máy chủ
+Mất kết nối mạng
+Đang tải...
+Đang xử lý...
+Đang lưu...
+Vui lòng đợi
+Không có dữ liệu
+Dữ liệu trống
+Dữ liệu không hợp lệ
+Trường bắt buộc
+Không được để trống
+Định dạng không đúng
+Số điện thoại không hợp lệ
+Email không hợp lệ
+Mật khẩu quá ngắn
+Mật khẩu không khớp
+Bạn có chắc chắn muốn xóa?
+Bạn có chắc chắn muốn hủy?
+Thao tác này không thể hoàn tác
+Dữ liệu sẽ bị mất
+Hành động không được phép
+Không có quyền thực hiện
+Phiên làm việc hết hạn
+Vui lòng đăng nhập lại
+Tải lại trang
+Thử lại
+Bỏ qua
+Tiếp tục
+Dừng lại
+Hủy bỏ
+Đồng ý
+Từ chối

@@ -44,22 +44,21 @@ const BepBar = () => {
   // Load danh sách món đang chờ làm
   const loadPendingOrders = async () => {
     try {
-      console.log('Loading pending orders...');
+  // Silent console
       const response = await layDsMonCho();
       
       if (Array.isArray(response)) {
         setPendingOrders(response);
-        console.log(`Pending orders loaded: ${response.length} items`);
+  // Silent console
         if (response.length > 0) {
-          console.log('First pending order structure:', response[0]);
-          console.log('Available fields:', Object.keys(response[0]));
+          // Silent console
         }
       } else {
-        console.log('Pending orders response not array:', response);
+  // Silent console
         setPendingOrders([]);
       }
     } catch (error) {
-      console.error('Error loading pending orders:', error);
+  // Silent console
       message.error('Không thể tải danh sách món chờ làm');
       setPendingOrders([]);
     }
@@ -68,22 +67,21 @@ const BepBar = () => {
   // Load danh sách món đã xong
   const loadCompletedOrders = async () => {
     try {
-      console.log('Loading completed orders...');
+  // Silent console
       const response = await layDsMonDaXong();
       
       if (Array.isArray(response)) {
         setCompletedOrders(response);
-        console.log(`Completed orders loaded: ${response.length} items`);
+  // Silent console
         if (response.length > 0) {
-          console.log('First completed order structure:', response[0]);
-          console.log('Available fields:', Object.keys(response[0]));
+          // Silent console
         }
       } else {
-        console.log('Completed orders response not array:', response);
+  // Silent console
         setCompletedOrders([]);
       }
     } catch (error) {
-      console.error('Error loading completed orders:', error);
+  // Silent console
       message.error('Không thể tải danh sách món đã xong');
       setCompletedOrders([]);
     }
@@ -91,7 +89,7 @@ const BepBar = () => {
 
   // Load tất cả dữ liệu
   const loadAllData = async () => {
-    console.log('=== LOADING ALL KITCHEN DATA ===');
+  // Silent console
     setLoading(true);
     
     try {
@@ -105,9 +103,9 @@ const BepBar = () => {
         loadCompletedOrders()
       ]);
       
-      console.log('All kitchen data loaded successfully');
+  // Silent console
     } catch (error) {
-      console.error('Error loading kitchen data:', error);
+  // Silent console
     } finally {
       setLoading(false);
     }
@@ -116,13 +114,11 @@ const BepBar = () => {
   // Hoàn thành món - Mark dish as completed
   const completeOrder = async (idCthd, dishName) => {
     try {
-      console.log('=== COMPLETING ORDER ===');
-      console.log('Attempting to complete order with idCthd:', idCthd);
-      console.log('Dish name:', dishName);
+  // Silent console
       
       setLoading(true);
       const result = await updateTrangThaiMon(idCthd);
-      console.log('API response for complete:', result);
+  // Silent console
       
       message.success(`Đã hoàn thành món: ${dishName} (ID: ${idCthd})`);
       
@@ -132,7 +128,7 @@ const BepBar = () => {
       }, 500);
       
     } catch (error) {
-      console.error('Error completing order:', error);
+  // Silent console
       message.error('Không thể hoàn thành món');
     } finally {
       setLoading(false);
@@ -146,24 +142,22 @@ const BepBar = () => {
       content: `Bạn có chắc muốn hoàn lại món "${dishName}" về trạng thái chờ làm?`,
       onOk: async () => {
         try {
-          console.log('=== REVERTING ORDER ===');
-          console.log('Attempting to revert order with idCthd:', idCthd);
-          console.log('Dish name:', dishName);
+          // Silent console
           
           setLoading(true);
           const result = await updateTrangThaiMon(idCthd);
-          console.log('API response for revert:', result);
+          // Silent console
           
           message.success(`Đã hoàn lại món: ${dishName} (ID: ${idCthd})`);
           
           // Hot reload hệ thống ngay sau khi tương tác
           setTimeout(async () => {
-            console.log('Hot reloading after revert action...');
+            // Silent console
             await loadAllData();
           }, 500);
           
         } catch (error) {
-          console.error('Error reverting order:', error);
+          // Silent console
           message.error('Không thể hoàn lại món');
         } finally {
           setLoading(false);
@@ -179,7 +173,7 @@ const BepBar = () => {
     if (autoRefresh) {
       // Auto refresh mỗi 15 giây
       intervalId = setInterval(() => {
-        console.log('Auto refreshing kitchen data...');
+  // Silent console
         loadAllData();
       }, 15000); // 15 seconds
     }
@@ -246,8 +240,7 @@ const BepBar = () => {
               size="large"
               icon={<CheckCircle size={16} />}
               onClick={() => {
-                console.log('Complete button clicked for order:', order);
-                console.log('idCthd:', order.idCthd, 'tenNuoc:', order.tenNuoc);
+                // Silent console
                 completeOrder(order.idCthd, order.tenNuoc);
               }}
               style={{

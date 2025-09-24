@@ -1,0 +1,25 @@
+// Authentication - Text đăng nhập, đăng xuất
+Đăng nhập
+Đăng xuất
+Tên đăng nhập
+Mật khẩu
+Nhớ mật khẩu
+Quên mật khẩu?
+Đăng nhập thành công
+Đăng xuất thành công
+Tên đăng nhập không được để trống
+Mật khẩu không được để trống
+Tên đăng nhập hoặc mật khẩu không đúng
+Phiên làm việc đã hết hạn
+Vui lòng đăng nhập lại
+Thông tin đăng nhập
+Xác thực
+Quyền truy cập
+Không có quyền truy cập
+Tài khoản bị khóa
+Tài khoản không tồn tại
+Đổi mật khẩu
+Mật khẩu cũ
+Mật khẩu mới
+Xác nhận mật khẩu mới
+Mật khẩu không khớp

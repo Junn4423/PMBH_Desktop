@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Row, Col, Card, Button, Modal, Form, Input, Select, InputNumber, Table, Space, Typography, Tag, message } from 'antd';
-import { PlusOutlined, EditOutlined, DeleteOutlined, TableOutlined } from '@ant-design/icons';
+import { Plus, Pencil, Trash2, Table as TableIcon } from 'lucide-react';
 import { loadBan, loadKhuVuc } from '../../services/apiServices';
 import './QuanLyBan.css';
 
@@ -27,7 +27,7 @@ const QuanLyBan = () => {
       if (data && Array.isArray(data)) {
         setTables(data);
       } else {
-        console.log('No tables data received');
+        // Silent console
         setTables([]);
       }
     } catch (error) {
@@ -45,7 +45,7 @@ const QuanLyBan = () => {
       if (data && Array.isArray(data)) {
         setKhuVucList(data);
       } else {
-        console.log('No khu vuc data received');
+        // Silent console
         setKhuVucList([]);
       }
     } catch (error) {
@@ -215,7 +215,7 @@ const QuanLyBan = () => {
         <Space size="middle">
           <Button
             type="link"
-            icon={<EditOutlined />}
+            icon={<Pencil size={16} />}
             onClick={() => handleEdit(record)}
           >
             Sửa
@@ -223,7 +223,7 @@ const QuanLyBan = () => {
           <Button
             type="link"
             danger
-            icon={<DeleteOutlined />}
+            icon={<Trash2 size={16} />}
             onClick={() => handleDelete(record.id)}
           >
             Xóa
@@ -239,7 +239,7 @@ const QuanLyBan = () => {
         <Title level={2}>Quản lý bàn</Title>
         <Button
           type="primary"
-          icon={<PlusOutlined />}
+          icon={<Plus size={16} />}
           onClick={handleAddNew}
         >
           Thêm bàn mới
@@ -259,7 +259,7 @@ const QuanLyBan = () => {
                     onClick={() => handleEdit(table)}
                   >
                     <div className="table-content">
-                      <TableOutlined style={{ fontSize: '24px', marginBottom: '8px' }} />
+                      <TableIcon size={24} style={{ marginBottom: '8px' }} />
                       <Text strong className="table-name">{table.ten}</Text>
                       <div className="table-details">
                         <Text type="secondary" style={{ fontSize: '12px' }}>

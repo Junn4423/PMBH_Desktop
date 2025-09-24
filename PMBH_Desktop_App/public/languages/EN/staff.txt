@@ -1,0 +1,56 @@
+// Staff & HR - Staff and HR text
+Staff
+Staff Code
+Staff Name
+Full Name
+Position
+Department
+Department
+Work Shift
+Morning Shift
+Afternoon Shift
+Evening Shift
+Night Shift
+Part Time
+Full Time
+Probation
+Permanent
+Contract
+Basic Salary
+Net Salary
+Allowance
+Bonus
+Deduction
+Start Date
+End Date
+Work Status
+Working
+On Leave
+Sick Leave
+Resigned
+Terminated
+Authority
+Manager
+Cashier
+Service Staff
+Head Chef
+Kitchen Assistant
+Bartender
+Security
+Cleaner
+General Staff
+Experience
+Skills
+Evaluation
+Reward
+Discipline
+Shift Report
+Attendance
+Overtime
+Standard Work
+Work Days
+Work Hours
+Clock In
+Clock Out
+Paid Leave
+Unpaid Leave

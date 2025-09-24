@@ -47,35 +47,36 @@
 
 /* Primary Button */
 .btn-primary {
-  background-color: var(--color-primary);
-  border-color: var(--color-primary);
-  color: var(--color-white);
+  background: linear-gradient(135deg, #197dd3 0%, #77d4fb 100%);
+  border: none;
+  color: #ffffff;
+  box-shadow: 0 2px 8px rgba(25, 125, 211, 0.3);
 }
 
 .btn-primary:hover:not(:disabled) {
-  background-color: var(--color-primary-dark);
-  border-color: var(--color-primary-dark);
-  transform: translateY(-1px);
-  box-shadow: var(--shadow-lg);
+  background: linear-gradient(135deg, #1565c0 0%, #64b5f6 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 16px rgba(25, 125, 211, 0.4);
 }
 
 .btn-primary:active {
   transform: translateY(0);
-  box-shadow: var(--shadow-base);
+  box-shadow: 0 2px 8px rgba(25, 125, 211, 0.3);
 }
 
 /* Secondary Button */
 .btn-secondary {
-  background-color: var(--color-secondary);
-  border-color: var(--color-secondary);
-  color: var(--color-white);
+  background-color: #bdbcc4;
+  border-color: #bdbcc4;
+  color: #4b4344;
 }
 
 .btn-secondary:hover:not(:disabled) {
-  background-color: var(--color-secondary-dark);
-  border-color: var(--color-secondary-dark);
+  background-color: #4b4344;
+  border-color: #4b4344;
+  color: #ffffff;
   transform: translateY(-1px);
-  box-shadow: var(--shadow-lg);
+  box-shadow: 0 4px 12px rgba(75, 67, 68, 0.3);
 }
 
 /* Success Button */

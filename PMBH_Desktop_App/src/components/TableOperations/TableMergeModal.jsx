@@ -50,16 +50,7 @@ const TableMergeModal = ({
     table.maBan !== selectedTable?.maBan && table.status === 'occupied'
   );
 
-  // Debug logging
-  React.useEffect(() => {
-    if (visible) {
-      console.log('TableMergeModal - All tables:', tables);
-      console.log('TableMergeModal - Selected table:', selectedTable);
-      console.log('TableMergeModal - Available tables:', availableTables);
-      console.log('TableMergeModal - Tables length:', tables.length);
-      console.log('TableMergeModal - Occupied tables:', tables.filter(t => t.status === 'occupied'));
-    }
-  }, [visible, tables, selectedTable, availableTables]);
+  // Silent debug logs for performance
 
   const handleMerge = () => {
     if (!selectedTargetTable) {

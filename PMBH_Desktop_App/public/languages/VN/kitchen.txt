@@ -1,0 +1,60 @@
+// Kitchen & Bar - Text bếp và bar
+Bếp
+Bar  
+Nhà bếp
+Quầy bar
+Đơn bếp
+Đơn bar
+Món chính
+Món phụ
+Đồ uống
+Cocktail
+Mocktail
+Cà phê
+Trà
+Nước ngọt
+Bia
+Rượu
+Thức ăn nhanh
+Thức ăn chậm
+Ưu tiên
+Khẩn cấp
+Bình thường
+Đang chuẩn bị
+Đã hoàn thành
+Đã giao
+Hủy món
+Ghi chú bếp
+Yêu cầu đặc biệt
+Không cay
+Ít cay
+Cay vừa
+Cay nhiều
+Không đường
+Ít đường
+Vừa đường
+Nhiều đường
+Không đá
+Ít đá
+Nhiều đá
+Nóng
+Ấm
+Mát
+Lạnh
+Đá riêng
+Món chay
+Món mặn
+Không hành
+Không tỏi
+Không MSG
+Ăn kiêng
+Dị ứng
+Thêm topping
+Thêm gia vị
+Size nhỏ
+Size vừa
+Size lớn
+Combo
+Set menu
+Món đặc biệt
+Món signature

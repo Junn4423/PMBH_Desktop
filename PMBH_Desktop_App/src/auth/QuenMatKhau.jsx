@@ -1,6 +1,6 @@
 import React from 'react';
 import { Form, Input, Button, Card, Row, Col, Typography, message, Steps, Result } from 'antd';
-import { MailOutlined, SafetyOutlined, LockOutlined } from '@ant-design/icons';
+import { Mail, Shield, Lock, CheckCircle } from 'lucide-react';
 
 const { Title, Text } = Typography;
 const { Step } = Steps;
@@ -16,7 +16,7 @@ const QuenMatKhau = () => {
     setLoading(true);
     try {
       // TODO: Implement send reset code API
-      console.log('Send reset code to:', values.email);
+  // Silent dev log
       
       // Simulate API call
       await new Promise(resolve => setTimeout(resolve, 1500));
@@ -35,7 +35,7 @@ const QuenMatKhau = () => {
     setLoading(true);
     try {
       // TODO: Implement verify code API
-      console.log('Verify code:', values.resetCode);
+  // Silent dev log
       
       // Simulate API call
       await new Promise(resolve => setTimeout(resolve, 1000));
@@ -54,11 +54,7 @@ const QuenMatKhau = () => {
     setLoading(true);
     try {
       // TODO: Implement reset password API
-      console.log('Reset password with:', { 
-        email, 
-        resetCode, 
-        newPassword: values.newPassword 
-      });
+      // Silent dev log
       
       // Simulate API call
       await new Promise(resolve => setTimeout(resolve, 1500));
@@ -118,7 +114,7 @@ const QuenMatKhau = () => {
               ]}
             >
               <Input
-                prefix={<MailOutlined />}
+                prefix={<Mail size={16} />}
                 placeholder="Nhập email đăng ký tài khoản"
                 size="large"
               />
@@ -158,7 +154,7 @@ const QuenMatKhau = () => {
               ]}
             >
               <Input
-                prefix={<SafetyOutlined />}
+                prefix={<Shield size={16} />}
                 placeholder="Nhập mã xác thực 6 số"
                 size="large"
                 maxLength={6}
@@ -218,7 +214,7 @@ const QuenMatKhau = () => {
               ]}
             >
               <Input.Password
-                prefix={<LockOutlined />}
+                prefix={<Lock size={16} />}
                 placeholder="Nhập mật khẩu mới"
                 size="large"
               />
@@ -234,7 +230,7 @@ const QuenMatKhau = () => {
               ]}
             >
               <Input.Password
-                prefix={<LockOutlined />}
+                prefix={<Lock size={16} />}
                 placeholder="Nhập lại mật khẩu mới"
                 size="large"
               />

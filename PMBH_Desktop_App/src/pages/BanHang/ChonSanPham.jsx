@@ -1,13 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { Card, Row, Col, Input, Select, Typography, Spin, message } from 'antd';
+import { Input, Typography, Spin, message } from 'antd';
 import { Search } from 'lucide-react';
 import { getAllSanPham, getLoaiSanPham } from '../../services/apiServices';
-import SimpleImagePlaceholder from '../../components/common/SimpleImagePlaceholder';
-import ProductImagePlaceholder from '../../components/common/ProductImagePlaceholder';
-import { DEFAULT_IMAGES, PLACEHOLDER_CONFIG } from '../../constants';
+import ProductCard from '../../components/common/ProductCard';
+import { DEFAULT_IMAGES } from '../../constants';
+import './ChonSanPham.css';
 
 const { Text } = Typography;
-const { Option } = Select;
 
 const ChonSanPham = ({ onAddToCart }) => {
   const [products, setProducts] = useState([]);
@@ -93,7 +92,9 @@ const ChonSanPham = ({ onAddToCart }) => {
         gia: product.giaBan || product.gia || product.donGia || 0,
         danhMuc: product.danhMuc || product.maLoai,
         moTa: product.moTa || product.ghiChu || '',
-        hinhAnh: product.hinhAnh || DEFAULT_IMAGES.PRODUCT
+        hinhAnh: product.hinhAnh && product.hinhAnh !== DEFAULT_IMAGES.PRODUCT 
+          ? product.hinhAnh 
+          : null // Đặt null để component tự fallback về cafe.png
       }));
 
       setProducts(formattedProducts);
@@ -117,88 +118,72 @@ const ChonSanPham = ({ onAddToCart }) => {
   };
 
   return (
-    <div style={{ padding: '20px' }}>
-      {/* Filter */}
-      <div style={{ marginBottom: '20px' }}>
-        <Row gutter={[16, 16]}>
-          <Col xs={24} sm={12}>
+    <div className="chonsp-layout">
+      {/* Sidebar categories */}
+      <aside className="categories-sidebar">
+        <div className="sidebar-header">
+          <h4>Danh mục</h4>
+        </div>
+        <div className="categories-list">
+          <div
+            className={`category-item ${selectedCategory === 'all' ? 'active' : ''}`}
+            onClick={() => setSelectedCategory('all')}
+          >
+            Tất cả
+          </div>
+          {categories.filter(c => c.value !== 'all').map(category => (
+            <div
+              key={category.value}
+              className={`category-item ${selectedCategory === category.value ? 'active' : ''}`}
+              onClick={() => setSelectedCategory(category.value)}
+            >
+              {category.label}
+            </div>
+          ))}
+        </div>
+      </aside>
+
+      {/* Right pane */}
+      <section className="products-pane">
+        <div className="products-header">
+          <div className="products-title">
+            <span>{selectedCategory === 'all' ? 'Tất cả' : (categories.find(c => c.value === selectedCategory)?.label || '')}</span>
+          </div>
+          <div className="products-search">
             <Input
               placeholder="Tìm kiếm sản phẩm..."
               prefix={<Search size={16} />}
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
-          </Col>
-          <Col xs={24} sm={12}>
-            <Select
-              style={{ width: '100%' }}
-              placeholder="Chọn danh mục"
-              value={selectedCategory}
-              onChange={setSelectedCategory}
-            >
-              {categories.map(category => (
-                <Option key={category.value} value={category.value}>
-                  {category.label}
-                </Option>
-              ))}
-            </Select>
-          </Col>
-        </Row>
-      </div>
-
-      {/* Products */}
-      {loading ? (
-        <div style={{ textAlign: 'center', padding: '40px' }}>
-          <Spin size="large" />
-          <div style={{ marginTop: '16px' }}>
-            <Text>Đang tải sản phẩm...</Text>
           </div>
         </div>
-      ) : filteredProducts.length === 0 ? (
-        <div style={{ textAlign: 'center', padding: '40px' }}>
-          <Text type="secondary">Không tìm thấy sản phẩm nào</Text>
-        </div>
-      ) : (
-        <Row gutter={[16, 16]}>
-          {filteredProducts.map(product => (
-            <Col xs={12} sm={8} md={6} lg={4} key={product.id}>
-              <Card
-                size="small"
-                hoverable
-                onClick={() => handleAddToCart(product)}
-                style={{ 
-                  height: '100%',
-                  borderRadius: '8px',
-                  overflow: 'hidden'
-                }}
-              >
-                <div style={{ textAlign: 'center' }}>
-                  <div style={{ margin: '0 auto 12px' }}>
-                    <ProductImagePlaceholder
-                      src={product.hinhAnh && product.hinhAnh !== DEFAULT_IMAGES.PRODUCT ? product.hinhAnh : null}
-                      fallbackText={product.ten}
-                      size={PLACEHOLDER_CONFIG.PRODUCT_IMAGE.SIZE.MEDIUM}
-                      shape={PLACEHOLDER_CONFIG.PRODUCT_IMAGE.SHAPE.CIRCLE}
-                      variant={PLACEHOLDER_CONFIG.PRODUCT_IMAGE.VARIANT.GRADIENT}
-                      alt={`Hình ảnh ${product.ten}`}
-                    />
-                  </div>
-                  <Text strong style={{ display: 'block', marginBottom: '8px' }}>
-                    {product.ten || 'Không có tên'}
-                  </Text>
-                  <Text style={{ 
-                    color: '#197dd3', 
-                    fontSize: '16px', 
-                    fontWeight: 'bold' 
-                  }}>
-                    {product.gia?.toLocaleString('vi-VN')}đ
-                  </Text>
-                </div>
-              </Card>
-            </Col>
-          ))}
-        </Row>
-      )}
+
+        {loading ? (
+          <div className="loading-container">
+            <Spin size="large" />
+            <div className="loading-text">
+              <Text>Đang tải sản phẩm...</Text>
+            </div>
+          </div>
+        ) : filteredProducts.length === 0 ? (
+          <div className="empty-container">
+            <Text type="secondary">Không tìm thấy sản phẩm nào</Text>
+          </div>
+        ) : (
+          <div className="products-grid">
+            {filteredProducts.map(product => (
+              <ProductCard
+                key={product.id}
+                product={product}
+                onClick={handleAddToCart}
+                loading={loading}
+                showBadge={false}
+              />
+            ))}
+          </div>
+        )}
+      </section>
     </div>
   );
 };

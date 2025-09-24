@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { Card, Table, Button, Modal, Form, Input, InputNumber, Select, Upload, Space, Typography, Image, message, Row, Col, Tag, Spin } from 'antd';
-import { PlusOutlined, EditOutlined, DeleteOutlined, UploadOutlined, ReloadOutlined } from '@ant-design/icons';
-import { getLoaiSanPham, getAllSanPham, getSanPhamTheoIdLoai } from '../../services/apiServices';
-import SimpleImagePlaceholder from '../../components/common/SimpleImagePlaceholder';
+import { Card, Table, Button, Modal, Form, Input, InputNumber, Select, Space, Typography, message, Row, Col, Tag, Spin } from 'antd';
+import { Plus, Pencil, Trash2, RefreshCw } from 'lucide-react';
+import { getLoaiSanPham, getAllSanPham } from '../../services/apiServices';
 import ProductImagePlaceholder from '../../components/common/ProductImagePlaceholder';
 import ImageUploadPlaceholder from '../../components/common/ImageUploadPlaceholder';
 import { DEFAULT_IMAGES, PLACEHOLDER_CONFIG } from '../../constants';
+import './ThucDon.css';
 
 const { Title } = Typography;
 const { Option } = Select;
@@ -25,7 +25,6 @@ const ThucDon = () => {
   const loadData = async () => {
     setLoading(true);
     try {
-      // Load categories và products đồng thời
       const [categoriesResult, productsResult] = await Promise.all([
         getLoaiSanPham(),
         getAllSanPham()
@@ -39,7 +38,7 @@ const ThucDon = () => {
         setProducts(productsResult);
       }
     } catch (error) {
-      console.error('Error loading menu data:', error);
+      // Silent console in production
       message.error('Không thể tải dữ liệu thực đơn');
     } finally {
       setLoading(false);
@@ -67,13 +66,10 @@ const ThucDon = () => {
       okType: 'danger',
       onOk: async () => {
         try {
-          // TODO: Implement API call để xóa sản phẩm
-          // await deleteSanPham(id);
-          
+          // TODO: Call API to delete product
           setProducts(products.filter(product => product.id !== id));
           message.success('Đã xóa món thành công');
         } catch (error) {
-          console.error('Error deleting product:', error);
           message.error('Có lỗi xảy ra khi xóa món');
         }
       }
@@ -83,34 +79,29 @@ const ThucDon = () => {
   const handleSave = async (values) => {
     try {
       setLoading(true);
-      
+
       if (editingProduct) {
-        // TODO: Implement API call để update sản phẩm
-        // await updateSanPham(editingProduct.id, values);
-        
-        setProducts(products.map(product => 
-          product.id === editingProduct.id 
+        // TODO: Call API to update product
+        setProducts(products.map(product =>
+          product.id === editingProduct.id
             ? { ...product, ...values }
             : product
         ));
         message.success('Đã cập nhật món thành công');
       } else {
-        // TODO: Implement API call để thêm sản phẩm mới
-        // const newProduct = await addSanPham(values);
-        
+        // TODO: Call API to add product
         const newProduct = {
-          id: Date.now(), // Temporary ID
+          id: Date.now(),
           ...values,
           trangThai: 'active'
         };
         setProducts([...products, newProduct]);
         message.success('Đã thêm món mới thành công');
       }
-      
+
       setIsModalVisible(false);
       form.resetFields();
     } catch (error) {
-      console.error('Error saving product:', error);
       message.error('Có lỗi xảy ra khi lưu món');
     } finally {
       setLoading(false);
@@ -185,7 +176,7 @@ const ThucDon = () => {
         <Space size="middle">
           <Button
             type="link"
-            icon={<EditOutlined />}
+            icon={<Pencil size={16} />}
             onClick={() => handleEdit(record)}
           >
             Sửa
@@ -193,7 +184,7 @@ const ThucDon = () => {
           <Button
             type="link"
             danger
-            icon={<DeleteOutlined />}
+            icon={<Trash2 size={16} />}
             onClick={() => handleDelete(record.id)}
           >
             Xóa
@@ -205,22 +196,11 @@ const ThucDon = () => {
 
   return (
     <div className="thuc-don">
-      <style jsx>{`
-        .page-header {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          margin-bottom: 24px;
-        }
-        .page-header h2 {
-          margin: 0;
-        }
-      `}</style>
       <div className="page-header">
         <Title level={2}>Quản lý thực đơn</Title>
         <Space>
           <Button
-            icon={<ReloadOutlined />}
+            icon={<RefreshCw size={16} />}
             onClick={loadData}
             loading={loading}
           >
@@ -228,7 +208,7 @@ const ThucDon = () => {
           </Button>
           <Button
             type="primary"
-            icon={<PlusOutlined />}
+            icon={<Plus size={16} />}
             onClick={handleAddNew}
           >
             Thêm món mới
@@ -246,8 +226,7 @@ const ThucDon = () => {
               pageSize: 10,
               showSizeChanger: true,
               showQuickJumper: true,
-              showTotal: (total, range) => 
-                `${range[0]}-${range[1]} của ${total} món`,
+              showTotal: (total, range) => `${range[0]}-${range[1]} của ${total} món`,
             }}
           />
         </Spin>
@@ -263,19 +242,13 @@ const ThucDon = () => {
         footer={null}
         width={600}
       >
-        <Form
-          form={form}
-          layout="vertical"
-          onFinish={handleSave}
-        >
+        <Form form={form} layout="vertical" onFinish={handleSave}>
           <Row gutter={16}>
             <Col span={12}>
               <Form.Item
                 name="ten"
                 label="Tên món"
-                rules={[
-                  { required: true, message: 'Vui lòng nhập tên món!' }
-                ]}
+                rules={[{ required: true, message: 'Vui lòng nhập tên món!' }]}
               >
                 <Input placeholder="Tên món" />
               </Form.Item>
@@ -284,9 +257,7 @@ const ThucDon = () => {
               <Form.Item
                 name="danhMuc"
                 label="Danh mục"
-                rules={[
-                  { required: true, message: 'Vui lòng chọn danh mục!' }
-                ]}
+                rules={[{ required: true, message: 'Vui lòng chọn danh mục!' }]}
               >
                 <Select placeholder="Chọn danh mục">
                   {categories.map(category => (
@@ -304,9 +275,7 @@ const ThucDon = () => {
               <Form.Item
                 name="gia"
                 label="Giá"
-                rules={[
-                  { required: true, message: 'Vui lòng nhập giá!' }
-                ]}
+                rules={[{ required: true, message: 'Vui lòng nhập giá!' }]}
               >
                 <InputNumber
                   min={0}
@@ -318,11 +287,7 @@ const ThucDon = () => {
               </Form.Item>
             </Col>
             <Col span={12}>
-              <Form.Item
-                name="trangThai"
-                label="Trạng thái"
-                initialValue="active"
-              >
+              <Form.Item name="trangThai" label="Trạng thái" initialValue="active">
                 <Select>
                   <Option value="active">Đang bán</Option>
                   <Option value="inactive">Ngừng bán</Option>
@@ -331,31 +296,18 @@ const ThucDon = () => {
             </Col>
           </Row>
 
-          <Form.Item
-            name="moTa"
-            label="Mô tả"
-          >
-            <Input.TextArea
-              rows={3}
-              placeholder="Mô tả về món ăn..."
-            />
+          <Form.Item name="moTa" label="Mô tả">
+            <Input.TextArea rows={3} placeholder="Mô tả về món ăn..." />
           </Form.Item>
 
-          <Form.Item
-            name="hinhAnh"
-            label="Hình ảnh"
-          >
+          <Form.Item name="hinhAnh" label="Hình ảnh">
             <ImageUploadPlaceholder
               fallbackText={form.getFieldValue('tenSanPham') || 'Sản phẩm'}
               size={120}
               shape="rounded"
               variant="gradient"
               maxSizeMB={5}
-              resizeOptions={{
-                maxWidth: 800,
-                maxHeight: 600,
-                quality: 0.8
-              }}
+              resizeOptions={{ maxWidth: 800, maxHeight: 600, quality: 0.8 }}
             />
           </Form.Item>
 
@@ -364,10 +316,12 @@ const ThucDon = () => {
               <Button type="primary" htmlType="submit">
                 {editingProduct ? 'Cập nhật' : 'Thêm mới'}
               </Button>
-              <Button onClick={() => {
-                setIsModalVisible(false);
-                form.resetFields();
-              }}>
+              <Button
+                onClick={() => {
+                  setIsModalVisible(false);
+                  form.resetFields();
+                }}
+              >
                 Hủy
               </Button>
             </Space>

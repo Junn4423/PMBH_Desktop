@@ -50,16 +50,7 @@ const TableTransferModal = ({
     table.maBan !== selectedTable?.maBan && table.status === 'available'
   );
 
-  // Debug logging
-  React.useEffect(() => {
-    if (visible) {
-      console.log('TableTransferModal - All tables:', tables);
-      console.log('TableTransferModal - Selected table:', selectedTable);
-      console.log('TableTransferModal - Available tables:', availableTables);
-      console.log('TableTransferModal - Tables length:', tables.length);
-      console.log('TableTransferModal - Available tables:', tables.filter(t => t.status === 'available'));
-    }
-  }, [visible, tables, selectedTable, availableTables]);
+  // Silent debug logs for performance
 
   const handleTransfer = () => {
     if (!selectedTargetTable) {

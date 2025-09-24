@@ -7,35 +7,80 @@
 .header-bar {
   background-color: #ffffff;
   border-bottom: 1px solid #e8e8e8;
-  padding: 0 24px;
+  padding: 0;
   height: 64px;
   display: flex;
   align-items: center;
   justify-content: space-between;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  position: fixed;
+  top: 0;
+  left: 250px;
+  right: 0;
+  z-index: 1000;
 }
 
 .header-left {
   display: flex;
   align-items: center;
-  gap: 16px;
+  flex: 1;
+  padding-left: 24px;
 }
 
-.header-breadcrumb {
-  color: #4b4344;
-  font-size: 16px;
-  font-weight: 500;
+.drag-region {
+  -webkit-app-region: drag;
+  display: flex;
+  align-items: center;
+  height: 64px;
+  flex: 1;
 }
 
-.header-breadcrumb-separator {
-  color: #bdbcc4;
-  margin: 0 8px;
+.drag-region * {
+  -webkit-app-region: no-drag;
+}
+
+.header-center {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  -webkit-app-region: no-drag;
 }
 
 .header-right {
   display: flex;
   align-items: center;
-  gap: 20px;
+  -webkit-app-region: no-drag;
+}
+
+.window-controls {
+  display: flex;
+  align-items: center;
+}
+
+.window-control-btn {
+  width: 46px;
+  height: 64px;
+  border-radius: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  border: none;
+}
+
+.window-control-btn:hover {
+  background-color: rgba(0, 0, 0, 0.1);
+}
+
+.close-btn:hover {
+  background-color: #e74c3c;
+  color: white;
+}
+
+.minimize-btn:hover,
+.maximize-btn:hover {
+  background-color: rgba(25, 125, 211, 0.1);
+  color: #197dd3;
 }
 
 .header-search {

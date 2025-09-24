@@ -1,6 +1,6 @@
 import React from 'react';
 import { Form, Input, Button, Card, Row, Col, Typography, message, Steps } from 'antd';
-import { LockOutlined, SafetyOutlined, CheckCircleOutlined } from '@ant-design/icons';
+import { Lock, Shield, CheckCircle } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 
 const { Title, Text } = Typography;
@@ -57,7 +57,7 @@ const DoiMatKhau = () => {
           <Card>
             <div className="header-section">
               <Title level={3}>
-                <LockOutlined /> Đổi mật khẩu
+                <Lock size={18} style={{ marginRight: 8 }} /> Đổi mật khẩu
               </Title>
               <Text type="secondary">
                 Tài khoản: <strong>{user?.username}</strong>
@@ -90,7 +90,7 @@ const DoiMatKhau = () => {
                   ]}
                 >
                   <Input.Password
-                    prefix={<SafetyOutlined />}
+                    prefix={<Shield size={16} />}
                     placeholder="Nhập mật khẩu hiện tại"
                     size="large"
                   />
@@ -109,7 +109,7 @@ const DoiMatKhau = () => {
                   ]}
                 >
                   <Input.Password
-                    prefix={<LockOutlined />}
+                    prefix={<Lock size={16} />}
                     placeholder="Nhập mật khẩu mới"
                     size="large"
                   />
@@ -125,7 +125,7 @@ const DoiMatKhau = () => {
                   ]}
                 >
                   <Input.Password
-                    prefix={<LockOutlined />}
+                    prefix={<Lock size={16} />}
                     placeholder="Nhập lại mật khẩu mới"
                     size="large"
                   />
@@ -167,7 +167,7 @@ const DoiMatKhau = () => {
 
             {currentStep === 2 && (
               <div className="success-section">
-                <CheckCircleOutlined style={{ fontSize: 48, color: '#52c41a' }} />
+                <CheckCircle size={48} color="#52c41a" />
                 <Title level={4}>Đổi mật khẩu thành công!</Title>
                 <Text>
                   Mật khẩu của bạn đã được cập nhật. Vui lòng đăng nhập lại với mật khẩu mới.

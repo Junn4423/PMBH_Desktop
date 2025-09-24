@@ -1,52 +1,57 @@
 /* ================================================================
-   DEFAULT THEME - Blue Ocean
-   Theme mặc định với tone xanh dương hiện đại cho ứng dụng POS
+   DEFAULT THEME - Official Theme Colors
+   Theme với các màu chính thức: #197dd3, #77d4fb, #bdbcc4, #4b4344
    Pallet: #197dd3, #77d4fb, #bdbcc4, #4b4344
 ================================================================ */
 
 /* ============================================
-   THEME OVERRIDES - Default Blue Ocean Theme
+   THEME VARIABLES - Official Color Palette
 ============================================ */
 
-/* Theme này là theme chính với màu Blue Ocean, các variables đã được định nghĩa trong base/variables.css */
-
-/* Blue Ocean Theme Specific Adjustments */
 .theme-default {
-  /* Background colors */
-  --color-background: var(--color-white);
-  --color-surface: var(--color-white);
-  --color-surface-hover: #f0f8ff;
+  /* Primary colors from official palette */
+  --color-primary: #197dd3;
+  --color-primary-light: #77d4fb;
+  --color-secondary: #bdbcc4;
+  --color-secondary-dark: #4b4344;
   
-  /* Text colors for Blue Ocean theme */
-  --color-text-on-primary: var(--color-white);
-  --color-text-on-secondary: #1e293b;
-  --color-text-on-surface: #1e293b;
+  /* Background colors */
+  --color-background: #ffffff;
+  --color-surface: #ffffff;
+  --color-surface-hover: #f0f9ff;
+  
+  /* Text colors */
+  --color-text-primary: #4b4344;
+  --color-text-secondary: #bdbcc4;
+  --color-text-on-primary: #ffffff;
+  --color-text-on-secondary: #4b4344;
+  --color-text-on-surface: #4b4344;
   
   /* Border colors */
-  --color-border-light: #e2e8f0;
-  --color-border-medium: #cbd5e1;
-  --color-border-strong: #64748b;
+  --color-border-light: #bdbcc4;
+  --color-border-medium: #4b4344;
+  --color-border-strong: #197dd3;
   
-  /* Shadow adjustments for Blue Ocean theme */
-  --shadow-color: rgba(30, 41, 59, 0.08);
-  --shadow-strong-color: rgba(30, 41, 59, 0.12);
+  /* Shadow adjustments */
+  --shadow-color: rgba(25, 125, 211, 0.08);
+  --shadow-strong-color: rgba(25, 125, 211, 0.12);
 }
 
 /* ============================================
-   BLUE OCEAN THEME SPECIFIC COMPONENTS
+   COMPONENT OVERRIDES FOR OFFICIAL THEME
 ============================================ */
 
-/* Header in Blue Ocean theme */
+/* Header with official theme colors */
 .theme-default .app-header {
-  background-color: var(--color-white);
-  border-bottom: 1px solid #e2e8f0;
-  box-shadow: 0 2px 8px rgba(30, 41, 59, 0.08);
+  background: linear-gradient(135deg, #197dd3 0%, #77d4fb 100%);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 2px 8px rgba(25, 125, 211, 0.15);
 }
 
-/* Sidebar in Blue Ocean theme */
+/* Sidebar with official theme colors */
 .theme-default .app-sidebar {
-  background-color: var(--color-white);
-  border-right: 1px solid #e2e8f0;
+  background-color: #ffffff;
+  border-right: 1px solid #bdbcc4;
 }
 
 /* Cards in light theme */

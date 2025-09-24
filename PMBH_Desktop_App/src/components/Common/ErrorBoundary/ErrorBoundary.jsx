@@ -1,6 +1,6 @@
 import React from 'react';
 import { Button, Result } from 'antd';
-import { ReloadOutlined } from '@ant-design/icons';
+import { RotateCw } from 'lucide-react';
 
 const ErrorBoundary = ({ title = 'Đã xảy ra lỗi', subtitle, onRetry }) => {
   return (
@@ -10,7 +10,7 @@ const ErrorBoundary = ({ title = 'Đã xảy ra lỗi', subtitle, onRetry }) => 
       subTitle={subtitle || 'Xin lỗi, đã xảy ra lỗi không mong muốn.'}
       extra={
         onRetry && (
-          <Button type="primary" icon={<ReloadOutlined />} onClick={onRetry}>
+          <Button type="primary" icon={<RotateCw size={16} />} onClick={onRetry}>
             Thử lại
           </Button>
         )

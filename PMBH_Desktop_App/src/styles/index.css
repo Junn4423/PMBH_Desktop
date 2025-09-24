@@ -8,29 +8,95 @@
 html, body, #root {
   height: 100%;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  overflow: hidden;
+}
+
+body {
+  user-select: none;
+  -webkit-user-select: none;
 }
 
 /* Antd customizations */
 .ant-layout {
-  background: #f0f2f5 !important;
+  background: transparent;
+}
+
+/* Fixed layout styles */
+.app-layout {
+  position: relative;
+  width: 100%;
+  height: 100vh;
+}
+
+.app-content {
+  height: calc(100vh - 64px);
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+.app-content::-webkit-scrollbar {
+  width: 8px;
+}
+
+.app-content::-webkit-scrollbar-track {
+  background: rgba(25, 125, 211, 0.1);
+  border-radius: 4px;
+}
+
+.app-content::-webkit-scrollbar-thumb {
+  background: linear-gradient(135deg, #197dd3, #77d4fb);
+  border-radius: 4px;
+}
+
+.app-content::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(135deg, #77d4fb, #197dd3);
 }
 
 .ant-layout-sider {
   background: #fff !important;
   border-right: 1px solid #f0f0f0;
+  position: fixed !important;
+  left: 0;
+  top: 0;
+  height: 100vh;
+  z-index: 1001;
 }
 
 .ant-layout-header {
   background: #fff !important;
   border-bottom: 1px solid #f0f0f0;
-  padding: 0 24px;
+  padding: 0;
   height: 64px;
   line-height: 20px;
+  position: fixed !important;
+  top: 0;
+  left: 250px;
+  right: 0;
+  z-index: 1000;
 }
 
 .ant-layout-content {
-  background: #f0f2f5 !important;
+  background: transparent;
   min-height: calc(100vh - 64px);
+  position: relative;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+.ant-layout-content::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-image: url('../assets/Img/bg.jpg');
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  opacity: 0.6;
+  z-index: -1;
+  pointer-events: none;
 }
 
 /* Card styles */
@@ -38,6 +104,37 @@ html, body, #root {
   border-radius: 8px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.09);
   border: 1px solid #f0f0f0;
+  position: relative;
+  z-index: 1;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(2px);
+}
+
+/* Generic container backgrounds */
+.container:not(.container-sm):not(.container-md):not(.container-lg):not(.container-xl),
+.page-container,
+.main-container,
+.content-container {
+  position: relative;
+}
+
+.container:not(.container-sm):not(.container-md):not(.container-lg):not(.container-xl)::before,
+.page-container::before,
+.main-container::before,
+.content-container::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-image: url('../assets/Img/bg.jpg');
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  opacity: 0.6;
+  z-index: -1;
+  pointer-events: none;
 }
 
 .ant-card-head {
@@ -54,6 +151,8 @@ html, body, #root {
   border-radius: 6px;
   font-weight: 500;
   transition: all 0.3s cubic-bezier(0.645, 0.045, 0.355, 1);
+  position: relative;
+  z-index: 1;
 }
 
 .ant-btn-primary {
