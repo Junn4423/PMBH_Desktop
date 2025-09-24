@@ -1,15 +1,20 @@
 import React, { useState } from 'react';
 import { 
   Card, Form, Input, Button, Checkbox, Alert, 
-  Row, Col, Typography, Space, message 
+  Typography, message 
 } from 'antd';
 import { 
   User, 
-  Lock, 
-  Shield,
-  LogIn 
+  Lock,
+  LogIn,
+  X,
+  Coffee,
+  ShoppingCart,
+  BarChart,
+  Clock
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
+import logoImg from '../assets/Logo/logo.png';
 import '../styles/pages/DangNhap.css';
 
 const { Title, Text } = Typography;
@@ -20,6 +25,12 @@ const DangNhap = () => {
   const [showError, setShowError] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
   const { login: authLogin } = useAuth();
+
+  const handleExitApp = () => {
+    if (window.electronAPI) {
+      window.electronAPI.exitApp();
+    }
+  };
 
   const xuLyDangNhap = async (values) => {
     setLoading(true);
@@ -87,20 +98,73 @@ const DangNhap = () => {
 
   return (
     <div className="login-container">
-      <div className="login-content">
-        <Card className="login-card" styles={{ body: { padding: '50px 40px' } }}>
+      {/* Exit Button */}
+      <Button 
+        className="login-exit-btn"
+        type="text" 
+        icon={<X size={20} />}
+        onClick={handleExitApp}
+        title="Thoát ứng dụng"
+      />
+      
+      {/* Left Side - Introduction */}
+      <div className="login-intro-section">
+        <div className="login-intro-content">
+          <div className="login-intro-header">
+            <div className="login-intro-logo">
+              <Coffee size={48} />
+            </div>
+            <h1 className="login-intro-title">Café Management</h1>
+            <p className="login-intro-subtitle">Hệ thống quản lý quán cà phê chuyên nghiệp</p>
+          </div>
+          
+          <div className="login-intro-features">
+            <div className="feature-item">
+              <ShoppingCart size={24} />
+              <div className="feature-content">
+                <h3>Bán hàng thông minh</h3>
+                <p>Quản lý đơn hàng và thanh toán dễ dàng</p>
+              </div>
+            </div>
+            
+            <div className="feature-item">
+              <BarChart size={24} />
+              <div className="feature-content">
+                <h3>Báo cáo chi tiết</h3>
+                <p>Thống kê doanh thu và hiệu suất kinh doanh</p>
+              </div>
+            </div>
+            
+            <div className="feature-item">
+              <Clock size={24} />
+              <div className="feature-content">
+                <h3>Theo dõi thời gian thực</h3>
+                <p>Cập nhật trạng thái đơn hàng ngay lập tức</p>
+              </div>
+            </div>
+          </div>
+          
+          <div className="login-intro-footer">
+            <Text>© 2024 Café Management System</Text>
+          </div>
+        </div>
+      </div>
+
+      {/* Right Side - Login Form - Tách ra ngoài không có Card wrapper */}
+      <div className="login-form-section">
+        <div className="login-form-container">
+          {/* Login Header - Tách ra ngoài */}
           <div className="login-header">
             <div className="login-logo">
-              <Shield size={36} />
+              <img src={logoImg} alt="Logo" className="login-logo-image" />
             </div>
-            <Title level={2} className="login-title">
-              Café POS System
-            </Title>
+            <Title level={2} className="login-title">Đăng nhập</Title>
             <Text className="login-subtitle">
-              Hệ thống quản lý quán cà phê
+              Vui lòng đăng nhập để tiếp tục sử dụng hệ thống
             </Text>
           </div>
 
+          {/* Error Alert - Tách ra ngoài */}
           {showError && (
             <Alert
               message="Đăng nhập thất bại"
@@ -111,13 +175,16 @@ const DangNhap = () => {
             />
           )}
 
+          {/* Login Form - Tách ra ngoài */}
           <Form
             form={form}
             name="login"
             onFinish={xuLyDangNhap}
             layout="vertical"
             size="large"
+            className="login-form"
           >
+            {/* Username Input - Component riêng */}
             <Form.Item
               name="tenDangNhap"
               label="Tên đăng nhập"
@@ -130,9 +197,11 @@ const DangNhap = () => {
                 prefix={<User size={16} className="login-input-prefix" />}
                 placeholder="Nhập tên đăng nhập"
                 autoComplete="username"
+                className="login-input"
               />
             </Form.Item>
 
+            {/* Password Input - Component riêng */}
             <Form.Item
               name="matKhau"
               label="Mật khẩu"
@@ -145,35 +214,39 @@ const DangNhap = () => {
                 prefix={<Lock size={16} className="login-input-prefix" />}
                 placeholder="Nhập mật khẩu"
                 autoComplete="current-password"
+                className="login-input"
               />
             </Form.Item>
 
-            <Form.Item className="login-form-item">
+            {/* Remember Checkbox - Component riêng */}
+            <div className="login-remember-section">
               <Form.Item name="ghi_nho" valuePropName="checked" noStyle>
                 <Checkbox className="login-checkbox">Ghi nhớ đăng nhập</Checkbox>
               </Form.Item>
-            </Form.Item>
+            </div>
 
-            <Form.Item className="login-form-item">
+            {/* Login Button - Component riêng */}
+            <div className="login-button-section">
               <Button
                 type="primary"
                 htmlType="submit"
                 loading={loading}
                 block
                 icon={<LogIn size={16} />}
-                className={`login-button ${loading ? 'login-loading' : ''}`}
+                className="login-button"
               >
                 Đăng nhập
               </Button>
-            </Form.Item>
+            </div>
           </Form>
 
+          {/* Footer - Component riêng */}
           <div className="login-footer">
             <Text className="login-footer-text">
-              Phiên bản 1.0.0 | © 2024 Café POS System
+              Phiên bản 1.0.0
             </Text>
           </div>
-        </Card>
+        </div>
       </div>
     </div>
   );
