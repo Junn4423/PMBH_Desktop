@@ -10,7 +10,7 @@
   transition: all 0.2s ease;
   background: #ffffff;
   box-shadow: 0 2px 8px rgba(0,0,0,0.06);
-  min-height: 135px; /* User tested height */
+  min-height: 140px; /* User tested height */
   display: flex;
   flex-direction: column;
   align-items: center;

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Input, Typography, Spin, message } from 'antd';
 import { Search } from 'lucide-react';
-import { getAllSanPham, getLoaiSanPham, loadProductImage, getFullImageUrl } from '../../services/apiServices';
+import { getAllSanPham, getLoaiSanPham, getSanPhamTheoIdLoai, loadProductImage, getFullImageUrl } from '../../services/apiServices';
 import ProductCard from '../../components/common/ProductCard';
 import { DEFAULT_IMAGES } from '../../constants';
 import './ChonSanPham.css';
@@ -24,16 +24,33 @@ const ChonSanPham = ({ onAddToCart }) => {
   useEffect(() => {
     let filtered = products;
     
+    // Filter by search term
     if (searchTerm) {
       filtered = filtered.filter(product =>
         product.ten && product.ten.toLowerCase().includes(searchTerm.toLowerCase())
       );
     }
     
+    // Filter by category
     if (selectedCategory !== 'all') {
-      filtered = filtered.filter(product => 
-        product.danhMuc === selectedCategory
-      );
+      const beforeFilter = filtered.length;
+      filtered = filtered.filter(product => {
+        const productCategory = product.danhMuc;
+        const match = productCategory === selectedCategory;
+        if (!match && productCategory) {
+          console.log(`Category mismatch: product ${product.id} has category '${productCategory}', looking for '${selectedCategory}'`);
+        }
+        return match;
+      });
+      console.log(`Category filter: ${selectedCategory}, Before: ${beforeFilter}, After: ${filtered.length}`);
+      if (filtered.length === 0 && beforeFilter > 0) {
+        console.log('No products matched. Available product categories:', [...new Set(products.map(p => p.danhMuc).filter(Boolean))]);
+      }
+      console.log('Sample filtered products:', filtered.slice(0, 2).map(p => ({ 
+        id: p.id, 
+        ten: p.ten, 
+        danhMuc: p.danhMuc 
+      })));
     }
     
     setFilteredProducts(filtered);
@@ -62,14 +79,23 @@ const ChonSanPham = ({ onAddToCart }) => {
 
       const allCategories = [
         { value: 'all', label: 'Tất cả' },
-        ...categoriesData.map(cat => ({
-          value: cat.idLoaiSp || cat.id || cat.maLoai,
-          label: cat.tenLoaiSp || cat.ten || cat.tenLoai
-        }))
+        ...categoriesData
+          .filter(cat => {
+            // Filter out categories with "NVL" in name or ID (Nguyên vật liệu)
+            const categoryName = cat.tenLoaiSp || cat.ten || cat.tenLoai || '';
+            const categoryId = cat.idLoaiSp || cat.id || cat.maLoai || '';
+            return !categoryName.toUpperCase().includes('NVL') && 
+                   !categoryId.toUpperCase().includes('NVL');
+          })
+          .map(cat => ({
+            value: cat.idLoaiSp || cat.id || cat.maLoai,
+            label: cat.tenLoaiSp || cat.ten || cat.tenLoai
+          }))
       ];
       setCategories(allCategories);
+      console.log('Filtered categories (excluding NVL):', allCategories);
 
-      // Load tất cả sản phẩm
+      // Load tất cả sản phẩm với category mapping
       const productsResponse = await getAllSanPham();
       
       // Xử lý dữ liệu products
@@ -85,6 +111,31 @@ const ChonSanPham = ({ onAddToCart }) => {
       } else if (productsResponse && typeof productsResponse === 'object') {
         productsData = Object.values(productsResponse);
       }
+
+      // Load products by category to get proper category mapping
+      const productsByCategory = {};
+      for (const category of categoriesData) {
+        const categoryId = category.idLoaiSp || category.id || category.maLoai;
+        try {
+          const categoryProducts = await getSanPhamTheoIdLoai(categoryId);
+          let categoryProductsData = [];
+          if (Array.isArray(categoryProducts)) {
+            categoryProductsData = categoryProducts;
+          } else if (categoryProducts && typeof categoryProducts === 'object') {
+            categoryProductsData = Object.values(categoryProducts);
+          }
+          
+          // Map each product to its category
+          categoryProductsData.forEach(product => {
+            const productId = product.idSp || product.maSp || product.id;
+            productsByCategory[productId] = categoryId;
+          });
+        } catch (error) {
+          console.warn(`Failed to load products for category ${categoryId}:`, error);
+        }
+      }
+
+      console.log('Category mapping:', productsByCategory);
 
       // Enhanced product mapping with database image loading - Exclude "NL" products
       const formattedProducts = await Promise.all(productsData
@@ -111,18 +162,28 @@ const ChonSanPham = ({ onAddToCart }) => {
             }
           }
 
+          const productId = product.maSp || product.id || product.maSP || product.idSp;
+          const categoryId = productsByCategory[productId] || null;
+
           return {
-            id: product.maSp || product.id || product.maSP,
+            id: productId,
             ten: product.tenSp || product.ten || product.tenSP,
             gia: product.giaBan || product.gia || product.donGia || 0,
-            danhMuc: product.danhMuc || product.maLoai,
+            danhMuc: categoryId, // Use mapped category from getSanPhamTheoIdLoai
             moTa: product.moTa || product.ghiChu || '',
-            hinhAnh: imageUrl // Will be null if no valid image found, ProductCard will use placeholder
+            hinhAnh: imageUrl, // Will be null if no valid image found, ProductCard will use placeholder
+            originalProduct: product // Keep reference for debugging if needed
           };
         }));
 
       setProducts(formattedProducts);
       setFilteredProducts(formattedProducts);
+      console.log('Loaded products with proper category mapping:', formattedProducts.slice(0, 5).map(p => ({ 
+        id: p.id, 
+        ten: p.ten, 
+        danhMuc: p.danhMuc 
+      })));
+      console.log('Available categories for filtering:', allCategories.map(c => ({ value: c.value, label: c.label })));
     } catch (error) {
       console.error('Error loading products:', error);
       message.error('Không thể tải danh sách sản phẩm');
@@ -153,17 +214,22 @@ const ChonSanPham = ({ onAddToCart }) => {
             className={`category-item ${selectedCategory === 'all' ? 'active' : ''}`}
             onClick={() => setSelectedCategory('all')}
           >
-            Tất cả
+            <span>Tất cả</span>
+            <span className="category-count">({products.length})</span>
           </div>
-          {categories.filter(c => c.value !== 'all').map(category => (
-            <div
-              key={category.value}
-              className={`category-item ${selectedCategory === category.value ? 'active' : ''}`}
-              onClick={() => setSelectedCategory(category.value)}
-            >
-              {category.label}
-            </div>
-          ))}
+          {categories.filter(c => c.value !== 'all').map(category => {
+            const categoryCount = products.filter(p => p.danhMuc === category.value).length;
+            return (
+              <div
+                key={category.value}
+                className={`category-item ${selectedCategory === category.value ? 'active' : ''}`}
+                onClick={() => setSelectedCategory(category.value)}
+              >
+                <span>{category.label}</span>
+                <span className="category-count">({categoryCount})</span>
+              </div>
+            );
+          })}
         </div>
       </aside>
 
