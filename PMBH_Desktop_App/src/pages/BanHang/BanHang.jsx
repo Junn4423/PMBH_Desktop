@@ -766,8 +766,8 @@ const BanHang = () => {
         }
       }
       
-      // Chuyển sang view hóa đơn cho bàn có hóa đơn
-      setCurrentView(VIEW_STATES.INVOICE);
+      // Chuyển sang view combined cho bàn có hóa đơn
+      setCurrentView(VIEW_STATES.COMBINED);
       
       // Trigger quick refresh sau khi chọn bàn
       triggerQuickRefresh('TABLE_SELECT');
@@ -866,8 +866,8 @@ const BanHang = () => {
         // Trigger quick refresh sau khi thêm sản phẩm
         triggerQuickRefresh('ADD_PRODUCT');
         
-        // Quay lại view hóa đơn sau khi thêm sản phẩm
-        setCurrentView(VIEW_STATES.INVOICE);
+        // Giữ nguyên view hiện tại, không chuyển về INVOICE
+        // setCurrentView(VIEW_STATES.INVOICE);
         
         // Đóng modal
         setShowQuantityModal(false);
@@ -893,6 +893,70 @@ const BanHang = () => {
     setSelectedItemForUpdate(item);
     setNewQuantityForUpdate(newQuantity);
     setShowUpdateQuantityModal(true);
+  };
+
+  // Cập nhật số lượng trực tiếp không qua modal (cho combined view)
+  const updateItemQuantity = async (maCt, newQuantity) => {
+    if (!currentInvoice) {
+      message.error('Thiếu thông tin hóa đơn');
+      return;
+    }
+
+    if (newQuantity <= 0) {
+      // Xóa sản phẩm nếu số lượng <= 0
+      try {
+        await xoaCtHd({ maCt: maCt });
+        const detailsResponse = await getChiTietHoaDonTheoMaHD(currentInvoice.maHd);
+        if (Array.isArray(detailsResponse)) {
+          setInvoiceDetails(detailsResponse.filter(item => parseInt(item.sl) > 0));
+        }
+        message.success('Đã xóa sản phẩm khỏi đơn hàng');
+        triggerQuickRefresh('REMOVE_ITEM');
+      } catch (error) {
+        message.error('Không thể xóa sản phẩm: ' + (error.message || 'Lỗi không xác định'));
+      }
+      return;
+    }
+
+    try {
+      setLoading(true);
+      
+      // Phương pháp 1: Thử cập nhật trực tiếp bằng capNhatCtHd
+      try {
+        const updateResult = await capNhatCtHd({
+          maCt: maCt,
+          soLuong: newQuantity,
+          maHd: currentInvoice.maHd
+        });
+        
+        if (updateResult && !Array.isArray(updateResult) && updateResult.success !== false) {
+          // Reload chi tiết hóa đơn
+          const detailsResponse = await getChiTietHoaDonTheoMaHD(currentInvoice.maHd);
+          if (Array.isArray(detailsResponse)) {
+            setInvoiceDetails(detailsResponse.filter(item => parseInt(item.sl) > 0));
+          }
+          
+          // Trigger quick refresh
+          triggerQuickRefresh('UPDATE_QUANTITY');
+          return; // Thành công
+        } else {
+          throw new Error('API returned unsuccessful result');
+        }
+      } catch (directUpdateError) {
+        // Continue to fallback method
+      }
+      
+      // Phương pháp 2: Fallback - Mở modal để cập nhật
+      setSelectedItemForUpdate(currentItem);
+      setNewQuantityForUpdate(newQuantity);
+      setShowUpdateQuantityModal(true);
+      message.info('Đang chuyển sang chế độ cập nhật thủ công');
+      
+    } catch (error) {
+      message.error('Không thể cập nhật số lượng: ' + (error.message || 'Lỗi không xác định'));
+    } finally {
+      setLoading(false);
+    }
   };
 
   // Xác nhận update số lượng với fallback strategy
@@ -2116,14 +2180,7 @@ const BanHang = () => {
                 </>
               )}
               
-              <Button 
-                type="primary"
-                icon={<ShoppingCart size={16} />}
-                onClick={handleSelectItems}
-                disabled={editingInvoice}
-              >
-                Chọn món
-              </Button>
+              {/* Ẩn nút "Chọn món" vì đã được tích hợp vào combined view */}
             </Space>
           </div>
         </div>
@@ -2362,14 +2419,14 @@ const BanHang = () => {
                         <Button
                           size="small"
                           icon={<Minus size={12} />}
-                          onClick={() => updateItemQuantity(item.maCt, (item.sl || item.soLuong || 1) - 1)}
+                          onClick={() => updateProductQuantity(item, (item.sl || item.soLuong || 1) - 1)}
                           disabled={editingInvoice}
                         />
                         <span className="quantity-compact">{item.sl || item.soLuong || 1}</span>
                         <Button
                           size="small"
                           icon={<Plus size={12} />}
-                          onClick={() => updateItemQuantity(item.maCt, (item.sl || item.soLuong || 1) + 1)}
+                          onClick={() => updateProductQuantity(item, (item.sl || item.soLuong || 1) + 1)}
                           disabled={editingInvoice}
                         />
                       </div>
