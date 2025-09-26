@@ -111,9 +111,10 @@ const { Option } = Select;
 
 // View states based on flow requirements
 const VIEW_STATES = {
-  TABLES: 'tables',      // Initial view - show table grid
-  INVOICE: 'invoice',    // Show invoice UI after selecting table  
-  PRODUCTS: 'products'   // Show product grid after clicking "select items"
+  TABLES: 'tables',        // Initial view - show table grid
+  INVOICE: 'invoice',      // Show invoice UI after selecting table  
+  PRODUCTS: 'products',    // Show product grid after clicking "select items"
+  COMBINED: 'combined'     // Combined view - invoice (25%) + products (75%)
 };
 
 const BanHang = () => {
@@ -780,7 +781,7 @@ const BanHang = () => {
 
   // FLOW 2: Chuyển sang view chọn sản phẩm (dữ liệu do ChonSanPham tự tải)
   const handleSelectItems = async () => {
-    setCurrentView(VIEW_STATES.PRODUCTS);
+    setCurrentView(VIEW_STATES.COMBINED); // Chuyển sang combined view thay vì products
   };
 
   // Tạo hóa đơn mới cho bàn
@@ -1776,6 +1777,10 @@ const BanHang = () => {
       setCurrentView(VIEW_STATES.INVOICE);
       setSelectedCategory('all');
       setSearchTerm('');
+    } else if (currentView === VIEW_STATES.COMBINED) {
+      setCurrentView(VIEW_STATES.INVOICE);
+      setSelectedCategory('all');
+      setSearchTerm('');
     }
   };
 
@@ -2297,12 +2302,139 @@ const BanHang = () => {
     </Content>
   );
 
+  // Combined view - 25% Invoice + 75% Products
+  const renderCombinedView = () => (
+    <div className="combined-view">
+      {/* Back Button Row */}
+      <div className="back-button-row">
+        <Button 
+          icon={<ArrowLeft size={16} />}
+          onClick={handleGoBack}
+          className="back-button"
+        >
+          Quay lại hóa đơn
+        </Button>
+      </div>
+
+      <div className="combined-content">
+        {/* Left panel - Invoice (25%) */}
+        <div className="invoice-panel">
+          <div className="panel-header">
+            <Title level={4} style={{ margin: 0, color: '#197dd3' }}>
+              Hóa đơn - {selectedTable?.name}
+              {currentInvoice && ` (#${currentInvoice.maHd})`}
+            </Title>
+          </div>
+
+          {!currentInvoice ? (
+            <div className="empty-invoice">
+              <Users size={32} />
+              <Text>Không có hóa đơn</Text>
+            </div>
+          ) : (
+            <div className="invoice-summary">
+              <div className="invoice-info-compact">
+                <Text strong>Mã HĐ: {currentInvoice.maHd}</Text>
+                <br />
+                <Text>Bàn: {selectedTable?.name}</Text>
+              </div>
+              
+              <div className="invoice-items-compact">
+                {invoiceDetails.length === 0 ? (
+                  <div className="empty-items-compact">
+                    <ShoppingCart size={32} />
+                    <Text>Chưa có món</Text>
+                  </div>
+                ) : (
+                  invoiceDetails.map(item => (
+                    <div key={item.maCt} className="invoice-item-compact">
+                      <div className="item-info-compact">
+                        <Text strong>{item.tenSp}</Text>
+                        <div className="item-details">
+                          <Text type="secondary">SL: {item.sl}</Text>
+                          <Text type="secondary">
+                            {parseFloat(item.gia || item.giaBan || item.donGia || 0).toLocaleString('vi-VN')}đ
+                          </Text>
+                        </div>
+                      </div>
+                      
+                      <div className="item-controls-compact">
+                        <Button
+                          size="small"
+                          icon={<Minus size={12} />}
+                          onClick={() => updateItemQuantity(item.maCt, (item.sl || item.soLuong || 1) - 1)}
+                          disabled={editingInvoice}
+                        />
+                        <span className="quantity-compact">{item.sl || item.soLuong || 1}</span>
+                        <Button
+                          size="small"
+                          icon={<Plus size={12} />}
+                          onClick={() => updateItemQuantity(item.maCt, (item.sl || item.soLuong || 1) + 1)}
+                          disabled={editingInvoice}
+                        />
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+
+              <div className="invoice-total-compact">
+                <div className="total-display">
+                  <Text strong style={{ fontSize: '16px' }}>Tổng: </Text>
+                  <Text strong className="total-amount" style={{ fontSize: '18px', color: '#197dd3' }}>
+                    {invoiceSummary.total.toLocaleString('vi-VN')} đ
+                  </Text>
+                </div>
+              </div>
+
+              <div className="invoice-actions-compact">
+                <Button
+                  icon={<Clock size={14} />}
+                  onClick={sendToKitchen}
+                  size="small"
+                  block
+                  style={{ marginBottom: 8 }}
+                >
+                  Gửi bếp
+                </Button>
+                
+                <Button
+                  type="primary"
+                  icon={<CreditCard size={14} />}
+                  onClick={openPaymentModal}
+                  disabled={invoiceDetails.length === 0}
+                  size="small"
+                  block
+                >
+                  Thanh toán
+                </Button>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Right panel - Products (75%) */}
+        <div className="products-panel">
+          <div className="panel-header">
+            <Title level={4} style={{ margin: 0, color: '#197dd3' }}>
+              Chọn món
+            </Title>
+          </div>
+          <div className="products-content-wrapper">
+            <ChonSanPham onAddToCart={addProductToOrder} />
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+
   // Main render
   return (
     <div className="banhang-container">
       {currentView === VIEW_STATES.TABLES && renderTablesView()}
       {currentView === VIEW_STATES.INVOICE && renderInvoiceView()}
       {currentView === VIEW_STATES.PRODUCTS && renderProductsView()}
+      {currentView === VIEW_STATES.COMBINED && renderCombinedView()}
       
       {/* Enhanced Invoice Management Modals */}
       
