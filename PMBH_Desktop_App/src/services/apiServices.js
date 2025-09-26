@@ -107,10 +107,10 @@ export async function updateSanPham(productData) {
 export async function uploadProductImage(productId, imageFile) {
   try {
     const formData = new FormData();
-    formData.append('maSp', productId);
-    formData.append('imageFile', imageFile);
     formData.append('table', 'Mb_sanPham');
     formData.append('func', 'uploadImage');
+    formData.append('maSp', productId);
+    formData.append('imageFile', imageFile);
 
     const headers = await getAuthHeaders();
     const res = await axios.post(url_api_services, formData, {
@@ -120,16 +120,22 @@ export async function uploadProductImage(productId, imageFile) {
       }
     });
 
-    return res.data;
+    return { success: res.data === true || res.data === 1 || res.data === "1" };
   } catch (error) {
     console.error('Error uploading image:', error);
-    throw error;
+    return { success: false, error: error.message };
   }
 }
 
 // Cập nhật URL ảnh sản phẩm
 export async function updateProductImageUrl(productId, imageUrl) {
-  return await callApi('Mb_sanPham', 'updateImageUrl', { maSp: productId, imageUrl });
+  try {
+    const result = await callApi('Mb_sanPham', 'updateImageUrl', { maSp: productId, imageUrl });
+    return { success: result === true || result === 1 || result === "1" };
+  } catch (error) {
+    console.error('Error updating product image URL:', error);
+    return { success: false, error: error.message };
+  }
 }
 
 // -------------------- Functions from index_Cong.php --------------------

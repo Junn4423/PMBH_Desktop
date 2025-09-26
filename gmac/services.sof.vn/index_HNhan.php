@@ -46,6 +46,22 @@ switch ($vtable) {
 			case 'data':
 				$vOutput = $sl_lv0007->MB_LoadAll();
 				break;
+			case 'updateImageUrl':
+				error_log("API: updateImageUrl called");
+				$maSp = isset($input['maSp']) ? $input['maSp'] : (isset($_POST['maSp']) ? $_POST['maSp'] : "");
+				$imageUrl = isset($input['imageUrl']) ? $input['imageUrl'] : (isset($_POST['imageUrl']) ? $_POST['imageUrl'] : "");
+				error_log("API: maSp=$maSp, imageUrl=$imageUrl");
+				$vOutput = $sl_lv0007->UpdateImageUrl($maSp, $imageUrl);
+				error_log("API: updateImageUrl result: " . ($vOutput ? 'true' : 'false'));
+				break;
+			case 'uploadImage':
+				error_log("API: uploadImage called");
+				$maSp = isset($input['maSp']) ? $input['maSp'] : (isset($_POST['maSp']) ? $_POST['maSp'] : "");
+				$imageFile = isset($_FILES['imageFile']) ? $_FILES['imageFile'] : null;
+				error_log("API: maSp=$maSp, imageFile=" . print_r($imageFile, true));
+				$vOutput = $sl_lv0007->UploadImage($maSp, $imageFile);
+				error_log("API: uploadImage result: " . ($vOutput ? 'true' : 'false'));
+				break;
 			default:
 				break;
 		}

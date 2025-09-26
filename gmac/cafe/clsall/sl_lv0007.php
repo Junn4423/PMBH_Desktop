@@ -793,6 +793,44 @@ class   sl_lv0007 extends lv_controler
 		}
 		return $vArrRe;
 	}
+
+	function UpdateImageUrl($maSp, $imageUrl) {
+		error_log("UpdateImageUrl called: maSp=$maSp, imageUrl=$imageUrl");
+		$lvsql = "UPDATE sl_lv0007 SET lv014 = '$imageUrl' WHERE lv001 = '$maSp'";
+		$vReturn = db_query($lvsql);
+		error_log("UpdateImageUrl SQL result: " . ($vReturn ? 'true' : 'false'));
+		if($vReturn) $this->InsertLogOperation($this->DateCurrent,'sl_lv0007.updateImageUrl',sof_escape_string($lvsql));
+		return $vReturn ? true : false;
+	}
+
+	function UploadImage($maSp, $imageFile) {
+		error_log("UploadImage called: maSp=$maSp, imageFile=" . print_r($imageFile, true));
+		// Handle file upload logic here
+		$targetDir = "../images/products/";
+		if (!is_dir($targetDir)) {
+			mkdir($targetDir, 0777, true);
+		}
+
+		if (!$imageFile || !isset($imageFile['tmp_name']) || empty($imageFile['tmp_name'])) {
+			error_log("UploadImage: No valid image file provided");
+			return false;
+		}
+
+		$fileName = $maSp . "_" . time() . "_" . basename($imageFile["name"]);
+		$targetFile = $targetDir . $fileName;
+		error_log("UploadImage: Target file: $targetFile");
+
+		if (move_uploaded_file($imageFile["tmp_name"], $targetFile)) {
+			error_log("UploadImage: File moved successfully");
+			$lvsql = "UPDATE sl_lv0007 SET lv014 = '$fileName' WHERE lv001 = '$maSp'";
+			$vReturn = db_query($lvsql);
+			error_log("UploadImage: DB update result: " . ($vReturn ? 'true' : 'false'));
+			if($vReturn) $this->InsertLogOperation($this->DateCurrent,'sl_lv0007.uploadImage',sof_escape_string($lvsql));
+			return $vReturn ? true : false;
+		}
+		error_log("UploadImage: Failed to move uploaded file");
+		return false;
+	}
 }
 
 ?>
