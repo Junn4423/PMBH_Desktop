@@ -98,6 +98,40 @@ export async function thanhToanHoaDon(mahd) {
   return await callApi('Mb_thanhtoan', 'thanhToan_contract', { mahd });
 }
 
+// Cập nhật sản phẩm
+export async function updateSanPham(productData) {
+  return await callApi('Mb_sanPham', 'edit', productData);
+}
+
+// Upload ảnh sản phẩm
+export async function uploadProductImage(productId, imageFile) {
+  try {
+    const formData = new FormData();
+    formData.append('maSp', productId);
+    formData.append('imageFile', imageFile);
+    formData.append('table', 'Mb_sanPham');
+    formData.append('func', 'uploadImage');
+
+    const headers = await getAuthHeaders();
+    const res = await axios.post(url_api_services, formData, {
+      headers: {
+        ...headers,
+        'Content-Type': 'multipart/form-data'
+      }
+    });
+
+    return res.data;
+  } catch (error) {
+    console.error('Error uploading image:', error);
+    throw error;
+  }
+}
+
+// Cập nhật URL ảnh sản phẩm
+export async function updateProductImageUrl(productId, imageUrl) {
+  return await callApi('Mb_sanPham', 'updateImageUrl', { maSp: productId, imageUrl });
+}
+
 // -------------------- Functions from index_Cong.php --------------------
 
 // Thêm nhân sự

@@ -121,6 +121,46 @@
   min-height: calc(100vh - 200px);
 }
 
+/* Products Grid Layout (similar to ChonSanPham) */
+.products-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 16px;
+  padding: 16px;
+  overflow-y: auto;
+  max-width: 100%;
+  align-items: stretch;
+}
+
+/* Loading and Empty States */
+.loading-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 20px;
+  min-height: 200px;
+}
+
+.loading-text {
+  margin-top: 16px;
+}
+
+.empty-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 20px;
+  min-height: 200px;
+}
+
+@media (min-width: 1200px) {
+  .products-grid {
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  }
+}
+
 .products-content .ant-card {
   background: white !important;
   color: #4b4344 !important;
