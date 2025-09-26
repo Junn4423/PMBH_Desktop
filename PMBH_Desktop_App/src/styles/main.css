@@ -24,9 +24,9 @@
 /* Các utility classes và helper functions */
 
 @import './utils/background.css';      /* Background utilities */
+@import './utils/responsive.css';      /* Responsive utilities - ENABLED */
 /* @import './utils/animations.css'; */   /* Animations & Transitions */
 /* @import './utils/helpers.css'; */      /* Helper classes */
-/* @import './utils/responsive.css'; */   /* Responsive utilities */
 
 /* ==================== COMPONENT STYLES ==================== */
 /* Các component độc lập - có thể tái sử dụng */
@@ -37,6 +37,7 @@
 @import './components/tables.css';     /* Tables */
 @import './components/product-card.css'; /* Product cards */
 @import './components/theme-selector.css'; /* Theme selector */
+@import './components/enhanced-responsive.css'; /* Enhanced responsive components */
 /* @import './components/modals.css'; */     /* Modals & Dialogs */
 /* @import './components/navigation.css'; */ /* Navigation */
 /* @import './components/badges.css'; */     /* Badges & Tags */
@@ -75,6 +76,7 @@
 
 @import './custom/overrides.css';      /* Global overrides */
 @import './custom/patches.css';        /* Temporary fixes */
+@import './patches/button-overflow-fixes.css'; /* Button overflow fixes */
 
 /* ==================== GLOBAL STYLES ==================== */
 /* Một số styles toàn cục cần thiết */

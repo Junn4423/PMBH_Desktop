@@ -1,18 +1,28 @@
 /* ================================================================
-   RESPONSIVE UTILITIES
-   Các utility classes responsive cho mobile và desktop
+   RESPONSIVE UTILITIES - DESKTOP FOCUSED
+   Các utility classes responsive tối ưu cho desktop và màn hình lớn
 ================================================================ */
 
 /* ============================================
-   BREAKPOINT VARIABLES
+   BREAKPOINT VARIABLES - DESKTOP FOCUSED
 ============================================ */
 
 :root {
-  --breakpoint-sm: 640px;
-  --breakpoint-md: 768px;
-  --breakpoint-lg: 1024px;
-  --breakpoint-xl: 1280px;
-  --breakpoint-2xl: 1536px;
+  --breakpoint-sm: 640px;     /* Small desktop/large tablet */
+  --breakpoint-md: 768px;     /* Medium desktop */
+  --breakpoint-lg: 1024px;    /* Large desktop */
+  --breakpoint-xl: 1280px;    /* Extra large desktop */
+  --breakpoint-2xl: 1536px;   /* Ultra wide desktop */
+  --breakpoint-3xl: 1920px;   /* Full HD */
+  --breakpoint-4xl: 2560px;   /* 4K displays */
+  
+  /* Desktop-specific breakpoints */
+  --desktop-sm: 1024px;
+  --desktop-md: 1280px;
+  --desktop-lg: 1440px;
+  --desktop-xl: 1680px;
+  --desktop-2xl: 1920px;
+  --desktop-4k: 2560px;
 }
 
 /* ============================================
@@ -849,5 +859,304 @@
   
   .print\:border-none {
     border: none !important;
+  }
+}
+
+/* ============================================
+   DESKTOP-FOCUSED RESPONSIVE UTILITIES
+   Tối ưu cho màn hình desktop và cảm ứng
+============================================ */
+
+/* Large Desktop (1440px+) - Optimal touch targets */
+@media (min-width: 1440px) {
+  .desktop-lg\:text-base { font-size: var(--font-size-base) !important; }
+  .desktop-lg\:text-lg { font-size: var(--font-size-lg) !important; }
+  .desktop-lg\:text-xl { font-size: var(--font-size-xl) !important; }
+  .desktop-lg\:text-2xl { font-size: var(--font-size-2xl) !important; }
+  
+  .desktop-lg\:p-4 { padding: var(--space-4) !important; }
+  .desktop-lg\:p-6 { padding: var(--space-6) !important; }
+  .desktop-lg\:p-8 { padding: var(--space-8) !important; }
+  
+  .desktop-lg\:gap-4 { gap: var(--space-4) !important; }
+  .desktop-lg\:gap-6 { gap: var(--space-6) !important; }
+  .desktop-lg\:gap-8 { gap: var(--space-8) !important; }
+  
+  .desktop-lg\:grid-cols-4 { grid-template-columns: repeat(4, minmax(0, 1fr)) !important; }
+  .desktop-lg\:grid-cols-5 { grid-template-columns: repeat(5, minmax(0, 1fr)) !important; }
+  .desktop-lg\:grid-cols-6 { grid-template-columns: repeat(6, minmax(0, 1fr)) !important; }
+}
+
+/* Extra Large Desktop (1680px+) */
+@media (min-width: 1680px) {
+  .desktop-xl\:text-lg { font-size: var(--font-size-lg) !important; }
+  .desktop-xl\:text-xl { font-size: var(--font-size-xl) !important; }
+  .desktop-xl\:text-2xl { font-size: var(--font-size-2xl) !important; }
+  .desktop-xl\:text-3xl { font-size: var(--font-size-3xl) !important; }
+  
+  .desktop-xl\:p-6 { padding: var(--space-6) !important; }
+  .desktop-xl\:p-8 { padding: var(--space-8) !important; }
+  .desktop-xl\:p-10 { padding: var(--space-10) !important; }
+  
+  .desktop-xl\:gap-6 { gap: var(--space-6) !important; }
+  .desktop-xl\:gap-8 { gap: var(--space-8) !important; }
+  .desktop-xl\:gap-10 { gap: var(--space-10) !important; }
+  
+  .desktop-xl\:grid-cols-5 { grid-template-columns: repeat(5, minmax(0, 1fr)) !important; }
+  .desktop-xl\:grid-cols-6 { grid-template-columns: repeat(6, minmax(0, 1fr)) !important; }
+  .desktop-xl\:grid-cols-7 { grid-template-columns: repeat(7, minmax(0, 1fr)) !important; }
+}
+
+/* Full HD (1920px+) */
+@media (min-width: 1920px) {
+  .desktop-2xl\:text-xl { font-size: var(--font-size-xl) !important; }
+  .desktop-2xl\:text-2xl { font-size: var(--font-size-2xl) !important; }
+  .desktop-2xl\:text-3xl { font-size: var(--font-size-3xl) !important; }
+  .desktop-2xl\:text-4xl { font-size: var(--font-size-4xl) !important; }
+  
+  .desktop-2xl\:p-8 { padding: var(--space-8) !important; }
+  .desktop-2xl\:p-10 { padding: var(--space-10) !important; }
+  .desktop-2xl\:p-12 { padding: var(--space-12) !important; }
+  
+  .desktop-2xl\:gap-8 { gap: var(--space-8) !important; }
+  .desktop-2xl\:gap-10 { gap: var(--space-10) !important; }
+  .desktop-2xl\:gap-12 { gap: var(--space-12) !important; }
+  
+  .desktop-2xl\:grid-cols-6 { grid-template-columns: repeat(6, minmax(0, 1fr)) !important; }
+  .desktop-2xl\:grid-cols-7 { grid-template-columns: repeat(7, minmax(0, 1fr)) !important; }
+  .desktop-2xl\:grid-cols-8 { grid-template-columns: repeat(8, minmax(0, 1fr)) !important; }
+}
+
+/* 4K Displays (2560px+) */
+@media (min-width: 2560px) {
+  .desktop-4k\:text-2xl { font-size: var(--font-size-2xl) !important; }
+  .desktop-4k\:text-3xl { font-size: var(--font-size-3xl) !important; }
+  .desktop-4k\:text-4xl { font-size: var(--font-size-4xl) !important; }
+  
+  .desktop-4k\:p-10 { padding: var(--space-10) !important; }
+  .desktop-4k\:p-12 { padding: var(--space-12) !important; }
+  .desktop-4k\:p-16 { padding: var(--space-16) !important; }
+  
+  .desktop-4k\:gap-10 { gap: var(--space-10) !important; }
+  .desktop-4k\:gap-12 { gap: var(--space-12) !important; }
+  .desktop-4k\:gap-16 { gap: var(--space-16) !important; }
+  
+  .desktop-4k\:grid-cols-8 { grid-template-columns: repeat(8, minmax(0, 1fr)) !important; }
+  .desktop-4k\:grid-cols-10 { grid-template-columns: repeat(10, minmax(0, 1fr)) !important; }
+  .desktop-4k\:grid-cols-12 { grid-template-columns: repeat(12, minmax(0, 1fr)) !important; }
+}
+
+/* Touch Device Optimizations */
+@media (pointer: coarse) {
+  .touch\:p-4 { padding: var(--space-4) !important; }
+  .touch\:p-5 { padding: var(--space-5) !important; }
+  .touch\:p-6 { padding: var(--space-6) !important; }
+  
+  .touch\:gap-4 { gap: var(--space-4) !important; }
+  .touch\:gap-5 { gap: var(--space-5) !important; }
+  .touch\:gap-6 { gap: var(--space-6) !important; }
+  
+  .touch\:text-lg { font-size: var(--font-size-lg) !important; }
+  .touch\:text-xl { font-size: var(--font-size-xl) !important; }
+}
+
+/* High DPI Display Optimizations */
+@media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
+  .hidpi\:border { border-width: 0.5px !important; }
+  .hidpi\:text-sm { font-size: var(--font-size-sm) !important; }
+}
+
+/* Container Queries Support (Modern browsers) */
+@container (min-width: 320px) {
+  .container\:p-4 { padding: var(--space-4) !important; }
+}
+
+@container (min-width: 768px) {
+  .container\:p-6 { padding: var(--space-6) !important; }
+  .container\:grid-cols-2 { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
+}
+
+@container (min-width: 1024px) {
+  .container\:p-8 { padding: var(--space-8) !important; }
+  .container\:grid-cols-3 { grid-template-columns: repeat(3, minmax(0, 1fr)) !important; }
+}
+
+/* Aspect Ratio Utilities for Different Screen Ratios */
+@media (aspect-ratio: 16/9) {
+  .aspect-16-9\:grid-cols-6 { grid-template-columns: repeat(6, minmax(0, 1fr)) !important; }
+}
+
+@media (aspect-ratio: 21/9) {
+  .aspect-21-9\:grid-cols-8 { grid-template-columns: repeat(8, minmax(0, 1fr)) !important; }
+}
+
+/* ============================================
+   POS SYSTEM SPECIFIC RESPONSIVE UTILITIES
+============================================ */
+
+/* Table Grid Responsiveness */
+.tables-grid {
+  display: grid;
+  gap: var(--space-4);
+  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+}
+
+@media (min-width: 768px) {
+  .tables-grid {
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    gap: var(--space-5);
+  }
+}
+
+@media (min-width: 1024px) {
+  .tables-grid {
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+    gap: var(--space-6);
+  }
+}
+
+@media (min-width: 1440px) {
+  .tables-grid {
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: var(--space-6);
+  }
+}
+
+@media (min-width: 1920px) {
+  .tables-grid {
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: var(--space-8);
+  }
+}
+
+/* Product Grid Responsiveness */
+.products-grid {
+  display: grid;
+  gap: var(--space-4);
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+}
+
+@media (min-width: 768px) {
+  .products-grid {
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: var(--space-5);
+  }
+}
+
+@media (min-width: 1024px) {
+  .products-grid {
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    gap: var(--space-6);
+  }
+}
+
+@media (min-width: 1440px) {
+  .products-grid {
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: var(--space-6);
+  }
+}
+
+@media (min-width: 1920px) {
+  .products-grid {
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: var(--space-8);
+  }
+}
+
+/* ============================================
+   OVERFLOW PREVENTION UTILITIES
+============================================ */
+
+/* Prevent content overflow */
+.overflow-hidden { overflow: hidden !important; }
+.overflow-auto { overflow: auto !important; }
+.overflow-scroll { overflow: scroll !important; }
+.overflow-visible { overflow: visible !important; }
+
+.overflow-x-hidden { overflow-x: hidden !important; }
+.overflow-x-auto { overflow-x: auto !important; }
+.overflow-x-scroll { overflow-x: scroll !important; }
+
+.overflow-y-hidden { overflow-y: hidden !important; }
+.overflow-y-auto { overflow-y: auto !important; }
+.overflow-y-scroll { overflow-y: scroll !important; }
+
+/* Text overflow utilities */
+.text-truncate {
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+}
+
+.text-ellipsis {
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+}
+
+.text-clip {
+  text-overflow: clip !important;
+}
+
+/* Word wrap utilities */
+.text-wrap {
+  text-wrap: wrap !important;
+  overflow-wrap: break-word !important;
+  word-break: break-word !important;
+}
+
+.text-nowrap {
+  white-space: nowrap !important;
+}
+
+.text-balance {
+  text-wrap: balance !important;
+}
+
+.text-pretty {
+  text-wrap: pretty !important;
+}
+
+/* Container query support for preventing overflow */
+@container (max-width: 400px) {
+  .container\:flex-col { flex-direction: column !important; }
+  .container\:text-sm { font-size: var(--font-size-sm) !important; }
+}
+
+@container (max-width: 300px) {
+  .container\:text-xs { font-size: var(--font-size-xs) !important; }
+  .container\:gap-1 { gap: var(--space-1) !important; }
+}
+
+/* ============================================
+   RESPONSIVE BUTTON OVERFLOW FIXES
+============================================ */
+
+/* Automatic button container responsive behavior */
+.button-overflow-wrap {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  align-items: center;
+}
+
+@media (max-width: 640px) {
+  .button-overflow-wrap {
+    gap: var(--space-1);
+    justify-content: center;
+  }
+  
+  .button-overflow-wrap .btn {
+    flex: 1 1 auto;
+    min-width: var(--touch-target-min);
+    font-size: var(--font-size-sm);
+  }
+}
+
+@media (max-width: 480px) {
+  .button-overflow-wrap .btn {
+    font-size: var(--font-size-xs);
+    padding: var(--space-2) var(--space-3);
+    min-height: var(--touch-target-min);
   }
 }

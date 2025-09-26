@@ -471,6 +471,14 @@
 .empty-invoice .ant-space {
   width: 100%;
   max-width: 500px;
+  /* Make sure Ant Space component allows wrapping */
+}
+
+.empty-invoice .ant-space-item {
+  /* Force flex behavior for better responsive control */
+  flex: 1 1 auto;
+  min-width: 140px;
+  max-width: 200px;
 }
 
 .invoice-button {
@@ -478,7 +486,8 @@
   border-radius: 16px;
   font-weight: 600;
   font-size: 16px;
-  width: 200px;
+  width: 100%; /* Take full width of the flex item */
+  min-width: 140px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -486,6 +495,33 @@
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   position: relative;
   overflow: hidden;
+}
+
+/* Responsive adjustments for smaller screens */
+@media (max-width: 480px) {
+  .empty-invoice .ant-space {
+    max-width: 100%;
+  }
+  
+  .empty-invoice .ant-space-item {
+    min-width: 120px;
+    max-width: 100%;
+  }
+  
+  .invoice-button {
+    height: 48px;
+    font-size: 14px;
+    min-width: 120px;
+  }
+}
+
+@media (max-width: 360px) {
+  .invoice-button {
+    height: 44px;
+    font-size: 13px;
+    min-width: 100px;
+    gap: 6px;
+  }
 }
 
 .invoice-button::before {

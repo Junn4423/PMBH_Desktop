@@ -168,14 +168,24 @@
   --z-tooltip: 1070;
   --z-toast: 1080;
   
-  /* ==================== BREAKPOINTS ==================== */
+  /* ==================== BREAKPOINTS - DESKTOP FOCUSED ==================== */
   
   --breakpoint-xs: 480px;
   --breakpoint-sm: 576px;
-  --breakpoint-md: 768px;
-  --breakpoint-lg: 992px;
-  --breakpoint-xl: 1200px;
-  --breakpoint-2xl: 1600px;
+  --breakpoint-md: 768px;     /* Small desktop/large tablet */
+  --breakpoint-lg: 992px;     /* Medium desktop */
+  --breakpoint-xl: 1200px;    /* Large desktop */
+  --breakpoint-2xl: 1400px;   /* Extra large desktop */
+  --breakpoint-3xl: 1600px;   /* Ultra wide desktop */
+  --breakpoint-4xl: 1920px;   /* Full HD desktop */
+  
+  /* Desktop-specific breakpoints for responsive design */
+  --desktop-sm: 1024px;       /* Small desktop */
+  --desktop-md: 1280px;       /* Medium desktop */
+  --desktop-lg: 1440px;       /* Large desktop */
+  --desktop-xl: 1680px;       /* Extra large desktop */
+  --desktop-2xl: 1920px;      /* Full HD */
+  --desktop-4k: 2560px;       /* 4K monitors */
   
   /* ==================== TRANSITIONS ==================== */
   
@@ -183,39 +193,67 @@
   --transition-base: 0.3s ease-in-out;
   --transition-slow: 0.5s ease-in-out;
   
-  /* ==================== COMPONENT SPECIFIC ==================== */
+  /* ==================== COMPONENT SPECIFIC - TOUCH OPTIMIZED ==================== */
+  
+  /* Component Heights - Optimized for touch interaction */
+  --component-height-xs: 28px;
+  --component-height-sm: 36px;     /* Minimum touch target */
+  --component-height-base: 44px;   /* Recommended touch target */
+  --component-height-lg: 52px;     /* Large touch target */
+  --component-height-xl: 60px;     /* Extra large touch target */
+  --component-height-2xl: 72px;    /* Ultra large for primary actions */
+  
+  /* Button Heights - Desktop touch-friendly */
+  --btn-height-xs: 28px;
+  --btn-height-sm: 36px;
+  --btn-height-base: 44px;         /* Default button height */
+  --btn-height-lg: 52px;           /* Large buttons for primary actions */
+  --btn-height-xl: 60px;           /* Extra large for important actions */
+  --btn-height-2xl: 72px;          /* Ultra large for main CTAs */
+  
+  /* Button Padding - More generous for touch */
+  --btn-padding-xs: var(--space-2) var(--space-3);
+  --btn-padding-sm: var(--space-3) var(--space-4);
+  --btn-padding-base: var(--space-4) var(--space-6);     /* More padding */
+  --btn-padding-lg: var(--space-5) var(--space-8);       /* Generous padding */
+  --btn-padding-xl: var(--space-6) var(--space-10);      /* Very generous */
+  --btn-padding-2xl: var(--space-8) var(--space-12);     /* Ultra generous */
+  
+  /* Interactive Element Minimum Sizes (44px is iOS/Android recommended) */
+  --touch-target-min: 44px;
+  --touch-target-comfortable: 48px;
+  --touch-target-generous: 52px;
   
   /* Header */
   --header-height: 64px;
+  --header-height-lg: 72px;        /* Larger header for desktop */
   --header-bg: var(--bg-primary);
   --header-border: var(--border-light);
   
   /* Sidebar */
   --sidebar-width: 280px;
+  --sidebar-width-lg: 320px;       /* Wider sidebar for desktop */
   --sidebar-collapsed-width: 80px;
   --sidebar-bg: var(--bg-primary);
   --sidebar-border: var(--border-light);
   
   /* Content */
   --content-max-width: 1200px;
+  --content-max-width-lg: 1400px;  /* Larger content area for wide screens */
   --content-padding: var(--space-6);
+  --content-padding-lg: var(--space-8);  /* More padding on large screens */
   
   /* Cards */
   --card-padding: var(--space-6);
+  --card-padding-lg: var(--space-8);     /* More padding on desktop */
   --card-radius: var(--radius-lg);
   --card-shadow: var(--shadow-base);
   
-  /* Buttons */
-  --btn-height-sm: 24px;
-  --btn-height-base: 32px;
-  --btn-height-lg: 40px;
-  --btn-padding-sm: var(--space-2) var(--space-3);
-  --btn-padding-base: var(--space-2) var(--space-4);
-  --btn-padding-lg: var(--space-3) var(--space-5);
-  
   /* Forms */
-  --form-control-height: 32px;
-  --form-control-padding: var(--space-3);
+  --form-control-height: 44px;           /* Touch-friendly height */
+  --form-control-height-lg: 48px;        /* Larger for desktop */
+  --form-control-padding: var(--space-4);
+  --form-control-padding-lg: var(--space-5);
   --form-control-border: var(--border-medium);
   --form-control-radius: var(--radius-base);
   
@@ -223,6 +261,17 @@
   --table-header-bg: var(--bg-tertiary);
   --table-border: var(--border-light);
   --table-row-hover: var(--bg-tertiary);
+  --table-cell-padding: var(--space-3) var(--space-4);
+  --table-cell-padding-lg: var(--space-4) var(--space-6);  /* More padding on desktop */
+  
+  /* Grid Systems for Different Screen Sizes */
+  --grid-columns-sm: 2;
+  --grid-columns-md: 3;
+  --grid-columns-lg: 4;
+  --grid-columns-xl: 5;
+  --grid-columns-2xl: 6;
+  --grid-gap: var(--space-4);
+  --grid-gap-lg: var(--space-6);
   
   /* Specific for Cafe POS */
   --table-status-empty: var(--color-gray-300);
