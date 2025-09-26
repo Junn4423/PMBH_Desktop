@@ -201,20 +201,15 @@ const SanPham = () => {
     try {
       setUpdatingImage(true);
       let success = false;
-      let result;
 
       if (imageUpdateType === 'url' && imageUrl.trim()) {
         // Update with URL
-        console.log('Updating image URL for product:', selectedProduct.id, 'URL:', imageUrl.trim());
-        result = await updateProductImageUrl(selectedProduct.id, imageUrl.trim());
-        console.log('Update URL result:', result);
+        const result = await updateProductImageUrl(selectedProduct.id, imageUrl.trim());
         success = result.success;
       } else if (imageUpdateType === 'upload' && fileList.length > 0) {
         // Upload file
-        console.log('Uploading image file for product:', selectedProduct.id, 'File:', fileList[0]);
         const file = fileList[0].originFileObj || fileList[0];
-        result = await uploadProductImage(selectedProduct.id, file);
-        console.log('Upload result:', result);
+        const result = await uploadProductImage(selectedProduct.id, file);
         success = result.success;
       }
 
@@ -224,7 +219,6 @@ const SanPham = () => {
         // Reload products to show updated image
         loadCategoriesAndProducts();
       } else {
-        console.error('Image update failed:', result);
         message.error('Không thể cập nhật ảnh sản phẩm');
       }
     } catch (error) {

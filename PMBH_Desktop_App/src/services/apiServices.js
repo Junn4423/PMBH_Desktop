@@ -84,6 +84,11 @@ export function getFullImageUrl(imagePath) {
     return `${baseUrl}${imagePath}`;
   }
   
+  // Xử lý đường dẫn tương đối - nếu không bắt đầu bằng images/, giả sử là trong thư mục products
+  if (!imagePath.startsWith('images/')) {
+    return `${baseUrl}/images/products/${imagePath}`;
+  }
+  
   // Xử lý đường dẫn tương đối
   return `${baseUrl}/${imagePath}`;
 }
