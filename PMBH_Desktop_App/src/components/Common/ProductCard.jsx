@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Typography } from 'antd';
 import cafeImg from '../../assets/Img/cafe.png';
+import { loadProductImage, getFullImageUrl } from '../../services/apiServices';
 import './ProductCard.css';
 
 const { Text } = Typography;
@@ -13,19 +14,73 @@ const ProductCard = ({
   showBadge = false,
   badge = null,
   className = '',
+  size = 'default', // 'small', 'default', 'large'
   ...props 
 }) => {
   const [imageError, setImageError] = useState(false);
   const [imageLoading, setImageLoading] = useState(true);
+  const [productImageUrl, setProductImageUrl] = useState(null);
+  const [imageDimensions, setImageDimensions] = useState({ width: 0, height: 0 });
+
+  // Responsive image sizes based on screen size and props
+  const getImageSize = () => {
+    switch (size) {
+      case 'small':
+        return { width: 80, height: 80, placeholder: 60 };
+      case 'large':
+        return { width: 150, height: 150, placeholder: 130 };
+      default:
+        return { width: 120, height: 120, placeholder: 100 };
+    }
+  };
+
+  const imageSize = getImageSize();
+
+  // Load product image from database on component mount
+  useEffect(() => {
+    loadProductImageFromDB();
+  }, [product?.id]);
+
+  const loadProductImageFromDB = async () => {
+    if (!product?.id) {
+      setImageLoading(false);
+      return;
+    }
+
+    try {
+      setImageLoading(true);
+      
+      // First check if product already has a valid image URL
+      if (isValidImage(product.hinhAnh)) {
+        const fullUrl = getFullImageUrl(product.hinhAnh);
+        setProductImageUrl(fullUrl);
+      } else {
+        // Try to load image from database
+        const imageData = await loadProductImage(product.id);
+        if (imageData && imageData.imagePath) {
+          const fullUrl = getFullImageUrl(imageData.imagePath);
+          setProductImageUrl(fullUrl);
+        }
+      }
+    } catch (error) {
+      console.error('Error loading product image:', error);
+      setImageError(true);
+    } finally {
+      setImageLoading(false);
+    }
+  };
 
   const handleImageError = () => {
     setImageError(true);
     setImageLoading(false);
   };
 
-  const handleImageLoad = () => {
+  const handleImageLoad = (event) => {
+    const img = event.target;
+    setImageDimensions({ width: img.naturalWidth, height: img.naturalHeight });
     setImageLoading(false);
     setImageError(false);
+    // Bỏ validation để chấp nhận mọi kích thước ảnh
   };
 
   const handleCardClick = () => {
@@ -76,10 +131,11 @@ const ProductCard = ({
     getCategoryClass(),
     loading ? 'loading' : '',
     selected ? 'selected' : '',
+    size ? `size-${size}` : '',
     className
   ].filter(Boolean).join(' ');
 
-  const shouldShowPlaceholder = !isValidImage(product.hinhAnh) || imageError;
+  const shouldShowPlaceholder = !productImageUrl || imageError;
 
   return (
     <div 
@@ -88,50 +144,34 @@ const ProductCard = ({
       style={{ cursor: loading ? 'default' : 'pointer' }}
       {...props}
     >
-      {/* Product Image */}
+      {/* Product Image - Responsive sizing */}
       <div className="product-image-wrapper">
         {shouldShowPlaceholder ? (
           <div className="product-image-placeholder">
             <img 
               src={cafeImg} 
-              alt="Cafe placeholder" 
-              style={{
-                width: '60px',
-                height: '60px',
-                opacity: 1,
-                filter: 'none',
-                objectFit: 'contain'
-              }}
+              alt="Cafe placeholder"
             />
           </div>
         ) : (
           <>
             <img
-              src={product.hinhAnh}
+              src={productImageUrl}
               alt={product.ten || 'Product'}
               className="product-image"
               onError={handleImageError}
               onLoad={handleImageLoad}
               style={{ 
-                display: imageLoading ? 'none' : 'block',
-                width: '100%',
-                height: '100%',
-                objectFit: 'cover'
+                display: imageLoading ? 'none' : 'block'
               }}
             />
+            
             {/* Fallback khi ảnh thật load lỗi */}
             {imageError && (
               <div className="product-image-placeholder">
                 <img 
                   src={cafeImg} 
-                  alt="Fallback placeholder" 
-                  style={{
-                    width: '60px',
-                    height: '60px',
-                    opacity: 1,
-                    filter: 'none',
-                    objectFit: 'contain'
-                  }}
+                  alt="Fallback placeholder"
                 />
               </div>
             )}
@@ -139,18 +179,12 @@ const ProductCard = ({
         )}
         
         {/* Loading state for image */}
-           {imageLoading && !shouldShowPlaceholder && (
+        {imageLoading && !shouldShowPlaceholder && (
           <div className="product-image-placeholder">
             <img 
               src={cafeImg} 
-              alt="Loading..." 
-              style={{
-                width: '60px',
-                height: '60px',
-                   opacity: 0.7,
-                   filter: 'none',
-                   objectFit: 'contain'
-              }}
+              alt="Loading..."
+              style={{ opacity: 0.5 }}
             />
           </div>
         )}
@@ -163,23 +197,23 @@ const ProductCard = ({
         )}
       </div>
 
-      {/* Product Info */}
+      {/* Product Info - Enhanced display */}
       <div className="product-info">
-        <Text className="product-name" title={product.ten}>
+        <Typography.Text className="product-name" title={product.ten || 'Không có tên'}>
           {product.ten || 'Không có tên'}
-        </Text>
-        <Text className="product-price">
-          {typeof product.gia === 'number' 
-            ? product.gia.toLocaleString('vi-VN') 
-            : '0'
-          }đ
-        </Text>
+        </Typography.Text>
+        <Typography.Text className="product-price">
+          {typeof product.gia === 'number' && product.gia > 0
+            ? `${product.gia.toLocaleString('vi-VN')}đ` 
+            : '0đ'
+          }
+        </Typography.Text>
         
         {/* Description (optional) */}
         {product.moTa && (
-          <Text className="product-description" type="secondary">
+          <Typography.Text className="product-description" type="secondary">
             {product.moTa}
-          </Text>
+          </Typography.Text>
         )}
       </div>
     </div>

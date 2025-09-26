@@ -79,10 +79,28 @@
 
 .chonsp-layout .products-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
   gap: 16px;
   padding: 16px;
   overflow-y: auto;
+  max-width: 100%;
+  align-items: stretch; /* Ensure all cards have same height */
+}
+
+/* Responsive grid adjustments for uniform layout */
+@media (min-width: 1200px) {
+  .chonsp-layout .products-grid {
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 18px;
+    padding: 20px;
+  }
+}
+
+@media (max-width: 992px) {
+  .chonsp-layout .products-grid {
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 14px;
+  }
 }
 
 .chonsp-layout .loading-container, .chonsp-layout .empty-container {
@@ -110,5 +128,18 @@
   .chonsp-layout .category-item {
     margin-bottom: 0;
     white-space: nowrap;
+  }
+  .chonsp-layout .products-grid {
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    gap: 12px;
+    padding: 16px;
+  }
+}
+
+@media (max-width: 480px) {
+  .chonsp-layout .products-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+    padding: 12px;
   }
 }

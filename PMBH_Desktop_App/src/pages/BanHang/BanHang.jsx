@@ -83,7 +83,9 @@ import {
   inHoaDonThanhToan,
   gopBanEnhanced,
   chuyenBanEnhanced,
-  tachBanEnhanced
+  tachBanEnhanced,
+  loadProductImage,
+  getFullImageUrl
 } from '../../services/apiServices';
 
 // Import components
@@ -351,7 +353,8 @@ const BanHang = () => {
     
     await Promise.all([
       loadTables(),
-      loadAreas()
+      loadAreas(),
+      loadProducts() // Load products vào để sẵn sàng cho việc update quantity
     ]);
   };
 
@@ -632,7 +635,7 @@ const BanHang = () => {
     }
   };
 
-  // Load sản phẩm (chỉ khi cần)
+  // Load sản phẩm (chỉ khi cần) - Enhanced with database image loading
   const loadProducts = async () => {
     try {
       const productsResponse = await getAllSanPham();
@@ -651,19 +654,46 @@ const BanHang = () => {
         productsData = Object.values(productsResponse);
       }
 
-      // Map products to consistent format like ChonSanPham
-      const mappedProducts = productsData.map(product => ({
-        id: product.maSp || product.id || product.maSP,
-        ten: product.tenSp || product.ten || product.tenSP,
-        gia: product.giaBan || product.gia || product.donGia || 0,
-        danhMuc: product.danhMuc || product.maLoai,
-        moTa: product.moTa || product.ghiChu || '',
-        hinhAnh: product.hinhAnh || DEFAULT_IMAGES.PRODUCT
-      }));
+      // Map products to consistent format with enhanced image handling - Exclude "NL" products
+      const mappedProducts = await Promise.all(productsData
+        .filter(product => {
+          // Filter out products with codes starting with "NL" (Nguyên liệu)
+          const productCode = product.maSp || product.id || product.maSP || '';
+          return !productCode.toString().startsWith('NL');
+        })
+        .map(async (product) => {
+          let imageUrl = null;
+          
+          // Try to get image from product data first
+          if (product.hinhAnh && product.hinhAnh !== DEFAULT_IMAGES.PRODUCT) {
+            imageUrl = getFullImageUrl(product.hinhAnh);
+          } else {
+            // Try to load from database if no direct image URL
+            try {
+              const imageData = await loadProductImage(product.maSp || product.id);
+              if (imageData && imageData.imagePath) {
+                imageUrl = getFullImageUrl(imageData.imagePath);
+              }
+            } catch (error) {
+              // Ignore individual image load errors
+            }
+          }
+
+          return {
+            id: product.maSp || product.id || product.maSP,
+            ten: product.tenSp || product.ten || product.tenSP,
+            gia: product.giaBan || product.gia || product.donGia || 0,
+            danhMuc: product.danhMuc || product.maLoai,
+            moTa: product.moTa || product.ghiChu || '',
+            hinhAnh: imageUrl // Will be null if no valid image found
+          };
+        }));
 
       setProducts(mappedProducts);
     } catch (error) {
-  // Silent console
+      console.error('[LOAD_PRODUCTS] Lỗi tải sản phẩm:', error);
+      message.error('Không thể tải danh sách sản phẩm.');
+      setProducts([]);
     }
   };
 
@@ -688,11 +718,16 @@ const BanHang = () => {
         
         // Load chi tiết hóa đơn
         const detailsResponse = await getChiTietHoaDonTheoMaHD(table.invoiceId);
+        console.log('[INVOICE_DETAILS] Raw details response:', detailsResponse);
+        
         if (Array.isArray(detailsResponse)) {
           // Lọc chỉ những món có số lượng > 0
           const itemsWithQuantity = detailsResponse.filter(item => parseInt(item.sl) > 0);
+          console.log('[INVOICE_DETAILS] Items with quantity:', itemsWithQuantity);
+          console.log('[INVOICE_DETAILS] Item structure example:', itemsWithQuantity[0]);
           setInvoiceDetails(itemsWithQuantity);
         } else {
+          console.log('[INVOICE_DETAILS] No valid array response, setting empty');
           setInvoiceDetails([]);
         }
         
@@ -849,7 +884,7 @@ const BanHang = () => {
   // Cập nhật số lượng sản phẩm - mở modal
   const updateProductQuantity = (item, newQuantity) => {
     if (newQuantity <= 0) {
-      removeProductFromOrder(item.maCt);
+      removeProductFromOrder(item.maCt || item.cthd);
       return;
     }
 
@@ -859,22 +894,88 @@ const BanHang = () => {
     setShowUpdateQuantityModal(true);
   };
 
-  // Xác nhận update số lượng bằng cách xóa và thêm lại
+  // Xác nhận update số lượng với fallback strategy
   const confirmUpdateQuantity = async () => {
     if (!selectedItemForUpdate || !currentInvoice) {
+      message.error('Thiếu thông tin để cập nhật số lượng');
       return;
     }
 
     try {
       setLoading(true);
       
+      // Phương pháp 1: Thử cập nhật trực tiếp bằng capNhatCtHd
+      try {
+        const updateResult = await capNhatCtHd({
+          maCt: selectedItemForUpdate.maCt || selectedItemForUpdate.cthd, // Thử cả 2 field
+          soLuong: newQuantityForUpdate,
+          maHd: currentInvoice.maHd
+        });
+        
+        // Sửa lại logic kiểm tra - mảng rỗng có nghĩa là không thành công
+        if (updateResult && !Array.isArray(updateResult) && updateResult.success !== false) {
+          // Reload chi tiết hóa đơn
+          const detailsResponse = await getChiTietHoaDonTheoMaHD(currentInvoice.maHd);
+          if (Array.isArray(detailsResponse)) {
+            setInvoiceDetails(detailsResponse.filter(item => parseInt(item.sl) > 0));
+          }
+          
+          message.success(`Đã cập nhật số lượng ${selectedItemForUpdate.tenSp} thành ${newQuantityForUpdate}`);
+          
+          // Trigger quick refresh
+          triggerQuickRefresh('UPDATE_QUANTITY');
+          
+          // Đóng modal
+          setShowUpdateQuantityModal(false);
+          setSelectedItemForUpdate(null);
+          setNewQuantityForUpdate(1);
+          return; // Exit successfully
+        } else {
+          throw new Error('API returned empty array or unsuccessful result');
+        }
+      } catch (directUpdateError) {
+        // Continue to fallback method
+      }
+      
+      // Phương pháp 2: Fallback - Xóa và thêm lại
+      
+      // Nếu products chưa được load, load ngay
+      if (!products || products.length === 0) {
+        await loadProducts();
+      }
+      
       // Bước 1: Xóa item hiện tại
-      await xoaCtHd({ maCt: selectedItemForUpdate.maCt });
+      await xoaCtHd({ maCt: selectedItemForUpdate.maCt || selectedItemForUpdate.cthd });
       
       // Bước 2: Tìm sản phẩm gốc để lấy mã sản phẩm
-      const foundProduct = products.find(p => p.ten === selectedItemForUpdate.tenSp);
+      // Thử nhiều cách match để tránh lỗi
+      let foundProduct = null;
+      
+      // Cách 1: Match theo tên chính xác
+      foundProduct = products.find(p => p.ten === selectedItemForUpdate.tenSp);
+      
+      // Cách 2: Match theo tên không phân biệt hoa thường
       if (!foundProduct) {
-        throw new Error('Không tìm thấy thông tin sản phẩm');
+        foundProduct = products.find(p => 
+          p.ten?.toLowerCase().trim() === selectedItemForUpdate.tenSp?.toLowerCase().trim()
+        );
+      }
+      
+      // Cách 3: Match theo mã sản phẩm nếu có trong item
+      if (!foundProduct && selectedItemForUpdate.maSp) {
+        foundProduct = products.find(p => p.id === selectedItemForUpdate.maSp);
+      }
+      
+      // Cách 4: Match partial name
+      if (!foundProduct) {
+        foundProduct = products.find(p => 
+          p.ten?.includes(selectedItemForUpdate.tenSp) || 
+          selectedItemForUpdate.tenSp?.includes(p.ten)
+        );
+      }
+      
+      if (!foundProduct) {
+        throw new Error(`Không tìm thấy sản phẩm "${selectedItemForUpdate.tenSp}" trong danh sách. Vui lòng thử lại sau khi tải lại trang.`);
       }
       
       // Bước 3: Thêm lại với số lượng mới
@@ -883,10 +984,10 @@ const BanHang = () => {
       // Reload chi tiết hóa đơn
       const detailsResponse = await getChiTietHoaDonTheoMaHD(currentInvoice.maHd);
       if (Array.isArray(detailsResponse)) {
-        setInvoiceDetails(detailsResponse);
+        setInvoiceDetails(detailsResponse.filter(item => parseInt(item.sl) > 0));
       }
       
-      message.success('Đã cập nhật số lượng');
+      message.success(`Đã cập nhật số lượng ${selectedItemForUpdate.tenSp} thành ${newQuantityForUpdate}`);
       
       // Trigger quick refresh sau khi cập nhật số lượng
       triggerQuickRefresh('UPDATE_QUANTITY');
@@ -896,7 +997,7 @@ const BanHang = () => {
       setSelectedItemForUpdate(null);
       setNewQuantityForUpdate(1);
     } catch (error) {
-  // Silent console
+      console.error('[UPDATE_QUANTITY] Lỗi:', error);
       message.error('Không thể cập nhật số lượng: ' + (error.message || 'Lỗi không xác định'));
     } finally {
       setLoading(false);
@@ -1065,13 +1166,13 @@ const BanHang = () => {
           // Silent console
           
           if (finalizeResponse && finalizeResponse.success !== false) {
-            message.success('Thanh toán hoàn tất và hóa đơn đã được xóa khỏi hệ thống');
+            message.success('Thanh toán hoàn tất');
           } else {
-            message.warning('Thanh toán hoàn tất nhưng có thể cần refresh để cập nhật trạng thái bàn');
+            message.warning('Thanh toán hoàn tất');
           }
         } catch (tratienError) {
           // Silent console
-          message.warning('Thanh toán hoàn tất nhưng có thể cần refresh để cập nhật trạng thái bàn');
+          message.warning('Thanh toán hoàn tất');
         }
       }
 
@@ -2078,7 +2179,7 @@ const BanHang = () => {
                     />
                     <Popconfirm
                       title="Xác nhận xóa món này?"
-                      onConfirm={() => removeProductFromOrder(item.maCt)}
+                      onConfirm={() => removeProductFromOrder(item.maCt || item.cthd)}
                     >
                       <Button
                         size="small"

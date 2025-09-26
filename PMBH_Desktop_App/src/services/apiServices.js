@@ -56,6 +56,38 @@ export async function getAllSanPham() {
   return await callApi('Mb_sanPham', 'data');
 }
 
+// Load hình ảnh sản phẩm từ database
+export async function loadProductImage(productId) {
+  try {
+    const result = await callApi('Mb_sanPham', 'loadImage', { maSp: productId });
+    return result;
+  } catch (error) {
+    console.error('Error loading product image:', error);
+    return null;
+  }
+}
+
+// Lấy URL hình ảnh sản phẩm đầy đủ
+export function getFullImageUrl(imagePath) {
+  if (!imagePath) return null;
+  
+  // Nếu đã là URL đầy đủ (http/https)
+  if (imagePath.startsWith('http://') || imagePath.startsWith('https://')) {
+    return imagePath;
+  }
+  
+  // Nếu là đường dẫn tương đối, tạo URL đầy đủ
+  const baseUrl = "http://192.168.1.92/gmac";
+  
+  // Xử lý đường dẫn bắt đầu bằng /
+  if (imagePath.startsWith('/')) {
+    return `${baseUrl}${imagePath}`;
+  }
+  
+  // Xử lý đường dẫn tương đối
+  return `${baseUrl}/${imagePath}`;
+}
+
 // Thêm chi tiết hóa đơn
 export async function themChiTietHoaDon(mahd, masp, soluong) {
   return await callApi('Mb_Cthd', 'themCtHd', { mahd, masp, soluong });
@@ -736,7 +768,8 @@ export async function taoHoaDon(maBan) {
 
 // Tạo chi tiết hóa đơn
 export async function taoCthd(maHd, maSp, soLuong) {
-  return await callApi('sl_lv0014', 'taoCtHd', { maHd, maSp, soLuong });
+  const result = await callApi('sl_lv0014', 'taoCtHd', { maHd, maSp, soLuong });
+  return result;
 }
 
 // Load danh sách chi tiết hóa đơn
@@ -753,8 +786,11 @@ export async function loadDsCthdV2(maHd) {
 export async function xoaCtHd(data) {
   // Support both direct maCt parameter and object parameter
   const maCt = typeof data === 'object' && data.maCt ? data.maCt : data;
+  
   // FIXED: Use correct function name from mobile logic pattern
-  return await callApi('sl_lv0014', 'xoaCthd', { maCt });
+  const result = await callApi('sl_lv0014', 'xoaCthd', { maCt });
+  
+  return result;
 }
 
 // Chuyển bàn (corrected parameters)
@@ -980,9 +1016,12 @@ export async function capNhatTrangThaiMon(idCthd, trangThaiMoi, ghiChu) {
 
 // Cập nhật số lượng chi tiết hóa đơn - Update invoice detail quantity
 export async function capNhatCtHd(updateData) {
-  // Function này đã được thay thế bằng UI modal để xử lý update quantity
-  // Không sử dụng nữa
-  return { success: true, message: 'Please use modal to update quantity' };
+  // Thử gọi API thật để update số lượng trực tiếp
+  const { maCt, soLuong, maHd } = updateData;
+  
+  const result = await callApi('sl_lv0014', 'capNhatCtHd', { maCt, soLuong, maHd });
+  
+  return result;
 }
 
 // Load trạng thái bàn theo hóa đơn - Get table status based on invoices

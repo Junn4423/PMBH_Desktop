@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Input, Typography, Spin, message } from 'antd';
 import { Search } from 'lucide-react';
-import { getAllSanPham, getLoaiSanPham } from '../../services/apiServices';
+import { getAllSanPham, getLoaiSanPham, loadProductImage, getFullImageUrl } from '../../services/apiServices';
 import ProductCard from '../../components/common/ProductCard';
 import { DEFAULT_IMAGES } from '../../constants';
 import './ChonSanPham.css';
@@ -86,16 +86,40 @@ const ChonSanPham = ({ onAddToCart }) => {
         productsData = Object.values(productsResponse);
       }
 
-      const formattedProducts = productsData.map(product => ({
-        id: product.maSp || product.id || product.maSP,
-        ten: product.tenSp || product.ten || product.tenSP,
-        gia: product.giaBan || product.gia || product.donGia || 0,
-        danhMuc: product.danhMuc || product.maLoai,
-        moTa: product.moTa || product.ghiChu || '',
-        hinhAnh: product.hinhAnh && product.hinhAnh !== DEFAULT_IMAGES.PRODUCT 
-          ? product.hinhAnh 
-          : null // Đặt null để component tự fallback về cafe.png
-      }));
+      // Enhanced product mapping with database image loading - Exclude "NL" products
+      const formattedProducts = await Promise.all(productsData
+        .filter(product => {
+          // Filter out products with codes starting with "NL" (Nguyên liệu)
+          const productCode = product.maSp || product.id || product.maSP || '';
+          return !productCode.toString().startsWith('NL');
+        })
+        .map(async (product) => {
+          let imageUrl = null;
+          
+          // First check if product has valid image URL
+          if (product.hinhAnh && product.hinhAnh !== DEFAULT_IMAGES.PRODUCT) {
+            imageUrl = getFullImageUrl(product.hinhAnh);
+          } else {
+            // Try to load image from database
+            try {
+              const imageData = await loadProductImage(product.maSp || product.id);
+              if (imageData && imageData.imagePath) {
+                imageUrl = getFullImageUrl(imageData.imagePath);
+              }
+            } catch (error) {
+              // Ignore individual image load errors
+            }
+          }
+
+          return {
+            id: product.maSp || product.id || product.maSP,
+            ten: product.tenSp || product.ten || product.tenSP,
+            gia: product.giaBan || product.gia || product.donGia || 0,
+            danhMuc: product.danhMuc || product.maLoai,
+            moTa: product.moTa || product.ghiChu || '',
+            hinhAnh: imageUrl // Will be null if no valid image found, ProductCard will use placeholder
+          };
+        }));
 
       setProducts(formattedProducts);
       setFilteredProducts(formattedProducts);
