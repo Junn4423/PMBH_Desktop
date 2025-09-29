@@ -112,8 +112,7 @@ const { Option } = Select;
 // View states based on flow requirements
 const VIEW_STATES = {
   TABLES: 'tables',        // Initial view - show table grid
-  INVOICE: 'invoice',      // Show invoice UI after selecting table  
-  PRODUCTS: 'products',    // Show product grid after clicking "select items"
+  PRODUCTS: 'products',    // Show product grid after clicking "select items" 
   COMBINED: 'combined'     // Combined view - invoice (25%) + products (75%)
 };
 
@@ -738,7 +737,7 @@ const BanHang = () => {
           message.success(`Đã load hóa đơn cho bàn ${table.name} - #${table.invoiceId}`);
         }
       } else {
-        // Bàn trống - tự động tạo hóa đơn mới và chuyển sang chọn món
+        // Bàn trống - tự động tạo hóa đơn mới và chuyển sang combined layout
         
         const response = await taoHoaDon(table.id);
         
@@ -756,10 +755,9 @@ const BanHang = () => {
           // Trigger refresh để cập nhật trạng thái bàn
           triggerQuickRefresh('INVOICE_CREATE');
           
-          // Tự động chuyển sang view chọn món cho bàn trống
-          // Việc tải danh mục/sản phẩm sẽ do component ChonSanPham đảm nhiệm
-          setCurrentView(VIEW_STATES.PRODUCTS);
-          return; // Kết thúc hàm tại đây để không chuyển sang INVOICE view
+          // Chuyển thẳng sang combined layout cho bàn trống
+          setCurrentView(VIEW_STATES.COMBINED);
+          return; // Kết thúc hàm tại đây
         } else {
           console.error('Invalid response from taoHoaDon:', response);
           throw new Error('Không thể tạo hóa đơn mới');
@@ -865,9 +863,6 @@ const BanHang = () => {
         
         // Trigger quick refresh sau khi thêm sản phẩm
         triggerQuickRefresh('ADD_PRODUCT');
-        
-        // Giữ nguyên view hiện tại, không chuyển về INVOICE
-        // setCurrentView(VIEW_STATES.INVOICE);
         
         // Đóng modal
         setShowQuantityModal(false);
@@ -1184,7 +1179,7 @@ const BanHang = () => {
   useEffect(() => {
     let trackingInterval;
     
-    if (currentInvoice && currentView === VIEW_STATES.INVOICE) {
+    if (currentInvoice && currentView === VIEW_STATES.COMBINED) {
       trackingInterval = setInterval(trackOrderStatus, 30000); // Track every 30 seconds
     }
     
@@ -1829,22 +1824,20 @@ const BanHang = () => {
 
   // Quay lại view trước
   const handleGoBack = () => {
-    if (currentView === VIEW_STATES.INVOICE) {
+    if (currentView === VIEW_STATES.PRODUCTS) {
+      setCurrentView(VIEW_STATES.COMBINED);
+      setSelectedCategory('all');
+      setSearchTerm('');
+    } else if (currentView === VIEW_STATES.COMBINED) {
       setCurrentView(VIEW_STATES.TABLES);
       setSelectedTable(null);
       setCurrentInvoice(null);
       setInvoiceDetails([]);
+      setSelectedCategory('all');
+      setSearchTerm('');
       
       // Trigger quick refresh khi quay về tables view
       triggerQuickRefresh('BACK_TO_TABLES');
-    } else if (currentView === VIEW_STATES.PRODUCTS) {
-      setCurrentView(VIEW_STATES.INVOICE);
-      setSelectedCategory('all');
-      setSearchTerm('');
-    } else if (currentView === VIEW_STATES.COMBINED) {
-      setCurrentView(VIEW_STATES.INVOICE);
-      setSelectedCategory('all');
-      setSearchTerm('');
     }
   };
 
@@ -2038,305 +2031,6 @@ const BanHang = () => {
     </div>
   );
 
-  const renderInvoiceView = () => {
-    
-    return (
-      <div className="invoice-view">
-        {/* Back Button Row */}
-        <div className="back-button-row">
-          <Button 
-            icon={<ArrowLeft size={16} />}
-            onClick={handleGoBack}
-            className="back-button"
-          >
-            Quay lại
-          </Button>
-        </div>
-        
-        <div className="view-header">
-          <div className="header-left">
-            <Title level={3} style={{ margin: 0 }}>
-              Hóa đơn - {selectedTable?.name}
-              {currentInvoice && ` (#${currentInvoice.maHd})`}
-              {currentInvoice?.isDraft && <Text type="warning"> (Tạm)</Text>}
-              {editingInvoice && <Text type="danger"> - ĐANG CHỈNH SỬA</Text>}
-            </Title>
-            {currentInvoice && (
-              <div style={{ marginTop: 8 }}>
-                <OrderStatus 
-                  invoice={currentInvoice}
-                  realTimeStatus={orderStatus}
-                />
-              </div>
-            )}
-          </div>
-          
-          <div className="header-right">
-            <Space>
-              {/* Table Operations Buttons */}
-              {currentInvoice && (
-                <Space.Compact>
-                  <Button 
-                    icon={<Merge size={16} />}
-                    onClick={openMergeTableModal}
-                    title="Gộp bàn này với bàn khác"
-                    disabled={loading || operationInProgress}
-                  >
-                    Gộp bàn
-                  </Button>
-                  
-                  <Button 
-                    icon={<Split size={16} />}
-                    onClick={() => setShowSplitTableModal(true)}
-                    title="Tách bàn này"
-                    disabled={loading || operationInProgress}
-                  >
-                    Tách bàn
-                  </Button>
-                  
-                  <Button 
-                    icon={<ArrowRight size={16} />}
-                    onClick={openTransferTableModal}
-                    title="Chuyển sang bàn khác"
-                    disabled={loading || operationInProgress}
-                  >
-                    Chuyển bàn
-                  </Button>
-                </Space.Compact>
-              )}
-              
-              <Divider type="vertical" />
-              
-              {/* Enhanced Invoice Management Buttons */}
-              <Button 
-                icon={<History size={16} />}
-                onClick={loadInvoiceHistory}
-                title="Lịch sử hóa đơn"
-              >
-                Lịch sử
-              </Button>
-              
-              {currentInvoice && (
-                <>
-                  {editingInvoice ? (
-                    <>
-                      <Button 
-                        type="primary"
-                        icon={<Save size={16} />}
-                        onClick={saveInvoiceEdits}
-                        title="Lưu chỉnh sửa"
-                      >
-                        Lưu
-                      </Button>
-                      
-                      <Button 
-                        icon={<X size={16} />}
-                        onClick={cancelInvoiceEdits}
-                        title="Hủy chỉnh sửa"
-                      >
-                        Hủy sửa
-                      </Button>
-                    </>
-                  ) : (
-                    <Button 
-                      icon={<Edit3 size={16} />}
-                      onClick={editInvoiceDetails}
-                      title="Chỉnh sửa hóa đơn"
-                    >
-                      Sửa
-                    </Button>
-                  )}
-                  
-                  <Button 
-                    icon={<Printer size={16} />}
-                    onClick={printInvoice}
-                    disabled={invoiceDetails.length === 0}
-                    title="In hóa đơn"
-                  >
-                    In
-                  </Button>
-                  
-                  {currentInvoice.isDraft && (
-                    <Button 
-                      type="default"
-                      icon={<CheckCircle size={16} />}
-                      onClick={convertDraftToOfficial}
-                      title="Chuyển thành chính thức"
-                    >
-                      Chính thức
-                    </Button>
-                  )}
-                  
-                  {!editingInvoice && (
-                    <Button 
-                      danger
-                      icon={<X size={16} />}
-                      onClick={cancelInvoice}
-                      title="Hủy hóa đơn"
-                    >
-                      Hủy HĐ
-                    </Button>
-                  )}
-                </>
-              )}
-              
-              {/* Ẩn nút "Chọn món" vì đã được tích hợp vào combined view */}
-            </Space>
-          </div>
-        </div>
-
-        {!currentInvoice ? (
-          <div className="empty-invoice">
-            <Users size={48} />
-            <Text>Không có hóa đơn nào được chọn</Text>
-            <Text type="secondary" style={{ marginTop: 8 }}>
-              Chọn một bàn để bắt đầu hoặc xem hóa đơn
-            </Text>
-          </div>
-        ) : (
-          <div className="invoice-content">
-            <div className="invoice-info">
-              <Text strong>Mã hóa đơn: {currentInvoice.maHd}</Text>
-              <br />
-              <Text>Bàn: {selectedTable?.name}</Text>
-            </div>
-            
-            <div className="invoice-items">
-              {invoiceDetails.length === 0 ? (
-                <div className="empty-items">
-                  <ShoppingCart size={48} />
-                  <Text>Chưa có món nào trong đơn hàng</Text>
-                </div>
-              ) : (
-              invoiceDetails.map(item => (
-                <div key={item.maCt} className="invoice-item">
-                  <div className="item-info">
-                    <Title level={5}>{item.tenSp}</Title>
-                    <Text type="secondary">
-                      {parseFloat(item.gia || item.giaBan || item.donGia || 0).toLocaleString('vi-VN')} đ
-                    </Text>
-                  </div>
-                  
-                  <div className="item-controls">
-                    <Button
-                      size="small"
-                      icon={<Minus size={12} />}
-                      onClick={() => updateProductQuantity(item, parseInt(item.sl || item.soLuong) - 1)}
-                    />
-                    <Button
-                      size="small"
-                      style={{ width: 80, margin: '0 8px' }}
-                      onClick={() => {
-                        setSelectedItemForUpdate(item);
-                        setNewQuantityForUpdate(parseInt(item.sl || item.soLuong));
-                        setShowUpdateQuantityModal(true);
-                      }}
-                    >
-                      {item.sl || item.soLuong}
-                    </Button>
-                    <Button
-                      size="small"
-                      icon={<Plus size={12} />}
-                      onClick={() => updateProductQuantity(item, parseInt(item.sl || item.soLuong) + 1)}
-                    />
-                    <Popconfirm
-                      title="Xác nhận xóa món này?"
-                      onConfirm={() => removeProductFromOrder(item.maCt || item.cthd)}
-                    >
-                      <Button
-                        size="small"
-                        danger
-                        icon={<Trash2 size={12} />}
-                        style={{ marginLeft: 8 }}
-                      />
-                    </Popconfirm>
-                  </div>
-                </div>
-              ))
-            )}
-          </div>
-
-          <Divider />
-
-          <div className="invoice-summary">
-            {/* Enhanced Invoice Summary với thuế, giảm giá */}
-            <div className="summary-details">
-              <div className="summary-row">
-                <Text>Tạm tính:</Text>
-                <Text>{invoiceSummary.subtotal.toLocaleString('vi-VN')} đ</Text>
-              </div>
-              
-              <div className="summary-row">
-                <Text>Thuế VAT (10%):</Text>
-                <Text>{invoiceSummary.tax.toLocaleString('vi-VN')} đ</Text>
-              </div>
-              
-              {invoiceSummary.discount > 0 && (
-                <div className="summary-row">
-                  <Text type="success">Giảm giá:</Text>
-                  <Text type="success">-{invoiceSummary.discount.toLocaleString('vi-VN')} đ</Text>
-                </div>
-              )}
-            </div>
-            
-            <Divider style={{ margin: '12px 0' }} />
-            
-            <div className="total-row">
-              <Text strong style={{ fontSize: '16px' }}>Tổng cộng: </Text>
-              <Text strong className="total-amount" style={{ fontSize: '18px', color: '#197dd3' }}>
-                {invoiceSummary.total.toLocaleString('vi-VN')} đ
-              </Text>
-            </div>
-            
-            {/* Thông tin thêm */}
-            <div className="invoice-meta">
-              <Space split={<Divider type="vertical" />}>
-                <Text type="secondary">Số món: {invoiceDetails.length}</Text>
-                <Text type="secondary">
-                  Thời gian: {new Date().toLocaleTimeString()}
-                </Text>
-                {currentInvoice?.isDraft && (
-                  <Text type="warning">Hóa đơn tạm</Text>
-                )}
-              </Space>
-            </div>
-          </div>
-
-          <div className="invoice-actions">
-            <Button
-              icon={<Clock size={16} />}
-              onClick={sendToKitchen}
-              style={{ marginBottom: 8 }}
-              block
-            >
-              Chuyển xuống bếp
-            </Button>
-            
-            <div style={{ marginBottom: 8 }}>
-              <ReceiptPrinter
-                invoice={currentInvoice}
-                invoiceDetails={invoiceDetails}
-                orderTotal={orderTotal}
-                paymentDetails={null}
-              />
-            </div>
-            
-            <Button
-              type="primary"
-              icon={<CreditCard size={16} />}
-              onClick={openPaymentModal}
-              disabled={invoiceDetails.length === 0}
-              block
-            >
-              Thanh toán ({orderTotal.toLocaleString('vi-VN')} đ)
-            </Button>
-          </div>
-        </div>
-      )}
-    </div>
-  );
-};
-
   const renderProductsView = () => (
     <Content className="products-content">
       {/* Back Button Row */}
@@ -2374,7 +2068,19 @@ const BanHang = () => {
       </div>
 
       <div className="combined-content">
-        {/* Left panel - Invoice (25%) */}
+        {/* Left panel - Products (75%) */}
+        <div className="products-panel">
+          <div className="panel-header">
+            <Title level={4} style={{ margin: 0, color: '#197dd3' }}>
+              Chọn món
+            </Title>
+          </div>
+          <div className="products-content-wrapper">
+            <ChonSanPham onAddToCart={addProductToOrder} />
+          </div>
+        </div>
+
+        {/* Right panel - Invoice (25%) */}
         <div className="invoice-panel">
           <div className="panel-header">
             <Title level={4} style={{ margin: 0, color: '#197dd3' }}>
@@ -2389,97 +2095,163 @@ const BanHang = () => {
               <Text>Không có hóa đơn</Text>
             </div>
           ) : (
-            <div className="invoice-summary">
-              <div className="invoice-info-compact">
-                <Text strong>Mã HĐ: {currentInvoice.maHd}</Text>
-                <br />
-                <Text>Bàn: {selectedTable?.name}</Text>
-              </div>
-              
-              <div className="invoice-items-compact">
-                {invoiceDetails.length === 0 ? (
-                  <div className="empty-items-compact">
-                    <ShoppingCart size={32} />
-                    <Text>Chưa có món</Text>
-                  </div>
-                ) : (
-                  invoiceDetails.map(item => (
-                    <div key={item.maCt} className="invoice-item-compact">
-                      <div className="item-info-compact">
-                        <Text strong>{item.tenSp}</Text>
-                        <div className="item-details">
-                          <Text type="secondary">SL: {item.sl}</Text>
-                          <Text type="secondary">
-                            {parseFloat(item.gia || item.giaBan || item.donGia || 0).toLocaleString('vi-VN')}đ
-                          </Text>
+            <>
+              <div className="invoice-summary">
+                <div className="invoice-info-compact">
+                  <Text strong>Mã HĐ: {currentInvoice.maHd}</Text>
+                  <br />
+                  <Text>Bàn: {selectedTable?.name}</Text>
+                </div>
+                
+                <div className="invoice-items-compact">
+                  {invoiceDetails.length === 0 ? (
+                    <div className="empty-items-compact">
+                      <ShoppingCart size={32} />
+                      <Text>Chưa có món</Text>
+                    </div>
+                  ) : (
+                    invoiceDetails.map(item => (
+                      <div key={item.maCt} className="invoice-item-compact">
+                        <div className="item-info-compact">
+                          <Text strong>{item.tenSp}</Text>
+                          <div className="item-details">
+                            <Text type="secondary">SL: {item.sl}</Text>
+                            <Text type="secondary">
+                              {parseFloat(item.gia || item.giaBan || item.donGia || 0).toLocaleString('vi-VN')}đ
+                            </Text>
+                          </div>
+                        </div>
+                        
+                        <div className="item-controls-compact">
+                          <Button
+                            size="small"
+                            icon={<Minus size={12} />}
+                            onClick={() => updateProductQuantity(item, parseInt(item.sl || item.soLuong || 1) - 1)}
+                            disabled={editingInvoice}
+                          />
+                          <span className="quantity-compact">{item.sl || item.soLuong || 1}</span>
+                          <Button
+                            size="small"
+                            icon={<Plus size={12} />}
+                            onClick={() => updateProductQuantity(item, parseInt(item.sl || item.soLuong || 1) + 1)}
+                            disabled={editingInvoice}
+                          />
                         </div>
                       </div>
-                      
-                      <div className="item-controls-compact">
-                        <Button
-                          size="small"
-                          icon={<Minus size={12} />}
-                          onClick={() => updateProductQuantity(item, (item.sl || item.soLuong || 1) - 1)}
-                          disabled={editingInvoice}
-                        />
-                        <span className="quantity-compact">{item.sl || item.soLuong || 1}</span>
-                        <Button
-                          size="small"
-                          icon={<Plus size={12} />}
-                          onClick={() => updateProductQuantity(item, (item.sl || item.soLuong || 1) + 1)}
-                          disabled={editingInvoice}
-                        />
-                      </div>
-                    </div>
-                  ))
-                )}
-              </div>
-
-              <div className="invoice-total-compact">
-                <div className="total-display">
-                  <Text strong style={{ fontSize: '16px' }}>Tổng: </Text>
-                  <Text strong className="total-amount" style={{ fontSize: '18px', color: '#197dd3' }}>
-                    {invoiceSummary.total.toLocaleString('vi-VN')} đ
-                  </Text>
+                    ))
+                  )}
                 </div>
               </div>
 
-              <div className="invoice-actions-compact">
-                <Button
-                  icon={<Clock size={14} />}
-                  onClick={sendToKitchen}
-                  size="small"
-                  block
-                  style={{ marginBottom: 8 }}
-                >
-                  Gửi bếp
-                </Button>
-                
-                <Button
-                  type="primary"
-                  icon={<CreditCard size={14} />}
-                  onClick={openPaymentModal}
-                  disabled={invoiceDetails.length === 0}
-                  size="small"
-                  block
-                >
-                  Thanh toán
-                </Button>
-              </div>
-            </div>
-          )}
-        </div>
+              {/* Fixed footer with total and actions */}
+              <div className="invoice-footer-fixed">
+                <div className="invoice-total-compact">
+                  <div className="total-display">
+                    <Text strong style={{ fontSize: '16px' }}>Tổng: </Text>
+                    <Text strong className="total-amount" style={{ fontSize: '22px', color: '#197dd3' }}>
+                      {invoiceSummary.total.toLocaleString('vi-VN')} đ
+                    </Text>
+                  </div>
+                </div>
 
-        {/* Right panel - Products (75%) */}
-        <div className="products-panel">
-          <div className="panel-header">
-            <Title level={4} style={{ margin: 0, color: '#197dd3' }}>
-              Chọn món
-            </Title>
-          </div>
-          <div className="products-content-wrapper">
-            <ChonSanPham onAddToCart={addProductToOrder} />
-          </div>
+                <div className="invoice-actions-compact">
+                  <Button
+                    icon={<Clock size={14} />}
+                    onClick={sendToKitchen}
+                    size="small"
+                    block
+                    style={{ marginBottom: 8 }}
+                  >
+                    Gửi bếp
+                  </Button>
+                  
+                  <Button
+                    type="primary"
+                    icon={<CreditCard size={14} />}
+                    onClick={openPaymentModal}
+                    disabled={invoiceDetails.length === 0}
+                    size="small"
+                    block
+                    style={{ marginBottom: 8 }}
+                  >
+                    Thanh toán
+                  </Button>
+
+                  {/* Hóa đơn management buttons */}
+                  <div className="invoice-management-buttons" style={{ marginBottom: 8 }}>
+                    <Button
+                      icon={<Printer size={14} />}
+                      onClick={printInvoice}
+                      disabled={invoiceDetails.length === 0}
+                      size="small"
+                      style={{ marginRight: 4, width: 'calc(50% - 2px)' }}
+                      title="In hóa đơn đầy đủ"
+                    >
+                      In đầy đủ
+                    </Button>
+                    
+                    <div style={{ width: 'calc(50% - 2px)' }}>
+                      <ReceiptPrinter
+                        invoice={currentInvoice}
+                        invoiceDetails={invoiceDetails}
+                        orderTotal={invoiceSummary.total}
+                        paymentDetails={null}
+                        size="small"
+                        style={{ width: '100%' }}
+                      />
+                    </div>
+                    
+                    {!editingInvoice && (
+                      <Button
+                        danger
+                        icon={<X size={14} />}
+                        onClick={cancelInvoice}
+                        size="small"
+                        block
+                      >
+                        Hủy HĐ
+                      </Button>
+                    )}
+                  </div>
+
+                  {/* Table management buttons */}
+                  {currentInvoice && !currentInvoice.isDraft && (
+                    <div className="table-management-buttons">
+                      <Button
+                        icon={<ArrowRight size={14} />}
+                        onClick={openTransferTableModal}
+                        disabled={loading || operationInProgress}
+                        size="small"
+                        style={{ marginRight: 4, marginBottom: 4, width: 'calc(50% - 2px)' }}
+                      >
+                        Chuyển bàn
+                      </Button>
+                      
+                      <Button
+                        icon={<Users size={14} />}
+                        onClick={openMergeTableModal}
+                        disabled={loading || operationInProgress}
+                        size="small"
+                        style={{ marginBottom: 4, width: 'calc(50% - 2px)' }}
+                      >
+                        Gộp bàn
+                      </Button>
+                      
+                      <Button
+                        icon={<Split size={14} />}
+                        onClick={() => setShowSplitTableModal(true)}
+                        disabled={loading || operationInProgress}
+                        size="small"
+                        block
+                      >
+                        Tách bàn
+                      </Button>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </>
+          )}
         </div>
       </div>
     </div>
@@ -2489,7 +2261,6 @@ const BanHang = () => {
   return (
     <div className="banhang-container">
       {currentView === VIEW_STATES.TABLES && renderTablesView()}
-      {currentView === VIEW_STATES.INVOICE && renderInvoiceView()}
       {currentView === VIEW_STATES.PRODUCTS && renderProductsView()}
       {currentView === VIEW_STATES.COMBINED && renderCombinedView()}
       

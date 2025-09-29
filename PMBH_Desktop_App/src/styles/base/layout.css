@@ -78,7 +78,7 @@
 
 .app-content {
   flex: 1;
-  overflow: auto;
+  overflow: hidden; /* Chặn hoàn toàn scroll */
   padding: var(--content-padding);
   background: transparent;
   position: relative;
