@@ -961,7 +961,7 @@ export async function tratien(donhangid, bangid, trangthai, cusid = '') {
   return await callApi('sl_lv0201', 'ajaxaproval', { 
     donhangid,  // Mã hóa đơn
     bangid,     // ID bàn 
-    trangthai,  // 1=chờ thanh toán, 2=thanh toán hoàn tất, 3=kích hoạt chờ thanh toán, 4=hủy bill, 5=báo bill
+    trangthai: 2,  // 1=chờ thanh toán, 2=thanh toán hoàn tất, 3=kích hoạt chờ thanh toán, 4=hủy bill, 5=báo bill
     cusid       // Mã khách hàng (optional)
   });
 }

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { 
   Layout, 
   Row, 
@@ -85,7 +85,8 @@ import {
   chuyenBanEnhanced,
   tachBanEnhanced,
   loadProductImage,
-  getFullImageUrl
+  getFullImageUrl,
+  layDsMonCho
 } from '../../services/apiServices';
 
 // Import components
@@ -185,6 +186,25 @@ const BanHang = () => {
   const [animationTables, setAnimationTables] = useState({ source: null, target: null });
   const [operationInProgress, setOperationInProgress] = useState(false);
 
+  // State theo dõi món chờ bếp/bar
+  const [pendingKitchenOrders, setPendingKitchenOrders] = useState([]);
+
+  // Performance refs to avoid duplicated network calls/timeouts
+  const tableStatusRequestRef = useRef(null);
+  const quickRefreshTimeoutRef = useRef(null);
+
+  const pendingKitchenIdSet = useMemo(() => {
+    const idSet = new Set();
+    if (Array.isArray(pendingKitchenOrders)) {
+      pendingKitchenOrders.forEach(order => {
+        if (order?.idCthd) {
+          idSet.add(order.idCthd.toString());
+        }
+      });
+    }
+    return idSet;
+  }, [pendingKitchenOrders]);
+
   // Helper functions cho table status
   const getTableBadgeStatus = (status) => {
     switch (status) {
@@ -229,38 +249,57 @@ const BanHang = () => {
     }
   };
 
+  const arePendingListsEqual = (prev = [], next = []) => {
+    if (prev.length !== next.length) return false;
+    const normalize = (list) => list
+      .map(item => `${item.idCthd || item.id || ''}-${item.soLuong || 0}`)
+      .sort()
+      .join('|');
+    return normalize(prev) === normalize(next);
+  };
+
+  const areTablesEqual = (prevTables = [], nextTables = []) => {
+    if (prevTables.length !== nextTables.length) return false;
+    const prevMap = new Map(prevTables.map(table => [table.id, table]));
+    for (const nextTable of nextTables) {
+      const prevTable = prevMap.get(nextTable.id);
+      if (!prevTable) return false;
+      if (
+        prevTable.status !== nextTable.status ||
+        prevTable.invoiceId !== nextTable.invoiceId ||
+        prevTable.totalAmount !== nextTable.totalAmount ||
+        prevTable.itemCount !== nextTable.itemCount ||
+        prevTable.hasPendingKitchenItems !== nextTable.hasPendingKitchenItems ||
+        prevTable.sittingTime !== nextTable.sittingTime
+      ) {
+        return false;
+      }
+      const prevPending = (prevTable.pendingKitchenOrderIds || []).join(',');
+      const nextPending = (nextTable.pendingKitchenOrderIds || []).join(',');
+      if (prevPending !== nextPending) {
+        return false;
+      }
+    }
+    return true;
+  };
+
   // Load dữ liệu ban đầu
   useEffect(() => {
     loadInitialData();
   }, []);
 
-  // Auto refresh effect cho real-time table status
-  useEffect(() => {
-    let intervalId;
-    
-    if (autoRefreshEnabled && currentView === VIEW_STATES.TABLES) {
-      // Auto refresh mỗi 30 giây khi đang ở view TABLES
-      intervalId = setInterval(() => {
-        refreshTableStatusOnly();
-      }, 30000); // 30 seconds
-    }
+  // Manual refresh only - remove auto refresh to reduce lag
+  // User can manually refresh or refresh will happen after database actions
 
-    return () => {
-      if (intervalId) {
-        clearInterval(intervalId);
-      }
-    };
-  }, [autoRefreshEnabled, currentView]);
-
-  // Quick refresh effect sau khi có action
+  // Reduced quick refresh frequency to prevent lag
   useEffect(() => {
     let quickIntervalId;
     
     if (quickRefreshEnabled && currentView === VIEW_STATES.TABLES) {
-      // Quick refresh mỗi 2 giây trong 10 giây sau action
+      // Quick refresh every 5 seconds for 15 seconds after action
       quickIntervalId = setInterval(() => {
-        refreshTableStatusOnly();
-      }, 2000); // 2 seconds
+        refreshTableStatusOnly({ skipIfBusy: true });
+      }, 5000); // 5 seconds - reduced frequency
     }
 
     return () => {
@@ -270,6 +309,15 @@ const BanHang = () => {
     };
   }, [quickRefreshEnabled, currentView]);
 
+  useEffect(() => {
+    return () => {
+      if (quickRefreshTimeoutRef.current) {
+        clearTimeout(quickRefreshTimeoutRef.current);
+        quickRefreshTimeoutRef.current = null;
+      }
+    };
+  }, []);
+
   // Manual refresh handler
   const handleManualRefresh = async () => {
     setLastRefresh(new Date());
@@ -278,54 +326,39 @@ const BanHang = () => {
   };
 
   // Refresh chỉ trạng thái bàn (không reload toàn bộ)
-  const refreshTableStatusOnly = async () => {
+  const refreshTableStatusOnly = async (options = {}) => {
     if (tables.length === 0) return;
     
     try {
-      setLoading(true);
-      await loadTableStatuses(tables);
+      await loadTableStatuses(tables, { silent: true, ...options });
       setLastRefresh(new Date());
     } catch (error) {
   // Silent console
-    } finally {
-      setLoading(false);
     }
   };
 
-  // Trigger quick refresh sau khi có action
+  // Trigger optimized refresh after user actions
   const triggerQuickRefresh = (actionType) => {
     setLastAction({ type: actionType, timestamp: new Date() });
     setQuickRefreshEnabled(true);
-    
-    // Refresh ngay lập tức
-    setTimeout(() => {
-      refreshTableStatusOnly();
-    }, 500); // 0.5 giây
+    refreshTableStatusOnly({ skipIfBusy: true });
 
-    // Refresh lần 2 sau 2 giây để đảm bảo
-    setTimeout(() => {
-      refreshTableStatusOnly();
-    }, 2000); // 2 giây
+    if (quickRefreshTimeoutRef.current) {
+      clearTimeout(quickRefreshTimeoutRef.current);
+    }
 
-    // Tắt quick refresh sau 10 giây
-    setTimeout(() => {
+    // Shorter quick refresh period - 15 seconds instead of 10
+    quickRefreshTimeoutRef.current = setTimeout(() => {
       setQuickRefreshEnabled(false);
-    }, 10000);
+      quickRefreshTimeoutRef.current = null;
+    }, 15000);
   };
 
-  // Auto-refresh table statuses trong Tables view
+  // Remove auto-refresh for table statuses to reduce lag
+  // Only refresh on user action or manual refresh
   useEffect(() => {
-    let interval;
-    if (currentView === VIEW_STATES.TABLES && tables.length > 0) {
-      // Refresh mỗi 30 giây
-      interval = setInterval(() => {
-        loadTableStatuses(tables);
-      }, 30000);
-    }
-    
-    return () => {
-      if (interval) clearInterval(interval);
-    };
+    // Removed automatic 30-second refresh to improve performance
+    // Tables will only refresh when user performs actions or manually refreshes
   }, [currentView, tables]);
   
   // Tính toán tổng tiền khi invoice details thay đổi
@@ -343,7 +376,7 @@ const BanHang = () => {
     }
   }, [invoiceDetails]);
 
-  // Load dữ liệu ban đầu - chỉ tables và areas
+  // Load dữ liệu ban đầu - chỉ tables và areas, không load products để tránh lag
   const loadInitialData = async () => {
     // Debug API functions availability
     debugAPIFunctions();
@@ -351,10 +384,11 @@ const BanHang = () => {
     // Make payment test available globally for debugging
     window.testPaymentAPI = quickPaymentTest;
     
+    // Only load essential data initially - products loaded lazily when needed
     await Promise.all([
       loadTables(),
-      loadAreas(),
-      loadProducts() // Load products vào để sẵn sàng cho việc update quantity
+      loadAreas()
+      // Remove loadProducts() from initial load to improve startup performance
     ]);
   };
 
@@ -382,7 +416,7 @@ const BanHang = () => {
       setTables(tablesData);
 
       // Load trạng thái bàn riêng biệt
-      await loadTableStatuses(tablesData);
+  await loadTableStatuses(tablesData, { silent: true });
       
       // TEMPORARY: Add mock data for testing if no tables loaded
       if (tablesData.length === 0) {
@@ -438,113 +472,170 @@ const BanHang = () => {
   };
 
   // Load trạng thái bàn theo hóa đơn - sử dụng API getChiTietHoaDonRong
-  const loadTableStatuses = async (currentTables) => {
+  const loadTableStatuses = async (currentTables, options = {}) => {
+    const { silent = false, skipIfBusy = false } = options;
     if (!currentTables || currentTables.length === 0) return;
-    
-    try {
-      // Sử dụng API getChiTietHoaDonRong để lấy chi tiết hóa đơn kể cả hóa đơn rỗng
-      const statusResponse = await getChiTietHoaDonRong();
-      
-      if (Array.isArray(statusResponse)) {
+
+    if (tableStatusRequestRef.current) {
+      if (skipIfBusy) {
+        return;
+      }
+      return tableStatusRequestRef.current;
+    }
+
+    const requestPromise = (async () => {
+      if (!silent) {
+        setLoading(true);
+      }
+
+      try {
+        // Lấy song song trạng thái hóa đơn và các món đang chờ ở bếp/bar
+        const [statusResponse, pendingResponseRaw] = await Promise.all([
+          getChiTietHoaDonRong(),
+          layDsMonCho().catch(() => [])
+        ]);
+
+        const normalizedPending = Array.isArray(pendingResponseRaw)
+          ? pendingResponseRaw
+              .map(order => ({
+                ...order,
+                idBan: order?.idBan ? order.idBan.toString() : '',
+                idCthd: order?.idCthd ? order.idCthd.toString() : ''
+              }))
+              .filter(order => order.idBan && order.idCthd)
+          : [];
+
+        const pendingByTableMap = normalizedPending.reduce((acc, order) => {
+          if (!acc[order.idBan]) acc[order.idBan] = [];
+          acc[order.idBan].push(order);
+          return acc;
+        }, {});
+
+        setPendingKitchenOrders(prev => (
+          arePendingListsEqual(prev, normalizedPending) ? prev : normalizedPending
+        ));
         
-        const updatedTables = await Promise.all(
-          currentTables.map(async (table) => {
-            
-            // Tìm hóa đơn theo idBan
-            const tableInvoice = statusResponse.find(invoice => {
-              const matches = invoice.idBan === table.id || 
-                             parseInt(invoice.idBan) === parseInt(table.id);
-              if (matches) {
-              }
-              return matches;
-            });
-            
-            if (tableInvoice) {
+        if (Array.isArray(statusResponse)) {
+          const updatedTables = await Promise.all(
+            currentTables.map(async (table) => {
               
-              // Bàn có hóa đơn (kể cả hóa đơn rỗng với tongTien = 0)
-              const invoiceId = tableInvoice.idDonHang;
-              const totalAmount = parseFloat(tableInvoice.tongTien) || 0;
-              
-              try {
-                // Load chi tiết hóa đơn để lấy danh sách món
-                const invoiceDetails = await getChiTietHoaDonTheoMaHD(invoiceId);
-                
-                // Tính thời gian ngồi
-                let sittingTime = '';
-                if (tableInvoice.thoiGian) {
-                  try {
-                    const startTime = new Date(tableInvoice.thoiGian);
-                    const now = new Date();
-                    const diffMinutes = Math.floor((now - startTime) / 60000);
-                    const hours = Math.floor(diffMinutes / 60);
-                    const minutes = diffMinutes % 60;
-                    sittingTime = hours > 0 ? `${hours}h ${minutes}m` : `${minutes}m`;
-                  } catch (timeError) {
-                    // Silent console
-                    sittingTime = '';
-                  }
+              // Tìm hóa đơn theo idBan
+              const tableInvoice = statusResponse.find(invoice => {
+                const matches = invoice.idBan === table.id || 
+                               parseInt(invoice.idBan) === parseInt(table.id);
+                if (matches) {
                 }
-
-                // Tính số món (những món có sl > 0)
-                const itemsWithQuantity = Array.isArray(invoiceDetails) 
-                  ? invoiceDetails.filter(item => parseInt(item.sl) > 0) 
-                  : [];
-
-                const result = {
-                  ...table,
-                  status: 'occupied', // Bàn có hóa đơn luôn là occupied
-                  invoiceId,
-                  customerCount: 0, // API không trả về soKhach
-                  orderTime: tableInvoice.thoiGian || null,
-                  sittingTime,
-                  totalAmount,
-                  itemCount: itemsWithQuantity.length,
-                  orderItems: itemsWithQuantity.slice(0, 3),
-                  isEmptyInvoice: totalAmount === 0 // Đánh dấu hóa đơn rỗng
-                };
+                return matches;
+              });
+              const tableIdStr = table.id?.toString() || '';
+              const tablePendingOrders = pendingByTableMap[tableIdStr] || [];
+              
+              if (tableInvoice) {
                 
-                return result;
-              } catch (error) {
-                // Silent console
+                // Bàn có hóa đơn (kể cả hóa đơn rỗng với tongTien = 0)
+                const invoiceId = tableInvoice.idDonHang;
+                const totalAmount = parseFloat(tableInvoice.tongTien) || 0;
+                
+                try {
+                  // Load chi tiết hóa đơn để lấy danh sách món
+                  const invoiceDetails = await getChiTietHoaDonTheoMaHD(invoiceId);
+                  
+                  // Tính thời gian ngồi
+                  let sittingTime = '';
+                  if (tableInvoice.thoiGian) {
+                    try {
+                      const startTime = new Date(tableInvoice.thoiGian);
+                      const now = new Date();
+                      const diffMinutes = Math.floor((now - startTime) / 60000);
+                      const hours = Math.floor(diffMinutes / 60);
+                      const minutes = diffMinutes % 60;
+                      sittingTime = hours > 0 ? `${hours}h ${minutes}m` : `${minutes}m`;
+                    } catch (timeError) {
+                      // Silent console
+                      sittingTime = '';
+                    }
+                  }
+
+                  // Tính số món (những món có sl > 0)
+                  const itemsWithQuantity = Array.isArray(invoiceDetails) 
+                    ? invoiceDetails.filter(item => parseInt(item.sl) > 0) 
+                    : [];
+
+                  const result = {
+                    ...table,
+                    status: 'occupied', // Bàn có hóa đơn luôn là occupied
+                    invoiceId,
+                    customerCount: 0, // API không trả về soKhach
+                    orderTime: tableInvoice.thoiGian || null,
+                    sittingTime,
+                    totalAmount,
+                    itemCount: itemsWithQuantity.length,
+                    orderItems: itemsWithQuantity.slice(0, 3),
+                    isEmptyInvoice: totalAmount === 0,
+                    hasPendingKitchenItems: tablePendingOrders.length > 0,
+                    pendingKitchenOrders: tablePendingOrders,
+                    pendingKitchenOrderIds: tablePendingOrders.map(order => order.idCthd)
+                  };
+                  
+                  return result;
+                } catch (error) {
+                  // Silent console
+                  return {
+                    ...table,
+                    status: 'occupied',
+                    invoiceId,
+                    customerCount: 0,
+                    orderTime: tableInvoice.thoiGian || null,
+                    sittingTime: '',
+                    totalAmount,
+                    itemCount: 0,
+                    orderItems: [],
+                    isEmptyInvoice: totalAmount === 0,
+                    hasPendingKitchenItems: tablePendingOrders.length > 0,
+                    pendingKitchenOrders: tablePendingOrders,
+                    pendingKitchenOrderIds: tablePendingOrders.map(order => order.idCthd)
+                  };
+                }
+              } else {
+                // Bàn không có hóa đơn = bàn trống
                 return {
                   ...table,
-                  status: 'occupied',
-                  invoiceId,
+                  status: 'available',
+                  invoiceId: null,
                   customerCount: 0,
-                  orderTime: tableInvoice.thoiGian || null,
+                  orderTime: null,
                   sittingTime: '',
-                  totalAmount,
+                  totalAmount: 0,
                   itemCount: 0,
                   orderItems: [],
-                  isEmptyInvoice: totalAmount === 0
+                  isEmptyInvoice: false,
+                  hasPendingKitchenItems: false,
+                  pendingKitchenOrders: [],
+                  pendingKitchenOrderIds: []
                 };
               }
-            } else {
-              // Bàn không có hóa đơn = bàn trống
-              return {
-                ...table,
-                status: 'available',
-                invoiceId: null,
-                customerCount: 0,
-                orderTime: null,
-                sittingTime: '',
-                totalAmount: 0,
-                itemCount: 0,
-                orderItems: [],
-                isEmptyInvoice: false
-              };
-            }
-          })
-        );
-        
-        setTables(updatedTables);
-      } else {
+            })
+          );
+          
+          setTables(prevTables => (
+            areTablesEqual(prevTables, updatedTables) ? prevTables : updatedTables
+          ));
+        } else {
   // Silent console
+        }
+      } catch (error) {
+  // Silent console
+        // Don't show error message for status loading failure
+      } finally {
+        if (!silent) {
+          setLoading(false);
+        }
+        tableStatusRequestRef.current = null;
       }
-    } catch (error) {
-  // Silent console
-      // Don't show error message for status loading failure
-    }
+    })();
+
+    tableStatusRequestRef.current = requestPromise;
+    return requestPromise;
   };
 
   // Load danh sách khu vực
@@ -1263,7 +1354,30 @@ const BanHang = () => {
       return;
     }
 
-    setShowPaymentModal(true);
+    // Check if current table has pending kitchen items
+    const currentTable = selectedTable;
+    const hasPendingItems = currentTable?.hasPendingKitchenItems || 
+      invoiceDetails.some(item => {
+        const rawId = item.maCt || item.cthd || item.idCthd || item.id || item.lv001;
+        return rawId && pendingKitchenIdSet.has(rawId.toString());
+      });
+
+    if (hasPendingItems) {
+      Modal.confirm({
+        title: 'Xác nhận thanh toán',
+        content: 'Bàn này có món chưa xong - xác nhận thanh toán?',
+        okText: 'Thanh toán',
+        cancelText: 'Hủy',
+        onOk: () => {
+          setShowPaymentModal(true);
+        },
+        onCancel: () => {
+          // Do nothing, just close the modal
+        }
+      });
+    } else {
+      setShowPaymentModal(true);
+    }
   };
 
   // Legacy payment function (kept for compatibility)
@@ -1910,7 +2024,7 @@ const BanHang = () => {
         {filteredTables.map(table => (
           <Card
             key={table.id}
-            className={`table-card ${table.status}`}
+            className={`table-card ${table.status} ${table.hasPendingKitchenItems ? 'table-pending-blink' : ''}`}
             onClick={() => handleTableSelect(table)}
             hoverable={false}
             bodyStyle={{ 
@@ -1953,6 +2067,11 @@ const BanHang = () => {
                     {getTableStatusText(table.status)}
                   </Text>
                 </div>
+                {table.hasPendingKitchenItems && (
+                  <div className="table-pending-pill">
+                    Đang chờ bếp
+                  </div>
+                )}
               </div>
             </div>
             
@@ -2000,6 +2119,28 @@ const BanHang = () => {
                     <span style={{ fontWeight: 'bold' }}>
                       {table.itemCount}
                     </span>
+                  </div>
+                )}
+                {table.hasPendingKitchenItems && (
+                  <div className="table-pending-info">
+                    <span>Đang chế biến:</span>
+                    <span style={{ fontWeight: 'bold' }}>
+                      {table.pendingKitchenOrders.length} món
+                    </span>
+                  </div>
+                )}
+                {table.hasPendingKitchenItems && (
+                  <div className="table-pending-list">
+                    {table.pendingKitchenOrders.slice(0, 3).map((pendingItem, idx) => (
+                      <div key={`${pendingItem.idCthd || idx}`} className="pending-item-row">
+                        • {pendingItem.tenNuoc} ({pendingItem.soLuong})
+                      </div>
+                    ))}
+                    {table.pendingKitchenOrders.length > 3 && (
+                      <div className="pending-item-row more">
+                        ...còn {table.pendingKitchenOrders.length - 3} món khác
+                      </div>
+                    )}
                   </div>
                 )}
                 {table.orderItems && table.orderItems.length > 0 && (
@@ -2110,35 +2251,48 @@ const BanHang = () => {
                       <Text>Chưa có món</Text>
                     </div>
                   ) : (
-                    invoiceDetails.map(item => (
-                      <div key={item.maCt} className="invoice-item-compact">
-                        <div className="item-info-compact">
-                          <Text strong>{item.tenSp}</Text>
-                          <div className="item-details">
-                            <Text type="secondary">SL: {item.sl}</Text>
-                            <Text type="secondary">
-                              {parseFloat(item.gia || item.giaBan || item.donGia || 0).toLocaleString('vi-VN')}đ
-                            </Text>
+                    invoiceDetails.map((item, idx) => {
+                      const rawId = item.maCt || item.cthd || item.idCthd || item.id || item.lv001;
+                      const detailId = rawId ? rawId.toString() : `item-${idx}`;
+                      const isPendingItem = rawId && pendingKitchenIdSet.has(rawId.toString());
+                      return (
+                        <div
+                          key={detailId}
+                          className={`invoice-item-compact ${isPendingItem ? 'invoice-item-pending' : ''}`}
+                        >
+                          <div className="item-info-compact">
+                            <div className="item-info-header">
+                              <Text strong>{item.tenSp}</Text>
+                              {isPendingItem && (
+                                <span className="kitchen-status-tag">Đang chế biến</span>
+                              )}
+                            </div>
+                            <div className="item-details">
+                              <Text type="secondary">SL: {item.sl}</Text>
+                              <Text type="secondary">
+                                {parseFloat(item.gia || item.giaBan || item.donGia || 0).toLocaleString('vi-VN')}đ
+                              </Text>
+                            </div>
+                          </div>
+                          
+                          <div className="item-controls-compact">
+                            <Button
+                              size="small"
+                              icon={<Minus size={12} />}
+                              onClick={() => updateProductQuantity(item, parseInt(item.sl || item.soLuong || 1) - 1)}
+                              disabled={editingInvoice}
+                            />
+                            <span className="quantity-compact">{item.sl || item.soLuong || 1}</span>
+                            <Button
+                              size="small"
+                              icon={<Plus size={12} />}
+                              onClick={() => updateProductQuantity(item, parseInt(item.sl || item.soLuong || 1) + 1)}
+                              disabled={editingInvoice}
+                            />
                           </div>
                         </div>
-                        
-                        <div className="item-controls-compact">
-                          <Button
-                            size="small"
-                            icon={<Minus size={12} />}
-                            onClick={() => updateProductQuantity(item, parseInt(item.sl || item.soLuong || 1) - 1)}
-                            disabled={editingInvoice}
-                          />
-                          <span className="quantity-compact">{item.sl || item.soLuong || 1}</span>
-                          <Button
-                            size="small"
-                            icon={<Plus size={12} />}
-                            onClick={() => updateProductQuantity(item, parseInt(item.sl || item.soLuong || 1) + 1)}
-                            disabled={editingInvoice}
-                          />
-                        </div>
-                      </div>
-                    ))
+                      );
+                    })
                   )}
                 </div>
               </div>
@@ -2505,7 +2659,7 @@ const BanHang = () => {
           
           <div style={{ marginTop: 16, padding: 12, backgroundColor: '#fff2e8', borderRadius: 6 }}>
             <Text type="warning" style={{ fontSize: 12 }}>
-              ⚠️ Món sẽ được xóa và thêm lại với số lượng mới
+              Món sẽ được xóa và thêm lại với số lượng mới
             </Text>
           </div>
         </div>

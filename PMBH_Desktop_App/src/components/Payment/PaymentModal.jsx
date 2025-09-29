@@ -35,6 +35,7 @@ const PaymentModal = ({
   const [discountType, setDiscountType] = useState('percent'); // 'amount' or 'percent'
   const [discountAmount, setDiscountAmount] = useState(0);
   const [finalTotal, setFinalTotal] = useState(orderTotal);
+  const [paymentLoading, setPaymentLoading] = useState(false);
 
   // Currency exchange rates
   const exchangeRates = {
@@ -174,7 +175,7 @@ const PaymentModal = ({
         return;
       }
 
-      setLoading(true);
+      setPaymentLoading(true);
 
       // Call the original working payment API
       const result = await thanhToanHoaDon(invoice.maHd);
@@ -210,7 +211,7 @@ const PaymentModal = ({
     } catch (error) {
       message.error('Lỗi thanh toán: ' + (error.message || 'Lỗi không xác định'));
     } finally {
-      setLoading(false);
+      setPaymentLoading(false);
     }
   };
 
@@ -613,9 +614,6 @@ const PaymentModal = ({
         {/* Footer với nút thanh toán chính */}
         <div className="payment-footer">
           <div className="footer-left">
-            <Text className="total-display">
-              Tổng cần thanh toán: <span className="total-amount">{finalTotal.toLocaleString()} VND</span>
-            </Text>
           </div>
           <div className="footer-center">
             <Button 
@@ -631,7 +629,7 @@ const PaymentModal = ({
             <Button 
               className="main-payment-btn"
               onClick={handleConfirmPayment}
-              loading={loading}
+              loading={paymentLoading}
               size="large"
               type="primary"
               disabled={!enoughPayment}

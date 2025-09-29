@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, memo } from 'react';
 import { Typography } from 'antd';
 import cafeImg from '../../assets/Img/cafe.png';
 import { loadProductImage, getFullImageUrl } from '../../services/apiServices';
@@ -36,31 +36,29 @@ const ProductCard = ({
 
   const imageSize = getImageSize();
 
-  // Load product image from database on component mount
+  // Lazy load product image only when needed
   useEffect(() => {
-    loadProductImageFromDB();
-  }, [product?.id]);
+    // Skip loading database image initially - load only on hover or when visible
+    if (product?.hinhAnh && isValidImage(product.hinhAnh)) {
+      const fullUrl = getFullImageUrl(product.hinhAnh);
+      setProductImageUrl(fullUrl);
+      setImageLoading(false);
+    } else {
+      setImageLoading(false);
+    }
+  }, [product?.id, product?.hinhAnh]);
 
   const loadProductImageFromDB = async () => {
-    if (!product?.id) {
-      setImageLoading(false);
-      return;
+    if (!product?.id || productImageUrl) {
+      return; // Skip if already loaded
     }
 
     try {
       setImageLoading(true);
-      
-      // First check if product already has a valid image URL
-      if (isValidImage(product.hinhAnh)) {
-        const fullUrl = getFullImageUrl(product.hinhAnh);
+      const imageData = await loadProductImage(product.id);
+      if (imageData && imageData.imagePath) {
+        const fullUrl = getFullImageUrl(imageData.imagePath);
         setProductImageUrl(fullUrl);
-      } else {
-        // Try to load image from database
-        const imageData = await loadProductImage(product.id);
-        if (imageData && imageData.imagePath) {
-          const fullUrl = getFullImageUrl(imageData.imagePath);
-          setProductImageUrl(fullUrl);
-        }
       }
     } catch (error) {
       console.error('Error loading product image:', error);
@@ -141,6 +139,7 @@ const ProductCard = ({
     <div 
       className={cardClasses}
       onClick={handleCardClick}
+      onMouseEnter={loadProductImageFromDB} // Lazy load on hover
       style={{ cursor: loading ? 'default' : 'pointer' }}
       {...props}
     >
@@ -220,4 +219,14 @@ const ProductCard = ({
   );
 };
 
-export default ProductCard;
+export default memo(ProductCard, (prevProps, nextProps) => {
+  // Only re-render if essential props change
+  return (
+    prevProps.product?.id === nextProps.product?.id &&
+    prevProps.product?.ten === nextProps.product?.ten &&
+    prevProps.product?.gia === nextProps.product?.gia &&
+    prevProps.product?.hinhAnh === nextProps.product?.hinhAnh &&
+    prevProps.loading === nextProps.loading &&
+    prevProps.selected === nextProps.selected
+  );
+});

@@ -1761,7 +1761,7 @@ class sl_lv0014 extends lv_controler
 		echo $userID;
 		$cusid=$userID;
 		if(trim($cusid)=='' || $cusid=='Mã KH'){
-			$vsql="update sl_lv0013 set lv002='',lv003='',lv011=1,lv005=concat(curdate(),' ',curtime()),lv032='".$userID."' where lv001='".$donhangid."' and lv011=0";
+			$vsql="update sl_lv0013 set lv002='',lv003='',lv011=2,lv005=concat(curdate(),' ',curtime()),lv032='".$userID."' where lv001='".$donhangid."' and lv011=0";
 			$vresult=db_query($vsql);
 			// echo "1+ '$vsql'";
 			// echo "1+ '$vsql'";
@@ -1770,7 +1770,7 @@ class sl_lv0014 extends lv_controler
 		{
 			//$lvsl_lv0001=new sl_lv0001($_SESSION['ERPSOFV2RRight'],$_SESSION['ERPSOFV2RUserID'],'Sl0001');
 			//$lvsl_lv0001->LV_LoadID($cusid);
-			$vsql="update sl_lv0013 set  lv011=1,lv005=concat(curdate(),' ',curtime()),lv032='".$userID."' where lv001='".$donhangid."' and lv011=0";
+			$vsql="update sl_lv0013 set  lv011=2,lv005=concat(curdate(),' ',curtime()),lv032='".$userID."' where lv001='".$donhangid."' and lv011=0";
 			$vresult=db_query($vsql);
 			// echo "2+ '$vsql'";
 		}
