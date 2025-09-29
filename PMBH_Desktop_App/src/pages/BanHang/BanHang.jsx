@@ -2518,6 +2518,7 @@ const BanHang = () => {
         onConfirm={processPaymentEnhanced}
         invoice={currentInvoice}
         orderTotal={orderTotal}
+        invoiceDetails={invoiceDetails}
         loading={paymentLoading}
       />
     </div>
