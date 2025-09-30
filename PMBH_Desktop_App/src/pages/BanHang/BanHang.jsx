@@ -186,6 +186,11 @@ const BanHang = () => {
   const [selectedTargetTable, setSelectedTargetTable] = useState(null);
   const [availableTablesForOperation, setAvailableTablesForOperation] = useState([]);
   
+  // State cho Split Table - món được chọn để tách
+  const [selectedItemsForSplit, setSelectedItemsForSplit] = useState([]);
+  const [splitTargetTable, setSplitTargetTable] = useState(null);
+  const [availableTablesForSplit, setAvailableTablesForSplit] = useState([]);
+  
   // State cho Merged Table Groups - Track các nhóm bàn đã gộp
   const [mergedTableGroups, setMergedTableGroups] = useState(() => {
     try {
@@ -1771,6 +1776,33 @@ const BanHang = () => {
     }
   };
 
+  // Load danh sách bàn trống cho tách bàn
+  const loadAvailableTablesForSplit = async () => {
+    try {
+      // Lấy tất cả bàn trống cùng khu vực
+      const emptyTables = tables.filter(table =>
+        table.status === 'available' &&
+        (!selectedTable || table.idKhuVuc === selectedTable.idKhuVuc) &&
+        table.id !== selectedTable?.id
+      );
+
+      setAvailableTablesForSplit(emptyTables);
+
+      // bắt đầu logs //
+      console.log('=== LOAD AVAILABLE TABLES FOR SPLIT ===');
+      console.log('selectedTable:', selectedTable);
+      console.log('emptyTables:', emptyTables.length, 'bàn trống');
+      console.log('emptyTables:', emptyTables);
+      // kết thúc logs //
+
+    } catch (error) {
+      // bắt đầu logs //
+      console.error('❌ Lỗi khi load danh sách bàn trống:', error);
+      // kết thúc logs //
+      message.error('Không thể tải danh sách bàn trống');
+    }
+  };
+
   // Enhanced Gộp bàn với custom logic (không dùng API)
   const handleMergeTable = async (targetTable) => {
       
@@ -2047,41 +2079,339 @@ const BanHang = () => {
 
     };
 
-  // Enhanced Tách bàn  
+  // Enhanced Tách bàn - Tách theo món lẻ
   const handleSplitTable = async () => {
-    if (!currentInvoice) {
-      message.error('Không có hóa đơn để tách');
+    // bắt đầu logs //
+    console.log('=== BẮT ĐẦU TÁCH BÀN ===');
+    console.log('Bàn nguồn:', selectedTable);
+    console.log('Hóa đơn nguồn:', currentInvoice);
+    console.log('Chi tiết hóa đơn nguồn:', invoiceDetails);
+    console.log('Món được chọn để tách:', selectedItemsForSplit);
+    console.log('Bàn đích:', splitTargetTable);
+    // kết thúc logs //
+
+    // Validation
+    if (!selectedTable?.invoiceId || !currentInvoice) {
+      // bắt đầu logs //
+      console.log('❌ Validation failed: Thiếu thông tin bàn hoặc hóa đơn');
+      // kết thúc logs //
+      message.error('Vui lòng chọn bàn có hóa đơn để tách');
       return;
     }
+
+    if (invoiceDetails.length <= 1) {
+      // bắt đầu logs //
+      console.log('❌ Validation failed: Bàn chỉ có 1 món, không thể tách');
+      // kết thúc logs //
+      message.error('Bàn chỉ có 1 món, không thể tách bàn');
+      return;
+    }
+
+    if (!selectedItemsForSplit || selectedItemsForSplit.length === 0) {
+      // bắt đầu logs //
+      console.log('❌ Validation failed: Chưa chọn món để tách');
+      // kết thúc logs //
+      message.error('Vui lòng chọn ít nhất 1 món để tách');
+      return;
+    }
+
+    if (!splitTargetTable) {
+      // bắt đầu logs //
+      console.log('❌ Validation failed: Chưa chọn bàn đích');
+      // kết thúc logs //
+      message.error('Vui lòng chọn bàn đích để chuyển món');
+      return;
+    }
+
+    // Validation: Kiểm tra cùng khu vực
+    if (selectedTable.idKhuVuc !== splitTargetTable.idKhuVuc) {
+      // bắt đầu logs //
+      console.log('❌ Validation failed: Khác khu vực');
+      console.log('Khu vực bàn nguồn:', selectedTable.idKhuVuc);
+      console.log('Khu vực bàn đích:', splitTargetTable.idKhuVuc);
+      // kết thúc logs //
+      message.error('Không thể tách bàn sang khu vực khác');
+      return;
+    }
+
+    // Validation: Kiểm tra bàn đích trống
+    if (splitTargetTable.status !== 'available') {
+      // bắt đầu logs //
+      console.log('❌ Validation failed: Bàn đích không trống');
+      console.log('Trạng thái bàn đích:', splitTargetTable.status);
+      // kết thúc logs //
+      message.error('Bàn đích phải là bàn trống');
+      return;
+    }
+
+    // Validation: Kiểm tra còn món ở bàn nguồn sau khi tách
+    const remainingItems = invoiceDetails.filter(item =>
+      !selectedItemsForSplit.some(selectedItem =>
+        (selectedItem.maCt || selectedItem.cthd || selectedItem.idCthd) ===
+        (item.maCt || item.cthd || item.idCthd)
+      )
+    );
+
+    if (remainingItems.length === 0) {
+      // bắt đầu logs //
+      console.log('❌ Validation failed: Phải chừa lại ít nhất 1 món ở bàn nguồn');
+      // kết thúc logs //
+      message.error('Phải chừa lại ít nhất 1 món ở bàn nguồn');
+      return;
+    }
+
+    // bắt đầu logs //
+    console.log('✅ Validation passed, bắt đầu process tách bàn');
+    console.log('Món sẽ tách:', selectedItemsForSplit);
+    console.log('Món còn lại ở bàn nguồn:', remainingItems);
+    // kết thúc logs //
 
     try {
       setOperationInProgress(true);
       setLoading(true);
-      
-      // Gọi API tách bàn enhanced
-      const result = await tachBanEnhanced(currentInvoice.maHoaDon);
-      
-      if (result && result.success !== false) {
-        message.success(`Đã tách bàn ${selectedTable.tenBan}`);
-        
-        // Reset states
-        setShowSplitTableModal(false);
-        
-        // Refresh data
-        await loadDsHoaDon();
-        refreshTableStatusOnly();
-        
-      } else {
-        throw new Error(result?.message || 'Tách bàn thất bại');
+
+      // 1. Tạo hóa đơn mới cho bàn đích
+      // bắt đầu logs //
+      console.log('1. TẠO HÓA ĐƠN MỚI CHO BÀN ĐÍCH');
+      // kết thúc logs //
+
+      const createResponse = await taoHoaDon(splitTargetTable.id);
+      if (!createResponse || !createResponse.success) {
+        throw new Error('Không thể tạo hóa đơn cho bàn đích');
       }
-      
+
+      const targetInvoiceId = createResponse.message;
+      // bắt đầu logs //
+      console.log('✅ Tạo hóa đơn thành công cho bàn đích:', targetInvoiceId);
+      // kết thúc logs //
+
+      // 2. Lấy danh sách món đã xong từ bàn nguồn trước khi tách
+      // bắt đầu logs //
+      console.log('2. LẤY DANH SÁCH MÓN ĐÃ XONG TỪ BÀN NGUỒN');
+      // kết thúc logs //
+
+      let completedItems = [];
+      try {
+        const completedResponse = await layDsMonDaXong();
+        completedItems = Array.isArray(completedResponse) ? completedResponse : [];
+        // Lọc chỉ lấy món từ hóa đơn hiện tại
+        completedItems = completedItems.filter(item => 
+          item.maHd === currentInvoice.maHd || item.donHangId === currentInvoice.maHd
+        );
+        // bắt đầu logs //
+        console.log('Món đã xong từ bàn nguồn:', completedItems);
+        // kết thúc logs //
+      } catch (error) {
+        // bắt đầu logs //
+        console.log('⚠️ Không thể lấy danh sách món đã xong:', error);
+        // kết thúc logs //
+      }
+
+      // 3. Lấy danh sách sản phẩm để map tên -> mã
+      // bắt đầu logs //
+      console.log('3. LẤY DANH SÁCH SẢN PHẨM ĐỂ MAP');
+      // kết thúc logs //
+
+      let allProducts = [];
+      try {
+        const productsResponse = await getAllSanPham();
+        allProducts = Array.isArray(productsResponse) ? productsResponse : [];
+        // bắt đầu logs //
+        console.log('Danh sách sản phẩm:', allProducts.length, 'sản phẩm');
+        // kết thúc logs //
+      } catch (error) {
+        // bắt đầu logs //
+        console.log('⚠️ Không thể lấy danh sách sản phẩm:', error);
+        // kết thúc logs //
+      }
+
+      // Hàm tìm mã sản phẩm từ tên
+      const findProductCode = (productName) => {
+        if (!productName || !allProducts.length) return null;
+
+        const normalizedName = productName.trim().toLowerCase();
+
+        const product = allProducts.find(p =>
+          (p.tenSp && p.tenSp.trim().toLowerCase() === normalizedName) ||
+          (p.ten && p.ten.trim().toLowerCase() === normalizedName) ||
+          (p.tensp && p.tensp.trim().toLowerCase() === normalizedName) ||
+          (p.name && p.name.trim().toLowerCase() === normalizedName)
+        );
+
+        return product ? (product.maSp || product.ma || product.id || product.ma_sp) : null;
+      };
+
+      // 5. Thêm món được chọn vào bàn đích
+      // bắt đầu logs //
+      console.log('5. THÊM MÓN ĐƯỢC CHỌN VÀO BÀN ĐÍCH');
+      // kết thúc logs //
+
+      for (const item of selectedItemsForSplit) {
+        try {
+          const productName = item.tenSp || item.ten || item.tensp || item.name;
+          const productCode = findProductCode(productName);
+          const quantity = parseInt(item.sl || item.soLuong || 1);
+
+          // bắt đầu logs //
+          console.log(`Thêm món: ${productName} (SL: ${quantity}) vào hóa đơn ${targetInvoiceId}`);
+          // kết thúc logs //
+
+          if (!productCode) {
+            // bắt đầu logs //
+            console.log(`⚠️ Bỏ qua món ${productName} vì không tìm thấy mã sản phẩm`);
+            // kết thúc logs //
+            continue;
+          }
+
+          const addResponse = await taoCthd(targetInvoiceId, productCode, quantity);
+
+          if (!addResponse || !addResponse.success) {
+            // bắt đầu logs //
+            console.log(`⚠️ Thêm món ${productName} thất bại:`, addResponse);
+            // kết thúc logs //
+          } else {
+            // bắt đầu logs //
+            console.log(`✅ Thêm món ${productName} thành công`);
+            // kết thúc logs //
+          }
+        } catch (error) {
+          // bắt đầu logs //
+          console.log(`❌ Lỗi khi thêm món ${item.tenSp || item.ten || 'Unknown'}:`, error);
+          // kết thúc logs //
+        }
+      }
+
+      // 6. Load lại chi tiết hóa đơn đích để lấy thông tin chi tiết mới
+      // bắt đầu logs //
+      console.log('6. LOAD LẠI CHI TIẾT HÓA ĐƠN ĐÍCH SAU KHI THÊM MÓN');
+      // kết thúc logs //
+
+      let newInvoiceDetails = [];
+      try {
+        const newDetailsResponse = await getChiTietHoaDonTheoMaHD(targetInvoiceId);
+        newInvoiceDetails = Array.isArray(newDetailsResponse) 
+          ? newDetailsResponse.filter(item => parseInt(item.sl) > 0)
+          : [];
+        // bắt đầu logs //
+        console.log('Chi tiết hóa đơn đích sau khi thêm món:', newInvoiceDetails);
+        // kết thúc logs //
+      } catch (error) {
+        // bắt đầu logs //
+        console.log('⚠️ Không thể load lại chi tiết hóa đơn đích:', error);
+        // kết thúc logs //
+      }
+
+      // 7. Cập nhật trạng thái món đã xong
+      // bắt đầu logs //
+      console.log('7. CẬP NHẬT TRẠNG THÁI MÓN ĐÃ XONG');
+      // kết thúc logs //
+
+      for (const newItem of newInvoiceDetails) {
+        // Kiểm tra xem món này có trong danh sách đã xong của bàn nguồn không
+        const isCompleted = completedItems.some(completedItem => {
+          const completedName = completedItem.tenSp || completedItem.ten || completedItem.tensp || completedItem.name || '';
+          const newItemName = newItem.tenSp || newItem.ten || newItem.tensp || newItem.name || '';
+          const completedQty = parseInt(completedItem.sl || completedItem.soLuong || 0);
+          const newItemQty = parseInt(newItem.sl || 0);
+          
+          return completedName.trim().toLowerCase() === newItemName.trim().toLowerCase() && 
+                 completedQty === newItemQty;
+        });
+
+        if (isCompleted) {
+          try {
+            // Lấy ID của chi tiết hóa đơn mới
+            const itemId = newItem.idCthd || newItem.maCt || newItem.id;
+            if (itemId) {
+              // Cập nhật trạng thái món về "đã xong"
+              // Giả sử trạng thái 2 = "đã xong" (1 = chờ, 2 = xong)
+              await capNhatTrangThaiMon(itemId, 2, 'Chuyển từ bàn tách - đã xong');
+              // bắt đầu logs //
+              console.log(`✅ Cập nhật trạng thái món ${newItem.tenSp || newItem.ten || 'Unknown'} về "đã xong"`);
+              // kết thúc logs //
+            } else {
+              // bắt đầu logs //
+              console.log(`⚠️ Không thể cập nhật trạng thái món ${newItem.tenSp || newItem.ten || 'Unknown'}: thiếu ID`);
+              // kết thúc logs //
+            }
+          } catch (error) {
+            // bắt đầu logs //
+            console.log(`⚠️ Không thể cập nhật trạng thái món ${newItem.tenSp || newItem.ten || 'Unknown'}:`, error);
+            // kết thúc logs //
+          }
+        }
+      }
+
+      // 8. Xóa món đã tách khỏi bàn nguồn
+      // bắt đầu logs //
+      console.log('8. XÓA MÓN ĐÃ TÁCH KHỎI BÀN NGUỒN');
+      // kết thúc logs //
+
+      for (const item of selectedItemsForSplit) {
+        try {
+          const itemId = item.maCt || item.cthd || item.idCthd || item.id;
+          if (itemId) {
+            await xoaCtHd({ maCt: itemId });
+            // bắt đầu logs //
+            console.log(`✅ Xóa món ${item.tenSp || item.ten || 'Unknown'} khỏi bàn nguồn`);
+            // kết thúc logs //
+          } else {
+            // bắt đầu logs //
+            console.log(`⚠️ Không thể xóa món ${item.tenSp || item.ten || 'Unknown'}: thiếu ID`);
+            // kết thúc logs //
+          }
+        } catch (error) {
+          // bắt đầu logs //
+          console.log(`⚠️ Lỗi khi xóa món ${item.tenSp || item.ten || 'Unknown'}:`, error);
+          // kết thúc logs //
+        }
+      }
+
+      // 9. Load lại dữ liệu bàn nguồn
+      // bắt đầu logs //
+      console.log('9. LOAD LẠI DỮ LIỆU BÀN NGUỒN');
+      // kết thúc logs //
+
+      const sourceDetailsResponse = await getChiTietHoaDonTheoMaHD(currentInvoice.maHd);
+      if (Array.isArray(sourceDetailsResponse)) {
+        setInvoiceDetails(sourceDetailsResponse);
+        // bắt đầu logs //
+        console.log('Chi tiết hóa đơn bàn nguồn sau khi tách:', sourceDetailsResponse);
+        // kết thúc logs //
+      }
+
+      // 10. Reset states
+      // bắt đầu logs //
+      console.log('10. RESET STATES');
+      // kết thúc logs //
+
+      setSelectedItemsForSplit([]);
+      setSplitTargetTable(null);
+      setShowSplitTableModal(false);
+
+      // bắt đầu logs //
+      console.log('✅ TÁCH BÀN THÀNH CÔNG!');
+      console.log('Món đã chuyển sang bàn:', splitTargetTable.tenBan);
+      // kết thúc logs //
+
+      message.success(`Đã tách ${selectedItemsForSplit.length} món sang bàn ${splitTargetTable.tenBan}`);
+
+      // Trigger quick refresh
+      triggerQuickRefresh('SPLIT_TABLE');
+
     } catch (error) {
-  // Silent console
+      // bắt đầu logs //
+      console.log('❌ Lỗi trong quá trình tách bàn:', error);
+      // kết thúc logs //
       message.error('Không thể tách bàn: ' + (error.message || 'Lỗi không xác định'));
     } finally {
       setLoading(false);
       setOperationInProgress(false);
     }
+
+    // bắt đầu logs //
+    console.log('=== KẾT THÚC TÁCH BÀN ===');
+    // kết thúc logs //
   };
 
   // Enhanced Chuyển bàn
@@ -2147,6 +2477,11 @@ const BanHang = () => {
   // Silent console
     loadAvailableTablesForOperation();
     setShowTransferTableModal(true);
+  };
+
+  const openSplitTableModal = () => {
+    loadAvailableTablesForSplit();
+    setShowSplitTableModal(true);
   };
 
   // Animation completion handler
@@ -2801,8 +3136,8 @@ const BanHang = () => {
                       
                       <Button
                         icon={<Split size={14} />}
-                        onClick={() => setShowSplitTableModal(true)}
-                        disabled={loading || operationInProgress}
+                        onClick={openSplitTableModal}
+                        disabled={loading || operationInProgress || invoiceDetails.length <= 1}
                         size="small"
                       >
                         Tách bàn
@@ -2932,10 +3267,20 @@ const BanHang = () => {
 
       <TableSplitModal
         visible={showSplitTableModal}
-        onCancel={() => setShowSplitTableModal(false)}
+        onCancel={() => {
+          setShowSplitTableModal(false);
+          setSelectedItemsForSplit([]);
+          setSplitTargetTable(null);
+        }}
         onConfirm={handleSplitTable}
         selectedTable={selectedTable}
+        invoiceDetails={invoiceDetails}
         loading={loading || operationInProgress}
+        selectedItemsForSplit={selectedItemsForSplit}
+        setSelectedItemsForSplit={setSelectedItemsForSplit}
+        splitTargetTable={splitTargetTable}
+        setSplitTargetTable={setSplitTargetTable}
+        availableTablesForSplit={availableTablesForSplit}
       />
 
       <TableTransferModal
