@@ -15,7 +15,8 @@ import {
   Input,
   Popconfirm,
   Modal,
-  Table
+  Table,
+  Checkbox
 } from 'antd';
 import { 
   Coffee, 
@@ -153,6 +154,7 @@ const BanHang = () => {
   const [showInvoiceHistory, setShowInvoiceHistory] = useState(false);
   const [editingInvoice, setEditingInvoice] = useState(false);
   const [draftInvoices, setDraftInvoices] = useState([]);
+  const [includeVAT, setIncludeVAT] = useState(false); // Checkbox for VAT tax
   const [invoiceSummary, setInvoiceSummary] = useState({
     subtotal: 0,
     tax: 0,
@@ -1865,8 +1867,8 @@ const BanHang = () => {
       return sum + (price * quantity);
     }, 0);
 
-    // Tính thuế VAT 10% (có thể config sau)
-    const tax = subtotal * 0.1;
+    // Tính thuế VAT 10% chỉ khi checkbox được check
+    const tax = includeVAT ? subtotal * 0.1 : 0;
     
     // Giảm giá mặc định 0% (có thể config sau)
     const discount = 0;
@@ -1879,6 +1881,9 @@ const BanHang = () => {
       discount,
       total
     });
+    
+    // Update orderTotal for PaymentModal synchronization
+    setOrderTotal(total);
   };
 
   // In hóa đơn
@@ -1915,7 +1920,7 @@ const BanHang = () => {
         <hr>
         <div style="text-align: right; margin-top: 20px;">
           <p><strong>Tạm tính:</strong> ${invoiceSummary.subtotal.toLocaleString()}đ</p>
-          <p><strong>Thuế VAT (10%):</strong> ${invoiceSummary.tax.toLocaleString()}đ</p>
+          ${includeVAT ? `<p><strong>Thuế VAT (10%):</strong> ${invoiceSummary.tax.toLocaleString()}đ</p>` : ''}
           <p><strong>Giảm giá:</strong> ${invoiceSummary.discount.toLocaleString()}đ</p>
           <h3><strong>Tổng cộng:</strong> ${invoiceSummary.total.toLocaleString()}đ</h3>
         </div>
@@ -1934,7 +1939,7 @@ const BanHang = () => {
   // Effect để tính toán invoice summary khi invoiceDetails thay đổi
   useEffect(() => {
     calculateInvoiceSummary();
-  }, [invoiceDetails]);
+  }, [invoiceDetails, includeVAT]);
 
   // Quay lại view trước
   const handleGoBack = () => {
@@ -2300,6 +2305,14 @@ const BanHang = () => {
               {/* Fixed footer with total and actions */}
               <div className="invoice-footer-fixed">
                 <div className="invoice-total-compact">
+                  <div style={{ marginBottom: '8px' }}>
+                    <Checkbox
+                      checked={includeVAT}
+                      onChange={(e) => setIncludeVAT(e.target.checked)}
+                    >
+                      Thuế VAT (10%)
+                    </Checkbox>
+                  </div>
                   <div className="total-display">
                     <Text strong style={{ fontSize: '16px' }}>Tổng: </Text>
                     <Text strong className="total-amount" style={{ fontSize: '22px', color: '#197dd3' }}>
