@@ -1583,14 +1583,12 @@ const BanHang = () => {
   // Function to reload current table's invoice data
   const loadDsHoaDon = async () => {
     if (!selectedTable) {
-  // Silent console
       return;
     }
 
     try {
       // Reload table data to get updated status and invoice ID
       await loadTables();
-      
       // Find the updated table info
       const updatedTable = tables.find(t => t.id === selectedTable.id);
       if (updatedTable) {
@@ -1602,7 +1600,6 @@ const BanHang = () => {
             tenBan: updatedTable.name
           };
           setCurrentInvoice(invoice);
-          
           // Load chi tiết hóa đơn
           const detailsResponse = await getChiTietHoaDonTheoMaHD(updatedTable.invoiceId);
           if (Array.isArray(detailsResponse)) {
@@ -1616,12 +1613,11 @@ const BanHang = () => {
           setCurrentInvoice(null);
           setInvoiceDetails([]);
         }
-        
         // Update selected table with new data
         setSelectedTable(updatedTable);
+      } else {
       }
     } catch (error) {
-  // Silent console
       message.error('Không thể tải lại dữ liệu hóa đơn: ' + (error.message || 'Lỗi không xác định'));
     }
   };
@@ -1732,38 +1728,33 @@ const BanHang = () => {
 
   // Enhanced Chuyển bàn
   const handleTransferTable = async (targetTable) => {
-    // Silent console
-    
-    if (!selectedTable?.invoiceId || !targetTable) {
+
+    const invoiceIdToUse = selectedTable?.invoiceId || currentInvoice?.maHd;
+    if (!invoiceIdToUse || !targetTable) {
       message.error('Vui lòng chọn bàn có hóa đơn và bàn đích để chuyển');
       return;
     }
 
     try {
+
       setOperationInProgress(true);
       setLoading(true);
-      
-      // Gọi API chuyển bàn enhanced - sử dụng invoiceId từ selectedTable
-      const result = await chuyenBanEnhanced(selectedTable.invoiceId, targetTable.maBan);
-      
+      // Gọi API chuyển bàn enhanced - sử dụng invoiceId từ selectedTable hoặc currentInvoice
+      const result = await chuyenBanEnhanced(invoiceIdToUse, targetTable.maBan);
       if (result && result.success !== false) {
         message.success(`Đã chuyển từ bàn ${selectedTable.tenBan} sang bàn ${targetTable.tenBan}`);
-        
         // Reset states
         setShowTransferTableModal(false);
         setSelectedTargetTable(null);
-        
         // Refresh data và chọn bàn mới
         await loadDsHoaDon();
-        refreshTableStatusOnly();
+        await loadTableStatuses(tables, { silent: true });
         setSelectedTable(targetTable);
-        
+
       } else {
         throw new Error(result?.message || 'Chuyển bàn thất bại');
       }
-      
     } catch (error) {
-  // Silent console
       message.error('Không thể chuyển bàn: ' + (error.message || 'Lỗi không xác định'));
     } finally {
       setLoading(false);

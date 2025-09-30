@@ -1251,43 +1251,14 @@ export async function gopBanEnhanced(maHoaDonBanChinh, maBanGop, bangId) {
 // Chuyển bàn - Enhanced transfer table function  
 export async function chuyenBanEnhanced(maHoaDonBanCanChuyen, maBanChuyen) {
   try {
-    console.log('chuyenBanEnhanced params:', { maHoaDonBanCanChuyen, maBanChuyen });
     
-    const params = new URLSearchParams({
-      class: 'sl_lv0013',
-      action: 'chuyenBan',
-      maHdBanCanChuyen: maHoaDonBanCanChuyen,
-      maHdBanChuyen: '', // Để trống khi chuyển sang bàn trống
+    // Sử dụng callApi thay vì fetch trực tiếp để tránh lỗi backend
+    const result = await callApi('sl_lv0013', 'chuyenBan', {
+      maHoaDonBanCanChuyen: maHoaDonBanCanChuyen,
+      maHoaDonBanChuyen: '', // Để trống khi chuyển sang bàn trống
       maBanChuyen: maBanChuyen
     });
-
-    const response = await fetch(`${GMAC_BASE_URL}/services.sof.vn/index_NChung.php?${params}`, {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    });
-
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
-    }
-
-    const responseText = await response.text();
-    console.log('chuyenBanEnhanced response text:', responseText);
-    
-    // Kiểm tra nếu response là HTML error
-    if (responseText.includes('<br />') || responseText.includes('<b>')) {
-      throw new Error('Backend trả về lỗi HTML: ' + responseText.substring(0, 200));
-    }
-    
-    try {
-      const result = JSON.parse(responseText);
-      console.log('chuyenBanEnhanced result:', result);
-      return result;
-    } catch (parseError) {
-      console.error('JSON parse error:', parseError);
-      throw new Error('Response không phải JSON hợp lệ: ' + responseText.substring(0, 100));
-    }
+    return result;
   } catch (error) {
     console.error('Error in chuyenBanEnhanced:', error);
     throw error;
