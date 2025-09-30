@@ -2073,3 +2073,116 @@
     height: 44px;
   }
 }
+
+/* ============================================
+   RESPONSIVE INVOICE ACTION BUTTONS
+   ============================================ */
+
+.invoice-actions-compact {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.invoice-management-buttons {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+
+.table-management-buttons {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+
+/* Desktop styles (default) */
+@media (min-width: 769px) {
+  .invoice-management-buttons .ant-btn {
+    flex: 1;
+    min-width: 0;
+  }
+  
+  .table-management-buttons .ant-btn {
+    flex: 1;
+    min-width: 0;
+  }
+}
+
+/* Tablet styles */
+@media (max-width: 768px) and (min-width: 481px) {
+  .invoice-management-buttons {
+    flex-direction: row;
+  }
+  
+  .invoice-management-buttons .ant-btn {
+    flex: 1;
+    font-size: 13px;
+    height: 36px;
+  }
+  
+  .table-management-buttons {
+    flex-direction: row;
+  }
+  
+  .table-management-buttons .ant-btn {
+    flex: 1;
+    font-size: 13px;
+    height: 36px;
+  }
+  
+  .invoice-actions-compact .ant-btn {
+    font-size: 14px;
+    height: 40px;
+  }
+}
+
+/* Mobile styles */
+@media (max-width: 480px) {
+  .invoice-management-buttons {
+    flex-direction: column;
+    gap: 6px;
+  }
+  
+  .invoice-management-buttons .ant-btn {
+    width: 100%;
+    font-size: 14px;
+    height: 40px;
+  }
+  
+  .table-management-buttons {
+    flex-direction: column;
+    gap: 6px;
+  }
+  
+  .table-management-buttons .ant-btn {
+    width: 100%;
+    font-size: 14px;
+    height: 40px;
+  }
+  
+  .invoice-actions-compact .ant-btn {
+    font-size: 15px;
+    height: 44px;
+  }
+  
+  /* Stack buttons vertically on very small screens */
+  .invoice-actions-compact {
+    gap: 6px;
+  }
+}
+
+/* Extra small screens */
+@media (max-width: 360px) {
+  .invoice-management-buttons .ant-btn,
+  .table-management-buttons .ant-btn,
+  .invoice-actions-compact .ant-btn {
+    font-size: 13px;
+    height: 38px;
+    padding: 0 8px;
+  }
+  
+  .invoice-actions-compact {
+    gap: 4px;
+  }
+}

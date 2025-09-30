@@ -2336,29 +2336,25 @@ const BanHang = () => {
                   </Button>
 
                   {/* Hóa đơn management buttons */}
-                  <div className="invoice-management-buttons" style={{ marginBottom: 8 }}>
+                  <div className="invoice-management-buttons">
                     <Button
                       icon={<Printer size={14} />}
                       onClick={printInvoice}
                       disabled={invoiceDetails.length === 0}
                       size="small"
-                      style={{ marginRight: 4, width: 'calc(50% - 2px)' }}
                       title="In hóa đơn đầy đủ"
                     >
                       In đầy đủ
                     </Button>
                     
-                    <div style={{ width: 'calc(50% - 2px)' }}>
-                      <ReceiptPrinter
-                        invoice={currentInvoice}
-                        invoiceDetails={invoiceDetails}
-                        orderTotal={invoiceSummary.total}
-                        paymentDetails={null}
-                        includeVAT={includeVAT}
-                        size="small"
-                        style={{ width: '100%' }}
-                      />
-                    </div>
+                    <ReceiptPrinter
+                      invoice={currentInvoice}
+                      invoiceDetails={invoiceDetails}
+                      orderTotal={invoiceSummary.total}
+                      paymentDetails={null}
+                      includeVAT={includeVAT}
+                      size="small"
+                    />
                     
                     {!editingInvoice && (
                       <Button
@@ -2366,7 +2362,6 @@ const BanHang = () => {
                         icon={<X size={14} />}
                         onClick={cancelInvoice}
                         size="small"
-                        block
                       >
                         Hủy HĐ
                       </Button>
@@ -2381,7 +2376,6 @@ const BanHang = () => {
                         onClick={openTransferTableModal}
                         disabled={loading || operationInProgress}
                         size="small"
-                        style={{ marginRight: 4, marginBottom: 4, width: 'calc(50% - 2px)' }}
                       >
                         Chuyển bàn
                       </Button>
@@ -2391,7 +2385,6 @@ const BanHang = () => {
                         onClick={openMergeTableModal}
                         disabled={loading || operationInProgress}
                         size="small"
-                        style={{ marginBottom: 4, width: 'calc(50% - 2px)' }}
                       >
                         Gộp bàn
                       </Button>
@@ -2401,7 +2394,6 @@ const BanHang = () => {
                         onClick={() => setShowSplitTableModal(true)}
                         disabled={loading || operationInProgress}
                         size="small"
-                        block
                       >
                         Tách bàn
                       </Button>
