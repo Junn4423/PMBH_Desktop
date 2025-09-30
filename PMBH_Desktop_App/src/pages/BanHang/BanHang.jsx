@@ -2363,6 +2363,7 @@ const BanHang = () => {
                         invoiceDetails={invoiceDetails}
                         orderTotal={invoiceSummary.total}
                         paymentDetails={null}
+                        includeVAT={includeVAT}
                         size="small"
                         style={{ width: '100%' }}
                       />
@@ -2687,6 +2688,7 @@ const BanHang = () => {
         orderTotal={orderTotal}
         invoiceDetails={invoiceDetails}
         loading={paymentLoading}
+        includeVAT={includeVAT}
       />
     </div>
   );

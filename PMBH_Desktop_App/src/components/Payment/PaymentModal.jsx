@@ -18,14 +18,15 @@ import './PaymentModal.css';
 const { Text } = Typography;
 const { Option } = Select;
 
-const PaymentModal = ({ 
-  visible, 
-  onCancel, 
-  onConfirm, 
-  invoice, 
+const PaymentModal = ({
+  visible,
+  onCancel,
+  onConfirm,
+  invoice,
   orderTotal,
   invoiceDetails = [],
-  loading = false 
+  loading = false,
+  includeVAT = false
 }) => {
   const [paymentMethod, setPaymentMethod] = useState('Cash');
   const [currency, setCurrency] = useState('VND');
@@ -96,11 +97,15 @@ const PaymentModal = ({
       discountValue = discount;
     }
     setDiscountAmount(discountValue);
-    const total = Math.max(0, orderTotal - discountValue);
+
+    // Calculate VAT if included
+    const vatAmount = includeVAT ? orderTotal * 0.1 : 0;
+    const subtotalWithVAT = orderTotal + vatAmount;
+    const total = Math.max(0, subtotalWithVAT - discountValue);
     setFinalTotal(total);
-    
+
     // Do not auto-update customerPaid, keep user's input
-  }, [discount, discountType, orderTotal]);
+  }, [discount, discountType, orderTotal, includeVAT]);
 
   // Calculate change amount with currency conversion
   useEffect(() => {
@@ -251,9 +256,11 @@ const PaymentModal = ({
         })),
         totals: {
           subtotalVND: orderTotal,
+          vatVND: includeVAT ? orderTotal * 0.1 : 0,
           discountVND: discountAmount,
           totalVND: finalTotal,
           subtotalCurrency: subtotalInCurrency,
+          vatCurrency: includeVAT ? subtotalInCurrency * 0.1 : 0,
           discountCurrency: discountInCurrency,
           totalCurrency: totalInCurrency,
           paidCurrency: customerPaid,
@@ -316,6 +323,7 @@ const PaymentModal = ({
           
           <div class="totals-section">
             ${renderAmountLine('Tạm tính', receiptData.totals.subtotalVND, receiptData.totals.subtotalCurrency)}
+            ${receiptData.totals.vatVND > 0 ? renderAmountLine('Thuế VAT (10%)', receiptData.totals.vatVND, receiptData.totals.vatCurrency) : ''}
             ${receiptData.totals.discountVND > 0 ? renderAmountLine('Giảm giá', -receiptData.totals.discountVND, -receiptData.totals.discountCurrency) : ''}
             ${renderAmountLine('Tổng cộng', receiptData.totals.totalVND, receiptData.totals.totalCurrency, { highlight: true })}
             ${paymentMethod === 'Cash' ? renderAmountLine('Tiền khách đưa', receiptData.totals.paidVND, receiptData.totals.paidCurrency) : ''}
