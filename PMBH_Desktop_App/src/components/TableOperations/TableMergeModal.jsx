@@ -47,7 +47,9 @@ const TableMergeModal = ({
   };
 
   const availableTables = tables.filter(table => 
-    table.maBan !== selectedTable?.maBan && table.status === 'occupied'
+    table.maBan !== selectedTable?.maBan &&
+    table.status === 'occupied' &&
+    table.idKhuVuc === selectedTable?.idKhuVuc // Chỉ hiển thị bàn cùng khu vực
   );
 
   // Silent debug logs for performance
@@ -86,6 +88,8 @@ const TableMergeModal = ({
         <br />
         <Text type="secondary" style={{ fontSize: 12 }}>
           Tất cả món ăn từ bàn {selectedTable?.tenBan} sẽ được chuyển vào bàn được chọn và hóa đơn bàn {selectedTable?.tenBan} sẽ bị xóa.
+          <br />
+          <strong>Lưu ý:</strong> Chỉ có thể gộp bàn trong cùng khu vực.
         </Text>
       </div>
       
@@ -135,10 +139,10 @@ const TableMergeModal = ({
       {availableTables.length === 0 && !loading && (
         <div style={{ textAlign: 'center', padding: '40px 20px', color: '#999' }}>
           <div style={{ marginBottom: 8 }}>
-            Không có bàn nào khác có khách để gộp
+            Không có bàn nào khác có khách trong cùng khu vực để gộp
           </div>
           <div style={{ fontSize: 12 }}>
-            (Cần có ít nhất 2 bàn có khách để thực hiện gộp bàn)
+            (Cần có ít nhất 2 bàn có khách trong cùng khu vực để thực hiện gộp bàn)
           </div>
         </div>
       )}

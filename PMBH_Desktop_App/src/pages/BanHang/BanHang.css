@@ -2186,3 +2186,47 @@
     gap: 4px;
   }
 }
+
+/* ============================================
+   MERGED TABLE INDICATORS
+============================================ */
+.table-merged {
+  position: relative;
+}
+
+.table-main-merged {
+  box-shadow: 0 0 0 2px #ff6b35, 0 4px 12px rgba(255, 107, 53, 0.3);
+}
+
+.table-merged:not(.table-main-merged) {
+  box-shadow: 0 0 0 2px #ff9500, 0 4px 12px rgba(255, 149, 0, 0.2);
+}
+
+.merged-table-badge {
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  z-index: 10;
+}
+
+.merged-table-badge .ant-badge-count {
+  font-size: 10px;
+  font-weight: bold;
+  min-width: 20px;
+  height: 20px;
+  line-height: 18px;
+  border-radius: 10px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.table-merged .table-status {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.table-merged .table-status-text {
+  font-style: italic;
+  opacity: 0.9;
+}

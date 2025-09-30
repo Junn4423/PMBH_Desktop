@@ -75,6 +75,7 @@ import {
   chuyenHoaDonTamThanhChinhThuc,
   saoChepHoaDon,
   loadDsCthdV3,
+  loadDsCthdV2,
   gopBanBanhang,
   tachBan,
   chuyenBanCorrected,
@@ -87,7 +88,9 @@ import {
   tachBanEnhanced,
   loadProductImage,
   getFullImageUrl,
-  layDsMonCho
+  layDsMonCho,
+  layDsMonDaXong,
+  capNhatTrangThaiMon
 } from '../../services/apiServices';
 
 // Import components
@@ -182,6 +185,46 @@ const BanHang = () => {
   const [showTransferTableModal, setShowTransferTableModal] = useState(false);
   const [selectedTargetTable, setSelectedTargetTable] = useState(null);
   const [availableTablesForOperation, setAvailableTablesForOperation] = useState([]);
+  
+  // State cho Merged Table Groups - Track các nhóm bàn đã gộp
+  const [mergedTableGroups, setMergedTableGroups] = useState(() => {
+    try {
+      const saved = localStorage.getItem('mergedTableGroups');
+      return saved ? JSON.parse(saved) : {};
+    } catch (error) {
+      console.warn('Không thể load mergedTableGroups từ localStorage:', error);
+      return {};
+    }
+  }); // {mainTableId: [table1, table2, ...]}
+  
+  // Helper function để xóa bàn khỏi mergedTableGroups và localStorage
+  const clearMergedTableGroups = (tableToRemove) => {
+    if (tableToRemove) {
+      setMergedTableGroups(prev => {
+        const newGroups = { ...prev };
+        // Xóa nhóm nếu bàn hiện tại là bàn chính
+        if (newGroups[tableToRemove.id]) {
+          delete newGroups[tableToRemove.id];
+        }
+        // Hoặc xóa bàn khỏi nhóm khác nếu là bàn phụ
+        Object.keys(newGroups).forEach(mainTableId => {
+          newGroups[mainTableId] = newGroups[mainTableId].filter(t => t.id !== tableToRemove.id);
+          // Nếu nhóm chỉ còn 1 bàn, xóa luôn nhóm
+          if (newGroups[mainTableId].length <= 1) {
+            delete newGroups[mainTableId];
+          }
+        });
+        return newGroups;
+      });
+    }
+    
+    // Xóa dữ liệu mergedTableGroups khỏi localStorage
+    try {
+      localStorage.removeItem('mergedTableGroups');
+    } catch (error) {
+      console.warn('Không thể xóa mergedTableGroups khỏi localStorage:', error);
+    }
+  };
   
   // State cho Animation
   const [showMergeAnimation, setShowMergeAnimation] = useState(false);
@@ -319,6 +362,15 @@ const BanHang = () => {
       }
     };
   }, []);
+
+  // Lưu mergedTableGroups vào localStorage mỗi khi có thay đổi
+  useEffect(() => {
+    try {
+      localStorage.setItem('mergedTableGroups', JSON.stringify(mergedTableGroups));
+    } catch (error) {
+      console.warn('Không thể lưu mergedTableGroups vào localStorage:', error);
+    }
+  }, [mergedTableGroups]);
 
   // Manual refresh handler
   const handleManualRefresh = async () => {
@@ -794,7 +846,34 @@ const BanHang = () => {
   const handleTableSelect = async (table) => {
     try {
   // Silent console
-      setSelectedTable(table);
+      
+      // Kiểm tra xem bàn này có phải là bàn đã gộp (không phải bàn chính) không
+      const isMergedSlave = Object.values(mergedTableGroups).some(group => 
+        group.some(t => t.id === table.id) && mergedTableGroups[table.id] === undefined
+      );
+      
+      if (isMergedSlave) {
+        message.warning(`Bàn ${table.tenBan} đã được gộp vào bàn khác. Chỉ được thao tác trên bàn chính của nhóm.`);
+        return; // Không cho phép chọn bàn đã gộp
+      }
+      
+      // Kiểm tra xem bàn này có phải là phần của nhóm gộp không (để chuyển đến bàn chính)
+      const mergedGroup = Object.entries(mergedTableGroups).find(([mainTableId, groupTables]) => 
+        groupTables.some(t => t.id === table.id)
+      );
+      
+      let actualTable = table;
+      if (mergedGroup) {
+        // Nếu bàn này thuộc nhóm gộp, chuyển đến bàn chính
+        const [mainTableId, groupTables] = mergedGroup;
+        const mainTable = groupTables.find(t => t.id === mainTableId);
+        if (mainTable) {
+          actualTable = mainTable;
+          message.info(`Bàn ${table.tenBan} đã được gộp vào bàn ${mainTable.tenBan}`);
+        }
+      }
+      
+      setSelectedTable(actualTable);
       setLoading(true);
       
       // Kiểm tra bàn có hóa đơn hay không
@@ -1339,6 +1418,15 @@ const BanHang = () => {
       setCurrentView(VIEW_STATES.TABLES);
       setShowPaymentModal(false);
       
+      // Xóa bàn khỏi mergedTableGroups và localStorage
+      clearMergedTableGroups(selectedTable);
+      
+      // Xóa dữ liệu mergedTableGroups khỏi localStorage sau khi thanh toán
+      try {
+        localStorage.removeItem('mergedTableGroups');
+      } catch (error) {
+        console.warn('Không thể xóa mergedTableGroups khỏi localStorage:', error);
+      }
       
     } catch (error) {
   // Silent console
@@ -1415,6 +1503,26 @@ const BanHang = () => {
       setInvoiceDetails([]);
       setSelectedTable(null);
       setCurrentView(VIEW_STATES.TABLES);
+      
+      // Xóa bàn khỏi mergedTableGroups nếu có
+      if (selectedTable) {
+        setMergedTableGroups(prev => {
+          const newGroups = { ...prev };
+          // Xóa nhóm nếu bàn hiện tại là bàn chính
+          if (newGroups[selectedTable.id]) {
+            delete newGroups[selectedTable.id];
+          }
+          // Hoặc xóa bàn khỏi nhóm khác nếu là bàn phụ
+          Object.keys(newGroups).forEach(mainTableId => {
+            newGroups[mainTableId] = newGroups[mainTableId].filter(t => t.id !== selectedTable.id);
+            // Nếu nhóm chỉ còn 1 bàn, xóa luôn nhóm
+            if (newGroups[mainTableId].length <= 1) {
+              delete newGroups[mainTableId];
+            }
+          });
+          return newGroups;
+        });
+      }
       
       // Refresh table data to update status
       await loadTables();
@@ -1532,6 +1640,26 @@ const BanHang = () => {
       setSelectedTable(null);
       setCurrentView(VIEW_STATES.TABLES);
       
+      // Xóa bàn khỏi mergedTableGroups nếu có
+      if (selectedTable) {
+        setMergedTableGroups(prev => {
+          const newGroups = { ...prev };
+          // Xóa nhóm nếu bàn hiện tại là bàn chính
+          if (newGroups[selectedTable.id]) {
+            delete newGroups[selectedTable.id];
+          }
+          // Hoặc xóa bàn khỏi nhóm khác nếu là bàn phụ
+          Object.keys(newGroups).forEach(mainTableId => {
+            newGroups[mainTableId] = newGroups[mainTableId].filter(t => t.id !== selectedTable.id);
+            // Nếu nhóm chỉ còn 1 bàn, xóa luôn nhóm
+            if (newGroups[mainTableId].length <= 1) {
+              delete newGroups[mainTableId];
+            }
+          });
+          return newGroups;
+        });
+      }
+      
       // Refresh table data to update status
       await loadTables();
       
@@ -1627,19 +1755,70 @@ const BanHang = () => {
     try {
       // Lấy tất cả bàn có hóa đơn đang mở (để gộp/chuyển)
       const allTablesWithInvoices = tables.filter(table => table.status === 'occupied');
-      setAvailableTablesForOperation(allTablesWithInvoices);
+
+      // Lọc thêm theo khu vực nếu đang chọn bàn nguồn
+      let filteredTables = allTablesWithInvoices;
+      if (selectedTable) {
+        filteredTables = allTablesWithInvoices.filter(table =>
+          table.idKhuVuc === selectedTable.idKhuVuc && table.id !== selectedTable.id
+        );
+      }
+
+      setAvailableTablesForOperation(filteredTables);
+
     } catch (error) {
-  // Silent console
       message.error('Không thể tải danh sách bàn');
     }
   };
 
-  // Enhanced Gộp bàn với animation
+  // Enhanced Gộp bàn với custom logic (không dùng API)
   const handleMergeTable = async (targetTable) => {
-    // Silent console
-    
+      
+      // Lấy chi tiết đầy đủ của bàn nguồn để có mã sản phẩm
+      let sourceDetailsFull = [];
+      try {
+        const sourceResponse = await loadDsCthdV2(currentInvoice.maHd);
+        sourceDetailsFull = Array.isArray(sourceResponse) 
+          ? sourceResponse.filter(item => parseInt(item.sl) > 0)
+          : [];
+      } catch (error) {
+        sourceDetailsFull = invoiceDetails; // fallback
+      }
+      
+      // Lấy danh sách sản phẩm để map tên -> mã
+      let allProducts = [];
+      try {
+        const productsResponse = await getAllSanPham();
+        allProducts = Array.isArray(productsResponse) ? productsResponse : [];
+      } catch (error) {
+      }
+
+      // Hàm tìm mã sản phẩm từ tên
+      const findProductCode = (productName) => {
+        if (!productName || !allProducts.length) return null;
+        
+        // Chuẩn hóa tên để so sánh
+        const normalizedName = productName.trim().toLowerCase();
+        
+        // Tìm sản phẩm có tên khớp
+        const product = allProducts.find(p => 
+          (p.tenSp && p.tenSp.trim().toLowerCase() === normalizedName) ||
+          (p.ten && p.ten.trim().toLowerCase() === normalizedName) ||
+          (p.tensp && p.tensp.trim().toLowerCase() === normalizedName) ||
+          (p.name && p.name.trim().toLowerCase() === normalizedName)
+        );
+        
+        return product ? (product.maSp || product.ma || product.id || product.ma_sp) : null;
+      };
+      
     if (!selectedTable?.invoiceId || !targetTable) {
       message.error('Vui lòng chọn bàn có hóa đơn và bàn đích để gộp');
+      return;
+    }
+
+    // Validation: Kiểm tra cùng khu vực
+    if (selectedTable.idKhuVuc !== targetTable.idKhuVuc) {
+      message.error('Không thể gộp bàn từ khu vực khác nhau');
       return;
     }
 
@@ -1647,47 +1826,226 @@ const BanHang = () => {
       setOperationInProgress(true);
       setLoading(true);
 
-      // Gọi API gộp bàn enhanced - sử dụng invoiceId từ selectedTable
-      const result = await gopBanEnhanced(
-        selectedTable.invoiceId, 
-        targetTable.maBan, 
-        selectedTable.maBan  // Thêm tham số bangId
-      );
-      
-      if (result && result.success !== false) {
-        // Thiết lập animation
-        setAnimationTables({
-          source: selectedTable,
-          target: targetTable
-        });
-        setShowMergeAnimation(true);
-        
-        message.success(`Đã gộp bàn ${selectedTable.tenBan} vào bàn ${targetTable.tenBan}`);
-        
-        // Reset modal states
-        setShowMergeTableModal(false);
-        setSelectedTargetTable(null);
-        
-        // Delay để chạy animation xong rồi mới refresh
-        setTimeout(async () => {
-          await loadDsHoaDon();
-          refreshTableStatusOnly();
-          setSelectedTable(targetTable);
-          setOperationInProgress(false);
-        }, 2500); // Animation kéo dài 2s + 0.5s buffer
-        
+      // 1. Lấy chi tiết hóa đơn của bàn đích (nếu có)
+      let targetInvoiceDetails = [];
+      let targetInvoice = null;
+
+      if (targetTable.invoiceId) {
+        try {
+          const targetDetailsResponse = await loadDsCthdV2(targetTable.invoiceId);
+          targetInvoiceDetails = Array.isArray(targetDetailsResponse) 
+            ? targetDetailsResponse.filter(item => parseInt(item.sl) > 0)
+            : [];
+          
+          if (targetDetailsResponse === null || targetDetailsResponse === undefined) {
+            targetInvoiceDetails = [];
+          }
+          
+          targetInvoice = {
+            maHd: targetTable.invoiceId,
+            maBan: targetTable.maBan,
+            tenBan: targetTable.tenBan
+          };
+        } catch (error) {
+          targetInvoiceDetails = [];
+        }
       } else {
-        throw new Error(result?.message || 'Gộp bàn thất bại');
       }
-      
+
+      // 2. Kết hợp chi tiết hóa đơn: bàn đích + bàn nguồn
+      const combinedInvoiceDetails = [...targetInvoiceDetails, ...invoiceDetails];
+
+      // 3. Tạo hoặc cập nhật hóa đơn cho bàn đích
+      let finalInvoiceId = targetTable.invoiceId;
+
+      if (!targetTable.invoiceId) {
+        // Tạo hóa đơn mới cho bàn đích
+        try {
+          const createResponse = await taoHoaDon(targetTable.id);
+          if (createResponse && createResponse.success) {
+            finalInvoiceId = createResponse.message;
+            } else {
+            throw new Error('Không thể tạo hóa đơn cho bàn đích');
+          }
+        } catch (error) {
+          throw error;
+        }
+      }
+
+      // 4. Lấy danh sách món đã xong từ bàn nguồn trước khi gộp
+      let completedItems = [];
+      try {
+        const completedResponse = await layDsMonDaXong();
+        completedItems = Array.isArray(completedResponse) ? completedResponse : [];
+        // Lọc chỉ lấy món từ hóa đơn hiện tại
+        completedItems = completedItems.filter(item => 
+          item.maHd === currentInvoice.maHd || item.donHangId === currentInvoice.maHd
+        );
+        } catch (error) {
+        }
+
+      // 5. Thêm tất cả món từ bàn nguồn vào bàn đích
+      if (!finalInvoiceId) {
+        throw new Error('Không có mã hóa đơn đích để thêm món');
+      }
+
+      for (const item of invoiceDetails) {
+        try {
+          // Sử dụng taoCthd thay vì themChiTietHoaDon
+          const productName = item.tenSp || item.ten || item.tensp || item.name;
+          const productCode = findProductCode(productName);
+          console.log('Sử dụng mã sản phẩm:', productCode, 'cho tên:', productName);
+          
+          if (!productCode) {
+            continue;
+          }
+          
+          const addResponse = await taoCthd(finalInvoiceId, productCode, parseInt(item.sl));
+
+          if (!addResponse || !addResponse.success) {
+            } else {
+            }
+        } catch (error) {
+          }
+      }
+
+      // 6. Load lại chi tiết hóa đơn đích để lấy thông tin chi tiết mới
+      let newInvoiceDetails = [];
+      try {
+        const newDetailsResponse = await getChiTietHoaDonTheoMaHD(finalInvoiceId);
+        newInvoiceDetails = Array.isArray(newDetailsResponse) 
+          ? newDetailsResponse.filter(item => parseInt(item.sl) > 0)
+          : [];
+        } catch (error) {
+        }
+
+      // 7. Cập nhật trạng thái món đã xong
+      for (const newItem of newInvoiceDetails) {
+        // Kiểm tra xem món này có trong danh sách đã xong của bàn nguồn không
+        const isCompleted = completedItems.some(completedItem => {
+          const completedName = completedItem.tenSp || completedItem.ten || completedItem.tensp || completedItem.name || '';
+          const newItemName = newItem.tenSp || newItem.ten || newItem.tensp || newItem.name || '';
+          const completedQty = parseInt(completedItem.sl || completedItem.soLuong || 0);
+          const newItemQty = parseInt(newItem.sl || 0);
+          
+          return completedName.trim().toLowerCase() === newItemName.trim().toLowerCase() && 
+                 completedQty === newItemQty;
+        });
+
+        if (isCompleted) {
+          try {
+            // Lấy ID của chi tiết hóa đơn mới
+            const itemId = newItem.idCthd || newItem.maCt || newItem.id;
+            if (itemId) {
+              // Cập nhật trạng thái món về "đã xong"
+              // Giả sử trạng thái 2 = "đã xong" (1 = chờ, 2 = xong)
+              await capNhatTrangThaiMon(itemId, 2, 'Chuyển từ bàn gộp - đã xong');
+              } else {
+              }
+          } catch (error) {
+            }
+        }
+      }
+
+      // 8. Xóa hóa đơn bàn nguồn (thay vì chỉ cập nhật trạng thái)
+      if (selectedTable.invoiceId) {
+        try {
+          await huyHoaDon(selectedTable.invoiceId);
+          } catch (error) {
+          }
+      }
+
+      // 9. Load lại chi tiết hóa đơn đích lần cuối
+      let finalInvoiceDetails = [];
+      try {
+        const finalDetailsResponse = await getChiTietHoaDonTheoMaHD(finalInvoiceId);
+        finalInvoiceDetails = Array.isArray(finalDetailsResponse) 
+          ? finalDetailsResponse.filter(item => parseInt(item.sl) > 0)
+          : [];
+        } catch (error) {
+        finalInvoiceDetails = newInvoiceDetails; // fallback
+      }
+
+      // 10. Cập nhật state local
+      // Cập nhật currentInvoice và invoiceDetails cho bàn đích
+      const finalInvoice = {
+        maHd: finalInvoiceId,
+        maBan: targetTable.maBan,
+        tenBan: targetTable.tenBan
+      };
+
+      setCurrentInvoice(finalInvoice);
+      setInvoiceDetails(finalInvoiceDetails); // Sử dụng dữ liệu từ server
+      setSelectedTable(targetTable);
+
+      // Cập nhật merged table groups với logic mới
+      setMergedTableGroups(prev => {
+        const newGroups = { ...prev };
+        
+        // Kiểm tra xem targetTable đã là bàn chính của nhóm gộp nào chưa
+        const isTargetMainTable = newGroups[targetTable.id] !== undefined;
+        
+        if (isTargetMainTable) {
+          // Nếu targetTable đã là bàn chính: thêm selectedTable vào nhóm hiện tại
+          newGroups[targetTable.id] = [...newGroups[targetTable.id], selectedTable];
+        } else {
+          // Nếu targetTable chưa phải bàn chính: kiểm tra selectedTable
+          const isSelectedMainTable = newGroups[selectedTable.id] !== undefined;
+          
+          if (isSelectedMainTable) {
+            // Nếu selectedTable là bàn chính: bàn chính cũ trở thành bàn gộp, targetTable trở thành bàn chính mới
+            const oldGroup = newGroups[selectedTable.id];
+            delete newGroups[selectedTable.id]; // Xóa nhóm cũ
+            
+            // Tạo nhóm mới với targetTable là bàn chính
+            newGroups[targetTable.id] = [targetTable, ...oldGroup]; // targetTable là bàn chính, các bàn cũ (bao gồm selectedTable) trở thành bàn gộp
+          } else {
+            // Nếu selectedTable là bàn gộp: tìm nhóm của nó và thêm targetTable vào nhóm đó
+            const currentGroupKey = Object.keys(newGroups).find(mainTableId => 
+              newGroups[mainTableId].some(t => t.id === selectedTable.id)
+            );
+            
+            if (currentGroupKey) {
+              // Thêm targetTable vào nhóm hiện tại
+              newGroups[currentGroupKey] = [...newGroups[currentGroupKey], targetTable];
+            } else {
+              // Trường hợp không tìm thấy nhóm (không nên xảy ra), tạo nhóm mới
+              newGroups[targetTable.id] = [selectedTable, targetTable];
+            }
+          }
+        }
+        
+        return newGroups;
+      });
+
+      // 11. Thiết lập animation ghép bàn
+      setAnimationTables({
+        source: selectedTable,
+        target: targetTable
+      });
+      setShowMergeAnimation(true);
+
+      message.success(`Đã gộp bàn ${selectedTable.tenBan} vào bàn ${targetTable.tenBan}`);
+
+      // Reset modal states
+      setShowMergeTableModal(false);
+      setSelectedTargetTable(null);
+
+      // Delay để chạy animation xong rồi mới refresh
+      setTimeout(async () => {
+        await loadDsHoaDon();
+        refreshTableStatusOnly();
+        setOperationInProgress(false);
+      }, 2500); // Animation kéo dài 2s + 0.5s buffer
+
     } catch (error) {
-  // Silent console
       message.error('Không thể gộp bàn: ' + (error.message || 'Lỗi không xác định'));
       setOperationInProgress(false);
     } finally {
       setLoading(false);
     }
-  };
+
+    };
 
   // Enhanced Tách bàn  
   const handleSplitTable = async () => {
@@ -1743,13 +2101,29 @@ const BanHang = () => {
       const result = await chuyenBanEnhanced(invoiceIdToUse, targetTable.maBan);
       if (result && result.success !== false) {
         message.success(`Đã chuyển từ bàn ${selectedTable.tenBan} sang bàn ${targetTable.tenBan}`);
+        
+        // Cập nhật trạng thái bàn và mergedTableGroups
+        setSelectedTable(targetTable);
+        
+        // Chuyển trạng thái bàn chính nếu bàn hiện tại là bàn chính của nhóm gộp
+        if (mergedTableGroups[selectedTable.id]) {
+          setMergedTableGroups(prev => {
+            const newGroups = { ...prev };
+            // Chuyển nhóm từ bàn cũ sang bàn mới
+            newGroups[targetTable.id] = newGroups[selectedTable.id].map(table => 
+              table.id === selectedTable.id ? targetTable : table
+            );
+            delete newGroups[selectedTable.id];
+            return newGroups;
+          });
+        }
+        
         // Reset states
         setShowTransferTableModal(false);
         setSelectedTargetTable(null);
         // Refresh data và chọn bàn mới
         await loadDsHoaDon();
         await loadTableStatuses(tables, { silent: true });
-        setSelectedTable(targetTable);
 
       } else {
         throw new Error(result?.message || 'Chuyển bàn thất bại');
@@ -2017,59 +2391,94 @@ const BanHang = () => {
       </div>
       
       <div className="tables-grid">
-        {filteredTables.map(table => (
-          <Card
-            key={table.id}
-            className={`table-card ${table.status} ${table.hasPendingKitchenItems ? 'table-pending-blink' : ''}`}
-            onClick={() => handleTableSelect(table)}
-            hoverable={false}
-            bodyStyle={{ 
-              padding: 0, 
-              height: '100%',
-              backgroundColor: getTableStatusColor(table.status),
-              color: getTableStatusTextColor(table.status)
-            }}
-            style={{
-              backgroundColor: getTableStatusColor(table.status),
-              borderColor: getTableStatusColor(table.status),
-              cursor: 'pointer'
-            }}
-          >
-            <div className="table-header">
-              <div className="table-icon">
-                <Coffee 
-                  size={24} 
-                  color={getTableStatusTextColor(table.status)}
-                />
-              </div>
-              <div className="table-info">
-                <Title 
-                  level={5} 
-                  style={{ 
-                    margin: 0, 
-                    color: getTableStatusTextColor(table.status),
-                    fontSize: '16px',
-                    fontWeight: 600
-                  }}
-                >
-                  {table.name}
-                </Title>
-                <div className="table-status">
-                  <Text style={{ 
-                    color: getTableStatusTextColor(table.status),
-                    fontWeight: '500',
-                    fontSize: '14px'
-                  }}>
-                    {getTableStatusText(table.status)}
-                  </Text>
+        {filteredTables.map(table => {
+          // Kiểm tra xem bàn này có thuộc nhóm gộp không
+          const isMerged = Object.values(mergedTableGroups).some(group => 
+            group.some(t => t.id === table.id)
+          );
+          
+          // Kiểm tra xem bàn này có phải là bàn chính của nhóm gộp không
+          const isMainTable = mergedTableGroups[table.id] !== undefined;
+          
+          // Lấy thông tin nhóm gộp nếu có
+          const mergedGroup = isMainTable ? mergedTableGroups[table.id] : null;
+          
+          return (
+            <Card
+              key={table.id}
+              className={`table-card ${table.status} ${table.hasPendingKitchenItems ? 'table-pending-blink' : ''} ${isMerged ? 'table-merged' : ''} ${isMainTable ? 'table-main-merged' : ''}`}
+              onClick={() => handleTableSelect(table)}
+              hoverable={false}
+              bodyStyle={{ 
+                padding: 0, 
+                height: '100%',
+                backgroundColor: getTableStatusColor(table.status),
+                color: getTableStatusTextColor(table.status)
+              }}
+              style={{
+                backgroundColor: getTableStatusColor(table.status),
+                borderColor: isMainTable ? '#ff6b35' : (isMerged ? '#ff9500' : getTableStatusColor(table.status)),
+                borderWidth: isMerged ? '2px' : '1px',
+                cursor: 'pointer',
+                position: 'relative'
+              }}
+            >
+              {/* Badge cho bàn đã gộp */}
+              {isMerged && (
+                <div className="merged-table-badge">
+                  {isMainTable ? (
+                    <Badge count={mergedGroup.length} color="#ff6b35" />
+                  ) : (
+                    <Badge count="Gộp" color="#ff9500" />
+                  )}
                 </div>
-                {table.hasPendingKitchenItems && (
-                  <div className="table-pending-pill">
-                    Đang chờ bếp
+              )}
+              
+              <div className="table-header">
+                <div className="table-icon">
+                  <Coffee 
+                    size={24} 
+                    color={getTableStatusTextColor(table.status)}
+                  />
+                </div>
+                <div className="table-info">
+                  <Title 
+                    level={5} 
+                    style={{ 
+                      margin: 0, 
+                      color: getTableStatusTextColor(table.status),
+                      fontSize: '16px',
+                      fontWeight: 600
+                    }}
+                  >
+                    {table.name}
+                  </Title>
+                  <div className="table-status">
+                    <Text style={{ 
+                      color: getTableStatusTextColor(table.status),
+                      fontWeight: '500',
+                      fontSize: '14px'
+                    }}>
+                      {getTableStatusText(table.status)}
+                    </Text>
+                    {isMerged && (
+                      <Text style={{ 
+                        color: getTableStatusTextColor(table.status),
+                        fontSize: '12px',
+                        fontStyle: 'italic',
+                        marginLeft: '4px'
+                      }}>
+                        {isMainTable ? '(Bàn chính)' : '(Đã gộp)'}
+                      </Text>
+                    )}
                   </div>
-                )}
+                  {table.hasPendingKitchenItems && (
+                    <div className="table-pending-pill">
+                      Đang chờ bếp
+                    </div>
+                  )}
+                </div>
               </div>
-            </div>
             
             {/* Hiển thị thông tin chi tiết nếu bàn có khách */}
             {table.status !== 'available' && (
@@ -2163,7 +2572,8 @@ const BanHang = () => {
               </div>
             )}
           </Card>
-        ))}
+          );
+        })}
       </div>
     </div>
   );
@@ -2678,3 +3088,4 @@ const BanHang = () => {
 };
 
 export default BanHang;
+
