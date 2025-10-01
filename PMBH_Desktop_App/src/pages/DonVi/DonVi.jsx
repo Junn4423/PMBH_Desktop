@@ -190,26 +190,29 @@ const DonVi = () => {
               <Ruler size={20} />
               <span>Quản lý Đơn vị</span>
             </div>
-            <Button
-              type="primary"
-              icon={<Plus size={16} />}
-              onClick={handleAdd}
-            >
-              Thêm mới
-            </Button>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+              <SearchInput
+                placeholder="Tìm kiếm theo mã, tên đơn vị..."
+                allowClear
+                prefix={<Search size={16} />}
+                value={searchText}
+                onChange={(e) => setSearchText(e.target.value)}
+                onSearch={handleSearch}
+                style={{ width: 300 }}
+              />
+              <Button
+                type="primary"
+                icon={<Plus size={16} />}
+                onClick={handleAdd}
+              >
+                Thêm mới
+              </Button>
+            </div>
           </div>
         }
       >
         <div style={{ marginBottom: 16 }}>
-          <SearchInput
-            placeholder="Tìm kiếm theo mã, tên đơn vị..."
-            allowClear
-            prefix={<Search size={16} />}
-            value={searchText}
-            onChange={(e) => setSearchText(e.target.value)}
-            onSearch={handleSearch}
-            style={{ width: 300 }}
-          />
+          {/* Search moved to header */}
         </div>
         
         <Table

@@ -297,9 +297,19 @@ const SanPham = () => {
     // Get original data if available
     const original = product.originalProduct || {};
     
-    // Parse giá bán to ensure it's a number for the form
-    const giaBan = product.gia || original.giaBan || original.gia || original.donGia || 0;
-    const giaBanNumber = typeof giaBan === 'number' ? giaBan : (parseInt(giaBan, 10) || 0);
+    // Parse giá bán to ensure it's a number for the form - FIX: better parsing
+    let giaBan = product.gia || original.giaBan || original.gia || original.donGia || 0;
+    
+    // Convert string to number properly
+    if (typeof giaBan === 'string') {
+      giaBan = giaBan.replace(/[,\.]/g, ''); // Remove commas and dots
+      giaBan = parseInt(giaBan, 10);
+    }
+    
+    // Ensure it's a valid number
+    const giaBanNumber = (!isNaN(giaBan) && giaBan >= 0) ? giaBan : 0;
+    
+    console.log('Parsed giaBan:', giaBanNumber);
     
     const formValues = {
       lv001: product.id || original.maSp || product.maSp || '',
@@ -336,8 +346,20 @@ const SanPham = () => {
       console.log('Form values submitted:', values);
       console.log('Editing product:', editingProduct);
       
-      // Parse giá bán to ensure it's a number
-      const giaBan = typeof values.lv004 === 'number' ? values.lv004 : (parseInt(values.lv004, 10) || 0);
+      // Parse giá bán to ensure it's a number - FIX: Better validation
+      let giaBan = values.lv004;
+      
+      // Handle different input formats
+      if (typeof giaBan === 'string') {
+        giaBan = giaBan.replace(/[,\.]/g, ''); // Remove commas and dots
+        giaBan = parseInt(giaBan, 10);
+      }
+      
+      // Validate the price
+      if (isNaN(giaBan) || giaBan < 0) {
+        message.error('Giá bán không hợp lệ. Vui lòng nhập giá bán hợp lệ.');
+        return;
+      }
       
       console.log('Parsed giaBan:', giaBan);
       
@@ -352,7 +374,7 @@ const SanPham = () => {
         lv001: (values.lv001 || '').toString().trim(),
         lv002: (values.lv002 || '').toString().trim(),
         lv003: (values.lv003 || '').toString().trim(),
-        lv004: giaBan, // Ensure it's a number
+        lv004: giaBan, // Must be a valid number
         lv005: (values.lv005 || originalData.donVi || originalData.lv005 || '').toString().trim(),
         lv006: (values.lv006 || originalData.moTa || originalData.ghiChu || originalData.lv006 || '').toString().trim(),
         lv007: (values.lv007 || originalData.hinhAnh || originalData.lv007 || '').toString().trim(),
@@ -368,6 +390,7 @@ const SanPham = () => {
       };
       
       console.log('Payload to send:', payload);
+      console.log('Price in payload (lv004):', payload.lv004, typeof payload.lv004);
       
       let result;
       if (editingProduct) {
@@ -704,12 +727,15 @@ const SanPham = () => {
                 return `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
               }}
               parser={value => {
-                if (!value) return 0;
-                return parseInt(value.replace(/\$\s?|(,*)/g, ''), 10) || 0;
+                if (!value) return '';
+                // Remove all non-digits
+                const cleaned = value.replace(/[^\d]/g, '');
+                const num = parseInt(cleaned, 10);
+                return isNaN(num) ? '' : num;
               }}
               placeholder="Nhập giá bán (VD: 50000)"
               onChange={(value) => {
-                console.log('Price changed:', value);
+                console.log('Price changed:', value, typeof value);
               }}
             />
           </Form.Item>

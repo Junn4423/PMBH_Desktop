@@ -1,11 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { Card, Breadcrumb, Table, Button, Modal, Form, Input, Space, Popconfirm, message } from 'antd';
-import { Building, Plus, Edit, Trash2 } from 'lucide-react';
+import { Building, Plus, Edit, Trash2, Search } from 'lucide-react';
 import { loadKhuVuc, themKhuVuc, suaKhuVuc, xoaKhuVuc } from '../../services/apiServices';
 import './TangNhaHang.css';
 
+const { Search: SearchInput } = Input;
+
 const TangNhaHang = () => {
   const [khuVucList, setKhuVucList] = useState([]);
+  const [filteredList, setFilteredList] = useState([]);
+  const [searchText, setSearchText] = useState('');
   const [loading, setLoading] = useState(false);
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [editingKhuVuc, setEditingKhuVuc] = useState(null);
@@ -14,6 +18,10 @@ const TangNhaHang = () => {
   useEffect(() => {
     loadData();
   }, []);
+
+  useEffect(() => {
+    handleSearch(searchText);
+  }, [searchText, khuVucList]);
 
   const loadData = async () => {
     setLoading(true);
@@ -28,6 +36,7 @@ const TangNhaHang = () => {
           _raw: item
         }));
         setKhuVucList(mapped);
+        setFilteredList(mapped);
       }
     } catch (error) {
       console.error('Error loading khu vuc:', error);
@@ -35,6 +44,20 @@ const TangNhaHang = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleSearch = (value) => {
+    if (!value || value.trim() === '') {
+      setFilteredList(khuVucList);
+      return;
+    }
+    
+    const searchLower = value.toLowerCase().trim();
+    const filtered = khuVucList.filter(item => 
+      (item.maKhuVuc && item.maKhuVuc.toLowerCase().includes(searchLower)) ||
+      (item.tenKhuVuc && item.tenKhuVuc.toLowerCase().includes(searchLower))
+    );
+    setFilteredList(filtered);
   };
 
   const handleAdd = () => {
@@ -151,20 +174,31 @@ const TangNhaHang = () => {
               <Building size={20} />
               <span>Quản lý Tầng/Khu vực Nhà hàng</span>
             </div>
-            <Button
-              type="primary"
-              icon={<Plus size={16} />}
-              onClick={handleAdd}
-            >
-              Thêm mới
-            </Button>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+              <SearchInput
+                placeholder="Tìm kiếm theo mã, tên tầng/khu vực..."
+                allowClear
+                prefix={<Search size={16} />}
+                value={searchText}
+                onChange={(e) => setSearchText(e.target.value)}
+                onSearch={handleSearch}
+                style={{ width: 300 }}
+              />
+              <Button
+                type="primary"
+                icon={<Plus size={16} />}
+                onClick={handleAdd}
+              >
+                Thêm mới
+              </Button>
+            </div>
           </div>
         }
         className="main-card"
       >
         <Table
           columns={columns}
-          dataSource={khuVucList}
+          dataSource={filteredList}
           loading={loading}
           pagination={{
             pageSize: 10,

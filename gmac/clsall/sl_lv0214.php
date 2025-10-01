@@ -355,201 +355,342 @@ class  sl_lv0214 extends lv_controler
 		}
 		return $this->vArrDay;
 	}
-	function PrintInOutPutInStockDetail($plang, $vArrLang,$vDateStart,$vDateEnd,$vOpt=0)
-	{
-	$vHeaderReportInventory="
-		<table width=\"100%\" align=\"center\" cellpadding=\"0\" cellspacing=\"0\" border=\"1\" class=\"tblprint\">
-			<tr height=\"30px\" class=\"tblcaption\">
-				<td rowspan=\"2\" class=\"htable\" width=\"3%\" >STT</td>
-				<td rowspan=\"2\" class=\"htable\" width=\"5%\" >Ngày</td>
-				<td rowspan=\"2\" class=\"htable\" width=\"10%\" style=\"cursor:pointer\">Tổng thu</td>
-				<td class=\"htable\" width=\"*%\" style=\"cursor:pointer\" colspan=\"5\">Nội dung thu</td>
-			</tr>
-			<tr>
-				<td class=\"htable\" width=\"20%\" ondblclick=\"RemoveCol('col_5',this,@!79)\" style=\"cursor:pointer\">Tên mục thu</td>
-				<td class=\"htable\" width=\"10%\" ondblclick=\"RemoveCol('col_6',this,@!79)\" style=\"cursor:pointer\">Số lượng</td>
-				<td class=\"htable\" width=\"10%\" ondblclick=\"RemoveCol('col_7',this,@!79)\" style=\"cursor:pointer\">Đơn giá</td>
-				<td class=\"htable\" width=\"3%\" ondblclick=\"RemoveCol('col_8',this,@!79)\" style=\"cursor:pointer\">%Giảm giá</td>
-				<td class=\"htable\" width=\"10%\" ondblclick=\"RemoveCol('col_9',this,@!79)\" style=\"cursor:pointer\">Thành tiền</td>
-			</tr>
-			@01
-		</table>";			
-		$vRowFirst="
-			<tr class=\"lvlinehtable@#02\">
-				<td class=\"center_style\" rowspan=\"@#01\" valign=\"top\" >@01</td>
-				<td class=\"center_style\" rowspan=\"@#01\" valign=\"top\" nowrap>@02</td>
-				<td class=\"right_style\" rowspan=\"@#01\" valign=\"top\" nowrap>@03</td>
-				<td class=\"left_style\"   id=\"col_5_@02\" nowrap>@06</td>
-				<td class=\"center_style\" id=\"col_6_@02\" nowrap>@07</td>
-				<td class=\"center_style\" id=\"col_7_@02\" nowrap>@08</td>
-				<td class=\"right_style\"  id=\"col_8_@02\" nowrap>@09</td>
-				<td class=\"right_style\"  id=\"col_9_@02\" nowrap>@10</td>				
-			</tr>
-			";
-		$vRowDetail="
-			<tr class=\"lvlinehtable@#02\">
-				<td class=\"left_style\" id=\"col_5_@02\">@06</td>
-				<td class=\"center_style\" id=\"col_6_@02\">@07</td>
-				<td class=\"center_style\" id=\"col_7_@02\">@08</td>
-				<td class=\"right_style\"  id=\"col_8_@02\">@09</td>
-				<td class=\"right_style\"  id=\"col_9_@02\">@10</td>	
-			</tr>
-			";
-		$vRowLast="
-			<tr>
-				<td class=\"center_style\" valign=\"top\" colspan=\"2\"><strong>Tổng:</strong></td>
-				<td class=\"right_style\" id=\"col_2_@02\"><strong>@03</strong></td>
-				<td class=\"left_style\" id=\"col_5_@02\"&nbsp;</td>
-				<td class=\"center_style\" id=\"col_6_@02\">&nbsp;</td>
-				<td class=\"center_style\" id=\"col_7_@02\">&nbsp;</td>
-				<td class=\"right_style\" id=\"col_8_@02\"><strong>&nbsp;</strong></td>	
-				<td class=\"right_style\" id=\"col_9_@02\"><strong>&nbsp;</strong></td>	
-			</tr>
-			";
-		$vRowLightText="
-			<tr>
-				<td class=\"left_style\" id=\"col_5_@02\" >@06</td>
-				<td class=\"center_style\"  id=\"col_6_@02\">@07</td>
-				<td class=\"center_style\"  id=\"col_7_@02\">@08</td>
-				<td class=\"right_style\"  id=\"col_8_@02\">@09</td>	
-				<td class=\"center_style\"  id=\"col_9_@02\">@10</td>
-			</tr>";
-		$this->LV_GetLimitDate($vDateStart,$vDateEnd);
-		$vtInventorylv001='1111111111111111111111111111111111111';
-		$vOrder=1;
-		if(count($this->vArrDay)>0){
-			foreach($this->vArrDay as $vDateCal)
-			{
+function PrintInOutPutInStockDetail($plang, $vArrLang, $vDateStart, $vDateEnd, $vOpt = 0)
+{
+    $vHeaderReportInventory = "
+        <table width=\"100%\" align=\"center\" cellpadding=\"0\" cellspacing=\"0\" border=\"1\" class=\"tblprint\">
+            <tr class=\"tblcaption\">
+                <td class=\"htable\" width=\"3%\">STT</td>
+                <td class=\"htable\" width=\"10%\">Ngày</td>
+                <td class=\"htable\" width=\"5%\">Mã SP</td>
+                <td class=\"htable\" width=\"5%\">Số lượng</td>
+                <td class=\"htable\" width=\"10%\">Đơn giá</td>
+                <td class=\"htable\" width=\"10%\">Giảm giá (%)</td>
+                <td class=\"htable\" width=\"10%\">CKTM (%)</td>
+                <td class=\"htable\" width=\"10%\">Thành tiền</td>
+                <td class=\"htable\" width=\"27%\">Tên sản phẩm</td>
+            </tr>
+            @01
+        </table>";
 
-				$vLineRun = $vRowFirst;
-				$vLineRun = str_replace("@01", $vOrder, $vLineRun);
-				$vLineRun = str_replace("@02", $this->FormatView($vDateCal,2), $vLineRun);
-				$vLineRun = str_replace("@#02", ($vOrder%2), $vLineRun);
-				$vNumline=0;
-				$vContract=0;
-				$strExpportAll1='';
-				switch($vOpt)
-				{
-					case 1:
-						$vsql="select A.lv003,sum(A.lv004) lv004,'' lv006,'' lv011,'' CKTM,sum((A.lv004*A.lv006-A.lv004*A.lv006*A.lv011/100 -(A.lv004*A.lv006-A.lv004*A.lv006*A.lv011/100)*B.lv022/100)) thanhtien,C.lv002 Names from sl_lv0014 A inner join sl_lv0007 C on A.lv003=C.lv001 inner join sl_lv0013 B on A.lv002=B.lv001 and substr(B.lv004,1,10)='".$vDateCal."' group by A.lv003";
-						break;
-					case 2:
-						$vsql="select C.lv003,sum(A.lv004) lv004,'' lv006,'' lv011,'' CKTM,sum((A.lv004*A.lv006-A.lv004*A.lv006*A.lv011/100 -(A.lv004*A.lv006-A.lv004*A.lv006*A.lv011/100)*B.lv022/100)) thanhtien,D.lv002 Names from sl_lv0014 A inner join sl_lv0007 C on A.lv003=C.lv001 inner join sl_lv0013 B on A.lv002=B.lv001 and substr(B.lv004,1,10)='".$vDateCal."' left join sl_lv0006 D on C.lv003=D.lv001 group by C.lv003";
-						break;
-					case 3:
-						$vsql="select B.lv010,sum(A.lv004) lv004,'' lv006,'' lv011,'' CKTM,sum((A.lv004*A.lv006-A.lv004*A.lv006*A.lv011/100 -(A.lv004*A.lv006-A.lv004*A.lv006*A.lv011/100)*B.lv022/100)) thanhtien,C.lv002 Names from sl_lv0014 A  inner join sl_lv0013 B on A.lv002=B.lv001 and substr(B.lv004,1,10)='".$vDateCal."' inner join hr_lv0020 C on B.lv010=C.lv001 group by B.lv010";
-						break;
-					case 13:
-						$vsql="select B.lv032 lv010,sum(A.lv004) lv004,'' lv006,'' lv011,'' CKTM,sum((A.lv004*A.lv006-A.lv004*A.lv006*A.lv011/100 -(A.lv004*A.lv006-A.lv004*A.lv006*A.lv011/100)*B.lv022/100)) thanhtien,C.lv002 Names from sl_lv0014 A  inner join sl_lv0013 B on A.lv002=B.lv001 and substr(B.lv004,1,10)='".$vDateCal."' inner join hr_lv0020 C on B.lv032=C.lv001 group by B.lv032";
-						break;
-					case 4:
-						$vsql="select B.lv002,sum(A.lv004) lv004,'' lv006,'' lv011,'' CKTM,sum((A.lv004*A.lv006-A.lv004*A.lv006*A.lv011/100 -(A.lv004*A.lv006-A.lv004*A.lv006*A.lv011/100)*B.lv022/100)) thanhtien,C.lv002 Names from sl_lv0014 A inner join sl_lv0013 B on A.lv002=B.lv001 and substr(B.lv004,1,10)='".$vDateCal."' inner join sl_lv0001 C on B.lv002=C.lv001  group by B.lv002";
-						break;
-					default:
-						$vsql="select A.lv003,A.lv004,A.lv006,A.lv011,B.lv022 CKTM,(A.lv004*A.lv006-A.lv004*A.lv006*A.lv011/100 -(A.lv004*A.lv006-A.lv004*A.lv006*A.lv011/100)*B.lv022/100) thanhtien,C.lv002 Names from sl_lv0014 A inner join sl_lv0007 C on A.lv003=C.lv001 inner join sl_lv0013 B on A.lv002=B.lv001 and substr(B.lv004,1,10)='".$vDateCal."'";
-						break;
-				}
+    // dòng đầu tiên của 1 ngày (có STT + Ngày, gộp rowspan)
+    $vRowDetailWithDate = "
+        <tr class=\"lvlinehtable@#02\">
+            <td class=\"center_style\" rowspan=\"@ROWSPAN\">@STT</td>
+            <td class=\"center_style\" rowspan=\"@ROWSPAN\">@DATE</td>
+            <td class=\"center_style\">@03</td>
+            <td class=\"center_style\">@04</td>
+            <td class=\"right_style\">@05</td>
+            <td class=\"center_style\">@06</td>
+            <td class=\"center_style\">@07</td>
+            <td class=\"right_style\">@08</td>
+            <td class=\"left_style\">@09</td>
+        </tr>";
+
+    // các dòng còn lại của ngày (không có STT và Ngày)
+    $vRowDetailNoDate = "
+        <tr class=\"lvlinehtable@#02\">
+            <td class=\"center_style\">@03</td>
+            <td class=\"center_style\">@04</td>
+            <td class=\"right_style\">@05</td>
+            <td class=\"center_style\">@06</td>
+            <td class=\"center_style\">@07</td>
+            <td class=\"right_style\">@08</td>
+            <td class=\"left_style\">@09</td>
+        </tr>";
+
+    $vRowLast = "
+        <tr>
+            <td class=\"center_style\" colspan=\"7\"><strong>Tổng cộng:</strong></td>
+            <td class=\"right_style\"><strong>@SUM</strong></td>
+            <td>&nbsp;</td>
+        </tr>";
+
+    // Lấy dữ liệu
+    $vsql = "
+        SELECT 
+            DATE(B.lv004) AS Ngay,
+            A.lv003,
+            A.lv004,
+            A.lv006,
+            A.lv011,
+            B.lv022 AS CKTM,
+            (
+                (A.lv004 * A.lv006 - A.lv004 * A.lv006 * A.lv011 / 100 
+                - (A.lv004 * A.lv006 - A.lv004 * A.lv006 * A.lv011 / 100) * B.lv022 / 100)
+            ) AS thanhtien,
+            C.lv002 AS Names
+        FROM sl_lv0014 A
+        INNER JOIN sl_lv0007 C ON A.lv003 = C.lv001
+        INNER JOIN sl_lv0013 B ON A.lv002 = B.lv001
+        WHERE DATE(B.lv004) BETWEEN '$vDateStart' AND '$vDateEnd'
+        ORDER BY Ngay, A.lv003
+    ";
+
+    $rs = db_query($vsql);
+    if (!$rs) return "Không có dữ liệu.";
+
+    // Gom dữ liệu theo ngày
+    $dataByDate = [];
+    while ($row = db_fetch_array($rs)) {
+        $dataByDate[$row['Ngay']][] = $row;
+    }
+
+    $vRows = '';
+    $stt = 1;
+    $vTotalThanhTien = 0;
+
+    foreach ($dataByDate as $ngay => $rows) {
+        // --- Bước 1: gom sản phẩm trùng trong 1 ngày ---
+        $mergedProducts = [];
+        foreach ($rows as $r) {
+            $key = $r['lv003']; // gom theo Mã SP (hoặc Names)
+            if (!isset($mergedProducts[$key])) {
+                $mergedProducts[$key] = $r;
+            } else {
+                $mergedProducts[$key]['lv004'] += $r['lv004']; // cộng số lượng
+                $mergedProducts[$key]['thanhtien'] += $r['thanhtien']; // cộng thành tiền
+                // giữ nguyên đơn giá, giảm giá, CKTM
+            }
+        }
+
+        $rowspan = count($mergedProducts);
+        $isFirst = true;
+
+        // --- Bước 2: render ra bảng ---
+        foreach ($mergedProducts as $row) {
+            if ($isFirst) {
+                $vLine = $vRowDetailWithDate;
+                $vLine = str_replace("@ROWSPAN", $rowspan, $vLine);
+                $vLine = str_replace("@STT", $stt, $vLine);
+                $vLine = str_replace("@DATE", $this->FormatView($ngay, 2), $vLine);
+                $isFirst = false;
+            } else {
+                $vLine = $vRowDetailNoDate;
+            }
+
+            $vLine = str_replace("@03", $row['lv003'], $vLine); // Mã SP
+            $vLine = str_replace("@04", $this->FormatView($row['lv004'], 20), $vLine); // SL
+            $vLine = str_replace("@05", $this->FormatView($row['lv006'], 20), $vLine); // Đơn giá
+            $vLine = str_replace("@06", $this->FormatView($row['lv011'], 20), $vLine); // Giảm giá
+            $vLine = str_replace("@07", $this->FormatView($row['CKTM'], 20), $vLine); // CKTM
+            $vLine = str_replace("@08", $this->FormatView($row['thanhtien'], 20), $vLine); // Thành tiền
+            $vLine = str_replace("@09", $row['Names'], $vLine); // Tên SP
+            $vLine = str_replace("@#02", ($stt % 2), $vLine);
+
+            $vRows .= $vLine;
+            $vTotalThanhTien += $row['thanhtien'];
+        }
+
+        $stt++;
+    }
+
+    // Tổng cộng
+    $vRowLast = str_replace("@SUM", $this->FormatView($vTotalThanhTien, 20), $vRowLast);
+    $vRows .= $vRowLast;
+
+    $vTableAll = str_replace("@01", $vRows, $vHeaderReportInventory);
+    return $vTableAll;
+}
+
+
+
+	// function PrintInOutPutInStockDetail($plang, $vArrLang,$vDateStart,$vDateEnd,$vOpt=0)
+	// {
+	// $vHeaderReportInventory="
+	// 	<table width=\"100%\" align=\"center\" cellpadding=\"0\" cellspacing=\"0\" border=\"1\" class=\"tblprint\">
+	// 		<tr height=\"30px\" class=\"tblcaption\">
+	// 			<td rowspan=\"2\" class=\"htable\" width=\"3%\" >STT</td>
+	// 			<td rowspan=\"2\" class=\"htable\" width=\"5%\" >Ngày</td>
+	// 			<td rowspan=\"2\" class=\"htable\" width=\"10%\" style=\"cursor:pointer\">Tổng thu</td>
+	// 			<td class=\"htable\" width=\"*%\" style=\"cursor:pointer\" colspan=\"5\">Nội dung thu</td>
+	// 		</tr>
+	// 		<tr>
+	// 			<td class=\"htable\" width=\"20%\" ondblclick=\"RemoveCol('col_5',this,@!79)\" style=\"cursor:pointer\">Tên mục thu</td>
+	// 			<td class=\"htable\" width=\"10%\" ondblclick=\"RemoveCol('col_6',this,@!79)\" style=\"cursor:pointer\">Số lượng</td>
+	// 			<td class=\"htable\" width=\"10%\" ondblclick=\"RemoveCol('col_7',this,@!79)\" style=\"cursor:pointer\">Đơn giá</td>
+	// 			<td class=\"htable\" width=\"3%\" ondblclick=\"RemoveCol('col_8',this,@!79)\" style=\"cursor:pointer\">%Giảm giá</td>
+	// 			<td class=\"htable\" width=\"10%\" ondblclick=\"RemoveCol('col_9',this,@!79)\" style=\"cursor:pointer\">Thành tiền</td>
+	// 		</tr>
+	// 		@01
+	// 	</table>";			
+	// 	$vRowFirst="
+	// 		<tr class=\"lvlinehtable@#02\">
+	// 			<td class=\"center_style\" rowspan=\"@#01\" valign=\"top\" >@01</td>
+	// 			<td class=\"center_style\" rowspan=\"@#01\" valign=\"top\" nowrap>@02</td>
+	// 			<td class=\"right_style\" rowspan=\"@#01\" valign=\"top\" nowrap>@03</td>
+	// 			<td class=\"left_style\"   id=\"col_5_@02\" nowrap>@06</td>
+	// 			<td class=\"center_style\" id=\"col_6_@02\" nowrap>@07</td>
+	// 			<td class=\"center_style\" id=\"col_7_@02\" nowrap>@08</td>
+	// 			<td class=\"right_style\"  id=\"col_8_@02\" nowrap>@09</td>
+	// 			<td class=\"right_style\"  id=\"col_9_@02\" nowrap>@10</td>				
+	// 		</tr>
+	// 		";
+	// 	$vRowDetail="
+	// 		<tr class=\"lvlinehtable@#02\">
+	// 			<td class=\"left_style\" id=\"col_5_@02\">@06</td>
+	// 			<td class=\"center_style\" id=\"col_6_@02\">@07</td>
+	// 			<td class=\"center_style\" id=\"col_7_@02\">@08</td>
+	// 			<td class=\"right_style\"  id=\"col_8_@02\">@09</td>
+	// 			<td class=\"right_style\"  id=\"col_9_@02\">@10</td>	
+	// 		</tr>
+	// 		";
+	// 	$vRowLast="
+	// 		<tr>
+	// 			<td class=\"center_style\" valign=\"top\" colspan=\"2\"><strong>Tổng:</strong></td>
+	// 			<td class=\"right_style\" id=\"col_2_@02\"><strong>@03</strong></td>
+	// 			<td class=\"left_style\" id=\"col_5_@02\"&nbsp;</td>
+	// 			<td class=\"center_style\" id=\"col_6_@02\">&nbsp;</td>
+	// 			<td class=\"center_style\" id=\"col_7_@02\">&nbsp;</td>
+	// 			<td class=\"right_style\" id=\"col_8_@02\"><strong>&nbsp;</strong></td>	
+	// 			<td class=\"right_style\" id=\"col_9_@02\"><strong>&nbsp;</strong></td>	
+	// 		</tr>
+	// 		";
+	// 	$vRowLightText="
+	// 		<tr>
+	// 			<td class=\"left_style\" id=\"col_5_@02\" >@06</td>
+	// 			<td class=\"center_style\"  id=\"col_6_@02\">@07</td>
+	// 			<td class=\"center_style\"  id=\"col_7_@02\">@08</td>
+	// 			<td class=\"right_style\"  id=\"col_8_@02\">@09</td>	
+	// 			<td class=\"center_style\"  id=\"col_9_@02\">@10</td>
+	// 		</tr>";
+	// 	$this->LV_GetLimitDate($vDateStart,$vDateEnd);
+	// 	$vtInventorylv001='1111111111111111111111111111111111111';
+	// 	$vOrder=1;
+	// 	if(count($this->vArrDay)>0){
+	// 		foreach($this->vArrDay as $vDateCal)
+	// 		{
+
+	// 			$vLineRun = $vRowFirst;
+	// 			$vLineRun = str_replace("@01", $vOrder, $vLineRun);
+	// 			$vLineRun = str_replace("@02", $this->FormatView($vDateCal,2), $vLineRun);
+	// 			$vLineRun = str_replace("@#02", ($vOrder%2), $vLineRun);
+	// 			$vNumline=0;
+	// 			$vContract=0;
+	// 			$strExpportAll1='';
+	// 			switch($vOpt)
+	// 			{
+	// 				case 1:
+	// 					$vsql="select A.lv003,sum(A.lv004) lv004,'' lv006,'' lv011,'' CKTM,sum((A.lv004*A.lv006-A.lv004*A.lv006*A.lv011/100 -(A.lv004*A.lv006-A.lv004*A.lv006*A.lv011/100)*B.lv022/100)) thanhtien,C.lv002 Names from sl_lv0014 A inner join sl_lv0007 C on A.lv003=C.lv001 inner join sl_lv0013 B on A.lv002=B.lv001 and substr(B.lv004,1,10)='".$vDateCal."' group by A.lv003";
+	// 					break;
+	// 				case 2:
+	// 					$vsql="select C.lv003,sum(A.lv004) lv004,'' lv006,'' lv011,'' CKTM,sum((A.lv004*A.lv006-A.lv004*A.lv006*A.lv011/100 -(A.lv004*A.lv006-A.lv004*A.lv006*A.lv011/100)*B.lv022/100)) thanhtien,D.lv002 Names from sl_lv0014 A inner join sl_lv0007 C on A.lv003=C.lv001 inner join sl_lv0013 B on A.lv002=B.lv001 and substr(B.lv004,1,10)='".$vDateCal."' left join sl_lv0006 D on C.lv003=D.lv001 group by C.lv003";
+	// 					break;
+	// 				case 3:
+	// 					$vsql="select B.lv010,sum(A.lv004) lv004,'' lv006,'' lv011,'' CKTM,sum((A.lv004*A.lv006-A.lv004*A.lv006*A.lv011/100 -(A.lv004*A.lv006-A.lv004*A.lv006*A.lv011/100)*B.lv022/100)) thanhtien,C.lv002 Names from sl_lv0014 A  inner join sl_lv0013 B on A.lv002=B.lv001 and substr(B.lv004,1,10)='".$vDateCal."' inner join hr_lv0020 C on B.lv010=C.lv001 group by B.lv010";
+	// 					break;
+	// 				case 13:
+	// 					$vsql="select B.lv032 lv010,sum(A.lv004) lv004,'' lv006,'' lv011,'' CKTM,sum((A.lv004*A.lv006-A.lv004*A.lv006*A.lv011/100 -(A.lv004*A.lv006-A.lv004*A.lv006*A.lv011/100)*B.lv022/100)) thanhtien,C.lv002 Names from sl_lv0014 A  inner join sl_lv0013 B on A.lv002=B.lv001 and substr(B.lv004,1,10)='".$vDateCal."' inner join hr_lv0020 C on B.lv032=C.lv001 group by B.lv032";
+	// 					break;
+	// 				case 4:
+	// 					$vsql="select B.lv002,sum(A.lv004) lv004,'' lv006,'' lv011,'' CKTM,sum((A.lv004*A.lv006-A.lv004*A.lv006*A.lv011/100 -(A.lv004*A.lv006-A.lv004*A.lv006*A.lv011/100)*B.lv022/100)) thanhtien,C.lv002 Names from sl_lv0014 A inner join sl_lv0013 B on A.lv002=B.lv001 and substr(B.lv004,1,10)='".$vDateCal."' inner join sl_lv0001 C on B.lv002=C.lv001  group by B.lv002";
+	// 					break;
+	// 				default:
+	// 					$vsql="select A.lv003,A.lv004,A.lv006,A.lv011,B.lv022 CKTM,(A.lv004*A.lv006-A.lv004*A.lv006*A.lv011/100 -(A.lv004*A.lv006-A.lv004*A.lv006*A.lv011/100)*B.lv022/100) thanhtien,C.lv002 Names from sl_lv0014 A inner join sl_lv0007 C on A.lv003=C.lv001 inner join sl_lv0013 B on A.lv002=B.lv001 and substr(B.lv004,1,10)='".$vDateCal."'";
+	// 					break;
+	// 			}
 				
-				$bResultS = db_query($vsql);
-				while($vrow =db_fetch_array($bResultS))
-				{
-					$vContract=$vContract+$vrow['thanhtien'];
-					if($vNumline==0)
-					{
-						$vLineRun = str_replace("@06", $vrow['Names'], $vLineRun);
-						$vLineRun = str_replace("@07", $this->FormatView($vrow['lv004'],20), $vLineRun);
-						$vLineRun = str_replace("@08", $this->FormatView($vrow['lv006'],20), $vLineRun);
-						$vLineRun = str_replace("@09", $this->FormatView($vrow['lv011'],20),$vLineRun);
-						$vLineRun = str_replace("@10", $this->FormatView($vrow['thanhtien'],20),$vLineRun);
-					}
-					else
-					{
-						$vLineRun1 = $vRowDetail;
-						$vLineRun1 = str_replace("@06", $vrow['Names'], $vLineRun1);
-						$vLineRun1 = str_replace("@07", $this->FormatView($vrow['lv004'],20), $vLineRun1);
-						$vLineRun1 = str_replace("@08", $this->FormatView($vrow['lv006'],20), $vLineRun1);
-						$vLineRun1 = str_replace("@09", $this->FormatView($vrow['lv011'],20), $vLineRun1);
-						$vLineRun1 = str_replace("@10", $this->FormatView($vrow['thanhtien'],20),$vLineRun1);
-						$strExpportAll1 = $strExpportAll1.$vLineRun1;
-					}
-					$vNumline++;
-				}
-				$vSumContract=$vSumContract+$vContract;
-				$vLineRun = str_replace("@03", $this->FormatView($vContract,20), $vLineRun);
-				if($vNumline==0)
-				{
-					$vLineRun = str_replace("@06", '&nbsp;', $vLineRun);
-					$vLineRun = str_replace("@07", '&nbsp;', $vLineRun);
-					$vLineRun = str_replace("@08", '&nbsp;', $vLineRun);
-					$vLineRun = str_replace("@09", '&nbsp;',$vLineRun);
-					$vLineRun = str_replace("@10", '&nbsp;',$vLineRun);
-					$strExpportAll = $strExpportAll.$vLineRun;
-				}
-				else
-				{
-					$strExpportAll = $strExpportAll.$vLineRun;
-				}
-				$strExpportAll = $strExpportAll.$strExpportAll1;
-				if($vNumline==0) $vNumline=1;
-				$strExpportAll = str_replace("@#01", $vNumline, $strExpportAll);
-				$vNumline=0;
-				//Chi theo kho
-				$vOrder++;
-			}
-		} else {
-			return $vArrLang[5];
-		}
-		$vincrease++;
-		$vOrder++;
-		$vRowLast=str_replace("@03",$this->FormatView($vSumContract,10),$vRowLast);
+	// 			$bResultS = db_query($vsql);
+	// 			while($vrow =db_fetch_array($bResultS))
+	// 			{
+	// 				$vContract=$vContract+$vrow['thanhtien'];
+	// 				if($vNumline==0)
+	// 				{
+	// 					$vLineRun = str_replace("@06", $vrow['Names'], $vLineRun);
+	// 					$vLineRun = str_replace("@07", $this->FormatView($vrow['lv004'],20), $vLineRun);
+	// 					$vLineRun = str_replace("@08", $this->FormatView($vrow['lv006'],20), $vLineRun);
+	// 					$vLineRun = str_replace("@09", $this->FormatView($vrow['lv011'],20),$vLineRun);
+	// 					$vLineRun = str_replace("@10", $this->FormatView($vrow['thanhtien'],20),$vLineRun);
+	// 				}
+	// 				else
+	// 				{
+	// 					$vLineRun1 = $vRowDetail;
+	// 					$vLineRun1 = str_replace("@06", $vrow['Names'], $vLineRun1);
+	// 					$vLineRun1 = str_replace("@07", $this->FormatView($vrow['lv004'],20), $vLineRun1);
+	// 					$vLineRun1 = str_replace("@08", $this->FormatView($vrow['lv006'],20), $vLineRun1);
+	// 					$vLineRun1 = str_replace("@09", $this->FormatView($vrow['lv011'],20), $vLineRun1);
+	// 					$vLineRun1 = str_replace("@10", $this->FormatView($vrow['thanhtien'],20),$vLineRun1);
+	// 					$strExpportAll1 = $strExpportAll1.$vLineRun1;
+	// 				}
+	// 				$vNumline++;
+	// 			}
+	// 			$vSumContract=$vSumContract+$vContract;
+	// 			$vLineRun = str_replace("@03", $this->FormatView($vContract,20), $vLineRun);
+	// 			if($vNumline==0)
+	// 			{
+	// 				$vLineRun = str_replace("@06", '&nbsp;', $vLineRun);
+	// 				$vLineRun = str_replace("@07", '&nbsp;', $vLineRun);
+	// 				$vLineRun = str_replace("@08", '&nbsp;', $vLineRun);
+	// 				$vLineRun = str_replace("@09", '&nbsp;',$vLineRun);
+	// 				$vLineRun = str_replace("@10", '&nbsp;',$vLineRun);
+	// 				$strExpportAll = $strExpportAll.$vLineRun;
+	// 			}
+	// 			else
+	// 			{
+	// 				$strExpportAll = $strExpportAll.$vLineRun;
+	// 			}
+	// 			$strExpportAll = $strExpportAll.$strExpportAll1;
+	// 			if($vNumline==0) $vNumline=1;
+	// 			$strExpportAll = str_replace("@#01", $vNumline, $strExpportAll);
+	// 			$vNumline=0;
+	// 			//Chi theo kho
+	// 			$vOrder++;
+	// 		}
+	// 	} else {
+	// 		return $vArrLang[5];
+	// 	}
+	// 	$vincrease++;
+	// 	$vOrder++;
+	// 	$vRowLast=str_replace("@03",$this->FormatView($vSumContract,10),$vRowLast);
 	
-		$vRowLast=str_replace("@02",$vincrease,$vRowLast);
-		$strExpportAll=$strExpportAll.$vRowLast;	
-		$strExpportAll = str_replace("@01", $vNumline, $strExpportAll);
-		///////////////////////////////////////////////////////////////
-		$vHeader = str_replace("@!79",$totalRows+1,$vHeaderReportInventory);
-		//Order
-		$vHeader = str_replace("@02", $vArrLang[4], $vHeader);
-		//Invoice
-		$vHeader = str_replace("@03", $vArrLang[23], $vHeader);
-		//Date incoide
-		$vHeader = str_replace("@04", $vArrLang[24], $vHeader);
-		//Item
-		$vHeader = str_replace("@05",$vArrLang[5], $vHeader);
-		//Name Item
-		$vHeader = str_replace("@06", $vArrLang[6], $vHeader);
-		//Quantity
-		$vHeader = str_replace("@07", 'SL', $vHeader);
-		//Price
-		$vHeader = str_replace("@08",$vArrLang[48], $vHeader);
-		//Amount
-		$vHeader = str_replace("@09",$vArrLang[51]."(vnđ)", $vHeader);	
-		//Discount
-		$vHeader = str_replace("@10","CK<br/>(%)", $vHeader);
-		//Discount Amount
-		$vHeader = str_replace("@11",'Tiền<br/>CK<br/>'."(vnđ)", $vHeader);
-		//Tax
-		$vHeader = str_replace("@12",$vArrLang[49], $vHeader);
-		//Tax Amount
-		$vHeader = str_replace("@13",$vArrLang[57]."(vnđ)", $vHeader);
-		//Score
-		$vHeader = str_replace("@14",$vArrLang[56], $vHeader);
-		//
-		$vHeader = str_replace("@15",'<span title="'.$vArrLang[53].'">CT<br/>BH</span>', $vHeader);
-		//Program
-		$vHeader = str_replace("@16",$vArrLang[26], $vHeader);	
-		$vHeader = str_replace("@17",$vArrLang[27], $vHeader);	
-		$vHeader = str_replace("@18",$vArrLang[55]."(vnđ)", $vHeader);	
-		$vHeader = str_replace("@19",$vArrLang[58], $vHeader);	
-		$vHeader = str_replace("@20",'<span title="'.$vArrLang[59].'">CK<br/>TM<br/>'."(vnđ)<br/>", $vHeader);	
-		$vHeader = str_replace("@21",$vArrLang[60], $vHeader);	
-		$vHeader = str_replace("@28","Giá vốn", $vHeader);	
-		$vHeader = str_replace("@29","Tổng tiền vốn", $vHeader);	
-		$vHeader = str_replace("@30","Lợi nhuận", $vHeader);
-		$vTableAll = $vHeader;
-		return str_replace("@01", $strExpportAll, $vTableAll);	
+	// 	$vRowLast=str_replace("@02",$vincrease,$vRowLast);
+	// 	$strExpportAll=$strExpportAll.$vRowLast;	
+	// 	$strExpportAll = str_replace("@01", $vNumline, $strExpportAll);
+	// 	///////////////////////////////////////////////////////////////
+	// 	$vHeader = str_replace("@!79",$totalRows+1,$vHeaderReportInventory);
+	// 	//Order
+	// 	$vHeader = str_replace("@02", $vArrLang[4], $vHeader);
+	// 	//Invoice
+	// 	$vHeader = str_replace("@03", $vArrLang[23], $vHeader);
+	// 	//Date incoide
+	// 	$vHeader = str_replace("@04", $vArrLang[24], $vHeader);
+	// 	//Item
+	// 	$vHeader = str_replace("@05",$vArrLang[5], $vHeader);
+	// 	//Name Item
+	// 	$vHeader = str_replace("@06", $vArrLang[6], $vHeader);
+	// 	//Quantity
+	// 	$vHeader = str_replace("@07", 'SL', $vHeader);
+	// 	//Price
+	// 	$vHeader = str_replace("@08",$vArrLang[48], $vHeader);
+	// 	//Amount
+	// 	$vHeader = str_replace("@09",$vArrLang[51]."(vnđ)", $vHeader);	
+	// 	//Discount
+	// 	$vHeader = str_replace("@10","CK<br/>(%)", $vHeader);
+	// 	//Discount Amount
+	// 	$vHeader = str_replace("@11",'Tiền<br/>CK<br/>'."(vnđ)", $vHeader);
+	// 	//Tax
+	// 	$vHeader = str_replace("@12",$vArrLang[49], $vHeader);
+	// 	//Tax Amount
+	// 	$vHeader = str_replace("@13",$vArrLang[57]."(vnđ)", $vHeader);
+	// 	//Score
+	// 	$vHeader = str_replace("@14",$vArrLang[56], $vHeader);
+	// 	//
+	// 	$vHeader = str_replace("@15",'<span title="'.$vArrLang[53].'">CT<br/>BH</span>', $vHeader);
+	// 	//Program
+	// 	$vHeader = str_replace("@16",$vArrLang[26], $vHeader);	
+	// 	$vHeader = str_replace("@17",$vArrLang[27], $vHeader);	
+	// 	$vHeader = str_replace("@18",$vArrLang[55]."(vnđ)", $vHeader);	
+	// 	$vHeader = str_replace("@19",$vArrLang[58], $vHeader);	
+	// 	$vHeader = str_replace("@20",'<span title="'.$vArrLang[59].'">CK<br/>TM<br/>'."(vnđ)<br/>", $vHeader);	
+	// 	$vHeader = str_replace("@21",$vArrLang[60], $vHeader);	
+	// 	$vHeader = str_replace("@28","Giá vốn", $vHeader);	
+	// 	$vHeader = str_replace("@29","Tổng tiền vốn", $vHeader);	
+	// 	$vHeader = str_replace("@30","Lợi nhuận", $vHeader);
+	// 	$vTableAll = $vHeader;
+	// 	return str_replace("@01", $strExpportAll, $vTableAll);	
 	
-	}	
+	// }	
+
 	function LV_TimeToCal($vRoomID,$vCongThuc)
 	{
 		
