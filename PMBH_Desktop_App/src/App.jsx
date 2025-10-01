@@ -11,7 +11,7 @@ import HeaderBar from './components/Layout/HeaderBar/HeaderBar';
 const TrangChu = React.lazy(() => import('./pages/TrangChu/TrangChu'));
 const BanHang = React.lazy(() => import('./pages/BanHang/BanHang'));
 const KitchenSystem = React.lazy(() => import('./pages/BepBar/BepBar'));
-const QuanLyBan = React.lazy(() => import('./pages/QuanLyBan/QuanLyBan'));
+const QuanLyBanNhaHang = React.lazy(() => import('./pages/QuanLyBanNhaHang/QuanLyBanNhaHang'));
 const ThucDon = React.lazy(() => import('./pages/ThucDon/ThucDon'));
 const KhachHang = React.lazy(() => import('./pages/KhachHang/KhachHang'));
 const NhanVien = React.lazy(() => import('./pages/NhanVien/NhanVien'));
@@ -60,7 +60,6 @@ const XemThongTinXoaDonHang = React.lazy(() => import('./pages/XemThongTinXoaDon
 const ChoNhaBepQl = React.lazy(() => import('./pages/ChoNhaBepQl/ChoNhaBepQl'));
 const ChoQuayBarQl = React.lazy(() => import('./pages/ChoQuayBarQl/ChoQuayBarQl'));
 const BaoCaoDoanhThuKhachHang = React.lazy(() => import('./pages/BaoCaoDoanhThuKhachHang/BaoCaoDoanhThuKhachHang'));
-const QuanLyBanNhaHang = React.lazy(() => import('./pages/QuanLyBanNhaHang/QuanLyBanNhaHang'));
 
 const { Sider, Content } = Layout;
 
@@ -98,7 +97,7 @@ function App() {
               <Route path="/kitchen-system" element={<KitchenSystem />} />
               <Route path="/bep-bar" element={<BepBar />} />
               <Route path="/chi-khac" element={<ChiKhac />} />
-              <Route path="/quan-ly-ban" element={<QuanLyBan />} />
+              <Route path="/quan-ly-ban" element={<QuanLyBanNhaHang />} />
               <Route path="/thuc-don" element={<ThucDon />} />
               <Route path="/khach-hang" element={<KhachHang />} />
               <Route path="/nhan-vien" element={<NhanVien />} />

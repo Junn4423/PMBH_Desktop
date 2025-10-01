@@ -46,6 +46,23 @@ export async function getLoaiSanPham() {
   return await callApi('Mb_loaiSanPham', 'data');
 }
 
+// Thêm loại sản phẩm
+export async function themLoaiSanPham(loaiSanPhamData) {
+  const { lv001, lv002, lv003, lv004, lv005 } = loaiSanPhamData;
+  return await callApi('Mb_loaiSanPham', 'add', { lv001, lv002, lv003, lv004, lv005 });
+}
+
+// Sửa loại sản phẩm
+export async function suaLoaiSanPham(loaiSanPhamData) {
+  const { lv001, lv002, lv003, lv004, lv005 } = loaiSanPhamData;
+  return await callApi('Mb_loaiSanPham', 'edit', { lv001, lv002, lv003, lv004, lv005 });
+}
+
+// Xóa loại sản phẩm
+export async function xoaLoaiSanPham(lv001) {
+  return await callApi('Mb_loaiSanPham', 'delete', { lv001 });
+}
+
 // Lấy sản phẩm theo ID loại
 export async function getSanPhamTheoIdLoai(findID) {
   return await callApi('Mb_sanPham', 'laySanTheoIdLoai', { findID });
@@ -236,6 +253,45 @@ export async function loadBan() {
 // Load khu vực
 export async function loadKhuVuc() {
   return await callApi('Mb_LayDanhSachKhuVuc', 'data');
+}
+
+// Thêm khu vực / tầng
+export async function themKhuVuc(khuVucData) {
+  const { lv001, lv002 } = khuVucData;
+  return await callApi('sl_lv0008', 'themKhuVuc', { lv001, lv002 });
+}
+
+// Sửa khu vực / tầng
+export async function suaKhuVuc(khuVucData) {
+  const { maKhuVuc, tenKhuVuc } = khuVucData;
+  return await callApi('sl_lv0008', 'suaKhuVuc', { maKhuVuc, tenKhuVuc });
+}
+
+// Xóa khu vực / tầng
+export async function xoaKhuVuc(maKhuVuc) {
+  return await callApi('sl_lv0008', 'xoaKhuVuc', { maKhuVuc });
+}
+
+// Load đơn vị
+export async function loadDonVi() {
+  return await callApi('sl_lv0005', 'loadDonVi');
+}
+
+// Thêm đơn vị
+export async function themDonVi(donViData) {
+  const { lv001, lv002, lv003 } = donViData;
+  return await callApi('sl_lv0005', 'themDonVi', { lv001, lv002, lv003 });
+}
+
+// Sửa đơn vị
+export async function suaDonVi(donViData) {
+  const { maDonVi, tenDonVi, tenDonViRutGon } = donViData;
+  return await callApi('sl_lv0005', 'suaDonVi', { maDonVi, tenDonVi, tenDonViRutGon });
+}
+
+// Xóa đơn vị
+export async function xoaDonVi(maDonVi) {
+  return await callApi('sl_lv0005', 'xoaDonVi', { maDonVi });
 }
 
 // Tạo đơn hàng
@@ -683,25 +739,23 @@ export async function xoaLoaiNVL(lv001) {
 
 // Thêm sản phẩm
 export async function themSanPham(sanPhamData) {
-  const { lv001, lv002, lv003, lv004, lv005, lv006, lv007, lv008, lv009, lv010, lv011, lv012, lv013, lv014, lv015, lv016, lv017, lv018, lv019, lv020 } = sanPhamData;
-  return await callApi('sl_lv0007', 'themSanPham', {
-    lv001, lv002, lv003, lv004, lv005, lv006, lv007, lv008, lv009, lv010, 
-    lv011, lv012, lv013, lv014, lv015, lv016, lv017, lv018, lv019, lv020
+  const { lv001, lv002, lv003, lv004, lv005, lv006, lv007, lv008, lv009, lv010 } = sanPhamData;
+  return await callApi('Mb_sanPham', 'add', {
+    lv001, lv002, lv003, lv004, lv005, lv006, lv007, lv008, lv009, lv010
   });
 }
 
 // Cập nhật sản phẩm
 export async function capNhatSanPham(sanPhamData) {
-  const { lv001, lv002, lv003, lv004, lv005, lv006, lv007, lv008, lv009, lv010, lv011, lv012, lv013, lv014, lv015, lv016, lv017, lv018, lv019, lv020 } = sanPhamData;
-  return await callApi('sl_lv0007', 'capNhatSanPham', {
-    lv001, lv002, lv003, lv004, lv005, lv006, lv007, lv008, lv009, lv010, 
-    lv011, lv012, lv013, lv014, lv015, lv016, lv017, lv018, lv019, lv020
+  const { lv001, lv002, lv003, lv004, lv005, lv006, lv007, lv008, lv009, lv010 } = sanPhamData;
+  return await callApi('Mb_sanPham', 'edit', {
+    lv001, lv002, lv003, lv004, lv005, lv006, lv007, lv008, lv009, lv010
   });
 }
 
 // Xóa sản phẩm
 export async function xoaSanPham(lv001) {
-  return await callApi('sl_lv0007', 'xoaSanPham', { lv001 });
+  return await callApi('Mb_sanPham', 'delete', { lv001 });
 }
 
 // -------------------- Functions from features/banhang --------------------
@@ -852,12 +906,6 @@ export async function loadHoaDonTheoBan(maBan) {
 }
 
 // -------------------- Additional missing functions from banhang --------------------
-
-// Thêm khu vực
-export async function themKhuVuc(khuVucData) {
-  const { lv001, lv002 } = khuVucData;
-  return await callApi('sl_lv0008', 'themKhuVuc', { lv001, lv002 });
-}
 
 // Cập nhật hóa đơn (thanh toán contract)
 export async function capNhatHoaDon(mahd) {
@@ -1123,18 +1171,27 @@ export async function loadSanPhamTheoMaDanhMucSp(maDm) {
 // Thêm bàn mới - Add new table
 export async function themBan(banData) {
   const { lv002, lv004 } = banData; // tenBan, maKhuVuc
-  return await callApi('sl_lv0009', 'themBan', { lv002, lv004 });
+  console.log('themBan API called with:', { lv002, lv004 });
+  const result = await callApi('sl_lv0009', 'themBan', { lv002, lv004 });
+  console.log('themBan API result:', result);
+  return result;
 }
 
 // Xóa bàn - Delete table
 export async function xoaBan(maBan) {
-  return await callApi('sl_lv0009', 'xoaBan', { maBan });
+  console.log('xoaBan API called with maBan:', maBan);
+  const result = await callApi('sl_lv0009', 'xoaBan', { maBan });
+  console.log('xoaBan API result:', result);
+  return result;
 }
 
 // Sửa bàn - Edit table
 export async function suaBan(banData) {
   const { maBan, tenBan, maKhuVuc } = banData;
-  return await callApi('sl_lv0009', 'suaBan', { maBan, tenBan, maKhuVuc });
+  console.log('suaBan API called with:', { maBan, tenBan, maKhuVuc });
+  const result = await callApi('sl_lv0009', 'suaBan', { maBan, tenBan, maKhuVuc });
+  console.log('suaBan API result:', result);
+  return result;
 }
 
 // Hủy hóa đơn - Cancel invoice

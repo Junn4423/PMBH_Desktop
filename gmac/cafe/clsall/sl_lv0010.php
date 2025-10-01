@@ -672,6 +672,21 @@ class   sl_lv0010 extends lv_controler
 		$vReturn= db_query($lvsql);
 		if($vReturn) $this->InsertLogOperation($this->DateCurrent,'wh_lv0010.delete',sof_escape_string($lvsql));
 		return $vReturn;
-	}	
+	}
+	
+	function LoadDonVi()
+	{
+		$vArrRe = [];
+		$vsql = "SELECT * FROM sl_lv0010 ORDER BY lv002";
+		$vresult = db_query($vsql);
+		while ($vrow = db_fetch_array($vresult, MYSQLI_ASSOC)) {
+			$vArrRe[] = [
+				'maDonVi' => $vrow['lv001'],
+				'tenDonVi' => $vrow['lv002'],
+				'tenDonViRutGon' => $vrow['lv003'],
+			];
+		}
+		return $vArrRe;
+	}
 }
 ?>

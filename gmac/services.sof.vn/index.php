@@ -52,6 +52,17 @@ switch ($vtable) {
 				$sl_lv0009->lv004 = $input['lv004'] ?? $_POST['lv004'] ?? "";
 				$vOutput = $sl_lv0009->LV_Insert();
 				break;
+			case 'suaBan':
+				$maBan = $input['maBan'] ?? $_POST['maBan'] ?? "";
+				$sl_lv0009->lv001 = $maBan;
+				$sl_lv0009->lv002 = $input['tenBan'] ?? $_POST['tenBan'] ?? "";
+				$sl_lv0009->lv004 = $input['maKhuVuc'] ?? $_POST['maKhuVuc'] ?? "";
+				$vOutput = $sl_lv0009->LV_Update();
+				break;
+			case 'xoaBan':
+				$maBan = $input['maBan'] ?? $_POST['maBan'] ?? "";
+				$vOutput = $sl_lv0009->LV_Delete("'$maBan'");
+				break;
 			default:
 				break;
 		}
@@ -68,6 +79,44 @@ switch ($vtable) {
 				$sl_lv0008->lv001 = $input['lv001'] ?? $_POST['lv001'] ?? "";
 				$sl_lv0008->lv002 = $input['lv002'] ?? $_POST['lv002'] ?? "";
 				$vOutput = $sl_lv0008->LV_Insert();
+				break;
+			case 'suaKhuVuc':
+				$sl_lv0008->lv001 = $input['maKhuVuc'] ?? $_POST['maKhuVuc'] ?? "";
+				$sl_lv0008->lv002 = $input['tenKhuVuc'] ?? $_POST['tenKhuVuc'] ?? "";
+				$vOutput = $sl_lv0008->LV_Update();
+				break;
+			case 'xoaKhuVuc':
+				$maKhuVuc = $input['maKhuVuc'] ?? $_POST['maKhuVuc'] ?? "";
+				$vOutput = $sl_lv0008->LV_Delete("'$maKhuVuc'");
+				break;
+			default:
+				break;
+		}
+		break;
+	
+	// case dùng để xử lý đơn vị
+	case "sl_lv0005":
+		include("../cafe/clsall/sl_lv0005.php");
+		$sl_lv0005 = new sl_lv0005($_SESSION['ERPSOFV2RRight'], $_SESSION['ERPSOFV2RUserID'], 'Jo0105');
+		switch ($vfun) {
+			case 'loadDonVi':
+				$vOutput = $sl_lv0005->LoadDonVi();
+				break;
+			case 'themDonVi':
+				$sl_lv0005->lv001 = $input['lv001'] ?? $_POST['lv001'] ?? "";
+				$sl_lv0005->lv002 = $input['lv002'] ?? $_POST['lv002'] ?? "";
+				$sl_lv0005->lv003 = $input['lv003'] ?? $_POST['lv003'] ?? "";
+				$vOutput = $sl_lv0005->LV_Insert();
+				break;
+			case 'suaDonVi':
+				$sl_lv0005->lv001 = $input['maDonVi'] ?? $_POST['maDonVi'] ?? "";
+				$sl_lv0005->lv002 = $input['tenDonVi'] ?? $_POST['tenDonVi'] ?? "";
+				$sl_lv0005->lv003 = $input['tenDonViRutGon'] ?? $_POST['tenDonViRutGon'] ?? "";
+				$vOutput = $sl_lv0005->LV_Update();
+				break;
+			case 'xoaDonVi':
+				$maDonVi = $input['maDonVi'] ?? $_POST['maDonVi'] ?? "";
+				$vOutput = $sl_lv0005->LV_Delete("'$maDonVi'");
 				break;
 			default:
 				break;

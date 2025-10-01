@@ -15,6 +15,7 @@ const ProductCard = ({
   badge = null,
   className = '',
   size = 'default', // 'small', 'default', 'large'
+  extraActions = null, // Actions to display below product info
   ...props 
 }) => {
   const [imageError, setImageError] = useState(false);
@@ -214,6 +215,13 @@ const ProductCard = ({
             {product.moTa}
           </Typography.Text>
         )}
+        
+        {/* Extra Actions */}
+        {extraActions && (
+          <div className="product-extra-actions" style={{ marginTop: '8px', display: 'flex', gap: '8px', justifyContent: 'center' }}>
+            {extraActions}
+          </div>
+        )}
       </div>
     </div>
   );
@@ -227,6 +235,7 @@ export default memo(ProductCard, (prevProps, nextProps) => {
     prevProps.product?.gia === nextProps.product?.gia &&
     prevProps.product?.hinhAnh === nextProps.product?.hinhAnh &&
     prevProps.loading === nextProps.loading &&
-    prevProps.selected === nextProps.selected
+    prevProps.selected === nextProps.selected &&
+    prevProps.extraActions === nextProps.extraActions
   );
 });

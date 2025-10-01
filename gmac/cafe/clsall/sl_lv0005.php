@@ -98,6 +98,23 @@ class   sl_lv0005 extends lv_controler
 	{
 		return $this->isRpt;
 	}
+	
+	// Function to load all units for dropdown/list
+	function LoadDonVi()
+	{
+		$vsql = "SELECT lv001 as maDonVi, lv002 as tenDonVi, lv003 as tenDonViRutGon FROM sl_lv0005 ORDER BY lv001";
+		$vresult = db_query($vsql);
+		$data = array();
+		while($vrow = db_fetch_array($vresult))
+		{
+			$data[] = array(
+				'maDonVi' => $vrow['maDonVi'],
+				'tenDonVi' => $vrow['tenDonVi'],
+				'tenDonViRutGon' => $vrow['tenDonViRutGon']
+			);
+		}
+		return $data;
+	}
 	//////////get view///////////////
 	function GetAdd()
 	{
