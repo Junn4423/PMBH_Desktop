@@ -286,6 +286,117 @@ case 'DonBan':
             break;
         }
 
+        case 'thanhToanHonHop': {
+            $maHd           = isset($input['maHd']) ? trim($input['maHd']) : (isset($_POST['maHd']) ? trim($_POST['maHd']) : "");
+            $tongTien       = isset($input['tongTien']) ? (float)$input['tongTien'] : (isset($_POST['tongTien']) ? (float)$_POST['tongTien'] : 0);
+            $finalTotal     = isset($input['finalTotal']) ? (float)$input['finalTotal'] : (isset($_POST['finalTotal']) ? (float)$_POST['finalTotal'] : 0);
+            $discount       = isset($input['discount']) ? (float)$input['discount'] : (isset($_POST['discount']) ? (float)$_POST['discount'] : 0);
+            $mixedPayments  = isset($input['mixedPayments']) ? $input['mixedPayments'] : (isset($_POST['mixedPayments']) ? $_POST['mixedPayments'] : "");
+            $ghiChu         = isset($input['ghiChu']) ? trim($input['ghiChu']) : (isset($_POST['ghiChu']) ? trim($_POST['ghiChu']) : "");
+            $ngayThanhToan  = isset($input['ngayThanhToan']) ? trim($input['ngayThanhToan']) : (isset($_POST['ngayThanhToan']) ? trim($_POST['ngayThanhToan']) : "");
+
+            if ($maHd === "") {
+                $vOutput = ['success' => false, 'message' => 'Thiếu mã hóa đơn'];
+                break;
+            }
+            if ($finalTotal < 0) {
+                $vOutput = ['success' => false, 'message' => 'Giá trị tiền không hợp lệ'];
+                break;
+            }
+
+            $maHdEsc = esc_str($maHd);
+            $ghiChuEsc = esc_str($ghiChu);
+            $mixedPaymentsEsc = esc_str($mixedPayments);
+
+            // Cập nhật hoá đơn với thông tin thanh toán hỗn hợp
+            $sql = "
+                UPDATE sl_lv0013
+                   SET lv011 = 2,
+                       lv029 = UTC_TIMESTAMP(),
+                       lv016 = ".($finalTotal + 0).",
+                       lv017 = ".($finalTotal + 0).",
+                       lv018 = 0,
+                       lv030 = '{$ghiChuEsc}',
+                       lv031 = '{$mixedPaymentsEsc}',
+                       lv032 = '".esc_str($_SESSION['ERPSOFV2RUserID'])."'
+                 WHERE lv001 = '{$maHdEsc}'
+                   AND lv011 = 0
+            ";
+            $result = db_query($sql);
+
+            $rows = 0;
+            if (function_exists('db_affected_rows')) $rows = (int) db_affected_rows();
+
+            if ($result && $rows === 1) {
+                $vOutput = ['success' => true, 'message' => 'Thanh toán hỗn hợp thành công'];
+            } else {
+                $vOutput = ['success' => false, 'message' => 'Hoá đơn không tồn tại hoặc không ở trạng thái mở'];
+            }
+            break;
+        }
+
+        case 'luuChiTietThanhToanHonHop': {
+            $maHd          = isset($input['maHd']) ? trim($input['maHd']) : (isset($_POST['maHd']) ? trim($_POST['maHd']) : "");
+            $mixedPayments = isset($input['mixedPayments']) ? $input['mixedPayments'] : (isset($_POST['mixedPayments']) ? $_POST['mixedPayments'] : "");
+
+            if ($maHd === "" || $mixedPayments === "") {
+                $vOutput = ['success' => false, 'message' => 'Thiếu mã hóa đơn hoặc thông tin thanh toán'];
+                break;
+            }
+
+            $maHdEsc = esc_str($maHd);
+            $mixedPaymentsEsc = esc_str($mixedPayments);
+
+            // Lưu chi tiết thanh toán vào bảng (giả sử có bảng sl_lv0013_payments hoặc field lv031)
+            $sql = "
+                UPDATE sl_lv0013
+                   SET lv031 = '{$mixedPaymentsEsc}'
+                 WHERE lv001 = '{$maHdEsc}'
+            ";
+            $result = db_query($sql);
+
+            if ($result) {
+                $vOutput = ['success' => true, 'message' => 'Lưu chi tiết thanh toán hỗn hợp thành công'];
+            } else {
+                $vOutput = ['success' => false, 'message' => 'Lỗi lưu chi tiết thanh toán'];
+            }
+            break;
+        }
+
+        case 'layLichSuThanhToanHonHop': {
+            $maHd = isset($input['maHd']) ? trim($input['maHd']) : (isset($_POST['maHd']) ? trim($_POST['maHd']) : "");
+
+            if ($maHd === "") {
+                $vOutput = ['success' => false, 'message' => 'Thiếu mã hóa đơn'];
+                break;
+            }
+
+            $maHdEsc = esc_str($maHd);
+
+            // Lấy lịch sử thanh toán từ field lv031
+            $sql = "
+                SELECT lv001 as maHd, lv030 as ghiChu, lv031 as mixedPayments, lv029 as ngayThanhToan
+                  FROM sl_lv0013
+                 WHERE lv001 = '{$maHdEsc}'
+            ";
+            $result = db_query($sql);
+
+            if ($result && $row = db_fetch_array($result, MYSQLI_ASSOC)) {
+                $vOutput = [
+                    'success' => true,
+                    'data' => [
+                        'maHd' => $row['maHd'],
+                        'ghiChu' => $row['ghiChu'],
+                        'mixedPayments' => $row['mixedPayments'],
+                        'ngayThanhToan' => $row['ngayThanhToan']
+                    ]
+                ];
+            } else {
+                $vOutput = ['success' => false, 'message' => 'Không tìm thấy lịch sử thanh toán'];
+            }
+            break;
+        }
+
         default:
             $vOutput = ['success' => false, 'message' => 'Chức năng không tồn tại'];
             break;

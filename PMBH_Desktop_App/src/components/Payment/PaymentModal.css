@@ -384,6 +384,88 @@
   margin-left: 6px;
 }
 
+.summary-line.paid span {
+  color: #52c41a;
+}
+
+.summary-line.remaining span {
+  color: #ff4d4f;
+}
+
+/* Mixed Payments List */
+.mixed-payments-list {
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid #e8e8e8;
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.mixed-payments-list .list-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: #4b4344;
+  margin-bottom: 8px;
+  display: block;
+}
+
+.mixed-payment-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 12px;
+  margin-bottom: 6px;
+  background: #f0f8ff;
+  border-radius: 6px;
+  border: 1px solid #d6e4ff;
+  transition: all 0.2s;
+}
+
+.mixed-payment-item:hover {
+  background: #e6f7ff;
+  border-color: #91d5ff;
+}
+
+.payment-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+}
+
+.payment-index {
+  font-size: 12px;
+  color: #888;
+  font-weight: 600;
+  min-width: 20px;
+}
+
+.payment-method {
+  font-size: 13px;
+  color: #4b4344;
+  font-weight: 500;
+}
+
+.payment-amount {
+  font-size: 14px;
+  color: #197dd3;
+  font-weight: 600;
+  margin-left: auto;
+}
+
+.remove-payment-btn {
+  font-size: 12px;
+  color: #ff4d4f;
+  padding: 2px 8px;
+  height: auto;
+  border-radius: 4px;
+}
+
+.remove-payment-btn:hover {
+  background: #fff1f0;
+  color: #cf1322;
+}
+
 /* Payment Button */
 .payment-btn {
   height: 48px;
@@ -423,6 +505,62 @@
 
 .footer-left {
   flex: 1;
+}
+
+.mixed-payment-btn {
+  height: 44px;
+  background: linear-gradient(135deg, #77d4fb, #bdbcc4);
+  border: none;
+  color: white;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 16px;
+  transition: all 0.3s;
+}
+
+.mixed-payment-btn:hover {
+  background: linear-gradient(135deg, #197dd3, #77d4fb);
+  color: white;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(25, 125, 211, 0.3);
+}
+
+.mixed-payment-btn.active {
+  background: linear-gradient(135deg, #197dd3, #77d4fb);
+  color: white;
+  box-shadow: 0 0 0 2px #fff, 0 0 0 4px #197dd3;
+}
+
+.add-partial-btn {
+  height: 44px;
+  background: #52c41a;
+  border: none;
+  color: white;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 16px;
+  transition: all 0.3s;
+}
+
+.add-partial-btn:hover:not(:disabled) {
+  background: #73d13d;
+  color: white;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(82, 196, 26, 0.3);
+}
+
+.add-partial-btn:disabled {
+  background: #bdbcc4;
+  color: white;
+  opacity: 0.6;
 }
 
 .footer-center {

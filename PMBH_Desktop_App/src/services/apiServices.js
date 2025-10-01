@@ -934,6 +934,42 @@ export async function inHoaDonThanhToan(maHd, paymentDetails) {
   });
 }
 
+// Thanh toán hỗn hợp - Mixed payment
+export async function thanhToanHonHop(paymentData) {
+  const {
+    maHd,
+    tongTien,
+    finalTotal,
+    discount,
+    mixedPayments,
+    ghiChu,
+    ngayThanhToan
+  } = paymentData;
+  
+  return await callApi('sl_lv0013', 'thanhToanHonHop', {
+    maHd,
+    tongTien,
+    finalTotal,
+    discount,
+    mixedPayments: JSON.stringify(mixedPayments),
+    ghiChu,
+    ngayThanhToan
+  });
+}
+
+// Lưu chi tiết thanh toán hỗn hợp - Save mixed payment details
+export async function luuChiTietThanhToanHonHop(maHd, mixedPayments) {
+  return await callApi('sl_lv0013', 'luuChiTietThanhToanHonHop', {
+    maHd,
+    mixedPayments: JSON.stringify(mixedPayments)
+  });
+}
+
+// Lấy lịch sử thanh toán hỗn hợp - Get mixed payment history
+export async function layLichSuThanhToanHonHop(maHd) {
+  return await callApi('sl_lv0013', 'layLichSuThanhToanHonHop', { maHd });
+}
+
 // Hủy thanh toán (nếu cần) - Cancel payment
 export async function huyThanhToan(maHd, reason) {
   return await callApi('sl_lv0013', 'huyThanhToan', { 

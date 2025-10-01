@@ -9,7 +9,9 @@ import {
 } from 'antd';
 import { 
   ArrowLeft,
-  Printer
+  Printer,
+  Split,
+  Plus
 } from 'lucide-react';
 import { thanhToanHoaDon } from '../../services/apiServices';
 import ReceiptPrinter from '../Print/ReceiptPrinter';
@@ -37,6 +39,9 @@ const PaymentModal = ({
   const [discountAmount, setDiscountAmount] = useState(0);
   const [finalTotal, setFinalTotal] = useState(orderTotal);
   const [paymentLoading, setPaymentLoading] = useState(false);
+  const [isMixedPaymentMode, setIsMixedPaymentMode] = useState(false);
+  const [mixedPayments, setMixedPayments] = useState([]);
+  const [partialPaidAmount, setPartialPaidAmount] = useState(0);
 
   // Currency exchange rates
   const exchangeRates = {
@@ -85,8 +90,24 @@ const PaymentModal = ({
       setFinalTotal(orderTotal);
       setPaymentMethod('Cash');
       setCurrency('VND');
+      
+      // Load partial payment from localStorage
+      if (invoice?.maHd) {
+        const savedPayment = localStorage.getItem(`partial_payment_${invoice.maHd}`);
+        if (savedPayment) {
+          try {
+            const data = JSON.parse(savedPayment);
+            setMixedPayments(data.payments || []);
+            setPartialPaidAmount(data.totalPaid || 0);
+            setIsMixedPaymentMode(true);
+            message.info(`Phát hiện thanh toán chưa hoàn tất. Đã thanh toán: ${data.totalPaid.toLocaleString()} VNĐ`);
+          } catch (e) {
+            console.error('Error loading partial payment:', e);
+          }
+        }
+      }
     }
-  }, [visible, orderTotal]);
+  }, [visible, orderTotal, invoice?.maHd]);
 
   // Calculate discount amount and final total
   useEffect(() => {
@@ -218,6 +239,323 @@ const PaymentModal = ({
     } finally {
       setPaymentLoading(false);
     }
+  };
+
+  const handleToggleMixedPayment = () => {
+    setIsMixedPaymentMode(!isMixedPaymentMode);
+    setCustomerPaid(0);
+    if (!isMixedPaymentMode) {
+      message.info('Chế độ thanh toán hỗn hợp đã bật');
+    } else {
+      message.info('Chế độ thanh toán thường đã bật');
+    }
+  };
+
+  const handleAddPartialPayment = () => {
+    if (customerPaid <= 0) {
+      message.warning('Vui lòng nhập số tiền thanh toán');
+      return;
+    }
+
+    const amountVND = convertToVND(customerPaid, currency);
+    const totalPaid = partialPaidAmount + amountVND;
+    const remaining = finalTotal - totalPaid;
+
+    if (remaining < 0) {
+      message.warning('Số tiền vượt quá số còn lại phải thanh toán');
+      return;
+    }
+
+    const newPayment = {
+      id: Date.now(),
+      method: paymentMethod,
+      methodLabel: paymentMethod,
+      amount: customerPaid,
+      currency: currency,
+      amountVND: amountVND,
+      timestamp: new Date().toISOString()
+    };
+
+    const updatedPayments = [...mixedPayments, newPayment];
+    setMixedPayments(updatedPayments);
+    setPartialPaidAmount(totalPaid);
+    setCustomerPaid(0);
+
+    // Save to localStorage
+    if (invoice?.maHd) {
+      localStorage.setItem(`partial_payment_${invoice.maHd}`, JSON.stringify({
+        payments: updatedPayments,
+        totalPaid: totalPaid,
+        finalTotal: finalTotal,
+        timestamp: new Date().toISOString()
+      }));
+    }
+
+    message.success(`Đã thêm ${formatWithCurrency(amountVND, 'VND')}. Còn lại: ${formatWithCurrency(remaining, 'VND')}`);
+
+    // Nếu đã thanh toán đủ, tự động chuyển sang chế độ hoàn tất
+    if (remaining === 0) {
+      message.success('Đã thanh toán đủ! Nhấn "HOÀN TẤT" để hoàn thành');
+    }
+  };
+
+  const handleRemovePartialPayment = (paymentId) => {
+    const payment = mixedPayments.find(p => p.id === paymentId);
+    if (!payment) return;
+
+    const updatedPayments = mixedPayments.filter(p => p.id !== paymentId);
+    const newTotalPaid = partialPaidAmount - payment.amountVND;
+    
+    setMixedPayments(updatedPayments);
+    setPartialPaidAmount(newTotalPaid);
+
+    // Update localStorage
+    if (invoice?.maHd) {
+      if (updatedPayments.length === 0) {
+        localStorage.removeItem(`partial_payment_${invoice.maHd}`);
+      } else {
+        localStorage.setItem(`partial_payment_${invoice.maHd}`, JSON.stringify({
+          payments: updatedPayments,
+          totalPaid: newTotalPaid,
+          finalTotal: finalTotal,
+          timestamp: new Date().toISOString()
+        }));
+      }
+    }
+
+    message.info('Đã xóa phương thức thanh toán');
+  };
+
+  const handleCompleteMixedPayment = async () => {
+    const remaining = finalTotal - partialPaidAmount;
+    
+    if (remaining > 0) {
+      message.error(`Còn thiếu ${formatWithCurrency(remaining, 'VND')} chưa thanh toán`);
+      return;
+    }
+
+    if (mixedPayments.length < 2) {
+      message.warning('Thanh toán hỗn hợp cần ít nhất 2 phương thức thanh toán');
+      return;
+    }
+
+    try {
+      setPaymentLoading(true);
+
+      // Call the original working payment API
+      const result = await thanhToanHoaDon(invoice.maHd);
+      
+      if (result && (result.success !== false)) {
+        message.success('Thanh toán hỗn hợp thành công!');
+
+        // Clear localStorage
+        if (invoice?.maHd) {
+          localStorage.removeItem(`partial_payment_${invoice.maHd}`);
+        }
+        
+        // Tạo chuỗi mô tả các phương thức thanh toán
+        const paymentMethodsDescription = mixedPayments.map(p => 
+          `${p.methodLabel} (${formatWithCurrency(p.amount, p.currency)})`
+        ).join(' + ');
+
+        const mixedPaymentData = {
+          maHd: invoice?.maHd,
+          tongTien: orderTotal,
+          discount: discountAmount,
+          finalTotal: finalTotal,
+          tienKhachDua: finalTotal,
+          tienThua: 0,
+          phuongThucThanhToan: `Hỗn hợp: ${paymentMethodsDescription}`,
+          ghiChu: `Thanh toán hỗn hợp: ${mixedPayments.length} phương thức`,
+          ngayThanhToan: new Date().toISOString(),
+          mixedPayments: mixedPayments
+        };
+        
+        // Tự động in hóa đơn sau khi thanh toán thành công
+        setTimeout(() => {
+          handlePrintReceiptMixed(mixedPaymentData);
+        }, 500);
+        
+        // Call parent onConfirm with mixed payment data
+        await onConfirm(mixedPaymentData);
+      } else {
+        message.error('Thanh toán thất bại: ' + (result?.error || 'Lỗi không xác định'));
+      }
+    } catch (error) {
+      message.error('Lỗi thanh toán: ' + (error.message || 'Lỗi không xác định'));
+    } finally {
+      setPaymentLoading(false);
+    }
+  };
+
+  const handleModalCancel = () => {
+    // Nếu đang ở chế độ hỗn hợp và có thanh toán chưa hoàn tất
+    if (isMixedPaymentMode && mixedPayments.length > 0) {
+      const remaining = finalTotal - partialPaidAmount;
+      if (remaining > 0) {
+        Modal.confirm({
+          title: 'Thanh toán chưa hoàn tất',
+          content: (
+            <div>
+              <p>Đã thanh toán: <strong>{formatWithCurrency(partialPaidAmount, 'VND')}</strong></p>
+              <p>Còn thiếu: <strong style={{ color: '#ff4d4f' }}>{formatWithCurrency(remaining, 'VND')}</strong></p>
+              <p style={{ marginTop: 12 }}>Bạn có muốn lưu tiến trình để thanh toán tiếp sau?</p>
+            </div>
+          ),
+          okText: 'Lưu và thoát',
+          cancelText: 'Hủy hết và thoát',
+          onOk: () => {
+            // Đã lưu vào localStorage rồi, chỉ cần đóng
+            message.info('Đã lưu tiến trình thanh toán');
+            onCancel();
+          },
+          onCancel: () => {
+            // Xóa localStorage và reset
+            if (invoice?.maHd) {
+              localStorage.removeItem(`partial_payment_${invoice.maHd}`);
+            }
+            setMixedPayments([]);
+            setPartialPaidAmount(0);
+            setIsMixedPaymentMode(false);
+            message.info('Đã hủy thanh toán chưa hoàn tất');
+            onCancel();
+          },
+          centered: true
+        });
+        return;
+      }
+    }
+    onCancel();
+  };
+
+  const handlePrintReceiptMixed = (mixedData) => {
+    if (!invoice || invoiceDetails.length === 0) {
+      message.error('Không có hóa đơn để in');
+      return;
+    }
+
+    const printContent = `
+      <div class="receipt-root">
+        <div class="receipt-header">
+          <h2>POS CAFE SYSTEM</h2>
+          <p>Địa chỉ cửa hàng</p>
+          <p>0123-456-789</p>
+          <p>${new Date().toLocaleDateString('vi-VN')} ${new Date().toLocaleTimeString('vi-VN')}</p>
+        </div>
+        
+        <div class="invoice-meta">
+          <p><strong>Hóa đơn:</strong> ${invoice?.maHd || 'N/A'}</p>
+          <p><strong>Bàn:</strong> ${invoice?.tenBan || 'N/A'}</p>
+        </div>
+        
+        <table class="items-table">
+          <thead>
+            <tr>
+              <th class="item-name">Món</th>
+              <th>SL x Giá</th>
+              <th class="total">Thành tiền</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${invoiceDetails.map(item => `
+              <tr>
+                <td class="item-name">${item.tenSp || item.tenMon || 'Unknown'}</td>
+                <td class="qty">${item.soLuong || item.sl || 1} x ${formatAmount(parseFloat(item.gia || item.giaBan || item.donGia || 0), 'VND')} VNĐ</td>
+                <td class="total">${formatAmount((item.soLuong || item.sl || 1) * parseFloat(item.gia || item.giaBan || item.donGia || 0), 'VND')} VNĐ</td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+        
+        <div class="totals-section">
+          <div class="amount-line">
+            <span class="label">Tạm tính</span>
+            <div class="value">
+              <span class="primary">${formatWithCurrency(orderTotal, 'VND')}</span>
+            </div>
+          </div>
+          ${discountAmount > 0 ? `
+            <div class="amount-line">
+              <span class="label">Giảm giá</span>
+              <div class="value">
+                <span class="primary">-${formatWithCurrency(discountAmount, 'VND')}</span>
+              </div>
+            </div>
+          ` : ''}
+          <div class="amount-line highlight">
+            <span class="label">Tổng cộng</span>
+            <div class="value">
+              <span class="primary">${formatWithCurrency(finalTotal, 'VND')}</span>
+            </div>
+          </div>
+          <div class="amount-line">
+            <span class="label">Phương thức:</span>
+            <div class="value">
+              <span class="primary">Thanh toán hỗn hợp</span>
+            </div>
+          </div>
+          ${mixedData.mixedPayments.map((p, idx) => `
+            <div class="amount-line">
+              <span class="label">${idx + 1}. ${p.methodLabel}</span>
+              <div class="value">
+                <span class="primary">${formatWithCurrency(p.amount, p.currency)}</span>
+                ${p.currency !== 'VND' ? `<span class="secondary">≈ ${formatWithCurrency(p.amountVND, 'VND')}</span>` : ''}
+              </div>
+            </div>
+          `).join('')}
+        </div>
+        
+        <div class="receipt-footer">
+          <p>Cảm ơn quý khách!</p>
+          <p>Hẹn gặp lại!</p>
+        </div>
+      </div>
+    `;
+
+    const printWindow = window.open('', '_blank', 'width=400,height=600');
+    printWindow.document.write(`
+      <html>
+        <head>
+          <title>Hóa đơn thanh toán</title>
+          <style>
+            body { margin: 0; padding: 20px; font-family: Arial, sans-serif; }
+            .receipt-root { width: 300px; font-family: monospace; font-size: 12px; line-height: 1.4; }
+            .receipt-header { text-align: center; margin-bottom: 20px; }
+            .receipt-header h2 { margin: 0; font-size: 16px; }
+            .receipt-header p { margin: 2px 0; }
+            .invoice-meta { border-top: 1px dashed #000; padding-top: 10px; margin-bottom: 10px; }
+            .invoice-meta p { margin: 2px 0; }
+            .items-table { width: 100%; border-top: 1px dashed #000; margin-top: 10px; padding-top: 10px; border-collapse: collapse; }
+            .items-table th, .items-table td { padding: 4px 0; font-family: monospace; font-size: 12px; }
+            .items-table th { text-align: left; border-bottom: 1px dashed #000; }
+            .items-table th.total, .items-table td.total { text-align: right; }
+            .items-table td.item-name { text-align: left; }
+            .items-table td.qty { text-align: right; color: #555; font-size: 11px; }
+            .totals-section { border-top: 1px dashed #000; padding-top: 10px; margin-top: 10px; }
+            .amount-line { display: flex; justify-content: space-between; margin: 4px 0; }
+            .amount-line .value { display: flex; flex-direction: column; align-items: flex-end; text-align: right; }
+            .amount-line .primary { font-weight: 500; }
+            .amount-line.highlight .primary { font-weight: 700; }
+            .amount-line .secondary { font-size: 11px; color: #555; }
+            .receipt-footer { text-align: center; margin-top: 20px; border-top: 1px dashed #000; padding-top: 10px; }
+            .no-print { display: block; }
+            @media print {
+              .no-print { display: none; }
+              body { margin: 0; }
+            }
+          </style>
+        </head>
+        <body>
+          ${printContent}
+          <div class="no-print" style="text-align: center; margin-top: 20px; padding-top: 20px; border-top: 1px dashed #000;">
+            <button onclick="window.print()" style="padding: 10px 20px; background: #197dd3; color: white; border: none; border-radius: 4px; cursor: pointer; margin: 5px;">In hóa đơn</button>
+            <button onclick="window.close()" style="padding: 10px 20px; background: #ccc; color: black; border: none; border-radius: 4px; cursor: pointer; margin: 5px;">Đóng</button>
+          </div>
+        </body>
+      </html>
+    `);
+    printWindow.document.close();
+    message.success('Đã gửi hóa đơn đến máy in');
   };
 
   const handlePrintReceipt = () => {
@@ -404,13 +742,14 @@ const PaymentModal = ({
   const customerPaidInVND = convertToVND(customerPaid, currency);
   const finalTotalInCurrency = convertFromVND(finalTotal, currency);
   const changeInVND = Math.max(0, customerPaidInVND - finalTotal);
-  const enoughPayment = customerPaidInVND >= finalTotal;
+  const remainingMixedPayment = finalTotal - partialPaidAmount;
+  const enoughPayment = isMixedPaymentMode ? (partialPaidAmount >= finalTotal) : (customerPaidInVND >= finalTotal);
   const currencyLabel = currency === 'VND' ? 'VNĐ' : currency;
 
   return (
     <Modal
       open={visible}
-      onCancel={onCancel}
+      onCancel={handleModalCancel}
       footer={null}
       width={1200}
       height={700}
@@ -425,10 +764,12 @@ const PaymentModal = ({
         <div className="payment-header">
           <Button 
             icon={<ArrowLeft size={18} />} 
-            onClick={onCancel}
+            onClick={handleModalCancel}
             className="back-button"
           />
-          <Text className="payment-title">Thanh toán</Text>
+          <Text className="payment-title">
+            {isMixedPaymentMode ? 'Thanh toán hỗn hợp' : 'Thanh toán'}
+          </Text>
           <div className="header-spacer"></div>
         </div>
 
@@ -572,10 +913,61 @@ const PaymentModal = ({
                 <span>{invoiceDetails.length}</span>
               </div>
               <div className="summary-line total">
-                <span>Còn lại:</span>
+                <span>Cần thanh toán:</span>
                 <span>{finalTotal.toLocaleString()} VND</span>
               </div>
-              {paymentMethod === 'Cash' && (
+
+              {/* Mixed Payment Mode */}
+              {isMixedPaymentMode && (
+                <>
+                  <div className="summary-line paid">
+                    <span>Đã thanh toán:</span>
+                    <span style={{ color: '#52c41a', fontWeight: 'bold' }}>
+                      {formatWithCurrency(partialPaidAmount, 'VND')}
+                    </span>
+                  </div>
+                  <div className="summary-line remaining">
+                    <span>Còn lại:</span>
+                    <span style={{ color: '#ff4d4f', fontWeight: 'bold' }}>
+                      {formatWithCurrency(remainingMixedPayment, 'VND')}
+                    </span>
+                  </div>
+                  <div className="summary-line">
+                    <span>Số phương thức:</span>
+                    <span>{mixedPayments.length}</span>
+                  </div>
+                  
+                  {/* Mixed Payments List */}
+                  {mixedPayments.length > 0 && (
+                    <div className="mixed-payments-list">
+                      <Text className="list-title">Đã thanh toán:</Text>
+                      {mixedPayments.map((payment, index) => (
+                        <div key={payment.id} className="mixed-payment-item">
+                          <div className="payment-info">
+                            <span className="payment-index">{index + 1}.</span>
+                            <span className="payment-method">{payment.methodLabel}</span>
+                            <span className="payment-amount">
+                              {formatWithCurrency(payment.amount, payment.currency)}
+                            </span>
+                          </div>
+                          <Button
+                            type="text"
+                            danger
+                            size="small"
+                            onClick={() => handleRemovePartialPayment(payment.id)}
+                            className="remove-payment-btn"
+                          >
+                            Xóa
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </>
+              )}
+
+              {/* Normal Payment Mode */}
+              {!isMixedPaymentMode && paymentMethod === 'Cash' && (
                 <>
                   <div className="summary-line">
                     <span>Tiền khách đưa:</span>
@@ -622,29 +1014,65 @@ const PaymentModal = ({
         {/* Footer với nút thanh toán chính */}
         <div className="payment-footer">
           <div className="footer-left">
+            <Button 
+              icon={<Split size={16} />}
+              onClick={handleToggleMixedPayment}
+              className={isMixedPaymentMode ? "mixed-payment-btn active" : "mixed-payment-btn"}
+              size="large"
+            >
+              {isMixedPaymentMode ? 'Tắt hỗn hợp' : 'Thanh toán hỗn hợp'}
+            </Button>
           </div>
           <div className="footer-center">
-            <Button 
-              icon={<Printer size={16} />}
-              onClick={handlePrintReceipt}
-              className="print-receipt-btn"
-              size="large"
-            >
-              In hóa đơn
-            </Button>
+            {isMixedPaymentMode ? (
+              <Button 
+                icon={<Plus size={16} />}
+                onClick={handleAddPartialPayment}
+                className="add-partial-btn"
+                size="large"
+                disabled={customerPaid <= 0 || remainingMixedPayment <= 0}
+              >
+                Thêm thanh toán
+              </Button>
+            ) : (
+              <Button 
+                icon={<Printer size={16} />}
+                onClick={handlePrintReceipt}
+                className="print-receipt-btn"
+                size="large"
+              >
+                In hóa đơn
+              </Button>
+            )}
           </div>
           <div className="footer-right">
-            <Button 
-              className="main-payment-btn"
-              onClick={handleConfirmPayment}
-              loading={paymentLoading}
-              size="large"
-              type="primary"
-              disabled={!enoughPayment}
-            >
-              <span>THANH TOÁN</span>
-              <span className="payment-amount">{finalTotal.toLocaleString()} VND</span>
-            </Button>
+            {isMixedPaymentMode ? (
+              <Button 
+                className="main-payment-btn"
+                onClick={handleCompleteMixedPayment}
+                loading={paymentLoading}
+                size="large"
+                type="primary"
+                disabled={!enoughPayment || mixedPayments.length < 2}
+              >
+                <span>HOÀN TẤT</span>
+                <span className="payment-amount">
+                  {mixedPayments.length < 2 ? 'Cần ít nhất 2 PT' : `${partialPaidAmount.toLocaleString()} VND`}
+                </span>
+              </Button>
+            ) : (
+              <Button 
+                className="main-payment-btn"
+                onClick={handleConfirmPayment}
+                loading={paymentLoading}
+                size="large"
+                type="primary"
+                disabled={!enoughPayment}
+              >
+                <span>THANH TOÁN</span>
+                <span className="payment-amount">{finalTotal.toLocaleString()} VND</span>
+              </Button>
+            )}
           </div>
         </div>
       </div>
