@@ -1,5 +1,5 @@
 import axios from 'axios';
-import {url_api_services} from "./url";
+import {url_api_services, url_chart_api} from "./url";
 import { getAuthHeaders } from './apiLogin';
 
 const urlApi = url_api_services;
@@ -1472,4 +1472,42 @@ export async function layBaoCaoBanHangTuanNay() {
   const endDate = lastDayOfWeek.toISOString().split('T')[0];
   
   return await layBaoCaoBanHangChiTiet(startDate, endDate);
+}
+
+// ==================== CHART API ====================
+
+/**
+ * Tạo biểu đồ doanh thu từ dữ liệu
+ * @param {Array} chartData - Mảng dữ liệu [{date: "YYYY-MM-DD HH:mm:ss", totalRevenue: number}]
+ * @returns {Promise<Object>} Kết quả chứa SVG chart HTML
+ */
+export async function taoChartDoanhThu(chartData) {
+  try {
+    const response = await axios.post(url_chart_api, chartData, {
+      headers: {
+        'Content-Type': 'application/json'
+      }
+    });
+    
+    if (response.data) {
+      return {
+        success: true,
+        chartHtml: response.data,
+        message: 'Tạo biểu đồ thành công'
+      };
+    } else {
+      return {
+        success: false,
+        chartHtml: null,
+        message: 'Không nhận được dữ liệu biểu đồ'
+      };
+    }
+  } catch (error) {
+    console.error('Error creating chart:', error);
+    return {
+      success: false,
+      chartHtml: null,
+      message: error.message || 'Có lỗi xảy ra khi tạo biểu đồ'
+    };
+  }
 }

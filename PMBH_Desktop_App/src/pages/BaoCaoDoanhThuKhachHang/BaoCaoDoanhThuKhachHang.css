@@ -235,3 +235,72 @@
     font-size: 14px;
   }
 }
+
+/* Chart Container Styles */
+.chart-container {
+  margin-top: 24px;
+  padding: 20px;
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  min-height: 500px;
+}
+
+.chart-content {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  overflow-x: auto;
+  padding: 20px 0;
+}
+
+.chart-content svg {
+  max-width: 100%;
+  height: auto;
+}
+
+/* Chart hover effects */
+.chart-content .area-dot {
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.chart-content .area-dot:hover {
+  r: 6;
+  fill: #197dd3;
+  filter: drop-shadow(0 0 8px rgba(25, 125, 211, 0.5));
+}
+
+/* Chart tooltip styles */
+.chart-tooltip {
+  position: absolute;
+  background: rgba(25, 125, 211, 0.95);
+  color: white;
+  padding: 8px 12px;
+  border-radius: 4px;
+  font-size: 12px;
+  pointer-events: none;
+  z-index: 1000;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+.chart-tooltip strong {
+  display: block;
+  margin-bottom: 4px;
+  font-size: 14px;
+}
+
+@media (max-width: 768px) {
+  .chart-container {
+    padding: 12px;
+  }
+
+  .chart-content {
+    overflow-x: scroll;
+  }
+
+  .chart-content svg {
+    min-width: 800px;
+  }
+}

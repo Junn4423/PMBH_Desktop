@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { Card, Breadcrumb, Button, Table, DatePicker, Space, Statistic, Row, Col, message, Spin, Select } from 'antd';
 import { BarChart, Calendar, Download, Table2, TrendingUp } from 'lucide-react';
 import dayjs from 'dayjs';
-import { layBaoCaoBanHangChiTiet, layBaoCaoBanHangHomNay, layBaoCaoBanHangTuanNay, xuatBaoCaoBanHang } from '../../services/apiServices';
+import { layBaoCaoBanHangChiTiet, layBaoCaoBanHangHomNay, layBaoCaoBanHangTuanNay, xuatBaoCaoBanHang, taoChartDoanhThu } from '../../services/apiServices';
 import './BaoCaoDoanhThuKhachHang.css';
 
 const { RangePicker } = DatePicker;
@@ -30,6 +30,8 @@ const BaoCaoDoanhThuKhachHang = () => {
   const [quickFilter, setQuickFilter] = useState('today');
   const [reportType, setReportType] = useState('table');
   const [isPickerOpen, setIsPickerOpen] = useState(false);
+  const [chartHtml, setChartHtml] = useState('');
+  const [loadingChart, setLoadingChart] = useState(false);
 
   useEffect(() => {
     const todayString = dayjs().format(DATE_FORMAT);
@@ -121,6 +123,13 @@ const BaoCaoDoanhThuKhachHang = () => {
           });
         }
         message.success(response.message || 'Tải báo cáo thành công');
+        
+        // Auto load chart if report type is chart
+        if (reportType === 'chart' && response.data && response.data.length > 0) {
+          setTimeout(() => {
+            loadChartData();
+          }, 500);
+        }
       } else {
         message.error(response?.message || 'Không thể tải báo cáo');
         setData([]);
@@ -184,10 +193,65 @@ const BaoCaoDoanhThuKhachHang = () => {
     };
   }, [isPickerOpen, preventPickerScroll]);
 
-  const handleReportTypeChange = (value) => {
+  const handleReportTypeChange = async (value) => {
     setReportType(value);
     if (value === 'chart') {
-      message.info('Chức năng báo cáo dạng biểu đồ đang được phát triển');
+      await loadChartData();
+    }
+  };
+
+  const loadChartData = async () => {
+    if (!data || data.length === 0) {
+      message.warning('Không có dữ liệu để tạo biểu đồ');
+      return;
+    }
+
+    try {
+      setLoadingChart(true);
+      
+      // Group data by date and sum totalRevenue
+      const chartDataMap = new Map();
+      
+      data.forEach((item) => {
+        const dateKey = item.ngay; // Format: DD/MM/YYYY
+        
+        if (dateKey) {
+          // Parse date from DD/MM/YYYY to YYYY-MM-DD HH:mm:ss
+          const parsedDate = dayjs(dateKey, DISPLAY_FORMAT, true);
+          if (parsedDate.isValid()) {
+            const formattedDate = parsedDate.format('YYYY-MM-DD 00:00:00');
+            const currentTotal = chartDataMap.get(formattedDate) || 0;
+            const itemTotal = parseFloat(item.thanhTien) || 0;
+            chartDataMap.set(formattedDate, currentTotal + itemTotal);
+          }
+        }
+      });
+
+      // Convert Map to array format required by API
+      const chartData = Array.from(chartDataMap.entries()).map(([date, totalRevenue]) => ({
+        date: date,
+        totalRevenue: totalRevenue
+      }));
+
+      // Sort by date ascending
+      chartData.sort((a, b) => new Date(a.date) - new Date(b.date));
+
+      // Call chart API
+      const response = await taoChartDoanhThu(chartData);
+      
+      if (response && response.success) {
+        setChartHtml(response.chartHtml);
+        message.success('Tạo biểu đồ thành công');
+      } else {
+        message.error(response?.message || 'Không thể tạo biểu đồ');
+        setChartHtml('');
+      }
+    } catch (error) {
+      console.error('Error loading chart:', error);
+      message.error('Có lỗi xảy ra khi tạo biểu đồ');
+      setChartHtml('');
+    } finally {
+      setLoadingChart(false);
     }
   };
 
@@ -217,6 +281,13 @@ const BaoCaoDoanhThuKhachHang = () => {
           to: endDate
         });
         message.success(response.message || 'Tải báo cáo thành công');
+        
+        // Auto load chart if report type is chart
+        if (reportType === 'chart' && response.data && response.data.length > 0) {
+          setTimeout(() => {
+            loadChartData();
+          }, 500);
+        }
       } else {
         message.error(response?.message || 'Không thể tải báo cáo');
         setData([]);
@@ -664,10 +735,21 @@ const BaoCaoDoanhThuKhachHang = () => {
               }}
             />
           ) : (
-            <div className="chart-placeholder">
-              <TrendingUp size={64} style={{ color: '#bdbcc4' }} />
-              <h3>Chức năng báo cáo dạng biểu đồ</h3>
-              <p>Tính năng này đang được phát triển và sẽ sớm ra mắt</p>
+            <div className="chart-container">
+              <Spin spinning={loadingChart} tip="Đang tạo biểu đồ...">
+                {chartHtml ? (
+                  <div 
+                    className="chart-content"
+                    dangerouslySetInnerHTML={{ __html: chartHtml }}
+                  />
+                ) : (
+                  <div className="chart-placeholder">
+                    <TrendingUp size={64} style={{ color: '#bdbcc4' }} />
+                    <h3>Chọn khoảng thời gian để xem biểu đồ</h3>
+                    <p>Vui lòng chọn bộ lọc hoặc khoảng thời gian tùy chỉnh</p>
+                  </div>
+                )}
+              </Spin>
             </div>
           )}
         </Spin>
