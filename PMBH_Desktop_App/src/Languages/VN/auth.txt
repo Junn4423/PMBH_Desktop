@@ -1,25 +1,66 @@
-// Authentication - Text đăng nhập, đăng xuất
-Đăng nhập
-Đăng xuất
-Tên đăng nhập
+# AUTH - Các text UI trong module auth
+# Tổng số: 62 text
+# Mỗi dòng là một text field riêng biệt
+
+Bán hàng thông minh
+Báo cáo chi tiết
+Café Management
+Chúng tôi đã gửi mã xác thực đến email:
+Có lỗi xảy ra khi đăng xuất
+Có lỗi xảy ra khi đăng xuất!
+Cập nhật trạng thái đơn hàng ngay lập tức
+Email đăng ký
+Ghi nhớ đăng nhập
+Gửi lại mã xác thực
+Gửi mã xác thực
+Hoàn thành
+Hệ thống quản lý quán cà phê chuyên nghiệp
+Không thể gửi mã xác thực! Vui lòng thử lại.
+Không thể đặt lại mật khẩu! Vui lòng thử lại.
+Mã xác thực
+Mã xác thực hợp lệ!
+Mã xác thực không hợp lệ! Vui lòng kiểm tra lại.
+Mã xác thực đã được gửi đến email của bạn!
 Mật khẩu
-Nhớ mật khẩu
-Quên mật khẩu?
-Đăng nhập thành công
-Đăng xuất thành công
-Tên đăng nhập không được để trống
-Mật khẩu không được để trống
-Tên đăng nhập hoặc mật khẩu không đúng
-Phiên làm việc đã hết hạn
-Vui lòng đăng nhập lại
-Thông tin đăng nhập
-Xác thực
-Quyền truy cập
-Không có quyền truy cập
-Tài khoản bị khóa
-Tài khoản không tồn tại
-Đổi mật khẩu
-Mật khẩu cũ
+Mật khẩu của bạn đã được cập nhật. Vui lòng đăng nhập lại với mật khẩu mới.
+Mật khẩu hiện tại
 Mật khẩu mới
+Nhập Email
+Nhập email đăng ký tài khoản
+Nhập lại mật khẩu mới
+Nhập mã xác thực 6 số
+Nhập mật khẩu
+Nhập mật khẩu hiện tại
+Nhập mật khẩu mới
+Nhập tên đăng nhập
+Phiên bản 1.0.0
+Quay lại
+Quên mật khẩu
+Quản lý đơn hàng và thanh toán dễ dàng
+Theo dõi thời gian thực
+Thoát ứng dụng
+Thống kê doanh thu và hiệu suất kinh doanh
+Tài khoản:
+Tên đăng nhập
+Vui lòng đăng nhập để tiếp tục sử dụng hệ thống
 Xác nhận mật khẩu mới
-Mật khẩu không khớp
+Xác nhận đăng xuất
+Xác thực
+Yêu cầu mật khẩu:
+© 2024 Café Management System
+Ít nhất 1 chữ hoa (A-Z)
+Ít nhất 1 chữ số (0-9)
+Ít nhất 1 chữ thường (a-z)
+Ít nhất 6 ký tự
+Đăng nhập
+Đăng nhập ngay
+Đăng xuất
+Đăng xuất thành công!
+Đặt lại
+Đặt lại mật khẩu
+Đặt lại mật khẩu cho tài khoản của bạn
+Đặt lại mật khẩu thành công!
+Đổi mật khẩu
+Đổi mật khẩu lần nữa
+Đổi mật khẩu thành công!
+Đổi mật khẩu thất bại! Vui lòng kiểm tra lại mật khẩu hiện tại.

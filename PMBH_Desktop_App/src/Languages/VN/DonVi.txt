@@ -1,0 +1,25 @@
+# DONVI - Các text UI trong module DonVi
+# Tổng số: 21 text
+# Mỗi dòng là một text field riêng biệt
+
+Cập nhật thành công
+Không thể tải danh sách đơn vị
+Không thể xóa đơn vị
+Mã đơn vị
+Mục chung
+Quản lý Đơn vị
+Sửa
+Thao tác
+Thêm mới
+Thêm thành công
+Tên rút gọn
+Tên đơn vị
+Tìm kiếm theo mã, tên đơn vị...
+VD: DV001, KG, LY...
+VD: Kilogram, Lý, Chai...
+VD: kg, ly, chai...
+Xác nhận xóa
+Xóa
+Xóa thành công
+Điều khiển sản phẩm
+Đơn vị

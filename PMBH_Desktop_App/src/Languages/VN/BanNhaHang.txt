@@ -1,0 +1,34 @@
+# BANNHAHANG - Các text UI trong module BanNhaHang
+# Tổng số: 30 text
+# Mỗi dòng là một text field riêng biệt
+
+Bàn nhà hàng
+Chọn khu vực
+Có khách
+Ghi chú
+Ghi chú thêm về bàn này...
+Khu vực
+Không thể tải danh sách bàn
+Không thể xóa bàn:
+Không tìm thấy khu vực, vui lòng chọn lại
+Không tìm thấy mã bàn
+Mục chung
+Quản lý bàn nhà hàng
+Số ghế
+Sửa
+Thao tác
+Thiết lập tầng và bàn
+Thêm bàn mới
+Trang chủ
+Trạng thái
+Trống
+Tên bàn
+Tìm kiếm bàn...
+Ví dụ: Bàn 1
+Xác nhận xóa
+Xóa
+Đã cập nhật bàn thành công
+Đã thêm bàn mới thành công
+Đã xóa bàn thành công
+Đã xảy ra lỗi:
+Đã đặt

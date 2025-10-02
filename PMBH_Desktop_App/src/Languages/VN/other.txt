@@ -1,0 +1,7 @@
+# OTHER - Các text UI trong module other
+# Tổng số: 3 text
+# Mỗi dòng là một text field riêng biệt
+
+') || responseText.includes('
+Chọn Theme
+Ctrl + T để toggle

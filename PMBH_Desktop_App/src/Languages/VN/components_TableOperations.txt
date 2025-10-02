@@ -1,0 +1,32 @@
+# COMPONENTS_TABLEOPERATIONS - Các text UI trong module components_TableOperations
+# Tổng số: 28 text
+# Mỗi dòng là một text field riêng biệt
+
+(Cần có ít nhất 1 bàn trống để thực hiện chuyển bàn)
+(Cần có ít nhất 2 bàn có khách trong cùng khu vực để thực hiện gộp bàn)
+(parseFloat(item.gia || item.giaBan || item.donGia || 0) * parseInt(item.sl || item.soLuong)).toLocaleString()đ
+Bàn trống
+Bước currentStep: currentStep === 1 ? 'Chọn món để tách' : 'Chọn bàn đích'
+Chuyển selectedItemsForSplit.length món sang bàn splitTargetTable.tenBan
+Chuyển từ bàn selectedTable?.tenBan || ''
+Chỉ có thể gộp bàn trong cùng khu vực.
+Chọn bàn đích để chuyển hóa đơn từ bàn
+Chọn bàn đích để gộp bàn
+Còn lại remainingItems.length món ở bàn hiện tại
+Gộp bàn selectedTable?.tenBan || ''
+Hủy
+Không có bàn nào khác có khách trong cùng khu vực để gộp
+Không có bàn trống để chuyển
+Lưu ý:
+Quay lại
+SL: item.sl || item.soLuong × parseFloat(item.gia || item.giaBan || item.donGia || 0).toLocaleString()đ
+Toàn bộ hóa đơn và món ăn từ bàn selectedTable?.tenBan sẽ được chuyển sang bàn được chọn.
+Tách bàn
+Tách bàn selectedTable?.tenBan || ''
+Vui lòng chọn bàn đích để chuyển
+Vui lòng chọn bàn đích để gộp
+item.tenSp || item.ten || item.tensp || item.name
+table.status === 'available' ? 'Trống' : 'Có khách'
+table.tenBan || table.name
+vào:
+Đã chọn selectedItemsForSplit.length món để tách

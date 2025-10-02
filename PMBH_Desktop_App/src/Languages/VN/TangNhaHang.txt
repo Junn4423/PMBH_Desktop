@@ -1,0 +1,24 @@
+# TANGNHAHANG - Các text UI trong module TangNhaHang
+# Tổng số: 20 text
+# Mỗi dòng là một text field riêng biệt
+
+Cập nhật thành công
+Không thể tải danh sách tầng/khu vực
+Không thể xóa tầng/khu vực
+Mã tầng/khu vực
+Mục chung
+Quản lý Tầng/Khu vực Nhà hàng
+Sửa
+Thao tác
+Thiết lập tầng và bàn
+Thêm mới
+Thêm thành công
+Trang chủ
+Tên tầng/khu vực
+Tìm kiếm theo mã, tên tầng/khu vực...
+Tầng nhà hàng
+VD: TANG1, KV01...
+VD: Tầng 1, Khu vực ngoài trời...
+Xác nhận xóa
+Xóa
+Xóa thành công

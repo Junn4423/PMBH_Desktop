@@ -1,0 +1,5 @@
+# COMPONENTS_ORDER - Các text UI trong module components_Order
+# Tổng số: 1 text
+# Mỗi dòng là một text field riêng biệt
+
+config.text

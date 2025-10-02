@@ -1,0 +1,13 @@
+# COMPONENTS_LAYOUT - Các text UI trong module components_Layout
+# Tổng số: 9 text
+# Mỗi dòng là một text field riêng biệt
+
+Bảng điều khiển người dùng
+Chọn bộ màu sắc
+Công ty
+Hệ thống quản lý quán cafe PMBH
+PMBH Desktop
+Quản lý bán nhà hàng
+theme.label
+user?.hoTen || 'Người dùng'
+user?.vaiTro || 'Nhân viên'

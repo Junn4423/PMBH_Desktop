@@ -1,50 +1,71 @@
-// Navigation & Menu - Text menu và điều hướng
-Trang chủ
+# MENU - Các text trong menu sidebar
+# Mỗi dòng là một text field riêng biệt
+
+# Menu chính
+Mục chung
+Kế toán
+Quản lí kho
 Bán hàng
-Thực đơn
-Quản lý bàn
-Khách hàng
-Nhân viên
 Báo cáo
 Cài đặt
-Bếp & Bar
-Chi khác
+
+# Mục chung submenu
+Trang chủ
 Công ty
-Bang điều khiển
-Phiếu chi
-Kiểm kho
 Phòng ban
+Nhân viên
+Bảng điều khiển người dùng
 Nhóm người dùng
 Chọn kho quản lý
-Tài khoản MB
+Giao diện MB
+Tài khoản
+BC chi tiền
+BC chi tiền + nhập kho
 Nhập chi
-Cảnh báo Max Min
-Đơn vị
-Chương trình kinh doanh
-Người đăng ký
-Cho người quản lý
-Nhân viên công ty
-Báo cáo chi tiền
-Báo cáo chi tiền nhập kho
 Nhập bán hàng
 Cho nhà bếp
 Cho quầy bar
-Báo cáo bán hàng
-Báo cáo tổng
+BC bán hàng
+BC tổng
 Báo cáo giao ca
-Báo cáo nhập kho
-Báo tồn Mobile
-Nhập kho Mobile
-Kiểm kho Mobile
+BC nhập kho
+Cảnh báo max/min
+Báo tồn Mobil
+Nhập kho
+Kiểm kho
+Điều khiển sản phẩm
+Đơn vị
 Loại sản phẩm
 Sản phẩm
+Thiết lập tầng và bàn
 Tầng nhà hàng
 Bàn nhà hàng
+
+# Kế toán submenu
+Phiếu chi
+
+# Quản lí kho submenu
 Kho
-Nhập kho
 Xuất kho
-Danh mục
-Quản lý
-Hệ thống
-Tiện ích
-Báo cáo thống kê
+Nhà cung cấp
+Chứng từ kho
+
+# Bán hàng submenu
+POS - Bán hàng
+Thực đơn
+Quản lý bàn nhà hàng
+Bếp + Bar
+Khách hàng
+Danh mục khách hàng
+Chương trình khuyến mãi
+
+# Báo cáo submenu
+Tổng hợp
+Báo cáo doanh thu
+Báo cáo theo điều kiện
+Lịch sử xóa đơn hàng
+
+# Cài đặt submenu
+Cấu hình hệ thống
+Thay đổi mật khẩu
+Đăng xuất

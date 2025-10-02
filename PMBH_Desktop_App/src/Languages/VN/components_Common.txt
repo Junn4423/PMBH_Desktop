@@ -1,0 +1,15 @@
+# COMPONENTS_COMMON - Các text UI trong module components_Common
+# Tổng số: 11 text
+# Mỗi dòng là một text field riêng biệt
+
+Chỉ hỗ trợ file ảnh (JPG, PNG, GIF, WebP)!
+Có lỗi xảy ra khi upload hình ảnh!
+Thử lại
+Upload hình ảnh
+Upload hình ảnh thành công!
+Xem hình ảnh
+Xem trước hình ảnh
+Xác nhận xóa
+Xóa hình ảnh
+flagEmojis[language] || '🌐'
+Đã xóa hình ảnh

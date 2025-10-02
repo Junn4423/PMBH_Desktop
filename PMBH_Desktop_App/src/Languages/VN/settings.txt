@@ -1,64 +1,66 @@
-// Settings & Configuration - Text cài đặt
+# SETTINGS - Các text trong trang cài đặt
+# Mỗi dòng là một text field riêng biệt
+
 Cài đặt
-Cấu hình
-Tùy chọn
-Thông số
-Tham số
-Cài đặt hệ thống
-Cài đặt ứng dụng
-Cài đặt người dùng
-Thông tin công ty
-Tên công ty
-Địa chỉ công ty
-Số điện thoại công ty
-Email công ty
-Website công ty
-Logo công ty
-Mã số thuế
-Giấy phép kinh doanh
-Ngành nghề
-Lĩnh vực hoạt động
-Cài đặt thuế
-Thuế VAT
-Thuế môn bài
-Cài đặt tiền tệ
-Đơn vị tiền tệ
-Tỷ giá
-Cài đặt in ấn
-Máy in
-Khổ giấy
-Margin
-Font chữ
-Cỡ chữ
-In màu
-In đen trắng
-In hóa đơn
-In báo cáo
-Cài đặt sao lưu
-Sao lưu dữ liệu
-Khôi phục dữ liệu
-Tự động sao lưu
-Vị trí sao lưu
-Thời gian sao lưu
-Cài đặt bảo mật
-Mã hóa
-Phân quyền
-Nhật ký truy cập
-Khóa tài khoản
-Cài đặt giao diện
-Chủ đề
-Màu sắc
 Ngôn ngữ
-Font chữ
-Cỡ chữ giao diện
-Chế độ tối
-Chế độ sáng
 Chọn ngôn ngữ hiển thị cho ứng dụng
+Ngôn ngữ hiện tại:
 Chọn ngôn ngữ (Select Style)
 Chọn ngôn ngữ (Button Style)
 Chọn ngôn ngữ (Flag Style)
 Thay đổi ngôn ngữ sẽ được áp dụng ngay lập tức và lưu cho lần sử dụng tiếp theo
+Thông tin hệ thống
 Phiên bản:
 Ngôn ngữ hỗ trợ:
 Các tính năng nâng cao cần gói premium để sử dụng
+Logo hóa đơn
+Tùy chỉnh logo hiển thị trên hóa đơn in
+Logo hiện tại:
+Xóa logo
+Phương thức cập nhật:
+Nhập URL ảnh
+Tải ảnh lên
+URL ảnh logo:
+Chọn ảnh logo:
+Chọn ảnh
+Cập nhật logo
+Logo sẽ được hiển thị ở đầu tất cả hóa đơn in. Kích thước đề xuất: 200x200px
+Quản lý LocalStorage
+Làm mới
+Xuất dữ liệu
+Items trong LocalStorage
+Đã sử dụng
+Còn lại (ước tính)
+LocalStorage Usage:
+Chromium Storage Estimate:
+Quota:
+Danh sách Items trong LocalStorage:
+Xóa tất cả
+Tổng
+items
+Lưu ý:
+LocalStorage có giới hạn khoảng 5-10MB tùy trình duyệt. Chromium Storage bao gồm cả IndexedDB, Cache API và các storage khác.
+Chi tiết Item
+Key
+Loại
+Kích thước
+Hành động
+Xóa item này?
+Bạn có chắc muốn xóa item này?
+Loại dữ liệu:
+Nội dung:
+Xóa toàn bộ localStorage?
+Cảnh báo: Hành động này không thể hoàn tác!
+Cài đặt giao diện
 Các tùy chọn giao diện khác sẽ có sẵn trong phiên bản premium
+Đã cập nhật logo hóa đơn thành công
+Không thể cập nhật logo hóa đơn
+Lỗi khi cập nhật logo:
+Đã xóa logo hóa đơn
+Không thể xóa logo hóa đơn
+Đã xóa item:
+Không thể xóa item
+Đã xóa toàn bộ localStorage
+Không thể xóa localStorage
+Đã xuất dữ liệu localStorage
+Không thể xuất dữ liệu

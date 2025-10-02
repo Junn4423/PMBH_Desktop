@@ -1,49 +1,53 @@
-// Messages & Notifications - Text thông báo
+# MESSAGES - Các thông báo hệ thống
+# Mỗi dòng là một text field riêng biệt
+
+# Success messages
 Thành công
+Lưu thành công
+Thêm thành công
+Cập nhật thành công
+Xóa thành công
+Tải dữ liệu thành công
+Xuất báo cáo thành công
+Đã gửi lệnh in hóa đơn
+Đã gửi hóa đơn đến máy in
+Xóa sản phẩm thành công
+Cập nhật ảnh sản phẩm thành công
+Thêm sản phẩm thành công
+Đã xóa sản phẩm khỏi đơn hàng
+Đã xóa sản phẩm khỏi hóa đơn
+
+# Error messages
 Lỗi
-Cảnh báo
-Thông tin
-Xác nhận
-Thông báo
-Đã lưu thành công
-Đã xóa thành công
-Đã cập nhật thành công
-Đã thêm thành công
-Lưu thất bại
-Xóa thất bại
-Cập nhật thất bại
-Thêm thất bại
-Vui lòng thử lại
+Không thể tải dữ liệu
+Không thể lưu
+Không thể thêm
+Không thể cập nhật
+Không thể xóa
 Có lỗi xảy ra
-Không thể kết nối máy chủ
-Mất kết nối mạng
-Đang tải...
+Lỗi không xác định
+Không thể tải danh sách sản phẩm
+Không thể tải danh mục sản phẩm
+Không thể xóa sản phẩm
+Không thể cập nhật ảnh sản phẩm
+Không thể thêm sản phẩm:
+Không thể xóa sản phẩm:
+Không thể in hóa đơn:
+Không thể tải báo cáo
+Không thể xuất báo cáo
+Có lỗi xảy ra khi tải báo cáo
+Có lỗi xảy ra khi xuất báo cáo
+
+# Warning messages
+Cảnh báo
+Vui lòng kiểm tra lại
+Không tìm thấy dữ liệu
+Không tìm thấy danh mục sản phẩm
+Vui lòng chọn khoảng thời gian để xuất báo cáo
+Không có hóa đơn để in
+
+# Info messages
 Đang xử lý...
-Đang lưu...
-Vui lòng đợi
-Không có dữ liệu
-Dữ liệu trống
-Dữ liệu không hợp lệ
-Trường bắt buộc
-Không được để trống
-Định dạng không đúng
-Số điện thoại không hợp lệ
-Email không hợp lệ
-Mật khẩu quá ngắn
-Mật khẩu không khớp
-Bạn có chắc chắn muốn xóa?
-Bạn có chắc chắn muốn hủy?
-Thao tác này không thể hoàn tác
-Dữ liệu sẽ bị mất
-Hành động không được phép
-Không có quyền thực hiện
-Phiên làm việc hết hạn
-Vui lòng đăng nhập lại
-Tải lại trang
-Thử lại
-Bỏ qua
-Tiếp tục
-Dừng lại
-Hủy bỏ
-Đồng ý
-Từ chối
+Đang tải...
+Đang tải sản phẩm...
+Vui lòng đợi...
