@@ -1,6 +1,7 @@
 import React from 'react';
 import { Button, message } from 'antd';
 import { Printer } from 'lucide-react';
+import receiptLogoManager from '../../utils/receiptLogoManager';
 
 const ReceiptPrinter = ({ 
   invoice, 
@@ -112,6 +113,7 @@ const ReceiptPrinter = ({
       // Create printable content
       const printContent = `
         <div class="receipt-root">
+          ${receiptLogoManager.getLogoHTML()}
           <div class="receipt-header">
             <h2>${receiptData.header.storeName}</h2>
             <p>${receiptData.header.address}</p>
@@ -182,6 +184,7 @@ const ReceiptPrinter = ({
             <style>
               body { margin: 0; padding: 20px; font-family: Arial, sans-serif; }
               .receipt-root { width: 300px; font-family: monospace; font-size: 12px; line-height: 1.4; }
+              ${receiptLogoManager.getLogoCSS()}
               .receipt-header { text-align: center; margin-bottom: 20px; }
               .receipt-header h2 { margin: 0; font-size: 16px; }
               .receipt-header p { margin: 2px 0; }
