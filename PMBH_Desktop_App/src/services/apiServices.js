@@ -1401,3 +1401,75 @@ export async function tachBanEnhanced(maHoaDon) {
     throw error;
   }
 }
+
+// ==================== BÁO CÁO BÁN HÀNG CHI TIẾT ====================
+
+/**
+ * Lấy báo cáo bán hàng chi tiết theo khoảng thời gian
+ * @param {string} ngayBatDau - Ngày bắt đầu (format: YYYY-MM-DD)
+ * @param {string} ngayKetThuc - Ngày kết thúc (format: YYYY-MM-DD)
+ * @param {string} plang - Ngôn ngữ báo cáo (mặc định: 'vi')
+ * @param {array} vArrLang - Mảng ngôn ngữ (tùy chọn)
+ * @param {number} vOpt - Tùy chọn báo cáo (mặc định: 0)
+ * @returns {Promise<Object>} Object chứa HTML báo cáo và thông tin kỳ báo cáo
+ */
+export async function layBaoCaoBanHangChiTiet(ngayBatDau, ngayKetThuc, plang = 'vi', vArrLang = [], vOpt = 0) {
+  return await callApi('BaoCaoBanHang', 'layBaoCaoBanHangChiTiet', {
+    ngayBatDau,
+    ngayKetThuc,
+    plang,
+    vArrLang,
+    vOpt
+  });
+}
+
+/**
+ * Xuất báo cáo bán hàng chi tiết (alias function với tên rõ ràng hơn)
+ * @param {Object} params - Object chứa các tham số
+ * @param {string} params.startDate - Ngày bắt đầu (YYYY-MM-DD)
+ * @param {string} params.endDate - Ngày kết thúc (YYYY-MM-DD)
+ * @param {string} params.language - Ngôn ngữ (mặc định: 'vi')
+ * @returns {Promise<Object>} Kết quả báo cáo
+ */
+export async function xuatBaoCaoBanHang({ startDate, endDate, language = 'vi' }) {
+  return await layBaoCaoBanHangChiTiet(startDate, endDate, language);
+}
+
+/**
+ * Lấy báo cáo bán hàng theo tháng
+ * @param {number} month - Tháng (1-12)
+ * @param {number} year - Năm
+ * @returns {Promise<Object>} Kết quả báo cáo
+ */
+export async function layBaoCaoBanHangTheoThang(month, year) {
+  // Tính ngày đầu và cuối tháng
+  const startDate = `${year}-${String(month).padStart(2, '0')}-01`;
+  const lastDay = new Date(year, month, 0).getDate();
+  const endDate = `${year}-${String(month).padStart(2, '0')}-${String(lastDay).padStart(2, '0')}`;
+  
+  return await layBaoCaoBanHangChiTiet(startDate, endDate);
+}
+
+/**
+ * Lấy báo cáo bán hàng hôm nay
+ * @returns {Promise<Object>} Kết quả báo cáo
+ */
+export async function layBaoCaoBanHangHomNay() {
+  const today = new Date().toISOString().split('T')[0];
+  return await layBaoCaoBanHangChiTiet(today, today);
+}
+
+/**
+ * Lấy báo cáo bán hàng tuần này
+ * @returns {Promise<Object>} Kết quả báo cáo
+ */
+export async function layBaoCaoBanHangTuanNay() {
+  const today = new Date();
+  const firstDayOfWeek = new Date(today.setDate(today.getDate() - today.getDay() + 1));
+  const lastDayOfWeek = new Date(today.setDate(today.getDate() - today.getDay() + 7));
+  
+  const startDate = firstDayOfWeek.toISOString().split('T')[0];
+  const endDate = lastDayOfWeek.toISOString().split('T')[0];
+  
+  return await layBaoCaoBanHangChiTiet(startDate, endDate);
+}

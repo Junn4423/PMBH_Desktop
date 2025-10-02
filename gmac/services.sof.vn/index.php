@@ -389,6 +389,41 @@ switch ($vtable) {
 
 		break;
 
+	// case dùng để xuất báo cáo bán hàng chi tiết
+	case "sl_lv0214":
+		include("../clsall/sl_lv0214.php");
+		$sl_lv0214 = new sl_lv0214($_SESSION['ERPSOFV2RRight'], $_SESSION['ERPSOFV2RUserID'], 'Sl0201');
+		switch ($vfun) {
+			case 'xuatBaoCaoBanHang':
+				$ngayBatDau = $input['ngayBatDau'] ?? $_POST['ngayBatDau'] ?? "";
+				$ngayKetThuc = $input['ngayKetThuc'] ?? $_POST['ngayKetThuc'] ?? "";
+				$plang = $input['plang'] ?? $_POST['plang'] ?? 'vi';
+				$vArrLang = $input['vArrLang'] ?? $_POST['vArrLang'] ?? [];
+				$vOpt = $input['vOpt'] ?? $_POST['vOpt'] ?? 0;
+				
+				if (empty($ngayBatDau) || empty($ngayKetThuc)) {
+					$vOutput = [
+						'success' => false,
+						'message' => 'Vui lòng cung cấp ngày bắt đầu và ngày kết thúc'
+					];
+				} else {
+					$htmlReport = $sl_lv0214->PrintInOutPutInStockDetail($plang, $vArrLang, $ngayBatDau, $ngayKetThuc, $vOpt);
+					$vOutput = [
+						'success' => true,
+						'data' => $htmlReport,
+						'message' => 'Xuất báo cáo bán hàng thành công'
+					];
+				}
+				break;
+			default:
+				$vOutput = [
+					'success' => false,
+					'message' => 'Chức năng không tồn tại'
+				];
+				break;
+		}
+		break;
+
 
 
 }

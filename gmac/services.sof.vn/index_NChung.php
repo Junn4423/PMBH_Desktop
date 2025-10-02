@@ -403,6 +403,182 @@ case 'DonBan':
     }
     break;
 
+    // Case xuất báo cáo bán hàng chi tiết
+    case 'BaoCaoBanHang':
+        include("../clsall/sl_lv0214.php");
+        $sl_lv0214 = new sl_lv0214($_SESSION['ERPSOFV2RRight'], $_SESSION['ERPSOFV2RUserID'], 'Sl0201');
+        
+        switch ($vfun) {
+            case 'layBaoCaoBanHangChiTiet': {
+                $ngayBatDau = isset($input['ngayBatDau']) ? trim($input['ngayBatDau']) : (isset($_POST['ngayBatDau']) ? trim($_POST['ngayBatDau']) : "");
+                $ngayKetThuc = isset($input['ngayKetThuc']) ? trim($input['ngayKetThuc']) : (isset($_POST['ngayKetThuc']) ? trim($_POST['ngayKetThuc']) : "");
+                $plang = isset($input['plang']) ? $input['plang'] : (isset($_POST['plang']) ? $_POST['plang'] : 'vi');
+                $vArrLang = isset($input['vArrLang']) ? $input['vArrLang'] : (isset($_POST['vArrLang']) ? $_POST['vArrLang'] : []);
+                $vOpt = isset($input['vOpt']) ? (int)$input['vOpt'] : (isset($_POST['vOpt']) ? (int)$_POST['vOpt'] : 0);
+
+                if ($ngayBatDau === "" || $ngayKetThuc === "") {
+                    $vOutput = [
+                        'success' => false,
+                        'message' => 'Vui lòng cung cấp ngày bắt đầu và ngày kết thúc'
+                    ];
+                    break;
+                }
+
+                // Validate định dạng ngày
+                $dateStart = date_create_from_format('Y-m-d', $ngayBatDau);
+                $dateEnd = date_create_from_format('Y-m-d', $ngayKetThuc);
+                
+                if (!$dateStart || !$dateEnd) {
+                    $vOutput = [
+                        'success' => false,
+                        'message' => 'Định dạng ngày không hợp lệ. Vui lòng sử dụng định dạng YYYY-MM-DD'
+                    ];
+                    break;
+                }
+
+                if ($dateStart > $dateEnd) {
+                    $vOutput = [
+                        'success' => false,
+                        'message' => 'Ngày bắt đầu không được lớn hơn ngày kết thúc'
+                    ];
+                    break;
+                }
+
+                try {
+                    // Lấy dữ liệu từ database
+                    $vsql = "
+                        SELECT 
+                            DATE(B.lv004) AS Ngay,
+                            A.lv003 AS MaSP,
+                            COALESCE(CAST(NULLIF(A.lv006, '') AS DECIMAL(18,2)), 0) AS DonGia,
+                            COALESCE(CAST(REPLACE(NULLIF(A.lv004, ''), ',', '') AS DECIMAL(18,2)), 0) AS SoLuong,
+                            COALESCE(CAST(NULLIF(A.lv011, '') AS DECIMAL(10,2)), 0) AS GiamGia,
+                            COALESCE(CAST(NULLIF(B.lv022, '') AS DECIMAL(10,2)), 0) AS CKTM,
+                            ROUND(
+                                COALESCE(CAST(NULLIF(A.lv006,'') AS DECIMAL(18,2)),0) *
+                                COALESCE(CAST(REPLACE(NULLIF(A.lv004,''),',','') AS DECIMAL(18,2)),0) *
+                                (1 - COALESCE(CAST(NULLIF(A.lv011,'') AS DECIMAL(10,2)),0)/100.0) *
+                                (1 - COALESCE(CAST(NULLIF(B.lv022,'') AS DECIMAL(10,2)),0)/100.0)
+                            , 0) AS ThanhTien,
+                            C.lv002 AS TenSP
+                        FROM sl_lv0014 A
+                        JOIN sl_lv0007 C ON A.lv003 = C.lv001
+                        JOIN sl_lv0013 B ON A.lv002 = B.lv001
+                        WHERE DATE(B.lv004) BETWEEN '$ngayBatDau' AND '$ngayKetThuc'
+                        ORDER BY Ngay, A.lv003
+                    ";
+                    
+                    $rs = db_query($vsql);
+                    
+                    if (!$rs) {
+                        $vOutput = [
+                            'success' => false,
+                            'message' => 'Lỗi truy vấn database'
+                        ];
+                        break;
+                    }
+                    
+                    // Gom dữ liệu theo ngày
+                    $dataByDate = [];
+                    $tongThanhTien = 0;
+                    
+                    while ($row = db_fetch_array($rs, MYSQLI_ASSOC)) {
+                        $ngay = $row['Ngay'];
+                        $maSP = $row['MaSP'];
+                        
+                        // Ép kiểu số
+                        $soLuong = (float)$row['SoLuong'];
+                        $donGia = (float)$row['DonGia'];
+                        $giamGia = (float)$row['GiamGia'];
+                        $cktm = (float)$row['CKTM'];
+                        $thanhTien = (float)$row['ThanhTien'];
+                        
+                        // Gộp sản phẩm trùng trong cùng ngày
+                        if (!isset($dataByDate[$ngay])) {
+                            $dataByDate[$ngay] = [];
+                        }
+                        
+                        if (!isset($dataByDate[$ngay][$maSP])) {
+                            $dataByDate[$ngay][$maSP] = [
+                                'maSP' => $maSP,
+                                'tenSP' => $row['TenSP'],
+                                'soLuong' => $soLuong,
+                                'donGia' => $donGia,
+                                'giamGia' => $giamGia,
+                                'cktm' => $cktm,
+                                'thanhTien' => $thanhTien
+                            ];
+                        } else {
+                            // Cộng dồn nếu trùng sản phẩm
+                            $dataByDate[$ngay][$maSP]['soLuong'] += $soLuong;
+                            $dataByDate[$ngay][$maSP]['thanhTien'] += $thanhTien;
+                        }
+                        
+                        $tongThanhTien += $thanhTien;
+                    }
+                    
+                    // Sắp xếp theo ngày
+                    ksort($dataByDate);
+                    
+                    // Format dữ liệu output
+                    $reportData = [];
+                    $stt = 1;
+                    
+                    foreach ($dataByDate as $ngay => $products) {
+                        $ngayFormatted = date('d/m/Y', strtotime($ngay));
+                        
+                        foreach ($products as $product) {
+                            $reportData[] = [
+                                'stt' => $stt,
+                                'ngay' => $ngayFormatted,
+                                'maSP' => $product['maSP'],
+                                'tenSP' => $product['tenSP'],
+                                'soLuong' => $product['soLuong'],
+                                'donGia' => $product['donGia'],
+                                'giamGia' => $product['giamGia'],
+                                'cktm' => $product['cktm'],
+                                'thanhTien' => $product['thanhTien']
+                            ];
+                        }
+                        $stt++;
+                    }
+                    
+                    if (count($reportData) > 0) {
+                        $vOutput = [
+                            'success' => true,
+                            'data' => $reportData,
+                            'summary' => [
+                                'tongThanhTien' => $tongThanhTien,
+                                'soNgay' => count($dataByDate),
+                                'tongSanPham' => count($reportData)
+                            ],
+                            'message' => 'Xuất báo cáo bán hàng thành công',
+                            'period' => [
+                                'from' => $ngayBatDau,
+                                'to' => $ngayKetThuc
+                            ]
+                        ];
+                    } else {
+                        $vOutput = [
+                            'success' => false,
+                            'message' => 'Không có dữ liệu bán hàng trong khoảng thời gian đã chọn',
+                            'data' => []
+                        ];
+                    }
+                } catch (Exception $e) {
+                    $vOutput = [
+                        'success' => false,
+                        'message' => 'Lỗi khi xuất báo cáo bán hàng: ' . $e->getMessage()
+                    ];
+                }
+                break;
+            }
+
+            default:
+                $vOutput = ['success' => false, 'message' => 'Chức năng không tồn tại'];
+                break;
+        }
+        break;
 
 }
 ?>

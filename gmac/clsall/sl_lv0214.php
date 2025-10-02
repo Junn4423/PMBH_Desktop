@@ -357,6 +357,7 @@ class  sl_lv0214 extends lv_controler
 	}
 function PrintInOutPutInStockDetail($plang, $vArrLang, $vDateStart, $vDateEnd, $vOpt = 0)
 {
+    // ---------- Header ----------
     $vHeaderReportInventory = "
         <table width=\"100%\" align=\"center\" cellpadding=\"0\" cellspacing=\"0\" border=\"1\" class=\"tblprint\">
             <tr class=\"tblcaption\">
@@ -373,7 +374,7 @@ function PrintInOutPutInStockDetail($plang, $vArrLang, $vDateStart, $vDateEnd, $
             @01
         </table>";
 
-    // dòng đầu tiên của 1 ngày (có STT + Ngày, gộp rowspan)
+    // dòng đầu tiên của 1 ngày (có STT + Ngày)
     $vRowDetailWithDate = "
         <tr class=\"lvlinehtable@#02\">
             <td class=\"center_style\" rowspan=\"@ROWSPAN\">@STT</td>
@@ -387,7 +388,7 @@ function PrintInOutPutInStockDetail($plang, $vArrLang, $vDateStart, $vDateEnd, $
             <td class=\"left_style\">@09</td>
         </tr>";
 
-    // các dòng còn lại của ngày (không có STT và Ngày)
+    // các dòng còn lại của ngày
     $vRowDetailNoDate = "
         <tr class=\"lvlinehtable@#02\">
             <td class=\"center_style\">@03</td>
@@ -399,6 +400,7 @@ function PrintInOutPutInStockDetail($plang, $vArrLang, $vDateStart, $vDateEnd, $
             <td class=\"left_style\">@09</td>
         </tr>";
 
+    // hàng tổng cộng
     $vRowLast = "
         <tr>
             <td class=\"center_style\" colspan=\"7\"><strong>Tổng cộng:</strong></td>
@@ -406,58 +408,70 @@ function PrintInOutPutInStockDetail($plang, $vArrLang, $vDateStart, $vDateEnd, $
             <td>&nbsp;</td>
         </tr>";
 
-    // Lấy dữ liệu
+    // ---------- SQL (đã chuẩn hóa kiểu dữ liệu + mapping đúng: lv006=SoLuong, lv004=DonGia) ----------
     $vsql = "
         SELECT 
             DATE(B.lv004) AS Ngay,
             A.lv003,
-            A.lv004,
-            A.lv006,
-            A.lv011,
-            B.lv022 AS CKTM,
-            (
-                (A.lv004 * A.lv006 - A.lv004 * A.lv006 * A.lv011 / 100 
-                - (A.lv004 * A.lv006 - A.lv004 * A.lv006 * A.lv011 / 100) * B.lv022 / 100)
-            ) AS thanhtien,
+            COALESCE(CAST(NULLIF(A.lv006, '') AS DECIMAL(18,2)), 0)                    AS DonGia,  -- Đơn giá
+            COALESCE(CAST(REPLACE(NULLIF(A.lv004, ''), ',', '') AS DECIMAL(18,2)), 0)  AS SoLuong,   -- Số lượng
+            COALESCE(CAST(NULLIF(A.lv011, '') AS DECIMAL(10,2)), 0)                    AS GiamGia,  -- %
+            COALESCE(CAST(NULLIF(B.lv022, '') AS DECIMAL(10,2)), 0)                    AS CKTM,     -- %
+            ROUND(
+                COALESCE(CAST(NULLIF(A.lv006,'') AS DECIMAL(18,2)),0) *
+                COALESCE(CAST(REPLACE(NULLIF(A.lv004,''),',','') AS DECIMAL(18,2)),0) *
+                (1 - COALESCE(CAST(NULLIF(A.lv011,'') AS DECIMAL(10,2)),0)/100.0) *
+                (1 - COALESCE(CAST(NULLIF(B.lv022,'') AS DECIMAL(10,2)),0)/100.0)
+            , 0) AS ThanhTien,
             C.lv002 AS Names
         FROM sl_lv0014 A
-        INNER JOIN sl_lv0007 C ON A.lv003 = C.lv001
-        INNER JOIN sl_lv0013 B ON A.lv002 = B.lv001
+        JOIN sl_lv0007 C ON A.lv003 = C.lv001
+        JOIN sl_lv0013 B ON A.lv002 = B.lv001
         WHERE DATE(B.lv004) BETWEEN '$vDateStart' AND '$vDateEnd'
-        ORDER BY Ngay, A.lv003
+        ORDER BY Ngay, A.lv003;
     ";
-
+	// dd($vsql);
     $rs = db_query($vsql);
     if (!$rs) return "Không có dữ liệu.";
 
-    // Gom dữ liệu theo ngày
+    // ---------- Gom dữ liệu theo ngày ----------
     $dataByDate = [];
     while ($row = db_fetch_array($rs)) {
+        // ép kiểu an toàn để cộng dồn
+        $row['SoLuong']   = (float)$row['SoLuong'];
+        $row['DonGia']    = (float)$row['DonGia'];
+        $row['GiamGia']   = (float)$row['GiamGia'];
+        $row['CKTM']      = (float)$row['CKTM'];
+        $row['ThanhTien'] = (float)$row['ThanhTien'];
         $dataByDate[$row['Ngay']][] = $row;
     }
+
+    // giữ thứ tự ngày tăng dần
+    ksort($dataByDate);
 
     $vRows = '';
     $stt = 1;
     $vTotalThanhTien = 0;
 
     foreach ($dataByDate as $ngay => $rows) {
-        // --- Bước 1: gom sản phẩm trùng trong 1 ngày ---
+        // --- B1: gộp sản phẩm trùng trong cùng ngày (theo mã SP) ---
         $mergedProducts = [];
         foreach ($rows as $r) {
-            $key = $r['lv003']; // gom theo Mã SP (hoặc Names)
+            $key = $r['lv003']; // Mã SP
             if (!isset($mergedProducts[$key])) {
                 $mergedProducts[$key] = $r;
             } else {
-                $mergedProducts[$key]['lv004'] += $r['lv004']; // cộng số lượng
-                $mergedProducts[$key]['thanhtien'] += $r['thanhtien']; // cộng thành tiền
-                // giữ nguyên đơn giá, giảm giá, CKTM
+                // cộng dồn số lượng + thành tiền
+                $mergedProducts[$key]['SoLuong']   += $r['SoLuong'];
+                $mergedProducts[$key]['ThanhTien'] += $r['ThanhTien'];
+                // DonGia/GiamGia/CKTM giữ theo dòng đầu (hoặc tự tính lại nếu nghiệp vụ yêu cầu)
             }
         }
 
         $rowspan = count($mergedProducts);
         $isFirst = true;
 
-        // --- Bước 2: render ra bảng ---
+        // --- B2: render ---
         foreach ($mergedProducts as $row) {
             if ($isFirst) {
                 $vLine = $vRowDetailWithDate;
@@ -469,33 +483,32 @@ function PrintInOutPutInStockDetail($plang, $vArrLang, $vDateStart, $vDateEnd, $
                 $vLine = $vRowDetailNoDate;
             }
 
-            $vLine = str_replace("@03", $row['lv003'], $vLine); // Mã SP
-            $vLine = str_replace("@04", $this->FormatView($row['lv004'], 20), $vLine); // SL
-            $vLine = str_replace("@05", $this->FormatView($row['lv006'], 20), $vLine); // Đơn giá
-            $vLine = str_replace("@06", $this->FormatView($row['lv011'], 20), $vLine); // Giảm giá
-            $vLine = str_replace("@07", $this->FormatView($row['CKTM'], 20), $vLine); // CKTM
-            $vLine = str_replace("@08", $this->FormatView($row['thanhtien'], 20), $vLine); // Thành tiền
-            $vLine = str_replace("@09", $row['Names'], $vLine); // Tên SP
-            $vLine = str_replace("@#02", ($stt % 2), $vLine);
+            $vLine = str_replace("@03", htmlspecialchars($row['lv003']),               $vLine); // Mã SP
+            $vLine = str_replace("@04", $this->FormatView($row['SoLuong'],   20),      $vLine); // Số lượng (lv006)
+            $vLine = str_replace("@05", $this->FormatView($row['DonGia'],    20),      $vLine); // Đơn giá (lv004)
+            $vLine = str_replace("@06", $this->FormatView($row['GiamGia'],   20),      $vLine); // Giảm giá %
+            $vLine = str_replace("@07", $this->FormatView($row['CKTM'],      20),      $vLine); // CKTM %
+            $vLine = str_replace("@08", $this->FormatView($row['ThanhTien'], 20),      $vLine); // Thành tiền
+            $vLine = str_replace("@09", htmlspecialchars($row['Names']),               $vLine); // Tên SP
+            $vLine = str_replace("@#02", ($stt % 2),                                    $vLine);
 
             $vRows .= $vLine;
-            $vTotalThanhTien += $row['thanhtien'];
+            $vTotalThanhTien += $row['ThanhTien'];
         }
 
         $stt++;
     }
 
-    // Tổng cộng
+    // ---------- Tổng cộng ----------
     $vRowLast = str_replace("@SUM", $this->FormatView($vTotalThanhTien, 20), $vRowLast);
     $vRows .= $vRowLast;
 
+    // ---------- Kết quả ----------
     $vTableAll = str_replace("@01", $vRows, $vHeaderReportInventory);
     return $vTableAll;
 }
 
 
-
-	// function PrintInOutPutInStockDetail($plang, $vArrLang,$vDateStart,$vDateEnd,$vOpt=0)
 	// {
 	// $vHeaderReportInventory="
 	// 	<table width=\"100%\" align=\"center\" cellpadding=\"0\" cellspacing=\"0\" border=\"1\" class=\"tblprint\">
