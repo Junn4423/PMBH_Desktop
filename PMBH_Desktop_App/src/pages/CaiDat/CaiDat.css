@@ -1,0 +1,382 @@
+/* CaiDat.css - Settings Page Styles */
+
+/* Container responsive */
+.caidat-container {
+  padding: 24px;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+/* Header section */
+.caidat-header {
+  margin-bottom: 24px;
+}
+
+.caidat-header .ant-space {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+/* Card responsive */
+.caidat-card {
+  height: 100%;
+  transition: all 0.3s ease;
+}
+
+.caidat-card:hover {
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+  transform: translateY(-2px);
+}
+
+/* Logo preview section */
+.logo-preview-container {
+  text-align: center;
+  padding: 12px;
+  background-color: #f5f5f5;
+  border-radius: 6px;
+  margin-bottom: 8px;
+}
+
+.logo-preview-image {
+  max-width: 120px;
+  max-height: 120px;
+  object-fit: contain;
+}
+
+/* Upload section */
+.logo-upload-section {
+  padding: 8px 0;
+}
+
+.logo-upload-section .ant-upload-picture-card {
+  width: 100%;
+  height: 150px;
+}
+
+/* Info box */
+.info-box {
+  margin-top: 16px;
+  padding: 12px;
+  background-color: #f6f8fa;
+  border-radius: 6px;
+}
+
+/* Language selector section */
+.language-section {
+  padding: 8px 0;
+}
+
+/* Responsive breakpoints */
+
+/* Tablet - Medium devices (768px and up) */
+@media (max-width: 992px) {
+  .caidat-container {
+    padding: 16px;
+  }
+
+  .caidat-header h2 {
+    font-size: 20px;
+  }
+
+  .logo-preview-image {
+    max-width: 100px;
+    max-height: 100px;
+  }
+}
+
+/* Mobile - Small devices (576px and up) */
+@media (max-width: 768px) {
+  .caidat-container {
+    padding: 12px;
+  }
+
+  .caidat-header {
+    margin-bottom: 16px;
+  }
+
+  .caidat-header h2 {
+    font-size: 18px;
+  }
+
+  .caidat-header .ant-space {
+    font-size: 14px;
+  }
+
+  /* Stack cards on mobile */
+  .ant-row {
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+  }
+
+  .ant-col {
+    padding-left: 8px !important;
+    padding-right: 8px !important;
+  }
+
+  /* Adjust card padding */
+  .ant-card-body {
+    padding: 16px;
+  }
+
+  .ant-card-head {
+    padding: 12px 16px;
+  }
+
+  /* Logo section adjustments */
+  .logo-preview-image {
+    max-width: 80px;
+    max-height: 80px;
+  }
+
+  .logo-upload-section .ant-upload-picture-card {
+    height: 120px;
+  }
+
+  /* Button adjustments */
+  .ant-btn {
+    padding: 4px 12px;
+    font-size: 14px;
+  }
+
+  /* Info box */
+  .info-box {
+    padding: 10px;
+    font-size: 11px;
+  }
+}
+
+/* Extra small devices (below 576px) */
+@media (max-width: 576px) {
+  .caidat-container {
+    padding: 8px;
+  }
+
+  .caidat-header h2 {
+    font-size: 16px;
+  }
+
+  .ant-card {
+    margin-bottom: 12px;
+  }
+
+  .ant-card-body {
+    padding: 12px;
+  }
+
+  .ant-card-head {
+    padding: 10px 12px;
+    font-size: 14px;
+  }
+
+  .ant-card-head-title {
+    font-size: 14px;
+  }
+
+  .logo-preview-image {
+    max-width: 60px;
+    max-height: 60px;
+  }
+
+  .logo-upload-section .ant-upload-picture-card {
+    height: 100px;
+    width: 100%;
+  }
+
+  /* Form items */
+  .ant-form-item {
+    margin-bottom: 12px;
+  }
+
+  .ant-select,
+  .ant-input {
+    font-size: 14px;
+  }
+
+  /* Space adjustments */
+  .ant-space-vertical {
+    gap: 12px !important;
+  }
+
+  /* Divider */
+  .ant-divider {
+    margin: 12px 0;
+  }
+
+  /* Paragraph adjustments */
+  .ant-typography {
+    font-size: 13px;
+  }
+
+  .ant-typography strong {
+    font-size: 13px;
+  }
+}
+
+/* Landscape mode for mobile devices */
+@media (max-width: 768px) and (orientation: landscape) {
+  .caidat-container {
+    padding: 12px 16px;
+  }
+
+  .logo-preview-image {
+    max-width: 70px;
+    max-height: 70px;
+  }
+}
+
+/* Ensure proper scrolling */
+.caidat-container {
+  min-height: calc(100vh - 100px);
+  overflow-y: auto;
+}
+
+/* Smooth transitions */
+.ant-card,
+.ant-btn,
+.ant-select,
+.ant-input {
+  transition: all 0.3s ease;
+}
+
+/* Focus states for accessibility */
+.ant-btn:focus,
+.ant-select:focus,
+.ant-input:focus {
+  outline: 2px solid #197dd3;
+  outline-offset: 2px;
+}
+
+/* Loading state */
+.ant-btn-loading {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+/* Hover effects for better UX */
+.ant-card:hover {
+  border-color: #197dd3;
+}
+
+.ant-btn-primary:hover:not(:disabled) {
+  background: #1565c0;
+  border-color: #1565c0;
+}
+
+.ant-btn-danger:hover:not(:disabled) {
+  background: #d32f2f;
+  border-color: #d32f2f;
+}
+
+/* LocalStorage section styles */
+.storage-stats-card {
+  transition: all 0.3s ease;
+}
+
+.storage-stats-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+.storage-item-table {
+  margin-top: 16px;
+}
+
+.storage-item-table .ant-table {
+  font-size: 13px;
+}
+
+.storage-item-table .ant-table-cell {
+  padding: 8px;
+}
+
+/* Modal styles */
+.ant-modal-body {
+  max-height: 70vh;
+  overflow-y: auto;
+}
+
+/* Responsive for storage cards */
+@media (max-width: 768px) {
+  .storage-stats-card {
+    margin-bottom: 12px;
+  }
+
+  .storage-stats-card .ant-card-body {
+    padding: 12px;
+  }
+
+  .storage-item-table .ant-table {
+    font-size: 12px;
+  }
+
+  .storage-item-table .ant-table-cell {
+    padding: 6px 4px;
+  }
+
+  /* Adjust button sizes in table */
+  .storage-item-table .ant-btn-sm {
+    padding: 2px 8px;
+    font-size: 12px;
+  }
+
+  /* Progress bar adjustments */
+  .ant-progress {
+    font-size: 12px;
+  }
+}
+
+@media (max-width: 576px) {
+  /* Stack storage stat cards */
+  .storage-stats-card {
+    margin-bottom: 8px;
+  }
+
+  /* Simplify table on mobile */
+  .storage-item-table .ant-table-thead > tr > th {
+    font-size: 11px;
+    padding: 6px 4px;
+  }
+
+  .storage-item-table .ant-table-tbody > tr > td {
+    font-size: 11px;
+    padding: 4px;
+  }
+
+  /* Hide some columns on very small screens */
+  .storage-item-table .ant-table-cell:nth-child(2) {
+    display: none;
+  }
+
+  /* Modal adjustments */
+  .ant-modal {
+    max-width: 95vw;
+    margin: 10px auto;
+  }
+
+  .ant-modal-body {
+    padding: 12px;
+  }
+
+  .ant-modal-footer {
+    padding: 10px 12px;
+  }
+}
+
+/* Print media query */
+@media print {
+  .caidat-container {
+    padding: 0;
+  }
+
+  .ant-btn,
+  .ant-upload,
+  .storage-item-table .ant-table-cell:last-child {
+    display: none;
+  }
+
+  .ant-card {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+}

@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { Typography, Card, Row, Col, Divider, Space, Upload, Input, Select, Button, message } from 'antd';
+import { Typography, Card, Row, Col, Divider, Space, Upload, Input, Select, Button, message, Progress, Table, Modal, Tag, Popconfirm } from 'antd';
 import { GlobalOutlined, SettingOutlined } from '@ant-design/icons';
-import { Image as ImageIcon, Upload as UploadIcon, Link as LinkIcon, Trash2 } from 'lucide-react';
+import { Image as ImageIcon, Upload as UploadIcon, Link as LinkIcon, Trash2, HardDrive, Database, Download, Eye, RefreshCw } from 'lucide-react';
 import { LanguageSelect, LanguageDropdown, LanguageFlagSelector } from '../../components/common/LanguageSelector';
 import Text from '../../components/common/Text';
 import { useLanguageContext } from '../../contexts/LanguageContext';
 import receiptLogoManager from '../../utils/receiptLogoManager';
+import localStorageManager from '../../utils/localStorageManager';
+import './CaiDat.css';
 
 const { Title, Paragraph } = Typography;
 
@@ -19,13 +21,26 @@ const CaiDat = () => {
   const [logoFileList, setLogoFileList] = useState([]);
   const [updatingLogo, setUpdatingLogo] = useState(false);
 
+  // LocalStorage states
+  const [storageStats, setStorageStats] = useState(null);
+  const [storageEstimate, setStorageEstimate] = useState(null);
+  const [viewItemModal, setViewItemModal] = useState(false);
+  const [selectedItem, setSelectedItem] = useState(null);
+  const [refreshKey, setRefreshKey] = useState(0);
+
   // Load receipt logo on mount
   useEffect(() => {
     const savedLogo = receiptLogoManager.getLogo();
     if (savedLogo) {
       setReceiptLogo(savedLogo);
     }
+    loadStorageStats();
   }, []);
+
+  // Reload storage stats when refreshKey changes
+  useEffect(() => {
+    loadStorageStats();
+  }, [refreshKey]);
 
   // Handle logo file change
   const handleLogoFileChange = ({ fileList: newFileList }) => {
@@ -75,15 +90,143 @@ const CaiDat = () => {
       setLogoUrl('');
       setLogoFileList([]);
       message.success('Đã xóa logo hóa đơn');
+      setRefreshKey(prev => prev + 1); // Refresh storage stats
     } else {
       message.error('Không thể xóa logo hóa đơn');
     }
   };
 
+  // Load storage statistics
+  const loadStorageStats = async () => {
+    try {
+      const stats = localStorageManager.getStatistics();
+      setStorageStats(stats);
+
+      // Get Chromium storage estimate
+      const estimate = await localStorageManager.getStorageEstimate();
+      setStorageEstimate(estimate);
+    } catch (error) {
+      console.error('Error loading storage stats:', error);
+    }
+  };
+
+  // Handle view item details
+  const handleViewItem = (item) => {
+    setSelectedItem(item);
+    setViewItemModal(true);
+  };
+
+  // Handle delete item
+  const handleDeleteItem = (key) => {
+    const success = localStorageManager.removeItem(key);
+    if (success) {
+      message.success(`Đã xóa item: ${key}`);
+      setRefreshKey(prev => prev + 1);
+    } else {
+      message.error('Không thể xóa item');
+    }
+  };
+
+  // Handle clear all
+  const handleClearAll = () => {
+    const success = localStorageManager.clearAll();
+    if (success) {
+      message.success('Đã xóa toàn bộ localStorage');
+      setRefreshKey(prev => prev + 1);
+    } else {
+      message.error('Không thể xóa localStorage');
+    }
+  };
+
+  // Handle export data
+  const handleExportData = () => {
+    try {
+      const data = localStorageManager.exportData();
+      const blob = new Blob([data], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `localStorage_backup_${new Date().getTime()}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+      message.success('Đã xuất dữ liệu localStorage');
+    } catch (error) {
+      console.error('Error exporting data:', error);
+      message.error('Không thể xuất dữ liệu');
+    }
+  };
+
+  // Table columns for localStorage items
+  const storageColumns = [
+    {
+      title: 'Key',
+      dataIndex: 'key',
+      key: 'key',
+      width: '30%',
+      ellipsis: true,
+    },
+    {
+      title: 'Loại',
+      dataIndex: 'key',
+      key: 'type',
+      width: '15%',
+      render: (_, record) => {
+        const type = localStorageManager.getValueType(record.value);
+        const colors = {
+          'JSON Object': 'blue',
+          'JSON Array': 'cyan',
+          'Base64 Image': 'purple',
+          'URL': 'green',
+          'String': 'default',
+          'Empty': 'default'
+        };
+        return <Tag color={colors[type]}>{type}</Tag>;
+      }
+    },
+    {
+      title: 'Kích thước',
+      dataIndex: 'sizeFormatted',
+      key: 'size',
+      width: '15%',
+      sorter: (a, b) => a.size - b.size,
+    },
+    {
+      title: 'Hành động',
+      key: 'action',
+      width: '20%',
+      render: (_, record) => (
+        <Space size="small">
+          <Button 
+            size="small" 
+            icon={<Eye size={14} />}
+            onClick={() => handleViewItem(record)}
+          >
+            Xem
+          </Button>
+          <Popconfirm
+            title="Xóa item này?"
+            description="Bạn có chắc muốn xóa item này?"
+            onConfirm={() => handleDeleteItem(record.key)}
+            okText="Xóa"
+            cancelText="Hủy"
+          >
+            <Button 
+              size="small" 
+              danger
+              icon={<Trash2 size={14} />}
+            >
+              Xóa
+            </Button>
+          </Popconfirm>
+        </Space>
+      ),
+    },
+  ];
+
   return (
-    <div style={{ padding: '24px', maxWidth: '1200px', margin: '0 auto' }}>
+    <div className="caidat-container">
       {/* Header */}
-      <div style={{ marginBottom: '24px' }}>
+      <div className="caidat-header">
         <Space size="middle">
           <SettingOutlined style={{ fontSize: '24px', color: '#1890ff' }} />
           <Title level={2} style={{ margin: 0 }}>
@@ -96,6 +239,7 @@ const CaiDat = () => {
         {/* Language Settings */}
         <Col xs={24} lg={12}>
           <Card 
+            className="caidat-card"
             title={
               <Space>
                 <GlobalOutlined />
@@ -103,7 +247,6 @@ const CaiDat = () => {
               </Space>
             }
             bordered={false}
-            style={{ height: '100%' }}
           >
             <div style={{ padding: '8px 0' }}>
               <Paragraph>
@@ -169,11 +312,11 @@ const CaiDat = () => {
         {/* System Information */}
         <Col xs={24} lg={12}>
           <Card 
+            className="caidat-card"
             title={
               <Text module="settings" line={8} fallback="Thông tin hệ thống" />
             }
             bordered={false}
-            style={{ height: '100%' }}
           >
             <Space direction="vertical" size="small" style={{ width: '100%' }}>
               <div>
@@ -220,6 +363,7 @@ const CaiDat = () => {
         {/* Receipt Logo Settings */}
         <Col xs={24} lg={12}>
           <Card 
+            className="caidat-card"
             title={
               <Space>
                 <ImageIcon size={20} />
@@ -227,9 +371,8 @@ const CaiDat = () => {
               </Space>
             }
             bordered={false}
-            style={{ height: '100%' }}
           >
-            <div style={{ padding: '8px 0' }}>
+            <div className="logo-upload-section">
               <Paragraph>
                 Tùy chỉnh logo hiển thị trên hóa đơn in
               </Paragraph>
@@ -238,21 +381,11 @@ const CaiDat = () => {
               {receiptLogo && (
                 <div style={{ marginBottom: '16px' }}>
                   <Paragraph strong>Logo hiện tại:</Paragraph>
-                  <div style={{ 
-                    textAlign: 'center', 
-                    padding: '12px',
-                    backgroundColor: '#f5f5f5',
-                    borderRadius: '6px',
-                    marginBottom: '8px'
-                  }}>
+                  <div className="logo-preview-container">
                     <img 
                       src={receiptLogo} 
                       alt="Receipt Logo"
-                      style={{ 
-                        maxWidth: '120px', 
-                        maxHeight: '120px', 
-                        objectFit: 'contain' 
-                      }}
+                      className="logo-preview-image"
                     />
                   </div>
                   <Button 
@@ -337,7 +470,7 @@ const CaiDat = () => {
                 </Button>
               </Space>
 
-              <div style={{ marginTop: '16px', padding: '12px', backgroundColor: '#f6f8fa', borderRadius: '6px' }}>
+              <div className="info-box">
                 <Paragraph type="secondary" style={{ fontSize: '12px', margin: 0 }}>
                   Logo sẽ được hiển thị ở đầu tất cả hóa đơn in. Kích thước đề xuất: 200x200px
                 </Paragraph>
@@ -346,9 +479,178 @@ const CaiDat = () => {
           </Card>
         </Col>
 
+        {/* LocalStorage Management */}
+        <Col xs={24}>
+          <Card 
+            className="caidat-card"
+            title={
+              <Space>
+                <HardDrive size={20} />
+                <span>Quản lý LocalStorage</span>
+              </Space>
+            }
+            extra={
+              <Space>
+                <Button 
+                  icon={<RefreshCw size={16} />}
+                  onClick={() => setRefreshKey(prev => prev + 1)}
+                  size="small"
+                >
+                  Làm mới
+                </Button>
+                <Button 
+                  icon={<Download size={16} />}
+                  onClick={handleExportData}
+                  size="small"
+                >
+                  Xuất dữ liệu
+                </Button>
+              </Space>
+            }
+            bordered={false}
+          >
+            {storageStats && (
+              <div style={{ padding: '8px 0' }}>
+                {/* Storage Overview */}
+                <Row gutter={[16, 16]} style={{ marginBottom: '24px' }}>
+                  <Col xs={24} md={8}>
+                    <Card 
+                      size="small" 
+                      style={{ background: '#f0f9ff', borderColor: '#197dd3' }}
+                    >
+                      <div style={{ textAlign: 'center' }}>
+                        <Database size={32} color="#197dd3" />
+                        <div style={{ fontSize: '24px', fontWeight: 'bold', marginTop: '8px' }}>
+                          {storageStats.itemCount}
+                        </div>
+                        <div style={{ color: '#666', fontSize: '12px' }}>Items trong LocalStorage</div>
+                      </div>
+                    </Card>
+                  </Col>
+                  <Col xs={24} md={8}>
+                    <Card 
+                      size="small" 
+                      style={{ background: '#f0fdf4', borderColor: '#22c55e' }}
+                    >
+                      <div style={{ textAlign: 'center' }}>
+                        <HardDrive size={32} color="#22c55e" />
+                        <div style={{ fontSize: '24px', fontWeight: 'bold', marginTop: '8px' }}>
+                          {storageStats.totalSizeFormatted}
+                        </div>
+                        <div style={{ color: '#666', fontSize: '12px' }}>Đã sử dụng</div>
+                      </div>
+                    </Card>
+                  </Col>
+                  <Col xs={24} md={8}>
+                    <Card 
+                      size="small" 
+                      style={{ background: '#fef3c7', borderColor: '#f59e0b' }}
+                    >
+                      <div style={{ textAlign: 'center' }}>
+                        <Database size={32} color="#f59e0b" />
+                        <div style={{ fontSize: '24px', fontWeight: 'bold', marginTop: '8px' }}>
+                          {storageStats.remainingFormatted}
+                        </div>
+                        <div style={{ color: '#666', fontSize: '12px' }}>Còn lại (ước tính)</div>
+                      </div>
+                    </Card>
+                  </Col>
+                </Row>
+
+                {/* Storage Progress Bar */}
+                <div style={{ marginBottom: '24px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+                    <span style={{ fontWeight: 'bold' }}>LocalStorage Usage:</span>
+                    <span style={{ color: '#666' }}>
+                      {storageStats.totalSizeFormatted} / {storageStats.quotaFormatted} 
+                      ({storageStats.percentage}%)
+                    </span>
+                  </div>
+                  <Progress 
+                    percent={parseFloat(storageStats.percentage)} 
+                    strokeColor={{
+                      '0%': '#197dd3',
+                      '100%': '#77d4fb',
+                    }}
+                    status={parseFloat(storageStats.percentage) > 80 ? 'exception' : 'active'}
+                  />
+                </div>
+
+                {/* Chromium Storage Estimate */}
+                {storageEstimate && (
+                  <div style={{ marginBottom: '24px', padding: '12px', background: '#f6f8fa', borderRadius: '6px' }}>
+                    <Paragraph strong>Chromium Storage Estimate:</Paragraph>
+                    <Row gutter={[8, 8]}>
+                      <Col span={12}>
+                        <div style={{ fontSize: '12px', color: '#666' }}>Đã sử dụng:</div>
+                        <div style={{ fontWeight: 'bold' }}>{storageEstimate.usageFormatted}</div>
+                      </Col>
+                      <Col span={12}>
+                        <div style={{ fontSize: '12px', color: '#666' }}>Quota:</div>
+                        <div style={{ fontWeight: 'bold' }}>{storageEstimate.quotaFormatted}</div>
+                      </Col>
+                    </Row>
+                    <Progress 
+                      percent={parseFloat(storageEstimate.percentage)} 
+                      size="small"
+                      style={{ marginTop: '8px' }}
+                    />
+                  </div>
+                )}
+
+                <Divider />
+
+                {/* Items Table */}
+                <div style={{ marginBottom: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <Paragraph strong style={{ margin: 0 }}>
+                    Danh sách Items trong LocalStorage:
+                  </Paragraph>
+                  <Popconfirm
+                    title="Xóa toàn bộ localStorage?"
+                    description="Cảnh báo: Hành động này không thể hoàn tác!"
+                    onConfirm={handleClearAll}
+                    okText="Xóa tất cả"
+                    cancelText="Hủy"
+                    okButtonProps={{ danger: true }}
+                  >
+                    <Button 
+                      danger 
+                      size="small"
+                      icon={<Trash2 size={14} />}
+                    >
+                      Xóa tất cả
+                    </Button>
+                  </Popconfirm>
+                </div>
+
+                <Table 
+                  columns={storageColumns}
+                  dataSource={storageStats.items}
+                  rowKey="key"
+                  size="small"
+                  pagination={{ 
+                    pageSize: 10,
+                    showSizeChanger: true,
+                    showTotal: (total) => `Tổng ${total} items`
+                  }}
+                  scroll={{ x: 'max-content' }}
+                />
+
+                <div className="info-box" style={{ marginTop: '16px' }}>
+                  <Paragraph type="secondary" style={{ fontSize: '12px', margin: 0 }}>
+                    💡 <strong>Lưu ý:</strong> LocalStorage có giới hạn khoảng 5-10MB tùy trình duyệt. 
+                    Chromium Storage bao gồm cả IndexedDB, Cache API và các storage khác.
+                  </Paragraph>
+                </div>
+              </div>
+            )}
+          </Card>
+        </Col>
+
         {/* Interface Settings */}
         <Col xs={24}>
           <Card 
+            className="caidat-card"
             title={
               <Text module="settings" line={42} fallback="Cài đặt giao diện" />
             }
@@ -364,6 +666,86 @@ const CaiDat = () => {
           </Card>
         </Col>
       </Row>
+
+      {/* View Item Modal */}
+      <Modal
+        title={
+          <Space>
+            <Eye size={20} />
+            <span>Chi tiết Item</span>
+          </Space>
+        }
+        open={viewItemModal}
+        onCancel={() => {
+          setViewItemModal(false);
+          setSelectedItem(null);
+        }}
+        footer={[
+          <Button key="close" onClick={() => setViewItemModal(false)}>
+            Đóng
+          </Button>,
+          <Popconfirm
+            key="delete"
+            title="Xóa item này?"
+            description="Bạn có chắc muốn xóa item này?"
+            onConfirm={() => {
+              handleDeleteItem(selectedItem.key);
+              setViewItemModal(false);
+            }}
+            okText="Xóa"
+            cancelText="Hủy"
+          >
+            <Button danger icon={<Trash2 size={14} />}>
+              Xóa
+            </Button>
+          </Popconfirm>
+        ]}
+        width={700}
+      >
+        {selectedItem && (
+          <div>
+            <div style={{ marginBottom: '16px' }}>
+              <div style={{ fontWeight: 'bold', marginBottom: '4px' }}>Key:</div>
+              <Input value={selectedItem.key} readOnly />
+            </div>
+
+            <div style={{ marginBottom: '16px' }}>
+              <div style={{ fontWeight: 'bold', marginBottom: '4px' }}>Loại dữ liệu:</div>
+              <Tag color="blue">{localStorageManager.getValueType(selectedItem.value)}</Tag>
+            </div>
+
+            <div style={{ marginBottom: '16px' }}>
+              <div style={{ fontWeight: 'bold', marginBottom: '4px' }}>Kích thước:</div>
+              <Tag color="green">{selectedItem.sizeFormatted}</Tag>
+            </div>
+
+            <div style={{ marginBottom: '16px' }}>
+              <div style={{ fontWeight: 'bold', marginBottom: '4px' }}>Nội dung:</div>
+              {localStorageManager.getValueType(selectedItem.value) === 'Base64 Image' ? (
+                <div style={{ 
+                  textAlign: 'center', 
+                  padding: '16px', 
+                  background: '#f5f5f5', 
+                  borderRadius: '6px' 
+                }}>
+                  <img 
+                    src={selectedItem.value} 
+                    alt="Preview" 
+                    style={{ maxWidth: '100%', maxHeight: '300px', objectFit: 'contain' }}
+                  />
+                </div>
+              ) : (
+                <Input.TextArea 
+                  value={selectedItem.value} 
+                  rows={10}
+                  readOnly
+                  style={{ fontFamily: 'monospace', fontSize: '12px' }}
+                />
+              )}
+            </div>
+          </div>
+        )}
+      </Modal>
     </div>
   );
 };
