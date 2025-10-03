@@ -1,3 +1,6 @@
+Trang chủ
+Mục chung
+Giao diện MB
 Cho quầy bar
 Chức năng này sẽ sớm được hoàn thiện.
 Màn hình Cho quầy bar cần gói premium để sử dụng

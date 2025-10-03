@@ -1,1 +1,2 @@
 Có lỗi xảy ra khi đăng xuất
+GMAC Authentication API chưa được implement

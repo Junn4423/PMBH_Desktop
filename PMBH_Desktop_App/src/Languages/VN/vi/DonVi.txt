@@ -1,13 +1,28 @@
-Cập nhật thành công
-Không thể tải danh sách đơn vị
-Không thể xóa đơn vị
-Mã đơn vị
-Mục chung
-Quản lý Đơn vị
+Hủy
+Sửa
+Xóa
+Thêm
+Đơn vị
+Cập nhật
+Thao tác
 Thêm mới
-Thêm thành công
-Tên rút gọn
+Mục chung
+Mã đơn vị
 Tên đơn vị
+Sửa đơn vị
+Tên rút gọn
 Xác nhận xóa
+Quản lý Đơn vị
 Xóa thành công
+Thêm đơn vị mới
+Thêm thành công
+Vui lòng nhập mã!
+Không thể cập nhật
+Vui lòng nhập tên!
+Cập nhật thành công
 Điều khiển sản phẩm
+Không thể xóa đơn vị
+Không thể thêm đơn vị
+Bạn có chắc chắn muốn xóa?
+Không thể tải danh sách đơn vị
+Tìm kiếm theo mã, tên đơn vị...

@@ -53,7 +53,7 @@ $moac_lv0233->ArrPush[26]=$vLangArr[54];
 $moac_lv0233->ArrPush[25]='Thành tiền';
 $moac_lv0233->ArrPush[905]='Ngày đơn hàng';
 $moac_lv0233->ArrPush[995]='Giờ vào';
-$moac_lv0233->ArrPush[996]='Giờ ra';
+$moac_lv0233->ArrPush[996]='中文';
 
 
 $moac_lv0233->ArrFunc[0]='//Function';

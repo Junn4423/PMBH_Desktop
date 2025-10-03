@@ -1,3 +1,7 @@
+Nhập kho
+Trang chủ
+Mục chung
+Giao diện MB
+nhap-kho-mb-container
 Chức năng này sẽ sớm được hoàn thiện.
 Màn hình Nhập kho cần gói premium để sử dụng
-Nhập kho

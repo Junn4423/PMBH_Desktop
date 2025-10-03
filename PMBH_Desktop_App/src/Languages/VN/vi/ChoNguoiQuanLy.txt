@@ -1,4 +1,5 @@
-Cho người quản lý
 Kinh doanh
-Màn hình Cho người quản lý cần gói premium để sử dụng
+Cho người quản lý
 Quản lý bán nhà hàng
+Màn hình Cho người quản lý cần gói premium để sử dụng
+Tính năng này sẽ sớm có mặt trong phiên bản tiếp theo...

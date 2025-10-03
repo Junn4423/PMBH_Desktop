@@ -1,0 +1,19 @@
+chi
+nhap
+thuong
+Tên cửa hàng
+Quản trị viên
+Chào buổi tối
+Lỗi khi copy:
+Chào buổi sáng
+Chào buổi chiều
+Địa chỉ cửa hàng
+Thuế suất VAT (%)
+Cho phép trả hàng
+Tự động in hóa đơn
+Số điện thoại cửa hàng
+Số ngày cho phép trả hàng
+Lỗi khi đọc từ localStorage:
+Lỗi khi xóa từ localStorage:
+Lỗi khi lưu vào localStorage:
+123 Đường ABC, Quận 1, TP.HCM

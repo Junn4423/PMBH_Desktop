@@ -1,20 +1,45 @@
-Chọn khu vực
-Có khách
-Ghi chú
-Khu vực
-Không thể tải danh sách bàn
-Không thể xóa bàn:
-Không tìm thấy khu vực, vui lòng chọn lại
-Không tìm thấy mã bàn
-Quản lý bàn nhà hàng
-Số ghế
-Thêm bàn mới
-Trạng thái
+Hủy
+Sửa
+Xóa
+Thêm
 Trống
+Số ghế
+Đã đặt
 Tên bàn
+Khu vực
+Ghi chú
+Cập nhật
+Thao tác
+Có khách
+Trang chủ
+Mục chung
+, khuVuc,
+Trạng thái
+Chọn khu vực
+Thêm bàn mới
 Ví dụ: Bàn 1
 Xác nhận xóa
-Đã cập nhật bàn thành công
-Đã thêm bàn mới thành công
-Đã xóa bàn thành công
+Bàn nhà hàng
+Khu vuc list:
+Không xác định
+Found khu vuc:
 Đã xảy ra lỗi:
+Tìm kiếm bàn...
+Sửa thông tin bàn
+Raw khu vuc data:
+Lỗi không xác định
+Không thể xóa bàn:
+Quản lý bàn nhà hàng
+Vui lòng nhập số ghế!
+Đã xóa bàn thành công
+Thiết lập tầng và bàn
+Không tìm thấy mã bàn
+Vui lòng chọn khu vực!
+Error loading khu vuc:
+Vui lòng nhập tên bàn!
+Đã cập nhật bàn thành công
+Ghi chú thêm về bàn này...
+Đã thêm bàn mới thành công
+Không thể tải danh sách bàn
+Bạn có chắc chắn muốn xóa bàn này?
+Không tìm thấy khu vực, vui lòng chọn lại

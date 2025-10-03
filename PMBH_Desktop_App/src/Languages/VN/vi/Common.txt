@@ -1,8 +1,14 @@
-Chọn ngôn ngữ
-Có lỗi xảy ra khi upload hình ảnh!
-Upload hình ảnh
-Upload hình ảnh thành công!
+Hủy
+Xóa
+Xác nhận xóa
 Xem hình ảnh
-Xem trước hình ảnh
 Xóa hình ảnh
+Không có tên
+Chọn ngôn ngữ
 Đã xóa hình ảnh
+Upload hình ảnh
+Xem trước hình ảnh
+Upload hình ảnh thành công!
+Có lỗi xảy ra khi upload hình ảnh!
+Bạn có chắc chắn muốn xóa hình ảnh này?
+Chỉ hỗ trợ file ảnh (JPG, PNG, GIF, WebP)!

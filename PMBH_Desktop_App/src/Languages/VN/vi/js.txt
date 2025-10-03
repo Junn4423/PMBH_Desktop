@@ -1,2 +1,4 @@
 Chọn Theme
 Ctrl + T để toggle
+Theme truyền thống với tone nâu cafe
+Theme mặc định với tone xanh dương hiện đại

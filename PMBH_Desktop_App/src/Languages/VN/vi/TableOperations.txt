@@ -1,10 +1,26 @@
-Bàn trống
-Chỉ có thể gộp bàn trong cùng khu vực.
-Chọn bàn đích để chuyển hóa đơn từ bàn
-Chọn bàn đích để gộp bàn
-Không có bàn nào khác có khách trong cùng khu vực để gộp
-Không có bàn trống để chuyển
-Quay lại
+Hủy
+Trống
+Đã đặt
+Gộp bàn
 Tách bàn
-Vui lòng chọn bàn đích để chuyển
+Quay lại
+Có khách
+Bàn trống
+Chuyển bàn
+Chọn bàn đích
+Không xác định
+Không thể tách
+Chọn món để tách
+Không có bàn trống
+Chọn bàn đích để gộp bàn
+Không có bàn trống để chuyển
 Vui lòng chọn bàn đích để gộp
+Vui lòng chọn bàn đích để chuyển
+Chọn bàn đích để chuyển hóa đơn từ bàn
+Chỉ có thể gộp bàn trong cùng khu vực.
+Phải chừa lại ít nhất 1 món ở bàn hiện tại.
+Không có bàn trống cùng khu vực để tách món.
+(Cần có ít nhất 1 bàn trống để thực hiện chuyển bàn)
+Không có bàn nào khác có khách trong cùng khu vực để gộp
+(Cần có ít nhất 2 bàn có khách trong cùng khu vực để thực hiện gộp bàn)
+Chọn 1 hoặc nhiều món để chuyển sang bàn khác. Phải chừa lại ít nhất 1 món ở bàn hiện tại.

@@ -1,0 +1,11 @@
+Tiếng Việt
+Chi nhánh 2
+Chi nhánh 1
+Chi nhánh demo
+Giỏ hàng trống
+Chi nhánh chính
+Đăng nhập thất bại
+Đã xảy ra lỗi khi đăng nhập
+useCart phải được sử dụng trong CartProvider
+useAuth phải được sử dụng trong AuthProvider
+useTheme phải được sử dụng trong ThemeProvider

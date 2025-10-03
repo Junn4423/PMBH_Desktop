@@ -1,0 +1,212 @@
+của
+tải
+giá
+chủ
+xóa
+cáo
+lại
+tại
+nên
+đầy
+giờ
+gửi
+này
+mới
+đến
+cảm
+tìm
+tối
+báo
+ảnh
+với
+rất
+bán
+lỗi
+tệp
+hủy
+khi
+mật
+cao
+sửa
+vào
+nếu
+đêm
+tên
+chi
+bật
+các
+tài
+bảo
+năm
+cho
+tắt
+thì
+một
+lưu
+tổng
+ngày
+canh
+nhan
+phải
+nhập
+hiện
+bằng
+phút
+đang
+đăng
+hoặc
+kiếm
+chon
+khẩu
+lòng
+chào
+công
+xuất
+khau
+nhận
+trua
+nhap
+quận
+tiết
+trưa
+đóng
+giây
+sách
+thêm
+sáng
+được
+cảnh
+giữa
+tiền
+chọn
+khoản
+thông
+tháng
+chiều
+nhiều
+khong
+trống
+không
+thang
+chu y
+phone
+trang
+thanh
+huyện
+huyen
+trước
+khoan
+thành
+thong
+nhưng
+trong
+người
+photo
+chú ý
+đã xóa
+tất cả
+đơn vị
+một số
+làm ơn
+hủy bỏ
+cảm ơn
+họ tên
+phường
+đã lưu
+huy bo
+báo cáo
+dịch vụ
+hóa đơn
+năm này
+đối tác
+hôm qua
+bắt đầu
+tải lên
+xin lỗi
+cong ty
+hôm nay
+xin chờ
+đăng ký
+địa chỉ
+dữ liệu
+văn bản
+xin cho
+công ty
+thư mục
+hình ảnh
+đơn hàng
+chi tiết
+quốc gia
+khẩn cấp
+không có
+tiếp tục
+quoc gia
+cảnh báo
+xác nhận
+tuần này
+xin chào
+kết thúc
+số lượng
+mật khẩu
+hoàn tất
+tài liệu
+chọn lựa
+bán hàng
+tạm biệt
+mua hàng
+vui lòng
+sản phẩm
+khan cap
+riêng tư
+cap nhat
+âm thanh
+tìm kiếm
+thay đổi
+ngày mai
+chưa lưu
+cập nhật
+quay lại
+trang chủ
+giới tính
+phần trăm
+thông tin
+đường dẫn
+thanh pho
+thong tin
+đăng nhập
+ngày sinh
+thông báo
+đăng xuất
+gioi tinh
+công khai
+tài khoản
+tổng cộng
+thành phố
+danh sách
+tải xuống
+tháng này
+điện thoại
+kinh doanh
+thanh toán
+quan trong
+đang xử lý
+thành công
+cảm ơn bạn
+khach hang
+hoàn thành
+khách hàng
+hoan thanh
+thanh toan
+quan trọng
+thương mại
+người dùng
+Tiếng Việt
+hẹn gặp lại
+nhà cung cấp
+nha cung cap
+vui lòng đợi
+số điện thoại
+đang hoạt động
+ngừng hoạt động
+SUMMARY BY LANGUAGE\n
+\b(và|của|có|được|không|cho|từ|này|đã|với|là|trong|một|các|người|để|thì|sẽ|đến|khi|hoặc|nhưng|vì|nếu|đang|vào|theo|sau|trước|giữa|bằng|về|tại|nên|phải|rất|lại|thêm|xin|vui lòng|cảm ơn|thông báo|lỗi|thành công|cảnh báo)\b

@@ -1,11 +1,22 @@
+Đóng
+Tỷ giá:
+Hóa đơn:
+Tạm tính
+Giảm giá
+Tiền mặt
+SL x Giá
+Tổng cộng
+Tiền thừa
+Thành tiền
+In hóa đơn
+Ví điện tử
+Phương thức:
+Hẹn gặp lại!
+Chuyển khoản
+Tiền khách đưa
+Thuế VAT (10%)
+Địa chỉ cửa hàng
 Cảm ơn quý khách!
 Hóa đơn thanh toán
-Hóa đơn:
-Hẹn gặp lại!
-In hóa đơn
 Không thể in hóa đơn:
-Phương thức:
-SL x Giá
-Thành tiền
-Tỷ giá:
 Đã gửi lệnh in hóa đơn

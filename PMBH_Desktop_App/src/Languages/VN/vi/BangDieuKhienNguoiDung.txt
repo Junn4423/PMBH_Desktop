@@ -1,2 +1,3 @@
-Bảng điều khiển người dùng
 Mục chung
+Bảng điều khiển người dùng
+Tính năng quản lý người dùng cần gói premium để sử dụng...

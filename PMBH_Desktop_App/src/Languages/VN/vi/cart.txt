@@ -1,7 +1,7 @@
-Giảm giá:
 Giỏ hàng
-Giỏ hàng trống
-In hóa đơn
-Lưu đơn hàng
+Giảm giá:
 Tạm tính:
+In hóa đơn
 Tổng cộng:
+Lưu đơn hàng
+Giỏ hàng trống

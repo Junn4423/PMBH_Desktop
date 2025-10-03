@@ -1,106 +1,142 @@
-Bàn chỉ có 1 món, không thể tách bàn
-Bàn đích phải là bàn trống
-Chuyển bàn
-Chưa có món
-Chế độ chỉnh sửa hóa đơn đã được kích hoạt
-Chọn bàn
-Chọn bàn để bán hàng
-Chọn khu vực
-Chọn món
-Chọn vị trí:
-Có khách
-Danh mục
-Giảm giá:
+Hủy
+Đóng
+hoặc
+Ngày
+Trống
+trống
+Mã HĐ
+In lại
+đã đặt
+Đã đặt
+Hủy HĐ
+Tất cả
+Tên món
 Gộp bàn
 Gửi bếp
-In hóa đơn đầy đủ
-In lại
-In đầy đủ
-Không có bàn nào
-Không có hóa đơn
-Không có hóa đơn tạm để chuyển đổi
-Không có hóa đơn để chuyển xuống bếp
-Không có hóa đơn để chỉnh sửa
-Không có hóa đơn để hủy
-Không có hóa đơn để in
-Không có lịch sử hóa đơn
-Không có đơn hàng để thanh toán
-Không có đơn hàng để xác nhận
-Không thể chuyển bàn:
-Không thể chuyển xuống bếp:
-Không thể chuyển đổi hóa đơn:
-Không thể cập nhật số lượng:
-Không thể gộp bàn từ khu vực khác nhau
-Không thể gộp bàn:
-Không thể hủy hóa đơn:
-Không thể sao chép hóa đơn:
-Không thể thêm sản phẩm:
-Không thể tách bàn sang khu vực khác
-Không thể tách bàn:
-Không thể tạo hóa đơn mới:
-Không thể tạo hóa đơn tạm:
-Không thể tạo hóa đơn, vui lòng thử lại
-Không thể tải danh mục sản phẩm.
-Không thể tải danh sách bàn
-Không thể tải danh sách bàn trống
-Không thể tải danh sách khu vực
-Không thể tải danh sách sản phẩm
-Không thể tải danh sách sản phẩm.
-Không thể tải lại dữ liệu hóa đơn:
-Không thể tải lịch sử hóa đơn:
-Không thể xác nhận đơn hàng:
-Không thể xóa sản phẩm:
-Không thể xử lý bàn:
-Không thể xử lý thanh toán:
-Không tìm thấy danh mục sản phẩm
-Không tìm thấy sản phẩm nào
-Làm mới
-Lỗi khi in lại hóa đơn
-Lỗi khi lưu thay đổi hóa đơn
-Lỗi khi sao chép hóa đơn
-Mã hóa đơn:
-Món sẽ được xóa và thêm lại với số lượng mới
-Phải chừa lại ít nhất 1 món ở bàn nguồn
-Quay lại hóa đơn
-Sao chép
-Sao chép hóa đơn thành công!
-Số lượng mới:
-Số lượng:
 Số món:
-Thanh toán
-Thanh toán hoàn tất
-Thanh toán thành công
-Thiếu thông tin hóa đơn
-Thiếu thông tin để cập nhật số lượng
-Thành tiền
-Thời gian:
-Trống
+đã xong
+Đơn giá
+Làm mới
+Cập nhật
+đang bán
+Không rõ
+Chọn bàn
+Thao tác
 Tách bàn
-Tên món
+Có khách
+Danh mục
+Chọn món
+Sao chép
+Thời gian
+Số lượng:
+Tổng tiền
+Giảm giá:
+In đầy đủ
 Tạm tính:
-Tất cả
-Tất cả khu vực
-Tổng cộng:
+Thời gian:
+Thanh toán
+Trạng thái
+Thành tiền
 Tổng tiền:
-Tổng:
-Vui lòng chọn bàn
-Vui lòng chọn bàn có hóa đơn và bàn đích để chuyển
-Vui lòng chọn bàn có hóa đơn và bàn đích để gộp
-Vui lòng chọn bàn có hóa đơn để tách
-Vui lòng chọn bàn trước
-Vui lòng chọn bàn đích để chuyển món
-Vui lòng chọn ít nhất 1 món để tách
-Đang chuyển sang chế độ cập nhật thủ công
-Đang chế biến
-Đang chế biến:
+Chuyển bàn
+Tổng cộng:
+Mã hóa đơn:
+Chưa có món
+Chọn khu vực
+Đang phục vụ
+Thêm vào đơn
+Chọn vị trí:
 Đang chờ bếp
-Đã chuyển hóa đơn tạm thành chính thức
-Đã chuyển đơn hàng xuống bếp
-Đã cập nhật trạng thái bàn
-Đã gửi hóa đơn đến máy in
-Đã hủy chỉnh sửa hóa đơn
-Đã hủy hóa đơn thành công
-Đã lưu thay đổi hóa đơn
+Đang chế biến
+Số lượng mới:
+Thuế VAT (10%)
+Chờ thanh toán
+Tất cả khu vực
+huỷ do gộp bàn
+Đang chế biến:
+Không xác định
+Không có bàn nào
+HÓA ĐƠN BÁN HÀNG
+Không có hóa đơn
+Quay lại hóa đơn
+Vui lòng chọn bàn
+In hóa đơn đầy đủ
+Lỗi không xác định
+Không thể gộp bàn:
+Xác nhận thanh toán
+Thanh toán hoàn tất
+Không thể tách bàn:
+Đang tải sản phẩm...
+Tìm kiếm sản phẩm...
 Đã xác nhận đơn hàng
+Chọn bàn để bán hàng
+Không thể xử lý bàn:
+Không thể chuyển bàn:
+Thanh toán thành công
+Lỗi khi in lại hóa đơn
+Không thể hủy hóa đơn:
+Không có hóa đơn để in
+Vui lòng chọn bàn trước
+Không thể xóa sản phẩm:
+Thiếu thông tin hóa đơn
+Đã lưu thay đổi hóa đơn
+Không có hóa đơn để hủy
+Đã hủy chỉnh sửa hóa đơn
+Không có lịch sử hóa đơn
+Không thể thêm sản phẩm:
+Lỗi khi sao chép hóa đơn
+tùy endpoint, không phải
+Đã hủy hóa đơn thành công
+Đang tải danh sách bàn...
+Đã gửi hóa đơn đến máy in
+Không thể tạo hóa đơn mới:
+Đang cập nhật real-time...
+Không thể tạo hóa đơn tạm:
+Bàn đích phải là bàn trống
+Đã cập nhật trạng thái bàn
+Không tìm thấy sản phẩm nào
+Không thể tải danh sách bàn
+Không thể sao chép hóa đơn:
+Không thể chuyển xuống bếp:
+Đang chuẩn bị in hóa đơn...
+Không thể xử lý thanh toán:
+Đã chuyển đơn hàng xuống bếp
+Không thể cập nhật số lượng:
 Đã xóa sản phẩm khỏi hóa đơn
+Sao chép hóa đơn thành công!
+Lỗi khi lưu thay đổi hóa đơn
+Không thể xác nhận đơn hàng:
+Không có đơn hàng để xác nhận
+Không có hóa đơn để chỉnh sửa
+Không thể chuyển đổi hóa đơn:
 Đã xóa sản phẩm khỏi đơn hàng
+Không thể tải lịch sử hóa đơn:
+Không thể tải danh sách khu vực
+Không có đơn hàng để thanh toán
+Không thể tải danh sách sản phẩm
+Không tìm thấy danh mục sản phẩm
+Không thể tải danh mục sản phẩm.
+Không thể tải danh sách sản phẩm.
+Không thể tải danh sách bàn trống
+Không có hóa đơn tạm để chuyển đổi
+Không thể tải lại dữ liệu hóa đơn:
+Vui lòng chọn ít nhất 1 món để tách
+Không có hóa đơn để chuyển xuống bếp
+Vui lòng chọn bàn đích để chuyển món
+Thiếu thông tin để cập nhật số lượng
+Bàn chỉ có 1 món, không thể tách bàn
+Vui lòng chọn bàn có hóa đơn để tách
+Không thể tách bàn sang khu vực khác
+Đã chuyển hóa đơn tạm thành chính thức
+Không thể gộp bàn từ khu vực khác nhau
+Phải chừa lại ít nhất 1 món ở bàn nguồn
+Không thể tạo hóa đơn, vui lòng thử lại
+Đang chuyển sang chế độ cập nhật thủ công
+Chế độ chỉnh sửa hóa đơn đã được kích hoạt
+Món sẽ được xóa và thêm lại với số lượng mới
+Bàn này có món chưa xong - xác nhận thanh toán?
+Vui lòng chọn bàn có hóa đơn và bàn đích để gộp
+Không thể lưu mergedTableGroups vào localStorage:
+Không thể load mergedTableGroups từ localStorage:
+Không thể xóa mergedTableGroups khỏi localStorage:
+Vui lòng chọn bàn có hóa đơn và bàn đích để chuyển

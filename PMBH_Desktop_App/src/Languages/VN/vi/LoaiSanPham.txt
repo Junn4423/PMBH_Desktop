@@ -1,14 +1,30 @@
+Hủy
+Xóa
+Thêm
+Mô tả
+Mã loại
+Cập nhật
+Thao tác
+Trang chủ
+Mục chung
+Nhập mô tả
+Tìm kiếm...
+Nhập mã loại
+Xác nhận xóa
+Loại sản phẩm
+Tên loại sản phẩm
+Sửa loại sản phẩm
+Thêm loại sản phẩm
+Điều khiển sản phẩm
+Vui lòng nhập mã loại
+Quản lý loại sản phẩm
+Nhập tên loại sản phẩm
+Không thể xóa loại sản phẩm
+Không thể thêm loại sản phẩm
+Xóa loại sản phẩm thành công
+Thêm loại sản phẩm thành công
+Vui lòng nhập tên loại sản phẩm
+Không thể cập nhật loại sản phẩm
 Cập nhật loại sản phẩm thành công
 Không thể tải danh sách loại sản phẩm
-Không thể xóa loại sản phẩm
-Mã loại
-Mô tả
-Nhập mã loại
-Nhập mô tả
-Nhập tên loại sản phẩm
-Quản lý loại sản phẩm
-Thêm loại sản phẩm
-Thêm loại sản phẩm thành công
-Tên loại sản phẩm
-Xác nhận xóa
-Xóa loại sản phẩm thành công
+Bạn có chắc chắn muốn xóa loại sản phẩm này?

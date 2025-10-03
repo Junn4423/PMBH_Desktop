@@ -1,37 +1,56 @@
-Chưa có ảnh
-Chỉnh sửa ảnh sản phẩm
-Chọn loại sản phẩm
-Chọn đơn vị
-Chọn ảnh
-Cập nhật sản phẩm thành công
-Cập nhật ảnh sản phẩm thành công
-Danh mục sản phẩm
-Danh sách sản phẩm
+Hủy
+Sửa
+Xóa
+Mô tả
+Tất cả
+Đơn vị
 Giá bán
-Giá bán không hợp lệ. Vui lòng nhập giá bán hợp lệ.
+URL ảnh
+Sản phẩm
+Chọn ảnh
+Trang chủ
+Mục chung
+Sản phẩm:
+Chưa có ảnh
+Chọn đơn vị
+Tải ảnh lên
+Mã sản phẩm
+Nhập URL ảnh
+Tên sản phẩm
+Xác nhận xóa
+URL hình ảnh
+Thêm sản phẩm
+Loại sản phẩm
+Ảnh hiện tại:
+Tất cả sản phẩm
+Nhập URL ảnh...
+Nhập mã sản phẩm
+Danh mục sản phẩm
+Nhập tên sản phẩm
+Nhập URL hình ảnh
+Chọn loại sản phẩm
+Danh sách sản phẩm
+Nhập mô tả sản phẩm
+Điều khiển sản phẩm
+Đang tải sản phẩm...
+Tìm kiếm sản phẩm...
+Phương thức cập nhật
+Vui lòng nhập giá bán
+Lỗi khi cập nhật ảnh:
+Chỉnh sửa ảnh sản phẩm
+Không thể xóa sản phẩm
+Xóa sản phẩm thành công
+Thêm sản phẩm thành công
+Nhập giá bán (VD: 50000)
+Vui lòng nhập mã sản phẩm
+Vui lòng nhập tên sản phẩm
+Vui lòng chọn loại sản phẩm
+Không tìm thấy sản phẩm nào
+Cập nhật sản phẩm thành công
 Không thể cập nhật ảnh sản phẩm
 Không thể tải danh mục sản phẩm
 Không thể tải danh sách sản phẩm
-Không thể xóa sản phẩm
-Không tìm thấy sản phẩm nào
-Loại sản phẩm
-Lỗi khi cập nhật ảnh:
-Mã sản phẩm
-Mô tả
-Nhập URL hình ảnh
-Nhập URL ảnh
-Nhập mã sản phẩm
-Nhập mô tả sản phẩm
-Nhập tên sản phẩm
-Phương thức cập nhật
-Sản phẩm:
-Thêm sản phẩm
-Thêm sản phẩm thành công
-Tên sản phẩm
-Tải ảnh lên
-Tất cả sản phẩm
-URL hình ảnh
-URL ảnh
-Xác nhận xóa
-Xóa sản phẩm thành công
-Ảnh hiện tại:
+Cập nhật ảnh sản phẩm thành công
+Giá bán phải lớn hơn hoặc bằng 0
+Bạn có chắc chắn muốn xóa sản phẩm này?
+Giá bán không hợp lệ. Vui lòng nhập giá bán hợp lệ.

@@ -1,38 +1,58 @@
-Chi tiết Item
-Chromium Storage Estimate:
-Chọn ngôn ngữ
-Chọn ảnh
-Chọn ảnh logo:
-Cập nhật logo
-Cập nhật logo hóa đơn thành công
-Danh sách Items trong LocalStorage:
-Items trong LocalStorage
-Không thể cập nhật logo hóa đơn
-Không thể xuất dữ liệu
-Không thể xóa item
-Không thể xóa localStorage
-Không thể xóa logo hóa đơn
-Kích thước:
-LocalStorage Usage:
-Logo hiện tại:
-Logo hóa đơn
-Logo sẽ được hiển thị ở đầu tất cả hóa đơn in. Kích thước đề xuất: 200x200px
-Loại dữ liệu:
+Hủy
+Xóa
+Đóng
 Làm mới
-Lỗi khi cập nhật logo:
-Nhập URL ảnh
-Nội dung:
-Phương thức cập nhật:
-Quota:
-Quản lý LocalStorage
-Tùy chỉnh logo hiển thị trên hóa đơn in
-Tải ảnh lên
-URL ảnh logo:
-Xuất dữ liệu
+Cài đặt
+Ngôn ngữ
+Chọn ảnh
 Xóa logo
-Xóa tất cả
+Nội dung:
+Hành động
 Đã sử dụng
+Phiên bản:
+Xóa tất cả
+Kích thước
+Kích thước:
 Đã sử dụng:
-Đã xuất dữ liệu localStorage
+Tải ảnh lên
+Nhập URL ảnh
+Logo hóa đơn
+Xuất dữ liệu
+Cập nhật logo
+Xóa item này?
+Loại dữ liệu:
+Chọn ngôn ngữ
+Chi tiết Item
+URL ảnh logo:
+Logo hiện tại:
+Chọn ảnh logo:
+Ngôn ngữ hỗ trợ:
+Cài đặt giao diện
+Ngôn ngữ hiện tại:
+Thông tin hệ thống
+Không thể xóa item
+Còn lại (ước tính)
 Đã xóa logo hóa đơn
+Quản lý LocalStorage
+Nhập URL ảnh logo...
+Phương thức cập nhật:
+Lỗi khi cập nhật logo:
+Không thể xuất dữ liệu
+Xóa toàn bộ localStorage?
+Không thể xóa logo hóa đơn
+Không thể xóa localStorage
+Chọn ngôn ngữ (Flag Style)
 Đã xóa toàn bộ localStorage
+Chọn ngôn ngữ (Button Style)
+Đã xuất dữ liệu localStorage
+Bạn có chắc muốn xóa item này?
+Không thể cập nhật logo hóa đơn
+Cập nhật logo hóa đơn thành công
+Chọn ngôn ngữ hiển thị cho ứng dụng
+Danh sách Items trong LocalStorage:
+Tùy chỉnh logo hiển thị trên hóa đơn in
+Cảnh báo: Hành động này không thể hoàn tác!
+Các tính năng nâng cao cần gói premium để sử dụng
+Các tùy chọn giao diện khác sẽ có sẵn trong phiên bản premium
+Logo sẽ được hiển thị ở đầu tất cả hóa đơn in. Kích thước đề xuất: 200x200px
+Thay đổi ngôn ngữ sẽ được áp dụng ngay lập tức và lưu cho lần sử dụng tiếp theo

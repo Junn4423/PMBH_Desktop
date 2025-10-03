@@ -1,3 +1,6 @@
+Trang chủ
+Mục chung
 BC bán hàng
+Giao diện MB
 Chức năng này sẽ sớm được hoàn thiện.
 Màn hình BC bán hàng cần gói premium để sử dụng

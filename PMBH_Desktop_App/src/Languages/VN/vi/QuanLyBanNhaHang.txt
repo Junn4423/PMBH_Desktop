@@ -1,3 +1,6 @@
+Trang chủ
+Kinh doanh
+Quản lý bán nhà hàng
+quan-ly-ban-nha-hang-container
 Chức năng này sẽ sớm được hoàn thiện.
 Màn hình Quản lý bán nhà hàng cần gói premium để sử dụng
-Quản lý bán nhà hàng

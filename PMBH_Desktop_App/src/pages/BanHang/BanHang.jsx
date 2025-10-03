@@ -477,51 +477,6 @@ const BanHang = () => {
       // Load trạng thái bàn riêng biệt
   await loadTableStatuses(tablesData, { silent: true });
       
-      // TEMPORARY: Add mock data for testing if no tables loaded
-      if (tablesData.length === 0) {
-        const mockTables = [
-          {
-            id: 'ban01',
-            maBan: 'ban01',
-            name: 'Bàn 1',
-            tenBan: 'Bàn 1',
-            areaId: 'kv01',
-            status: 'occupied',
-            invoiceId: 'hd01',
-            customerCount: 2,
-            totalAmount: 150000
-          },
-          {
-            id: 'ban02',
-            maBan: 'ban02',
-            name: 'Bàn 2',
-            tenBan: 'Bàn 2',
-            areaId: 'kv01',
-            status: 'available'
-          },
-          {
-            id: 'ban03',
-            maBan: 'ban03',
-            name: 'Bàn 3',
-            tenBan: 'Bàn 3',
-            areaId: 'kv01',
-            status: 'occupied',
-            invoiceId: 'hd03',
-            customerCount: 4,
-            totalAmount: 230000
-          },
-          {
-            id: 'ban04',
-            maBan: 'ban04',
-            name: 'Bàn 4',
-            tenBan: 'Bàn 4',
-            areaId: 'kv01',
-            status: 'available'
-          }
-        ];
-  // Silent console
-        setTables(mockTables);
-      }
     } catch (error) {
   // Silent console
       message.error('Không thể tải danh sách bàn');

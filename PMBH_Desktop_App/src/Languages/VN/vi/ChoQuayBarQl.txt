@@ -1,3 +1,6 @@
+Trang chủ
+Kinh doanh
 Cho quầy bar
+Quản lý bán nhà hàng
 Chức năng này sẽ sớm được hoàn thiện.
 Màn hình Cho quầy bar cần gói premium để sử dụng

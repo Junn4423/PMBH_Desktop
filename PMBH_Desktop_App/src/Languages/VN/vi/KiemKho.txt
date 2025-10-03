@@ -1,2 +1,3 @@
 Kiểm kho
 Quản lí kho
+Tính năng kiểm kho cần gói premium để sử dụng...

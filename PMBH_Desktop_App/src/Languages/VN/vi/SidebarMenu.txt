@@ -1,5 +1,48 @@
-Bảng điều khiển người dùng
-Chọn bộ màu sắc
+Đơn vị
+BC tổng
 Công ty
-PMBH Desktop
+Kế toán
+Sản phẩm
+Nhập kho
+Mặc định
+Nhập chi
+Xuất kho
+Kiểm kho
+Trang chủ
+Mục chung
+Hoàng hôn
+Rừng xanh
+Tài khoản
+Nhân viên
+Đại dương
+Phiếu chi
+Phòng ban
+BC bán hàng
+BC chi tiền
+Quản lí kho
+Cho nhà bếp
+BC nhập kho
+Cho quầy bar
+Giao diện MB
+Bàn nhà hàng
+Tầng nhà hàng
+Loại sản phẩm
+Nhập bán hàng
+Người đăng ký
+Báo tồn Mobil
+Nhóm người dùng
+Báo cáo giao ca
+Chọn bộ màu sắc
+Chọn kho quản lý
+Cho người quản lý
+Điều khiển sản phẩm
+Danh mục khách hàng
 Quản lý bán nhà hàng
+Thiết lập tầng và bàn
+BC chi tiền + nhập kho
+Báo cáo theo điều kiện
+Chương trình kinh doanh
+Cấu hình quản lý nhà hàng
+Xem thông tin xóa đơn hàng
+Bảng điều khiển người dùng
+Báo cáo doanh thu khách hàng

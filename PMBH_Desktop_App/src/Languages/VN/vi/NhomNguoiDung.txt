@@ -1,4 +1,5 @@
-Bảng điều khiển người dùng
-Màn hình Nhóm người dùng cần gói premium để sử dụng
 Mục chung
 Nhóm người dùng
+Bảng điều khiển người dùng
+Màn hình Nhóm người dùng cần gói premium để sử dụng
+Tính năng này sẽ sớm có mặt trong phiên bản tiếp theo...

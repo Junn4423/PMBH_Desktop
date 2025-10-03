@@ -1,0 +1,43 @@
+4 ghế
+Trống
+8 ghế
+2 ghế
+6 ghế
+Tầng 1
+Đã hủy
+Đã đặt
+Cà phê
+Tầng 2
+Phục vụ
+Quản lý
+Bảo trì
+Nước ép
+Sẵn sàng
+Có khách
+Tiền mặt
+Thu ngân
+Sân vườn
+Bánh ngọt
+Đồ ăn nhẹ
+Phòng VIP
+Ngoài trời
+Hoàn thành
+Ví điện tử
+Đã xác nhận
+Chuyển khoản
+Chờ xác nhận
+Đang chuẩn bị
+Quản trị viên
+Lưu thành công!
+Xóa thành công!
+Lỗi kết nối mạng!
+Cập nhật thành công!
+Dữ liệu không hợp lệ!
+Đăng xuất thành công!
+Đăng nhập thành công!
+Không tìm thấy dữ liệu!
+Bạn có chắc chắn muốn xóa?
+Bạn không có quyền truy cập!
+Bạn có chắc chắn muốn đăng xuất?
+Đã xảy ra lỗi, vui lòng thử lại!
+Bạn có chắc chắn muốn hủy đơn hàng?
