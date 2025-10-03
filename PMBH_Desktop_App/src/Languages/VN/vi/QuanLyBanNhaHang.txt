@@ -1,0 +1,3 @@
+Chức năng này sẽ sớm được hoàn thiện.
+Màn hình Quản lý bán nhà hàng cần gói premium để sử dụng
+Quản lý bán nhà hàng

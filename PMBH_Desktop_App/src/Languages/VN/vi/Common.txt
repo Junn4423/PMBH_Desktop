@@ -1,0 +1,8 @@
+Chọn ngôn ngữ
+Có lỗi xảy ra khi upload hình ảnh!
+Upload hình ảnh
+Upload hình ảnh thành công!
+Xem hình ảnh
+Xem trước hình ảnh
+Xóa hình ảnh
+Đã xóa hình ảnh

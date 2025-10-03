@@ -1,0 +1,16 @@
+Chọn danh mục
+Có lỗi xảy ra khi lưu món
+Có lỗi xảy ra khi xóa món
+Danh mục
+Hình ảnh
+Không thể tải dữ liệu thực đơn
+Làm mới
+Mô tả
+Ngừng bán
+Quản lý thực đơn
+Thêm món mới
+Trạng thái
+Tên món
+Đã cập nhật món thành công
+Đã thêm món mới thành công
+Đã xóa món thành công

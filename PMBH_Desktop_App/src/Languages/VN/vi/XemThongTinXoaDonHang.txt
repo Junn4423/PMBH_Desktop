@@ -1,0 +1,3 @@
+Chức năng này sẽ sớm được hoàn thiện.
+Màn hình Xem thông tin xóa đơn hàng cần gói premium để sử dụng
+Xem thông tin xóa đơn hàng

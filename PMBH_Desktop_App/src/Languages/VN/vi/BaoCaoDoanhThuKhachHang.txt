@@ -1,0 +1,27 @@
+1 tháng
+3 tháng
+6 tháng
+Báo cáo bán hàng
+Chọn dạng báo cáo
+Chọn khoảng thời gian để xem biểu đồ
+Có lỗi xảy ra khi tạo biểu đồ
+Có lỗi xảy ra khi tải báo cáo
+Có lỗi xảy ra khi xuất báo cáo
+Dạng biểu đồ
+Dạng bảng
+Hôm nay
+Không có dữ liệu để tạo biểu đồ
+Kỳ báo cáo:
+Năm nay
+Số ngày
+Tuần này
+Tìm kiếm
+Tạo biểu đồ thành công
+Tổng cộng:
+Tổng doanh thu
+Tổng sản phẩm
+Vui lòng chọn bộ lọc hoặc khoảng thời gian tùy chỉnh
+Vui lòng chọn khoảng thời gian
+Vui lòng chọn khoảng thời gian để xuất báo cáo
+Xuất báo cáo
+Xuất báo cáo thành công

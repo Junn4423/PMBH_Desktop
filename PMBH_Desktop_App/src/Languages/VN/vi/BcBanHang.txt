@@ -1,0 +1,3 @@
+BC bán hàng
+Chức năng này sẽ sớm được hoàn thiện.
+Màn hình BC bán hàng cần gói premium để sử dụng

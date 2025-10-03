@@ -1,6 +1,0 @@
-# COMPONENTS_TABLES - Các text UI trong module components_tables
-# Tổng số: 2 text
-# Mỗi dòng là một text field riêng biệt
-
-selectedKhuVuc === 'all' ? 'Không có bàn nào' : `Không có bàn nào trong khu vực $selectedKhuVuc`
-Đang tải danh sách bàn...

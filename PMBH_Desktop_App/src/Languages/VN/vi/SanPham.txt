@@ -1,0 +1,37 @@
+Chưa có ảnh
+Chỉnh sửa ảnh sản phẩm
+Chọn loại sản phẩm
+Chọn đơn vị
+Chọn ảnh
+Cập nhật sản phẩm thành công
+Cập nhật ảnh sản phẩm thành công
+Danh mục sản phẩm
+Danh sách sản phẩm
+Giá bán
+Giá bán không hợp lệ. Vui lòng nhập giá bán hợp lệ.
+Không thể cập nhật ảnh sản phẩm
+Không thể tải danh mục sản phẩm
+Không thể tải danh sách sản phẩm
+Không thể xóa sản phẩm
+Không tìm thấy sản phẩm nào
+Loại sản phẩm
+Lỗi khi cập nhật ảnh:
+Mã sản phẩm
+Mô tả
+Nhập URL hình ảnh
+Nhập URL ảnh
+Nhập mã sản phẩm
+Nhập mô tả sản phẩm
+Nhập tên sản phẩm
+Phương thức cập nhật
+Sản phẩm:
+Thêm sản phẩm
+Thêm sản phẩm thành công
+Tên sản phẩm
+Tải ảnh lên
+Tất cả sản phẩm
+URL hình ảnh
+URL ảnh
+Xác nhận xóa
+Xóa sản phẩm thành công
+Ảnh hiện tại:

@@ -1,0 +1,13 @@
+Cập nhật thành công
+Không thể tải danh sách đơn vị
+Không thể xóa đơn vị
+Mã đơn vị
+Mục chung
+Quản lý Đơn vị
+Thêm mới
+Thêm thành công
+Tên rút gọn
+Tên đơn vị
+Xác nhận xóa
+Xóa thành công
+Điều khiển sản phẩm

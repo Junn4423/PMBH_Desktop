@@ -1,0 +1,14 @@
+Cập nhật loại sản phẩm thành công
+Không thể tải danh sách loại sản phẩm
+Không thể xóa loại sản phẩm
+Mã loại
+Mô tả
+Nhập mã loại
+Nhập mô tả
+Nhập tên loại sản phẩm
+Quản lý loại sản phẩm
+Thêm loại sản phẩm
+Thêm loại sản phẩm thành công
+Tên loại sản phẩm
+Xác nhận xóa
+Xóa loại sản phẩm thành công

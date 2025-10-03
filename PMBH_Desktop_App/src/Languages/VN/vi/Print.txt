@@ -1,0 +1,11 @@
+Cảm ơn quý khách!
+Hóa đơn thanh toán
+Hóa đơn:
+Hẹn gặp lại!
+In hóa đơn
+Không thể in hóa đơn:
+Phương thức:
+SL x Giá
+Thành tiền
+Tỷ giá:
+Đã gửi lệnh in hóa đơn

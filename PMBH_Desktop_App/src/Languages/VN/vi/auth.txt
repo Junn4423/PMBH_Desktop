@@ -1,0 +1,54 @@
+Bán hàng thông minh
+Báo cáo chi tiết
+Café Management
+Chúng tôi đã gửi mã xác thực đến email:
+Có lỗi xảy ra khi đăng xuất!
+Cập nhật trạng thái đơn hàng ngay lập tức
+Email đăng ký
+Ghi nhớ đăng nhập
+Gửi lại mã xác thực
+Gửi mã xác thực
+Hệ thống quản lý quán cà phê chuyên nghiệp
+Không thể gửi mã xác thực! Vui lòng thử lại.
+Không thể đặt lại mật khẩu! Vui lòng thử lại.
+Mã xác thực
+Mã xác thực hợp lệ!
+Mã xác thực không hợp lệ! Vui lòng kiểm tra lại.
+Mã xác thực đã được gửi đến email của bạn!
+Mật khẩu
+Mật khẩu của bạn đã được cập nhật. Vui lòng đăng nhập lại với mật khẩu mới.
+Mật khẩu hiện tại
+Mật khẩu mới
+Nhập email đăng ký tài khoản
+Nhập lại mật khẩu mới
+Nhập mã xác thực 6 số
+Nhập mật khẩu
+Nhập mật khẩu hiện tại
+Nhập mật khẩu mới
+Nhập tên đăng nhập
+Phiên bản 1.0.0
+Quay lại
+Quên mật khẩu
+Quản lý đơn hàng và thanh toán dễ dàng
+Theo dõi thời gian thực
+Thoát ứng dụng
+Thống kê doanh thu và hiệu suất kinh doanh
+Tài khoản:
+Tên đăng nhập
+Vui lòng đăng nhập để tiếp tục sử dụng hệ thống
+Xác nhận mật khẩu mới
+Xác thực
+Yêu cầu mật khẩu:
+© 2024 Café Management System
+Ít nhất 6 ký tự
+Đăng nhập
+Đăng nhập ngay
+Đăng xuất
+Đăng xuất thành công!
+Đặt lại mật khẩu
+Đặt lại mật khẩu cho tài khoản của bạn
+Đặt lại mật khẩu thành công!
+Đổi mật khẩu
+Đổi mật khẩu lần nữa
+Đổi mật khẩu thành công!
+Đổi mật khẩu thất bại! Vui lòng kiểm tra lại mật khẩu hiện tại.

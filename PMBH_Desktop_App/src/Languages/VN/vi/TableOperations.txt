@@ -1,0 +1,10 @@
+Bàn trống
+Chỉ có thể gộp bàn trong cùng khu vực.
+Chọn bàn đích để chuyển hóa đơn từ bàn
+Chọn bàn đích để gộp bàn
+Không có bàn nào khác có khách trong cùng khu vực để gộp
+Không có bàn trống để chuyển
+Quay lại
+Tách bàn
+Vui lòng chọn bàn đích để chuyển
+Vui lòng chọn bàn đích để gộp

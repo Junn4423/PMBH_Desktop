@@ -1,0 +1,106 @@
+Bàn chỉ có 1 món, không thể tách bàn
+Bàn đích phải là bàn trống
+Chuyển bàn
+Chưa có món
+Chế độ chỉnh sửa hóa đơn đã được kích hoạt
+Chọn bàn
+Chọn bàn để bán hàng
+Chọn khu vực
+Chọn món
+Chọn vị trí:
+Có khách
+Danh mục
+Giảm giá:
+Gộp bàn
+Gửi bếp
+In hóa đơn đầy đủ
+In lại
+In đầy đủ
+Không có bàn nào
+Không có hóa đơn
+Không có hóa đơn tạm để chuyển đổi
+Không có hóa đơn để chuyển xuống bếp
+Không có hóa đơn để chỉnh sửa
+Không có hóa đơn để hủy
+Không có hóa đơn để in
+Không có lịch sử hóa đơn
+Không có đơn hàng để thanh toán
+Không có đơn hàng để xác nhận
+Không thể chuyển bàn:
+Không thể chuyển xuống bếp:
+Không thể chuyển đổi hóa đơn:
+Không thể cập nhật số lượng:
+Không thể gộp bàn từ khu vực khác nhau
+Không thể gộp bàn:
+Không thể hủy hóa đơn:
+Không thể sao chép hóa đơn:
+Không thể thêm sản phẩm:
+Không thể tách bàn sang khu vực khác
+Không thể tách bàn:
+Không thể tạo hóa đơn mới:
+Không thể tạo hóa đơn tạm:
+Không thể tạo hóa đơn, vui lòng thử lại
+Không thể tải danh mục sản phẩm.
+Không thể tải danh sách bàn
+Không thể tải danh sách bàn trống
+Không thể tải danh sách khu vực
+Không thể tải danh sách sản phẩm
+Không thể tải danh sách sản phẩm.
+Không thể tải lại dữ liệu hóa đơn:
+Không thể tải lịch sử hóa đơn:
+Không thể xác nhận đơn hàng:
+Không thể xóa sản phẩm:
+Không thể xử lý bàn:
+Không thể xử lý thanh toán:
+Không tìm thấy danh mục sản phẩm
+Không tìm thấy sản phẩm nào
+Làm mới
+Lỗi khi in lại hóa đơn
+Lỗi khi lưu thay đổi hóa đơn
+Lỗi khi sao chép hóa đơn
+Mã hóa đơn:
+Món sẽ được xóa và thêm lại với số lượng mới
+Phải chừa lại ít nhất 1 món ở bàn nguồn
+Quay lại hóa đơn
+Sao chép
+Sao chép hóa đơn thành công!
+Số lượng mới:
+Số lượng:
+Số món:
+Thanh toán
+Thanh toán hoàn tất
+Thanh toán thành công
+Thiếu thông tin hóa đơn
+Thiếu thông tin để cập nhật số lượng
+Thành tiền
+Thời gian:
+Trống
+Tách bàn
+Tên món
+Tạm tính:
+Tất cả
+Tất cả khu vực
+Tổng cộng:
+Tổng tiền:
+Tổng:
+Vui lòng chọn bàn
+Vui lòng chọn bàn có hóa đơn và bàn đích để chuyển
+Vui lòng chọn bàn có hóa đơn và bàn đích để gộp
+Vui lòng chọn bàn có hóa đơn để tách
+Vui lòng chọn bàn trước
+Vui lòng chọn bàn đích để chuyển món
+Vui lòng chọn ít nhất 1 món để tách
+Đang chuyển sang chế độ cập nhật thủ công
+Đang chế biến
+Đang chế biến:
+Đang chờ bếp
+Đã chuyển hóa đơn tạm thành chính thức
+Đã chuyển đơn hàng xuống bếp
+Đã cập nhật trạng thái bàn
+Đã gửi hóa đơn đến máy in
+Đã hủy chỉnh sửa hóa đơn
+Đã hủy hóa đơn thành công
+Đã lưu thay đổi hóa đơn
+Đã xác nhận đơn hàng
+Đã xóa sản phẩm khỏi hóa đơn
+Đã xóa sản phẩm khỏi đơn hàng

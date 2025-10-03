@@ -1,0 +1,3 @@
+Chức năng này sẽ sớm được hoàn thiện.
+Danh mục khách hàng
+Màn hình Danh mục khách hàng cần gói premium để sử dụng

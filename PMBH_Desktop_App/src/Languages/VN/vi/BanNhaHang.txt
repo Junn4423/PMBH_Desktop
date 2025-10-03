@@ -1,0 +1,20 @@
+Chọn khu vực
+Có khách
+Ghi chú
+Khu vực
+Không thể tải danh sách bàn
+Không thể xóa bàn:
+Không tìm thấy khu vực, vui lòng chọn lại
+Không tìm thấy mã bàn
+Quản lý bàn nhà hàng
+Số ghế
+Thêm bàn mới
+Trạng thái
+Trống
+Tên bàn
+Ví dụ: Bàn 1
+Xác nhận xóa
+Đã cập nhật bàn thành công
+Đã thêm bàn mới thành công
+Đã xóa bàn thành công
+Đã xảy ra lỗi:

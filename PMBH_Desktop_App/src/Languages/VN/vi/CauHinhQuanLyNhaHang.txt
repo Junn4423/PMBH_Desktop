@@ -1,0 +1,3 @@
+Chức năng này sẽ sớm được hoàn thiện.
+Cấu hình quản lý nhà hàng
+Màn hình Cấu hình quản lý nhà hàng cần gói premium để sử dụng
