@@ -327,6 +327,32 @@ const PaymentModal = ({
     message.info('Đã xóa phương thức thanh toán');
   };
 
+  const handleEditPartialPayment = (payment) => {
+    setPaymentMethod(payment.method);
+    setCurrency(payment.currency);
+    setCustomerPaid(payment.amount);
+    setMixedPayments(mixedPayments.filter(p => p.id !== payment.id));
+    const newTotalPaid = partialPaidAmount - payment.amountVND;
+    setPartialPaidAmount(newTotalPaid);
+
+    // Update localStorage
+    if (invoice?.maHd) {
+      const updatedPayments = mixedPayments.filter(p => p.id !== payment.id);
+      if (updatedPayments.length === 0) {
+        localStorage.removeItem(`partial_payment_${invoice.maHd}`);
+      } else {
+        localStorage.setItem(`partial_payment_${invoice.maHd}`, JSON.stringify({
+          payments: updatedPayments,
+          totalPaid: newTotalPaid,
+          finalTotal: finalTotal,
+          timestamp: new Date().toISOString()
+        }));
+      }
+    }
+
+    message.info('Đã tải dữ liệu để chỉnh sửa');
+  };
+
   const handleCompleteMixedPayment = async () => {
     const remaining = finalTotal - partialPaidAmount;
     
@@ -955,15 +981,26 @@ const PaymentModal = ({
                               {formatWithCurrency(payment.amount, payment.currency)}
                             </span>
                           </div>
-                          <Button
-                            type="text"
-                            danger
-                            size="small"
-                            onClick={() => handleRemovePartialPayment(payment.id)}
-                            className="remove-payment-btn"
-                          >
-                            Xóa
-                          </Button>
+                          <div className="payment-actions">
+                            <Button
+                              type="text"
+                              size="small"
+                              onClick={() => handleEditPartialPayment(payment)}
+                              className="edit-payment-btn"
+                              title="Sửa"
+                            >
+                              Sửa
+                            </Button>
+                            <Button
+                              type="text"
+                              danger
+                              size="small"
+                              onClick={() => handleRemovePartialPayment(payment.id)}
+                              className="remove-payment-btn"
+                            >
+                              Xóa
+                            </Button>
+                          </div>
                         </div>
                       ))}
                     </div>
