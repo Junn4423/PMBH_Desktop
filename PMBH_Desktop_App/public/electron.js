@@ -31,11 +31,15 @@ function createWindow() {
     ? 'http://localhost:3000'
     : `file://${path.join(__dirname, '../build/index.html')}`;
   
-  if (isDev) {
-    console.log('Loading URL:', loadURL);
-    console.log('isDev:', isDev);
-    console.log('__dirname:', __dirname);
-  }
+  // Always log for debugging
+  console.log('=== Electron Debug Info ===');
+  console.log('isDev:', isDev);
+  console.log('ELECTRON_IS_DEV env:', process.env.ELECTRON_IS_DEV);
+  console.log('NODE_ENV:', process.env.NODE_ENV);
+  console.log('Loading URL:', loadURL);
+  console.log('__dirname:', __dirname);
+  console.log('Build path:', path.join(__dirname, '../build/index.html'));
+  console.log('==========================');
 
   mainWindow.loadURL(loadURL);
 

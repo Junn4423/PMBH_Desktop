@@ -12,7 +12,7 @@
     "electron-dev-mac": "ELECTRON_IS_DEV=true electron .",
     "electron-only": "npm run build && electron .",
     "electron-test": "set ELECTRON_IS_DEV=false && npm run build && electron .",
-    "electron-mac": "ELECTRON_IS_DEV=false npm run build && electron .",
+    "electron-mac": "npm run build && ELECTRON_IS_DEV=false electron .",
     "start": "react-scripts start",
     "build": "react-scripts build",
     "test": "react-scripts test",
