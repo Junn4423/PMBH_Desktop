@@ -9,8 +9,10 @@
   "scripts": {
     "electron": "electron .",
     "electron-dev": "set ELECTRON_IS_DEV=true && electron .",
+    "electron-dev-mac": "ELECTRON_IS_DEV=true electron .",
     "electron-only": "npm run build && electron .",
     "electron-test": "set ELECTRON_IS_DEV=false && npm run build && electron .",
+    "electron-mac": "ELECTRON_IS_DEV=false npm run build && electron .",
     "start": "react-scripts start",
     "build": "react-scripts build",
     "test": "react-scripts test",
@@ -18,6 +20,7 @@
     "electron-pack": "electron-builder",
     "preelectron-pack": "npm run build",
     "dev": "concurrently \"npm start\" \"wait-on http://localhost:3000 && npm run electron-dev\"",
+    "dev-mac": "concurrently \"npm start\" \"wait-on http://localhost:3000 && npm run electron-dev-mac\"",
     "dev-web": "npm start",
     "dist": "npm run build && electron-builder --publish=never",
     "build-win": "npm run build && electron-builder --win",
