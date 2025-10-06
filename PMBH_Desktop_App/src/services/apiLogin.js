@@ -6,7 +6,7 @@ const urlLoginApi = url_login_api;
 const urlLogoutApi = url_api_logout;
 
 // GMAC login endpoint
-const GMAC_LOGIN_URL = 'http://192.168.1.92/gmac/login.sof.vn/index.php';
+const GMAC_LOGIN_URL = 'http://192.168.1.19/gmac/login.sof.vn/index.php';
 
 // Debug environment
 

@@ -25,10 +25,10 @@ let chartUrl;
 
 if (isElectronEnv) {
   // Direct URLs for Electron (no CORS issues)
-  baseUrl = "http://192.168.1.92/gmac";
-  loginUrl = "http://192.168.1.92/gmac/login.sof.vn/index.php";
-  logoutUrl = "http://192.168.1.92/gmac/signout.sof.vn/index.php";
-  servicesUrl = "http://192.168.1.92/gmac/services.sof.vn/index.php";
+  baseUrl = "http://192.168.1.19/gmac";
+  loginUrl = "http://192.168.1.19/gmac/login.sof.vn/index.php";
+  logoutUrl = "http://192.168.1.19/gmac/signout.sof.vn/index.php";
+  servicesUrl = "http://192.168.1.19/gmac/services.sof.vn/index.php";
   chartUrl = "http://192.168.1.91:5000/areaCharts";
 } else {
   // For development in browser, use proxy URLs
