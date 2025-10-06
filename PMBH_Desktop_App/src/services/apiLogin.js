@@ -38,7 +38,6 @@ async function getAuthToken(forceRefresh = false) {
 
     const result = res.data;
 
-    // Kiểm tra response từ GMAC - format: {"code":"admin","token":"29oJ8XO88yDm08kd","role":null,"chiNhanh":""}
     if (result && result.token && result.code) {
       authCache = {
         token: result.token,
