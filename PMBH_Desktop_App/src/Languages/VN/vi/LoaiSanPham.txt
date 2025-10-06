@@ -16,12 +16,12 @@ Tên loại sản phẩm
 Sửa loại sản phẩm
 Thêm loại sản phẩm
 Điều khiển sản phẩm
-Vui lòng nhập mã loại
 Quản lý loại sản phẩm
+Vui lòng nhập mã loại
 Nhập tên loại sản phẩm
 Không thể xóa loại sản phẩm
-Không thể thêm loại sản phẩm
 Xóa loại sản phẩm thành công
+Không thể thêm loại sản phẩm
 Thêm loại sản phẩm thành công
 Vui lòng nhập tên loại sản phẩm
 Không thể cập nhật loại sản phẩm

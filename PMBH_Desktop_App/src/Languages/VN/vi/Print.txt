@@ -1,18 +1,18 @@
 Đóng
 Tỷ giá:
-Hóa đơn:
-Tạm tính
-Giảm giá
-Tiền mặt
 SL x Giá
-Tổng cộng
+Hóa đơn:
+Giảm giá
+Tạm tính
+Tiền mặt
 Tiền thừa
+Tổng cộng
+Ví điện tử
 Thành tiền
 In hóa đơn
-Ví điện tử
-Phương thức:
-Hẹn gặp lại!
 Chuyển khoản
+Hẹn gặp lại!
+Phương thức:
 Tiền khách đưa
 Thuế VAT (10%)
 Địa chỉ cửa hàng

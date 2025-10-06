@@ -1,74 +1,57 @@
+Sửa
 Xóa
 XÓA
 Tiền
 Đóng
 Tỷ giá:
-Số tiền
-Đã hiểu
-Hóa đơn:
-Còn lại:
-Tạm tính
-Giảm giá
-Tiền mặt
 SL x Giá
+Còn lại:
 HOÀN TẤT
-Tổng cộng
+Hóa đơn:
+Giảm giá
+Tạm tính
 Giảm giá:
-Chiết khấu
-Thành tiền
-In hóa đơn
+Tổng cộng
 THANH TOÁN
+Thành tiền
 Còn thiếu:
-Phương thức
-Mã hóa đơn:
-Phương thức:
+In hóa đơn
+Chiết khấu
+Chưa đủ tiền
+Số tiền trả:
 Lưu và thoát
 Hẹn gặp lại!
-Chuyển khoản
-Số tiền trả:
-Chưa đủ tiền
+Phương thức:
 Tổng hóa đơn:
-Đã thanh toán:
 Đơn vị tiền tệ
-Tiền khách đưa:
+Đã thanh toán:
 Cần thanh toán:
-Tỷ giá quy đổi:
-Điền số còn lại
+Thêm thanh toán
 Lỗi thanh toán:
 Số phương thức:
-Thêm thanh toán
-Thêm phương thức
-Hủy hết và thoát
+Tiền khách đưa:
 Địa chỉ cửa hàng
+Hủy hết và thoát
 Cảm ơn quý khách!
-Thông tin hóa đơn
-Lỗi không xác định
-Thanh toán hỗn hợp
-Bạn đã thanh toán:
 Hóa đơn thanh toán
-HOÀN TẤT THANH TOÁN
+Thanh toán hỗn hợp
 Thanh toán thất bại:
 Tổng cần thanh toán:
-Đủ số tiền thanh toán
+Phương thức thanh toán
 Đã thanh toán đủ! Nhấn
 Không có hóa đơn để in
-Phương thức thanh toán
 Thanh toán thành công!
 Thanh toán chưa hoàn tất
 Đã gửi hóa đơn đến máy in
-Thêm phương thức thanh toán
+Đã tải dữ liệu để chỉnh sửa
 Đã lưu tiến trình thanh toán
 Đã xóa phương thức thanh toán
-Đã thêm phương thức thanh toán
 Thanh toán hỗn hợp thành công!
-Chế độ thanh toán thường đã bật
 Đã hủy thanh toán chưa hoàn tất
-Vui lòng nhập số tiền thanh toán
+Chế độ thanh toán thường đã bật
 Chế độ thanh toán hỗn hợp đã bật
+Vui lòng nhập số tiền thanh toán
 Không có mã hóa đơn để thanh toán
-Chưa có phương thức thanh toán nào
-Cần ít nhất 2 phương thức thanh toán
 Số tiền vượt quá số còn lại phải thanh toán
 Bạn có muốn lưu tiến trình để thanh toán tiếp sau?
 Thanh toán hỗn hợp cần ít nhất 2 phương thức thanh toán
-Vui lòng hoàn thành thanh toán hoặc hủy các giao dịch đã thêm.

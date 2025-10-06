@@ -3,31 +3,31 @@ Sửa
 Xóa
 Giá
 Mô tả
-Tên món
 Làm mới
 Sửa món
-Cập nhật
+Tên món
 Sản phẩm
-Thao tác
-Hình ảnh
-Đang bán
-Danh mục
-Thêm mới
 thuc-don
+Danh mục
+Hình ảnh
+Thêm mới
+Cập nhật
+Đang bán
+Thao tác
 Ngừng bán
 Trạng thái
 Thêm món mới
 Xác nhận xóa
 Chọn danh mục
 Quản lý thực đơn
-Mô tả về món ăn...
 Vui lòng nhập giá!
+Mô tả về món ăn...
 Đã xóa món thành công
 Vui lòng nhập tên món!
 Vui lòng chọn danh mục!
-Có lỗi xảy ra khi xóa món
 Có lỗi xảy ra khi lưu món
-Đã cập nhật món thành công
+Có lỗi xảy ra khi xóa món
 Đã thêm món mới thành công
+Đã cập nhật món thành công
 Không thể tải dữ liệu thực đơn
 Bạn có chắc chắn muốn xóa món này?

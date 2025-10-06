@@ -1,80 +1,80 @@
 Hủy
 Đặt lại
-Quay lại
-Mật khẩu
 Xác thực
+Mật khẩu
+Quay lại
 Đăng nhập
 Đăng xuất
 Tài khoản:
 Nhập Email
 Hoàn thành
 Mã xác thực
-Đổi mật khẩu
 Mật khẩu mới
-Nhập mật khẩu
-Quên mật khẩu
+Đổi mật khẩu
 Tên đăng nhập
+Nhập mật khẩu
 Email đăng ký
-Thoát ứng dụng
-Đăng nhập ngay
+Quên mật khẩu
 Lỗi đăng nhập:
-Phiên bản 1.0.0
-Café Management
+Đăng nhập ngay
+Thoát ứng dụng
 Gửi mã xác thực
 Ít nhất 6 ký tự
+Phiên bản 1.0.0
+Café Management
 Nhập mã xác thực
 Đặt lại mật khẩu
 Báo cáo chi tiết
 Đặt mật khẩu mới
-Ghi nhớ đăng nhập
 Yêu cầu mật khẩu:
-Mật khẩu hiện tại
 Nhập mật khẩu mới
-Nhập email đăng ký
-Đặt lại thành công
+Ghi nhớ đăng nhập
+Mật khẩu hiện tại
 Đăng nhập thất bại
-Xác nhận đăng xuất
 Nhập tên đăng nhập
-Gửi lại mã xác thực
-Bán hàng thông minh
+Nhập email đăng ký
+Xác nhận đăng xuất
+Đặt lại thành công
 Mã xác thực hợp lệ!
 Email không hợp lệ!
+Gửi lại mã xác thực
+Bán hàng thông minh
 Đổi mật khẩu lần nữa
 Vui lòng nhập email!
-Nhập mã xác thực 6 số
 Nhập lại mật khẩu mới
 Đăng xuất thành công!
+Nhập mã xác thực 6 số
 Xác nhận mật khẩu mới
-Nhập mật khẩu hiện tại
 Ít nhất 1 chữ số (0-9)
-Theo dõi thời gian thực
-Ít nhất 1 chữ hoa (A-Z)
-Đổi mật khẩu thành công
+Nhập mật khẩu hiện tại
 Vui lòng nhập mật khẩu!
+Theo dõi thời gian thực
+Đổi mật khẩu thành công
+Ít nhất 1 chữ hoa (A-Z)
 Đổi mật khẩu thành công!
-Vui lòng nhập mã xác thực!
 Ít nhất 1 chữ thường (a-z)
-Vui lòng nhập mật khẩu mới!
+Vui lòng nhập mã xác thực!
 Có lỗi xảy ra khi đăng nhập
-Đặt lại mật khẩu thành công!
+Vui lòng nhập mật khẩu mới!
 Có lỗi xảy ra khi đăng xuất!
-Nhập email đăng ký tài khoản
+Đặt lại mật khẩu thành công!
 Vui lòng nhập tên đăng nhập!
 Mã xác thực phải có 6 ký tự!
-© 2024 Café Management System
+Nhập email đăng ký tài khoản
 Mật khẩu xác nhận không khớp!
+© 2024 Café Management System
 Vui lòng xác nhận mật khẩu mới!
 Vui lòng nhập mật khẩu hiện tại!
 Mật khẩu phải có ít nhất 6 ký tự!
 Đăng nhập thành công! Chào mừng bạn!
-Đặt lại mật khẩu cho tài khoản của bạn
 Tên đăng nhập hoặc mật khẩu không đúng
 Quản lý đơn hàng và thanh toán dễ dàng
+Đặt lại mật khẩu cho tài khoản của bạn
 Chúng tôi đã gửi mã xác thực đến email:
 Cập nhật trạng thái đơn hàng ngay lập tức
-Hệ thống quản lý quán cà phê chuyên nghiệp
-Thống kê doanh thu và hiệu suất kinh doanh
 Mã xác thực đã được gửi đến email của bạn!
+Thống kê doanh thu và hiệu suất kinh doanh
+Hệ thống quản lý quán cà phê chuyên nghiệp
 Không thể gửi mã xác thực! Vui lòng thử lại.
 Không thể đặt lại mật khẩu! Vui lòng thử lại.
 Vui lòng đăng nhập để tiếp tục sử dụng hệ thống

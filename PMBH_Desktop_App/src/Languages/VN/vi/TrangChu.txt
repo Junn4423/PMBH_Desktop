@@ -1,10 +1,10 @@
-bao-cao
-nhan-su
 Báo cáo
+bao-cao
 Nhân sự
+nhan-su
+Bán hàng
 chi-khac
 Chi khác
-Bán hàng
 Quản trị
 trang-chu-title
 trang-chu-header
@@ -12,8 +12,8 @@ trang-chu-container
 Chọn khu vực làm việc
 Xem báo cáo và thống kê
 Quản lý các chi phí khác
-Quản lý bếp và khu vực bar
 Quản lý nhân viên và lương
+Quản lý bếp và khu vực bar
 Quản lý kho hàng và tồn kho
 Cài đặt và quản trị hệ thống
 Quản lý bán hàng và thanh toán

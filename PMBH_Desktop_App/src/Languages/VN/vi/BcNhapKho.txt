@@ -1,7 +1,6 @@
-Trang chủ
 Mục chung
+Trang chủ
 BC nhập kho
 Giao diện MB
-bc-nhap-kho-container
 Chức năng này sẽ sớm được hoàn thiện.
 Màn hình BC nhập kho cần gói premium để sử dụng

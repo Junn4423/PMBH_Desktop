@@ -1,4 +1,3 @@
-Kinh doanh
 Cho người quản lý
 Quản lý bán nhà hàng
 Màn hình Cho người quản lý cần gói premium để sử dụng

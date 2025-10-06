@@ -1,33 +1,33 @@
-4 ghế
-Trống
 8 ghế
 2 ghế
+Trống
+4 ghế
 6 ghế
 Tầng 1
-Đã hủy
-Đã đặt
 Cà phê
 Tầng 2
-Phục vụ
-Quản lý
+Đã đặt
+Đã hủy
 Bảo trì
+Phục vụ
 Nước ép
+Quản lý
 Sẵn sàng
+Thu ngân
 Có khách
 Tiền mặt
-Thu ngân
 Sân vườn
-Bánh ngọt
 Đồ ăn nhẹ
+Bánh ngọt
 Phòng VIP
 Ngoài trời
-Hoàn thành
 Ví điện tử
+Hoàn thành
 Đã xác nhận
 Chuyển khoản
 Chờ xác nhận
-Đang chuẩn bị
 Quản trị viên
+Đang chuẩn bị
 Lưu thành công!
 Xóa thành công!
 Lỗi kết nối mạng!
@@ -38,6 +38,6 @@ Dữ liệu không hợp lệ!
 Không tìm thấy dữ liệu!
 Bạn có chắc chắn muốn xóa?
 Bạn không có quyền truy cập!
-Bạn có chắc chắn muốn đăng xuất?
 Đã xảy ra lỗi, vui lòng thử lại!
+Bạn có chắc chắn muốn đăng xuất?
 Bạn có chắc chắn muốn hủy đơn hàng?

@@ -1,9 +1,9 @@
 Hủy
 Xóa
-Xác nhận xóa
-Xem hình ảnh
-Xóa hình ảnh
 Không có tên
+Xóa hình ảnh
+Xem hình ảnh
+Xác nhận xóa
 Chọn ngôn ngữ
 Đã xóa hình ảnh
 Upload hình ảnh

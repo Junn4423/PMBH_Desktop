@@ -1,45 +1,43 @@
 đến
 Ngày
 Mã SP
-Số ngày
-1 tháng
-Từ ngày
-3 tháng
-Đơn giá
-Hôm nay
-Báo cáo
-6 tháng
 Năm nay
-Tuần này
-Số lượng
+6 tháng
+Báo cáo
+1 tháng
+Hôm nay
+Đơn giá
+Từ ngày
+Số ngày
+3 tháng
 Đến ngày
 Tìm kiếm
-Trang chủ
+Số lượng
+Tuần này
 Dạng bảng
-Thành tiền
+Trang chủ
 Tổng cộng:
+Thành tiền
 Kỳ báo cáo:
+Dạng biểu đồ
 Tên sản phẩm
 Xuất báo cáo
-Dạng biểu đồ
 Tổng sản phẩm
 Tổng doanh thu
 Báo cáo bán hàng
-thanh-tien-column
 Chọn dạng báo cáo
 Đang tạo biểu đồ...
-Không thể tạo biểu đồ
 Không thể tải báo cáo
-Không thể xuất báo cáo
+Không thể tạo biểu đồ
 Tạo biểu đồ thành công
+Không thể xuất báo cáo
 Tải báo cáo thành công
 Xuất báo cáo thành công
-Có lỗi xảy ra khi tạo biểu đồ
 Có lỗi xảy ra khi tải báo cáo
+Có lỗi xảy ra khi tạo biểu đồ
 Có lỗi xảy ra khi xuất báo cáo
 Vui lòng chọn khoảng thời gian
 Không có dữ liệu để tạo biểu đồ
 Chọn khoảng thời gian để xem biểu đồ
-bao-cao-doanh-thu-khach-hang-container
 Vui lòng chọn khoảng thời gian để xuất báo cáo
 Vui lòng chọn bộ lọc hoặc khoảng thời gian tùy chỉnh

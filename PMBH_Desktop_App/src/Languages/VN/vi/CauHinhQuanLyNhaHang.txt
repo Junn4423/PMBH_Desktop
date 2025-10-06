@@ -1,7 +1,5 @@
 Trang chủ
-Kinh doanh
 Quản lý bán nhà hàng
 Cấu hình quản lý nhà hàng
-cau-hinh-quan-ly-nha-hang-container
 Chức năng này sẽ sớm được hoàn thiện.
 Màn hình Cấu hình quản lý nhà hàng cần gói premium để sử dụng

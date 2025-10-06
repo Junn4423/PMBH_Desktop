@@ -1,0 +1,57 @@
+================================================================================
+TEXT MERGE SUMMARY v1.1.0
+================================================================================
+Generated: 2025-10-06 09:52:02
+================================================================================
+
+STATISTICS
+--------------------------------------------------------------------------------
+Original texts:      1286
+After merge:         961
+Duplicates removed:  325
+Reduction rate:      25.3%
+
+BY LANGUAGE
+--------------------------------------------------------------------------------
+vi            961 texts
+
+BY CATEGORY
+--------------------------------------------------------------------------------
+
+VI:
+  auth                     60 texts
+    └─ general             60 texts
+  business                 54 texts
+    └─ general             54 texts
+  common                  124 texts
+    └─ action              15 texts
+    └─ button             101 texts
+    └─ navigation           8 texts
+  crud                     77 texts
+    └─ create              18 texts
+    └─ delete              23 texts
+    └─ read                16 texts
+    └─ update              20 texts
+  form                    119 texts
+    └─ label               74 texts
+    └─ placeholder         44 texts
+    └─ validation           1 texts
+  list                     72 texts
+    └─ filter               5 texts
+    └─ header              46 texts
+    └─ pagination          21 texts
+  menu                      7 texts
+    └─ general              7 texts
+  message                  52 texts
+    └─ error               21 texts
+    └─ info                 2 texts
+    └─ success             28 texts
+    └─ warning              1 texts
+  other                   339 texts
+    └─ general            339 texts
+  report                   33 texts
+    └─ general             33 texts
+  status                   17 texts
+    └─ general             17 texts
+  time                      7 texts
+    └─ general              7 texts

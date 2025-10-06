@@ -1,4 +1,3 @@
-Kinh doanh
 Quản lý bán nhà hàng
 Chương trình kinh doanh
 Tính năng này sẽ sớm có mặt trong phiên bản tiếp theo...

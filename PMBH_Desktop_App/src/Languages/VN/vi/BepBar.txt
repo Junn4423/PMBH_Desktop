@@ -1,18 +1,18 @@
 Làm mới
 Hoàn lại
-Bếp & Bar
 Số lượng:
+Bếp & Bar
 Hoàn thành
-Món đã xong
-Tắt tự động
-Bật tự động
 Thành tiền:
 Món chờ làm
+Tắt tự động
+Bật tự động
+Món đã xong
 Xác nhận hoàn lại món
 Không thể hoàn lại món
-Không có món nào cần làm
-Không thể hoàn thành món
 Quản lý đơn hàng nhà bếp
+Không thể hoàn thành món
+Không có món nào cần làm
 Chưa có món nào hoàn thành
 Tất cả món đã được hoàn thành
 Đang tải danh sách món đã xong...

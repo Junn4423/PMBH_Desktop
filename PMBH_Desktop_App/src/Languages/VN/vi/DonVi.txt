@@ -3,24 +3,24 @@ Sửa
 Xóa
 Thêm
 Đơn vị
+Thêm mới
 Cập nhật
 Thao tác
-Thêm mới
-Mục chung
 Mã đơn vị
+Mục chung
 Tên đơn vị
 Sửa đơn vị
 Tên rút gọn
 Xác nhận xóa
-Quản lý Đơn vị
 Xóa thành công
-Thêm đơn vị mới
+Quản lý Đơn vị
 Thêm thành công
+Thêm đơn vị mới
 Vui lòng nhập mã!
-Không thể cập nhật
 Vui lòng nhập tên!
-Cập nhật thành công
+Không thể cập nhật
 Điều khiển sản phẩm
+Cập nhật thành công
 Không thể xóa đơn vị
 Không thể thêm đơn vị
 Bạn có chắc chắn muốn xóa?

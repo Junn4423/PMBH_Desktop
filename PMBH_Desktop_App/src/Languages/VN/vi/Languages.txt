@@ -1,212 +1,196 @@
-của
-tải
-giá
-chủ
-xóa
-cáo
-lại
-tại
-nên
-đầy
-giờ
 gửi
-này
+chủ
 mới
+tên
+các
+giờ
+của
+giá
 đến
+ảnh
+một
+bảo
+bật
+đầy
+mật
+với
+tài
+báo
+lại
+thì
+tải
+tắt
+nên
+năm
+vào
+cáo
+lỗi
+bán
+rất
+sửa
+tối
+đêm
+nếu
+tại
+hủy
+này
 cảm
 tìm
-tối
-báo
-ảnh
-với
-rất
-bán
-lỗi
+xóa
 tệp
-hủy
-khi
-mật
-cao
-sửa
-vào
-nếu
-đêm
-tên
-chi
-bật
-các
-tài
-bảo
-năm
-cho
-tắt
-thì
-một
 lưu
-tổng
-ngày
-canh
-nhan
-phải
-nhập
-hiện
-bằng
-phút
-đang
-đăng
-hoặc
+quận
 kiếm
-chon
-khẩu
 lòng
 chào
-công
-xuất
-khau
-nhận
-trua
-nhap
-quận
-tiết
-trưa
 đóng
-giây
-sách
-thêm
-sáng
-được
-cảnh
+bằng
 giữa
+được
+tổng
+phải
+nhập
+cảnh
+thêm
+hoặc
+nhận
+khẩu
+tiết
+sách
+đang
 tiền
+đăng
+phút
+hiện
+xuất
+trưa
 chọn
-khoản
-thông
+sáng
+giây
+công
+ngày
 tháng
-chiều
 nhiều
-khong
+chiều
 trống
-không
-thang
-chu y
-phone
-trang
-thanh
-huyện
-huyen
 trước
-khoan
-thành
-thong
-nhưng
-trong
 người
-photo
+thông
 chú ý
-đã xóa
-tất cả
-đơn vị
-một số
-làm ơn
+nhưng
+khoản
+huyện
+thành
+không
 hủy bỏ
+đã lưu
+phường
+đã xóa
+đồng ý
+tất cả
 cảm ơn
 họ tên
-phường
-đã lưu
-huy bo
-báo cáo
-dịch vụ
-hóa đơn
+làm ơn
+đơn vị
+một số
 năm này
-đối tác
-hôm qua
-bắt đầu
-tải lên
-xin lỗi
-cong ty
-hôm nay
-xin chờ
-đăng ký
-địa chỉ
-dữ liệu
-văn bản
-xin cho
-công ty
 thư mục
-hình ảnh
-đơn hàng
-chi tiết
-quốc gia
-khẩn cấp
-không có
-tiếp tục
-quoc gia
-cảnh báo
-xác nhận
+văn bản
+dịch vụ
+xin lỗi
+hóa đơn
+hôm qua
+báo cáo
+hôm nay
+đối tác
+xin chờ
+bây giờ
+công ty
+đăng ký
+cài đặt
+địa chỉ
+liên hệ
+tải lên
+dữ liệu
+bắt đầu
+sắp xếp
 tuần này
-xin chào
-kết thúc
-số lượng
-mật khẩu
-hoàn tất
-tài liệu
-chọn lựa
-bán hàng
-tạm biệt
-mua hàng
 vui lòng
-sản phẩm
-khan cap
-riêng tư
-cap nhat
-âm thanh
-tìm kiếm
-thay đổi
-ngày mai
-chưa lưu
+mua hàng
+đơn hàng
+tiếp tục
 cập nhật
 quay lại
-trang chủ
-giới tính
-phần trăm
-thông tin
-đường dẫn
-thanh pho
-thong tin
-đăng nhập
-ngày sinh
-thông báo
-đăng xuất
-gioi tinh
-công khai
-tài khoản
+xác nhận
+thay đổi
+số lượng
+tìm kiếm
+bán hàng
+mật khẩu
+thất bại
+quốc gia
+cảnh báo
+chọn lựa
+bắt buộc
+khẩn cấp
+ngày mai
+chưa lưu
+trợ giúp
+riêng tư
+hình ảnh
+thống kê
+hoàn tất
+tạm biệt
+xin chào
+chi tiết
+không có
+sản phẩm
+âm thanh
+kết thúc
+tài liệu
 tổng cộng
-thành phố
-danh sách
+trang chủ
+công khai
+ngày sinh
 tải xuống
+thông báo
+tài khoản
 tháng này
-điện thoại
-kinh doanh
+thông tin
+giới tính
+đăng nhập
+đăng xuất
+danh sách
+thành phố
+đường dẫn
+phần trăm
 thanh toán
-quan trong
-đang xử lý
-thành công
-cảm ơn bạn
-khach hang
-hoàn thành
-khách hàng
-hoan thanh
-thanh toan
+điện thoại
 quan trọng
+cảm ơn bạn
+thành công
 thương mại
+đang xử lý
 người dùng
+hoàn thành
 Tiếng Việt
+khách hàng
 hẹn gặp lại
+bàn nhà hàng
+không hợp lệ
 nhà cung cấp
-nha cung cap
 vui lòng đợi
+Bàn nhà hàng
 số điện thoại
+123 Đường ABC
 đang hoạt động
+bảng điều khiển
 ngừng hoạt động
-SUMMARY BY LANGUAGE\n
+Helper để xử lý tiếng Việt
+Phát hiện subcategory chi tiết hơn
+Merge text trùng lặp và tạo key mapping
+Phân loại text thành các category hợp lý
+Bỏ dấu tiếng Việt 'bàn nhà hàng' -> 'ban nha hang' 'café' -> 'cafe'
+All keys are without diacritics. Example: "bàn nhà hàng" -> "ban_nha_hang"
+Chuyển text thành snake_case không dấu 'Bàn nhà hàng' -> 'ban_nha_hang' '123 Đường ABC' -> '123_duong_abc'
 \b(và|của|có|được|không|cho|từ|này|đã|với|là|trong|một|các|người|để|thì|sẽ|đến|khi|hoặc|nhưng|vì|nếu|đang|vào|theo|sau|trước|giữa|bằng|về|tại|nên|phải|rất|lại|thêm|xin|vui lòng|cảm ơn|thông báo|lỗi|thành công|cảnh báo)\b

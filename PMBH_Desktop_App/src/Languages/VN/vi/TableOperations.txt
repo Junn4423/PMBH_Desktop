@@ -3,13 +3,13 @@ Trống
 Đã đặt
 Gộp bàn
 Tách bàn
-Quay lại
 Có khách
+Quay lại
 Bàn trống
 Chuyển bàn
 Chọn bàn đích
-Không xác định
 Không thể tách
+Không xác định
 Chọn món để tách
 Không có bàn trống
 Chọn bàn đích để gộp bàn

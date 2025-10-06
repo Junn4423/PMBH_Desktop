@@ -1,6 +1,4 @@
 Trang chủ
-Kinh doanh
 Danh mục khách hàng
-danh-muc-khach-hang-container
 Chức năng này sẽ sớm được hoàn thiện.
 Màn hình Danh mục khách hàng cần gói premium để sử dụng

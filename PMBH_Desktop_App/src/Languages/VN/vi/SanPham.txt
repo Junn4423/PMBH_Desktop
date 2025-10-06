@@ -4,37 +4,37 @@ Xóa
 Mô tả
 Tất cả
 Đơn vị
-Giá bán
 URL ảnh
+Giá bán
 Sản phẩm
 Chọn ảnh
+Sản phẩm:
 Trang chủ
 Mục chung
-Sản phẩm:
 Chưa có ảnh
+Mã sản phẩm
 Chọn đơn vị
 Tải ảnh lên
-Mã sản phẩm
-Nhập URL ảnh
+URL hình ảnh
 Tên sản phẩm
 Xác nhận xóa
-URL hình ảnh
-Thêm sản phẩm
+Nhập URL ảnh
 Loại sản phẩm
+Thêm sản phẩm
 Ảnh hiện tại:
-Tất cả sản phẩm
 Nhập URL ảnh...
+Tất cả sản phẩm
 Nhập mã sản phẩm
-Danh mục sản phẩm
 Nhập tên sản phẩm
 Nhập URL hình ảnh
+Danh mục sản phẩm
 Chọn loại sản phẩm
 Danh sách sản phẩm
 Nhập mô tả sản phẩm
 Điều khiển sản phẩm
 Đang tải sản phẩm...
-Tìm kiếm sản phẩm...
 Phương thức cập nhật
+Tìm kiếm sản phẩm...
 Vui lòng nhập giá bán
 Lỗi khi cập nhật ảnh:
 Chỉnh sửa ảnh sản phẩm
@@ -47,8 +47,8 @@ Vui lòng nhập tên sản phẩm
 Vui lòng chọn loại sản phẩm
 Không tìm thấy sản phẩm nào
 Cập nhật sản phẩm thành công
-Không thể cập nhật ảnh sản phẩm
 Không thể tải danh mục sản phẩm
+Không thể cập nhật ảnh sản phẩm
 Không thể tải danh sách sản phẩm
 Cập nhật ảnh sản phẩm thành công
 Giá bán phải lớn hơn hoặc bằng 0

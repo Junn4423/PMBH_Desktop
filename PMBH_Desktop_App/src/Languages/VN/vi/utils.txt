@@ -2,8 +2,8 @@ chi
 nhap
 thuong
 Tên cửa hàng
-Quản trị viên
 Chào buổi tối
+Quản trị viên
 Lỗi khi copy:
 Chào buổi sáng
 Chào buổi chiều

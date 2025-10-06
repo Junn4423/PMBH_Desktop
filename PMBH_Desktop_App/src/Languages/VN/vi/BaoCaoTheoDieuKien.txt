@@ -1,6 +1,5 @@
 Trang chủ
 Quản lí kho
 Báo cáo theo điều kiện
-bao-cao-theo-dieu-kien-container
 Chức năng này sẽ sớm được hoàn thiện.
 Màn hình Báo cáo theo điều kiện cần gói premium để sử dụng
