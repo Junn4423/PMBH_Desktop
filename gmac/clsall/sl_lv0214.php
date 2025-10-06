@@ -509,6 +509,10 @@ function PrintInOutPutInStockDetail($plang, $vArrLang, $vDateStart, $vDateEnd, $
 }
 
 
+
+
+
+	
 	// {
 	// $vHeaderReportInventory="
 	// 	<table width=\"100%\" align=\"center\" cellpadding=\"0\" cellspacing=\"0\" border=\"1\" class=\"tblprint\">

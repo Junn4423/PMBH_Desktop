@@ -1060,4 +1060,234 @@ $vReturn = "";
 	}
 	return $vReturn;
 }
+///bua chu
+if (!function_exists('dd')) {
+    /**
+     * Dump the passed variables and end the script.
+     *
+     * @param  mixed  ...$vars
+     * @return void
+     */
+    function dd(...$vars)
+    {
+        // Set content type to HTML for better formatting
+        if (!headers_sent()) {
+            header('Content-Type: text/html; charset=UTF-8');
+        }
+        
+        echo '<style>
+            .dd-container {
+                background: #1e1e1e;
+                color: #f8f8f2;
+                font-family: "Fira Code", "Monaco", "Consolas", monospace;
+                padding: 20px;
+                margin: 10px;
+                border-radius: 8px;
+                box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+                white-space: pre-wrap;
+                word-wrap: break-word;
+                line-height: 1.5;
+            }
+            .dd-header {
+                color: #ff6b6b;
+                font-weight: bold;
+                border-bottom: 2px solid #ff6b6b;
+                padding-bottom: 10px;
+                margin-bottom: 15px;
+            }
+            .dd-type {
+                color: #4ecdc4;
+                font-weight: bold;
+            }
+            .dd-string {
+                color: #95e454;
+            }
+            .dd-number {
+                color: #ffa726;
+            }
+            .dd-boolean {
+                color: #ab47bc;
+            }
+            .dd-null {
+                color: #ef5350;
+            }
+            .dd-array-key {
+                color: #42a5f5;
+            }
+            .dd-object-property {
+                color: #66bb6a;
+            }
+        </style>';
+        
+        $trace = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 1);
+        $file = isset($trace[0]['file']) ? $trace[0]['file'] : 'unknown';
+        $line = isset($trace[0]['line']) ? $trace[0]['line'] : 'unknown';
+        
+        echo '<div class="dd-container">';
+        echo '<div class="dd-header">Debug Output - ' . basename($file) . ', line:' . $line . '</div>';
+        
+        foreach ($vars as $index => $var) {
+            if (count($vars) > 1) {
+                echo '<strong>Variable ' . ($index + 1) . ':</strong><br>';
+            }
+            echo formatVariable($var);
+            if ($index < count($vars) - 1) {
+                echo '<br><hr style="border-color: #444;"><br>';
+            }
+        }
+        
+        echo '</div>';
+        
+        die(1);
+    }
+}
+
+if (!function_exists('dump')) {
+    /**
+     * Dump the passed variables without ending the script.
+     *
+     * @param  mixed  ...$vars
+     * @return void
+     */
+    function dump(...$vars)
+    {
+        // Set content type to HTML for better formatting
+        if (!headers_sent()) {
+            header('Content-Type: text/html; charset=UTF-8');
+        }
+        
+        $trace = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 1);
+        $file = isset($trace[0]['file']) ? $trace[0]['file'] : 'unknown';
+        $line = isset($trace[0]['line']) ? $trace[0]['line'] : 'unknown';
+        
+        echo '<div class="dd-container" style="color:red;">';
+        echo '<div class="dd-header">Dump Output - ' . basename($file) . ', line:' . $line . '</div>';
+        
+        foreach ($vars as $index => $var) {
+            if (count($vars) > 1) {
+                echo '<strong>Variable ' . ($index + 1) . ':</strong><br>';
+            }
+            echo formatVariable($var);
+            if ($index < count($vars) - 1) {
+                echo '<br><hr style="border-color: #444;"><br>';
+            }
+        }
+        
+        echo '</div>';
+    }
+}
+
+if (!function_exists('formatVariable')) {
+    /**
+     * Format a variable for display.
+     *
+     * @param  mixed  $var
+     * @param  int    $depth
+     * @param  int    $maxDepth
+     * @return string
+     */
+    function formatVariable($var, $depth = 0, $maxDepth = 10)
+    {
+        $indent = str_repeat('  ', $depth);
+        
+        if ($depth > $maxDepth) {
+            return '<span class="dd-type">[Maximum depth reached]</span>';
+        }
+        
+        if (is_null($var)) {
+            return '<span class="dd-null">NULL</span>';
+        }
+        
+        if (is_bool($var)) {
+            return '<span class="dd-boolean">' . ($var ? 'true' : 'false') . '</span>';
+        }
+        
+        if (is_string($var)) {
+            $length = strlen($var);
+            $escaped = htmlspecialchars($var, ENT_QUOTES, 'UTF-8');
+            return '<span class="dd-type">string</span>(' . $length . ') <span class="dd-string">"' . $escaped . '"</span>';
+        }
+        
+        if (is_numeric($var)) {
+            $type = is_int($var) ? 'int' : 'float';
+            return '<span class="dd-type">' . $type . '</span>(<span class="dd-number">' . $var . '</span>)';
+        }
+        
+        if (is_array($var)) {
+            $count = count($var);
+            $output = '<span class="dd-type">array</span>(' . $count . ') ';
+            
+            if ($count === 0) {
+                return $output . '[]';
+            }
+            
+            $output .= "[\n";
+            foreach ($var as $key => $value) {
+                $formattedKey = is_string($key) ? '"' . $key . '"' : $key;
+                $output .= $indent . '  <span class="dd-array-key">' . $formattedKey . '</span> => ';
+                $output .= formatVariable($value, $depth + 1, $maxDepth) . "\n";
+            }
+            $output .= $indent . ']';
+            
+            return $output;
+        }
+        
+        if (is_object($var)) {
+            $className = get_class($var);
+            $reflection = new ReflectionClass($var);
+            $properties = $reflection->getProperties();
+            
+            $output = '<span class="dd-type">object</span>(' . $className . ') ';
+            
+            if (empty($properties)) {
+                return $output . '{}';
+            }
+            
+            $output .= "{\n";
+            
+            foreach ($properties as $property) {
+                $property->setAccessible(true);
+                $name = $property->getName();
+                $value = $property->getValue($var);
+                $visibility = '';
+                
+                if ($property->isPrivate()) {
+                    $visibility = '-';
+                } elseif ($property->isProtected()) {
+                    $visibility = '#';
+                } else {
+                    $visibility = '+';
+                }
+                
+                $output .= $indent . '  <span class="dd-object-property">' . $visibility . $name . '</span>: ';
+                $output .= formatVariable($value, $depth + 1, $maxDepth) . "\n";
+            }
+            
+            $output .= $indent . '}';
+            
+            return $output;
+        }
+        
+        if (is_resource($var)) {
+            return '<span class="dd-type">resource</span>(' . get_resource_type($var) . ')';
+        }
+        
+        return '<span class="dd-type">' . gettype($var) . '</span>(' . var_export($var, true) . ')';
+    }
+}
+
+if (!function_exists('ddd')) {
+    /**
+     * Dump, die, and display the passed variables with extra formatting.
+     *
+     * @param  mixed  ...$vars
+     * @return void
+     */
+    function ddd(...$vars)
+    {
+        echo '<html><head><title>Debug Output</title></head><body style="margin:0;padding:20px;background:#f5f5f5;">';
+        dd(...$vars);
+    }
+}
+
 ?>

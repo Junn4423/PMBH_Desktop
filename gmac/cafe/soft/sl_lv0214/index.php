@@ -1,6 +1,7 @@
 <?php
 $vfunc=$_GET['childdetailfunc'];
 $vChildID=$_GET['ChildDetailID'];
+echo $vfunc;
 switch($vfunc)
 {
 	case 'add':
