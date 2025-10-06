@@ -5,9 +5,6 @@ const urlApi = url_api_services;
 const urlLoginApi = url_login_api;
 const urlLogoutApi = url_api_logout;
 
-// GMAC login endpoint
-const GMAC_LOGIN_URL = 'http://192.168.1.19/gmac/login.sof.vn/index.php';
-
 // Debug environment
 
 // -------------------- Authentication helpers --------------------
@@ -20,15 +17,9 @@ async function getAuthToken(forceRefresh = false) {
     return authCache;
   }
 
-
-  const payload = {
-    txtUserName: "admin",
-    txtPassword: "123456"
-  };
-
   try {
     // Try real GMAC server first
-    const res = await axios.post(GMAC_LOGIN_URL, payload, {
+    const res = await axios.post(urlLoginApi, payload, {
       headers: { 
         "Content-Type": "application/json",
         "Accept": "application/json"
@@ -106,7 +97,7 @@ export async function login(username, password) {
       txtPassword: password,
     };
 
-    const res = await axios.post(GMAC_LOGIN_URL, payload, {
+    const res = await axios.post(urlLoginApi, payload, {
       headers: { 
         "Content-Type": "application/json",
         "Accept": "application/json"

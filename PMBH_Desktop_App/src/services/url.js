@@ -22,6 +22,7 @@ const isDevelopment = process.env.NODE_ENV === 'development';
 let baseUrl, loginUrl, logoutUrl, servicesUrl;
 
 let chartUrl;
+let imageBaseUrl;
 
 if (isElectronEnv) {
   // Direct URLs for Electron (no CORS issues)
@@ -30,6 +31,7 @@ if (isElectronEnv) {
   logoutUrl = "http://192.168.1.19/gmac/signout.sof.vn/index.php";
   servicesUrl = "http://192.168.1.19/gmac/services.sof.vn/index.php";
   chartUrl = "http://192.168.1.91:5000/areaCharts";
+  imageBaseUrl = "http://192.168.1.19/gmac";
 } else {
   // For development in browser, use proxy URLs
   // The proxy in package.json will redirect these to http://localhost
@@ -38,6 +40,7 @@ if (isElectronEnv) {
   logoutUrl = "/gmac/signout.sof.vn/index.php";
   servicesUrl = "/gmac/services.sof.vn/index.php";
   chartUrl = "http://192.168.1.91:5000/areaCharts";
+  imageBaseUrl = "/gmac";
 }
 
 export const url_api_services = servicesUrl;
@@ -45,6 +48,7 @@ export const url_login_api = loginUrl;
 export const url_api_logout = logoutUrl;
 export const url_api = baseUrl;
 export const url_chart_api = chartUrl;
+export const url_image_base = imageBaseUrl;
 
 // Export environment info for debugging
 export const environment = {
@@ -54,5 +58,6 @@ export const environment = {
   loginUrl,
   logoutUrl,
   servicesUrl,
-  chartUrl
+  chartUrl,
+  imageBaseUrl
 };

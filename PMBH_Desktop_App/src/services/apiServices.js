@@ -1,5 +1,5 @@
 import axios from 'axios';
-import {url_api_services, url_chart_api} from "./url";
+import {url_api_services, url_chart_api, url_image_base} from "./url";
 import { getAuthHeaders } from './apiLogin';
 
 const urlApi = url_api_services;
@@ -94,7 +94,7 @@ export function getFullImageUrl(imagePath) {
   }
   
   // Nếu là đường dẫn tương đối, tạo URL đầy đủ
-  const baseUrl = "http://192.168.1.92/gmac";
+  const baseUrl = url_image_base;
   
   // Xử lý đường dẫn bắt đầu bằng /
   if (imagePath.startsWith('/')) {

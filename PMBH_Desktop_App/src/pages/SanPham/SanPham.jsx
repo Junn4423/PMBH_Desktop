@@ -195,10 +195,21 @@ const SanPham = () => {
           const productId = product.maSp || product.id || product.maSP || product.idSp;
           const categoryId = productsByCategory[productId] || null;
 
+          console.log(`Mapping product ${productId}:`, {
+            giaBan: product.giaBan,
+            gia: product.gia,
+            donGia: product.donGia,
+            dvt: product.dvt,
+            dvtGia: product.dvtGia,
+            hinhAnh: product.hinhAnh,
+            lv007: product.lv007,
+            allKeys: Object.keys(product)
+          });
+
           return {
             id: productId,
             ten: product.tenSp || product.ten || product.tenSP,
-            gia: product.giaBan || product.gia || product.donGia || 0,
+            gia: product.giaBan || parseInt(product.dvt) || product.gia || product.donGia || 0,
             danhMuc: categoryId, // Use mapped category from getSanPhamTheoIdLoai
             moTa: product.moTa || product.ghiChu || '',
             hinhAnh: imageUrl, // Will be null if no valid image found, ProductCard will use placeholder
@@ -346,6 +357,10 @@ const SanPham = () => {
       console.log('Form values submitted:', values);
       console.log('Editing product:', editingProduct);
       
+      // Get original data
+      const originalData = editingProduct?.originalProduct || editingProduct || {};
+      console.log('Original data:', originalData);
+      
       // Parse giá bán to ensure it's a number - FIX: Better validation
       let giaBan = values.lv004;
       
@@ -364,11 +379,13 @@ const SanPham = () => {
       console.log('Parsed giaBan:', giaBan);
       
       // When editing, get original product data to preserve fields
-      let originalData = {};
-      if (editingProduct && editingProduct.originalProduct) {
-        originalData = editingProduct.originalProduct;
-      }
       
+      const originalImageValue = (originalData.lv007 || originalData.hinhAnh || '').toString().trim();
+      const originalImageFull = originalImageValue ? getFullImageUrl(originalImageValue) : '';
+      const submittedImageUrl = typeof values.lv007 === 'string' ? values.lv007.trim() : '';
+      const finalImageValue = submittedImageUrl || originalImageValue;
+      const imageUrlChanged = !!submittedImageUrl && submittedImageUrl !== originalImageValue && submittedImageUrl !== originalImageFull;
+
       // Đảm bảo có đầy đủ 10 field bắt buộc, giữ nguyên giá trị cũ nếu không có giá trị mới
       const payload = {
         lv001: (values.lv001 || '').toString().trim(),
@@ -377,7 +394,7 @@ const SanPham = () => {
         lv004: giaBan, // Must be a valid number
         lv005: (values.lv005 || originalData.donVi || originalData.lv005 || '').toString().trim(),
         lv006: (values.lv006 || originalData.moTa || originalData.ghiChu || originalData.lv006 || '').toString().trim(),
-        lv007: (values.lv007 || originalData.hinhAnh || originalData.lv007 || '').toString().trim(),
+        lv007: finalImageValue,
         lv008: typeof values.lv008 === 'number' ? values.lv008 : (
           typeof originalData.lv008 === 'number' ? originalData.lv008 : (parseInt(values.lv008 || originalData.lv008, 10) || 0)
         ),
@@ -391,17 +408,44 @@ const SanPham = () => {
       
       console.log('Payload to send:', payload);
       console.log('Price in payload (lv004):', payload.lv004, typeof payload.lv004);
+      console.log('Image URL in payload (lv007):', payload.lv007);
       
       let result;
       if (editingProduct) {
         result = await capNhatSanPham(payload);
-        console.log('Update result:', result);
+        console.log('Update result:', result, typeof result);
+        if (typeof result === 'object') {
+          console.log('Update result details:', JSON.stringify(result, null, 2));
+        }
+
+        if (imageUrlChanged) {
+          console.log('Image URL changed via form:', submittedImageUrl);
+          const imageResult = await updateProductImageUrl(payload.lv001, submittedImageUrl);
+          console.log('Image update result:', imageResult);
+          if (!imageResult.success) {
+            message.warning('Cập nhật sản phẩm thành công nhưng không thể đồng bộ URL hình ảnh mới. Vui lòng kiểm tra lại sau.');
+          }
+        }
         message.success('Cập nhật sản phẩm thành công');
       } else {
         result = await themSanPham(payload);
         console.log('Add result:', result);
-        
-        if (result && result.success) {
+
+        const addSuccess =
+          result === true ||
+          result === 1 ||
+          result === '1' ||
+          (typeof result === 'object' && result !== null && result.success === true);
+
+        if (addSuccess) {
+          if (submittedImageUrl) {
+            const imageResult = await updateProductImageUrl(payload.lv001, submittedImageUrl);
+            console.log('Image sync after add result:', imageResult);
+            if (!imageResult || !imageResult.success) {
+              message.warning('Thêm sản phẩm thành công nhưng không thể lưu URL hình ảnh. Vui lòng thử lại trong mục chỉnh sửa ảnh.');
+            }
+          }
+
           message.success('Thêm sản phẩm thành công');
         } else if (result && result.Message) {
           message.warning(result.Message);
