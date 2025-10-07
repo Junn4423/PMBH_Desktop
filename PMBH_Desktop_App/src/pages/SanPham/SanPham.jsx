@@ -193,14 +193,39 @@ const SanPham = () => {
           // Images can be added/updated via the image edit modal
 
           const productId = product.maSp || product.id || product.maSP || product.idSp;
-          const categoryId = productsByCategory[productId] || null;
+          const categoryId = productsByCategory[productId] || product.danhMuc || product.maLoai || product.maDanhMucSp || null;
+
+          const rawPrice =
+            product.giaBan ??
+            product.gia ??
+            product.donGia ??
+            product.lv004 ??
+            0;
+
+          const priceNumber =
+            typeof rawPrice === 'number'
+              ? rawPrice
+              : parseInt(String(rawPrice).replace(/[^\d]/g, ''), 10) || 0;
+
+          const donVi =
+            product.donVi ||
+            product.dvt ||
+            product.dvtGia ||
+            product.dvTinh ||
+            product.donViTinh ||
+            '';
+
+          const normalizedOriginalProduct = {
+            ...product,
+            donVi,
+            giaBan: rawPrice
+          };
 
           console.log(`Mapping product ${productId}:`, {
             giaBan: product.giaBan,
             gia: product.gia,
             donGia: product.donGia,
-            dvt: product.dvt,
-            dvtGia: product.dvtGia,
+            donVi,
             hinhAnh: product.hinhAnh,
             lv007: product.lv007,
             allKeys: Object.keys(product)
@@ -208,12 +233,13 @@ const SanPham = () => {
 
           return {
             id: productId,
-            ten: product.tenSp || product.ten || product.tenSP,
-            gia: product.giaBan || parseInt(product.dvt) || product.gia || product.donGia || 0,
+            ten: product.tenSp || product.ten || product.tenSP || '',
+            gia: priceNumber,
+            donVi,
             danhMuc: categoryId, // Use mapped category from getSanPhamTheoIdLoai
             moTa: product.moTa || product.ghiChu || '',
             hinhAnh: imageUrl, // Will be null if no valid image found, ProductCard will use placeholder
-            originalProduct: product // Keep reference for debugging if needed
+            originalProduct: normalizedOriginalProduct // Keep reference for debugging if needed
           };
         });
 
