@@ -64,7 +64,6 @@ class   sl_lv0005 extends lv_controler
 	}
 	function LV_Insert()
 	{
-		
 		if($this->isAdd==0) return false;
 		$lvsql="insert into sl_lv0005 (lv001,lv002,lv003) values('$this->lv001','$this->lv002','$this->lv003')";
 		$vReturn= db_query($lvsql);
@@ -102,7 +101,7 @@ class   sl_lv0005 extends lv_controler
 	// Function to load all units for dropdown/list
 	function LoadDonVi()
 	{
-		$vsql = "SELECT lv001 as maDonVi, lv002 as tenDonVi, lv003 as tenDonViRutGon FROM sl_lv0005 ORDER BY lv001";
+		$vsql = "SELECT lv001 as maDonVi, lv002 as tenDonVi, lv003 as heSo FROM sl_lv0005 ORDER BY lv001";
 		$vresult = db_query($vsql);
 		$data = array();
 		while($vrow = db_fetch_array($vresult))
@@ -110,7 +109,7 @@ class   sl_lv0005 extends lv_controler
 			$data[] = array(
 				'maDonVi' => $vrow['maDonVi'],
 				'tenDonVi' => $vrow['tenDonVi'],
-				'tenDonViRutGon' => $vrow['tenDonViRutGon']
+				'heSo' => $vrow['heSo']
 			);
 		}
 		return $data;
