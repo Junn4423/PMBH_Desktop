@@ -302,13 +302,13 @@ export async function themDonVi(donViData) {
 
 // Sửa đơn vị
 export async function suaDonVi(donViData) {
-  const { maDonVi, tenDonVi, tenDonViRutGon } = donViData;
-  return await callApi('sl_lv0005', 'suaDonVi', { maDonVi, tenDonVi, tenDonViRutGon });
+  const { lv001, lv002, lv003 } = donViData;
+  return await callApi('sl_lv0005', 'suaDonVi', { lv001, lv002, lv003 });
 }
 
 // Xóa đơn vị
-export async function xoaDonVi(maDonVi) {
-  return await callApi('sl_lv0005', 'xoaDonVi', { maDonVi });
+export async function xoaDonVi(lv001) {
+  return await callApi('sl_lv0005', 'xoaDonVi', { lv001 });
 }
 
 // Tạo đơn hàng

@@ -32,7 +32,7 @@ const DonVi = () => {
           key: item.maDonVi,
           maDonVi: item.maDonVi,
           tenDonVi: item.tenDonVi,
-          tenDonViRutGon: item.tenDonViRutGon || '',
+          heSo: item.heSo || '',
           _raw: item
         }));
         setDonViList(mapped);
@@ -56,7 +56,7 @@ const DonVi = () => {
     const filtered = donViList.filter(item => 
       (item.maDonVi && item.maDonVi.toLowerCase().includes(searchLower)) ||
       (item.tenDonVi && item.tenDonVi.toLowerCase().includes(searchLower)) ||
-      (item.tenDonViRutGon && item.tenDonViRutGon.toLowerCase().includes(searchLower))
+      (item.heSo && item.heSo.toString().includes(searchLower))
     );
     setFilteredList(filtered);
   };
@@ -72,7 +72,7 @@ const DonVi = () => {
     form.setFieldsValue({
       maDonVi: record.maDonVi,
       tenDonVi: record.tenDonVi,
-      tenDonViRutGon: record.tenDonViRutGon
+      heSo: record.heSo
     });
     setIsModalVisible(true);
   };
@@ -95,9 +95,9 @@ const DonVi = () => {
       
       if (editingDonVi) {
         const payload = {
-          maDonVi: editingDonVi.maDonVi,
-          tenDonVi: values.tenDonVi || '',
-          tenDonViRutGon: values.tenDonViRutGon || ''
+          lv001: editingDonVi.maDonVi,
+          lv002: values.tenDonVi || '',
+          lv003: values.heSo || ''
         };
         console.log('Update payload:', payload);
         const result = await suaDonVi(payload);
@@ -107,7 +107,7 @@ const DonVi = () => {
         const payload = {
           lv001: (values.maDonVi || '').toString().trim(),
           lv002: (values.tenDonVi || '').toString().trim(),
-          lv003: (values.tenDonViRutGon || '').toString().trim()
+          lv003: (values.heSo || '').toString().trim()
         };
         console.log('Add payload:', payload);
         const result = await themDonVi(payload);
@@ -137,9 +137,9 @@ const DonVi = () => {
       key: 'tenDonVi'
     },
     {
-      title: 'Tên rút gọn',
-      dataIndex: 'tenDonViRutGon',
-      key: 'tenDonViRutGon',
+      title: 'Hệ số',
+      dataIndex: 'heSo',
+      key: 'heSo',
       width: 150
     },
     {
@@ -259,10 +259,10 @@ const DonVi = () => {
           </Form.Item>
           
           <Form.Item
-            name="tenDonViRutGon"
-            label="Tên rút gọn"
+            name="heSo"
+            label="Hệ số"
           >
-            <Input placeholder="VD: kg, ly, chai..." />
+            <Input placeholder="VD: 0.5, 1, 2, ..." />
           </Form.Item>
         </Form>
       </Modal>
