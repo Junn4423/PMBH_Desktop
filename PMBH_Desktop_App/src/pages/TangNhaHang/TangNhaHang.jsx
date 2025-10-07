@@ -30,9 +30,9 @@ const TangNhaHang = () => {
       console.log('Khu vuc data:', data);
       if (data && Array.isArray(data)) {
         const mapped = data.map(item => ({
-          key: item.idKhuVuc || item.maKhuVuc,
-          maKhuVuc: item.idKhuVuc || item.maKhuVuc,
-          tenKhuVuc: item.ten || item.tenKhuVuc,
+          key: item.lv001 || item.idKhuVuc || item.maKhuVuc,
+          maKhuVuc: item.lv001 || item.idKhuVuc || item.maKhuVuc,
+          tenKhuVuc: item.lv002 || item.ten || item.tenKhuVuc,
           _raw: item
         }));
         setKhuVucList(mapped);
@@ -89,9 +89,10 @@ const TangNhaHang = () => {
   const handleSubmit = async (values) => {
     try {
       if (editingKhuVuc) {
+        // Gửi trực tiếp lv001, lv002 theo format API
         await suaKhuVuc({
-          maKhuVuc: editingKhuVuc.maKhuVuc,
-          tenKhuVuc: values.tenKhuVuc
+          lv001: editingKhuVuc.maKhuVuc,
+          lv002: values.tenKhuVuc
         });
         message.success('Cập nhật thành công');
       } else {

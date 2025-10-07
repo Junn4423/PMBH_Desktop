@@ -4,7 +4,7 @@
 switch ($vtable) {
     case 'Mb_LayDanhSachKhuVuc':
         include("../cafe/clsall/sl_lv0008.php");
-        $mobile = new sl_lv0008($_SESSION['ERPSOFV2RRight'], $_SESSION['ERPSOFV2RUserID'], 'Tc0002');
+        $mobile = new sl_lv0008($_SESSION['ERPSOFV2RRight'], $_SESSION['ERPSOFV2RUserID'], 'admin');
         echo $vcode;
         switch ($vfun) {
             case 'add':
@@ -157,8 +157,16 @@ switch ($vtable) {
                 $sl_lv0008->lv001 = $input['lv001'] ?? $_POST['lv001'] ?? "";
                 $sl_lv0008->lv002 = $input['lv002'] ?? $_POST['lv002'] ?? "";
                 $sl_lv0008->LV_Insert();
-            case 'edit':
-            case 'delete':
+                break;
+            case 'suaKhuVuc':
+                // $sl_lv0008->lv001 = $input['lv001'] ?? $_POST['lv001'] ?? "";
+                // $sl_lv0008->lv002 = $input['lv002'] ?? $_POST['lv002'] ?? "";
+                // $sl_lv0008->LV_Update();
+                break;
+            case 'xoaKhuVuc':
+                // $lv001 = $input['lv001'] ?? $_POST['lv001'] ?? "";
+                // $sl_lv0008->LV_Delete($lv001);
+                break;
             case 'apr':
             case 'unapr':
                 break;

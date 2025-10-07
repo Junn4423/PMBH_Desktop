@@ -250,9 +250,9 @@ export async function loadBan() {
   return await callApi('Mb_LayDsBan', 'data');
 }
 
-// Load khu vực
+// Load khu vực 
 export async function loadKhuVuc() {
-  return await callApi('Mb_LayDanhSachKhuVuc', 'data');
+  return await callApi('sl_lv0008', 'loadKhuVuc');
 }
 
 // Thêm khu vực / tầng
@@ -262,14 +262,31 @@ export async function themKhuVuc(khuVucData) {
 }
 
 // Sửa khu vực / tầng
-export async function suaKhuVuc(khuVucData) {
-  const { maKhuVuc, tenKhuVuc } = khuVucData;
-  return await callApi('sl_lv0008', 'suaKhuVuc', { maKhuVuc, tenKhuVuc });
+export async function suaKhuVuc(khuVucData = {}) {
+  const {
+    lv001,
+    lv002,
+    maKhuVuc,
+    tenKhuVuc,
+    ...rest
+  } = khuVucData;
+
+  // API expects lv001 and lv002 as parameter names
+  return await callApi('sl_lv0008', 'suaKhuVuc', {
+    lv001: maKhuVuc ?? lv001,
+    lv002: tenKhuVuc ?? lv002,
+    ...rest
+  });
 }
 
 // Xóa khu vực / tầng
-export async function xoaKhuVuc(maKhuVuc) {
-  return await callApi('sl_lv0008', 'xoaKhuVuc', { maKhuVuc });
+export async function xoaKhuVuc(khuVuc) {
+  const maKhuVuc = typeof khuVuc === 'string'
+    ? khuVuc
+    : khuVuc?.maKhuVuc ?? khuVuc?.lv001;
+
+  // API expects lv001 as parameter name
+  return await callApi('sl_lv0008', 'xoaKhuVuc', { lv001: maKhuVuc });
 }
 
 // Load đơn vị
@@ -1511,3 +1528,4 @@ export async function taoChartDoanhThu(chartData) {
     };
   }
 }
+

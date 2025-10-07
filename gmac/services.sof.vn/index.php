@@ -1,8 +1,10 @@
 <?php
-// Tắt warnings và notices
-error_reporting(E_ERROR | E_PARSE);
+// Bật error logging để debug
+error_reporting(E_ALL);
 ini_set('display_errors', 0);
 ini_set('display_startup_errors', 0);
+ini_set('log_errors', 1);
+ini_set('error_log', __DIR__ . '/php_errors.log');
 // Cho phép từ mọi origin (hoặc cụ thể origin nếu muốn)
 header("Access-Control-Allow-Origin: *");
 // Cho phép các phương thức
@@ -70,7 +72,20 @@ switch ($vtable) {
 	// case dùng để xử lý khu vực
 	case "sl_lv0008":
 		include("sl_lv0008.php");
-		$sl_lv0008 = new sl_lv0008($_SESSION['ERPSOFV2RRight'], $_SESSION['ERPSOFV2RUserID'], 'Tc0002');
+		
+		// Logging để debug
+		error_log("========== sl_lv0008 Case START ==========");
+		error_log("Function: " . $vfun);
+		error_log("Input data: " . json_encode($input));
+		error_log("Session ERPSOFV2RRight: " . ($_SESSION['ERPSOFV2RRight'] ?? 'NOT SET'));
+		error_log("Session ERPSOFV2RUserID: " . ($_SESSION['ERPSOFV2RUserID'] ?? 'NOT SET'));
+		
+		$sl_lv0008 = new sl_lv0008($_SESSION['ERPSOFV2RRight'], $_SESSION['ERPSOFV2RUserID'], 'admin');
+		
+		error_log("Object permissions - isEdit: " . $sl_lv0008->GetEdit());
+		error_log("Object permissions - isDel: " . $sl_lv0008->GetDel());
+		error_log("Object permissions - isAdd: " . $sl_lv0008->GetAdd());
+		
 		switch ($vfun) {
 			case 'loadKhuVuc':
 				$vOutput = $sl_lv0008->LoadKhuVuc();
@@ -78,20 +93,31 @@ switch ($vtable) {
 			case 'themKhuVuc':
 				$sl_lv0008->lv001 = $input['lv001'] ?? $_POST['lv001'] ?? "";
 				$sl_lv0008->lv002 = $input['lv002'] ?? $_POST['lv002'] ?? "";
+				error_log("themKhuVuc - lv001: " . $sl_lv0008->lv001);
+				error_log("themKhuVuc - lv002: " . $sl_lv0008->lv002);
 				$vOutput = $sl_lv0008->LV_Insert();
+				error_log("themKhuVuc result: " . ($vOutput ? "TRUE" : "FALSE"));
 				break;
 			case 'suaKhuVuc':
-				$sl_lv0008->lv001 = $input['maKhuVuc'] ?? $_POST['maKhuVuc'] ?? "";
-				$sl_lv0008->lv002 = $input['tenKhuVuc'] ?? $_POST['tenKhuVuc'] ?? "";
-				$vOutput = $sl_lv0008->LV_Update();
+				$sl_lv0008->lv001 = $input['lv001'] ?? $_POST['lv001'] ?? "";
+                $sl_lv0008->lv002 = $input['lv002'] ?? $_POST['lv002'] ?? "";
+				error_log("suaKhuVuc - lv001: " . $sl_lv0008->lv001);
+				error_log("suaKhuVuc - lv002: " . $sl_lv0008->lv002);
+                $vOutput = $sl_lv0008->LV_Update();
+				error_log("suaKhuVuc result: " . ($vOutput ? "TRUE" : "FALSE"));
 				break;
 			case 'xoaKhuVuc':
-				$maKhuVuc = $input['maKhuVuc'] ?? $_POST['maKhuVuc'] ?? "";
-				$vOutput = $sl_lv0008->LV_Delete("'$maKhuVuc'");
+				$lv001 = $input['lv001'] ?? $_POST['lv001'] ?? "";
+				error_log("xoaKhuVuc - lv001: " . $lv001);
+                $vOutput = $sl_lv0008->LV_Delete($lv001);
+				error_log("xoaKhuVuc result: " . ($vOutput ? "TRUE" : "FALSE"));
 				break;
 			default:
 				break;
 		}
+		
+		error_log("Final vOutput: " . json_encode($vOutput));
+		error_log("========== sl_lv0008 Case END ==========");
 		break;
 	
 	// case dùng để xử lý đơn vị

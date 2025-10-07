@@ -85,9 +85,10 @@ class sl_lv0008 extends lv_controler
 	}
 	function LV_Delete($lvarr)
 	{
+		
 		if ($this->isDel == 0)
 			return false;
-		$lvsql = "DELETE FROM sl_lv0008  WHERE sl_lv0008.lv001 IN ($lvarr)";// and (select count(*) from sl_lv0008 B where  B.lv002= sl_lv0008.lv001)<=0  ";
+		$lvsql = "DELETE FROM sl_lv0008  WHERE sl_lv0008.lv001 = '$lvarr'";// and (select count(*) from sl_lv0008 B where  B.lv002= sl_lv0008.lv001)<=0  ";
 		$vReturn = db_query($lvsql);
 		if ($vReturn)
 			$this->InsertLogOperation($this->DateCurrent, 'sl_lv0008.delete', sof_escape_string($lvsql));
