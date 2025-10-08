@@ -148,7 +148,7 @@ class   sl_lv0007 extends lv_controler
 	function LV_Delete($lvarr)
 	{
 		if($this->isDel==0) return false;
-		$lvsql = "DELETE FROM sl_lv0007  WHERE sl_lv0007.lv001 IN ($lvarr) and (select count(*) from sl_lv0014 B where  B.lv003= sl_lv0007.lv001)<=0";
+		$lvsql = "delete FROM sl_lv0007  WHERE sl_lv0007.lv001 IN ($lvarr) and (select count(*) from sl_lv0014 B where  B.lv003= sl_lv0007.lv001)<=0";
 		$vReturn= db_query($lvsql);
 		if($vReturn) $this->InsertLogOperation($this->DateCurrent,'sl_lv0007.delete',sof_escape_string($lvsql));
 		return $vReturn;

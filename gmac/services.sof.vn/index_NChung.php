@@ -580,5 +580,392 @@ case 'DonBan':
         }
         break;
 
+    // ==================== USER MANAGEMENT & PERMISSIONS ====================
+    case 'Mb_Users':
+        include("../clsall/lv_lv0007.php");
+        $lv_lv0007 = new lv_lv0007($_SESSION['ERPSOFV2RRight'], $_SESSION['ERPSOFV2RUserID'], 'Ad0011');
+        
+        if (!function_exists('esc_str')) {
+            function esc_str($s) {
+                if (function_exists('db_escape_string')) return db_escape_string($s);
+                if (isset($GLOBALS['db_link']) && function_exists('mysqli_real_escape_string')) {
+                    return mysqli_real_escape_string($GLOBALS['db_link'], $s);
+                }
+                return addslashes($s);
+            }
+        }
+        
+        switch ($vfun) {
+            case 'getAll':
+                $vsql = "SELECT lv001, lv002, lv003, lv004, lv006, lv007, lv094, lv095, lv099, lv100 FROM lv_lv0007 ORDER BY lv001";
+                $vresult = db_query($vsql);
+                $vOutput = [];
+                while ($vrow = db_fetch_array($vresult, MYSQLI_ASSOC)) {
+                    $vOutput[] = [
+                        'userId' => $vrow['lv001'],
+                        'groupId' => $vrow['lv002'],
+                        'groupUserId' => $vrow['lv003'],
+                        'fullName' => $vrow['lv004'],
+                        'employeeId' => $vrow['lv006'],
+                        'status' => (int)$vrow['lv007'],
+                        'companyId' => $vrow['lv094'],
+                        'ipAddress' => $vrow['lv095'],
+                        'theme' => $vrow['lv099'],
+                        'branchId' => $vrow['lv100']
+                    ];
+                }
+                break;
+                
+            case 'getById':
+                $userId = isset($input['userId']) ? trim($input['userId']) : '';
+                if ($userId === '') {
+                    $vOutput = ['success' => false, 'message' => 'Thiếu mã người dùng'];
+                    break;
+                }
+                
+                $userIdEsc = esc_str($userId);
+                $vsql = "SELECT lv001, lv002, lv003, lv004, lv006, lv007, lv094, lv095, lv099, lv100 FROM lv_lv0007 WHERE lv001='$userIdEsc'";
+                $vresult = db_query($vsql);
+                $vrow = db_fetch_array($vresult, MYSQLI_ASSOC);
+                
+                if ($vrow) {
+                    $vOutput = [
+                        'success' => true,
+                        'data' => [
+                            'userId' => $vrow['lv001'],
+                            'groupId' => $vrow['lv002'],
+                            'groupUserId' => $vrow['lv003'],
+                            'fullName' => $vrow['lv004'],
+                            'employeeId' => $vrow['lv006'],
+                            'status' => (int)$vrow['lv007'],
+                            'companyId' => $vrow['lv094'],
+                            'ipAddress' => $vrow['lv095'],
+                            'theme' => $vrow['lv099'],
+                            'branchId' => $vrow['lv100']
+                        ]
+                    ];
+                } else {
+                    $vOutput = ['success' => false, 'message' => 'Không tìm thấy người dùng'];
+                }
+                break;
+                
+            case 'add':
+                $userId = isset($input['userId']) ? trim($input['userId']) : '';
+                $groupId = isset($input['groupId']) ? trim($input['groupId']) : '';
+                $groupUserId = isset($input['groupUserId']) ? trim($input['groupUserId']) : '';
+                $fullName = isset($input['fullName']) ? trim($input['fullName']) : '';
+                $password = isset($input['password']) ? trim($input['password']) : '123456';
+                $employeeId = isset($input['employeeId']) ? trim($input['employeeId']) : '';
+                $theme = isset($input['theme']) ? trim($input['theme']) : 'themes1';
+                $branchId = isset($input['branchId']) ? trim($input['branchId']) : '';
+                
+                if ($userId === '' || $fullName === '') {
+                    $vOutput = ['success' => false, 'message' => 'Thiếu thông tin bắt buộc'];
+                    break;
+                }
+                
+                // Check if user exists
+                $lv_lv0007->Load($userId);
+                if ($lv_lv0007->lv001) {
+                    $vOutput = ['success' => false, 'message' => 'Mã người dùng đã tồn tại'];
+                    break;
+                }
+                
+                $lv_lv0007->lv001 = $userId;
+                $lv_lv0007->lv002 = $groupId;
+                $lv_lv0007->lv003 = $groupUserId;
+                $lv_lv0007->lv004 = $fullName;
+                $lv_lv0007->lv005 = $password; // Will be hashed in LV_Insert
+                $lv_lv0007->lv006 = $employeeId;
+                $lv_lv0007->lv094 = '';
+                $lv_lv0007->lv095 = '';
+                $lv_lv0007->lv099 = $theme;
+                $lv_lv0007->lv100 = $branchId;
+                
+                $result = $lv_lv0007->LV_Insert();
+                
+                if ($result) {
+                    $vOutput = ['success' => true, 'message' => 'Thêm người dùng thành công'];
+                } else {
+                    $vOutput = ['success' => false, 'message' => 'Thêm người dùng thất bại'];
+                }
+                break;
+                
+            case 'edit':
+                $userId = isset($input['userId']) ? trim($input['userId']) : '';
+                $groupId = isset($input['groupId']) ? trim($input['groupId']) : '';
+                $groupUserId = isset($input['groupUserId']) ? trim($input['groupUserId']) : '';
+                $fullName = isset($input['fullName']) ? trim($input['fullName']) : '';
+                $employeeId = isset($input['employeeId']) ? trim($input['employeeId']) : '';
+                $theme = isset($input['theme']) ? trim($input['theme']) : 'themes1';
+                $branchId = isset($input['branchId']) ? trim($input['branchId']) : '';
+                
+                if ($userId === '' || $fullName === '') {
+                    $vOutput = ['success' => false, 'message' => 'Thiếu thông tin bắt buộc'];
+                    break;
+                }
+                
+                $lv_lv0007->lv001 = $userId;
+                $lv_lv0007->lv002 = $groupId;
+                $lv_lv0007->lv003 = $groupUserId;
+                $lv_lv0007->lv004 = $fullName;
+                $lv_lv0007->lv006 = $employeeId;
+                $lv_lv0007->lv094 = '';
+                $lv_lv0007->lv095 = '';
+                $lv_lv0007->lv099 = $theme;
+                $lv_lv0007->lv100 = $branchId;
+                
+                $result = $lv_lv0007->LV_Update();
+                
+                if ($result) {
+                    $vOutput = ['success' => true, 'message' => 'Cập nhật người dùng thành công'];
+                } else {
+                    $vOutput = ['success' => false, 'message' => 'Cập nhật người dùng thất bại'];
+                }
+                break;
+                
+            case 'delete':
+                $userId = isset($input['userId']) ? trim($input['userId']) : '';
+                
+                if ($userId === '') {
+                    $vOutput = ['success' => false, 'message' => 'Thiếu mã người dùng'];
+                    break;
+                }
+                
+                $userIdEsc = esc_str($userId);
+                $result = $lv_lv0007->LV_Delete("'$userIdEsc'");
+                
+                if ($result) {
+                    $vOutput = ['success' => true, 'message' => 'Xóa người dùng thành công'];
+                } else {
+                    $vOutput = ['success' => false, 'message' => 'Xóa người dùng thất bại'];
+                }
+                break;
+                
+            case 'toggleStatus':
+                $userId = isset($input['userId']) ? trim($input['userId']) : '';
+                $status = isset($input['status']) ? (int)$input['status'] : 0;
+                
+                if ($userId === '') {
+                    $vOutput = ['success' => false, 'message' => 'Thiếu mã người dùng'];
+                    break;
+                }
+                
+                $userIdEsc = esc_str($userId);
+                $vsql = "UPDATE lv_lv0007 SET lv007=$status WHERE lv001='$userIdEsc'";
+                $result = db_query($vsql);
+                
+                if ($result) {
+                    $statusText = $status ? 'khóa' : 'mở khóa';
+                    $vOutput = ['success' => true, 'message' => "Đã $statusText người dùng thành công"];
+                } else {
+                    $vOutput = ['success' => false, 'message' => 'Cập nhật trạng thái thất bại'];
+                }
+                break;
+                
+            case 'changePassword':
+                $userId = isset($input['userId']) ? trim($input['userId']) : '';
+                $newPassword = isset($input['newPassword']) ? trim($input['newPassword']) : '';
+                
+                if ($userId === '' || $newPassword === '') {
+                    $vOutput = ['success' => false, 'message' => 'Thiếu thông tin'];
+                    break;
+                }
+                
+                $userIdEsc = esc_str($userId);
+                $hashedPassword = md5($newPassword);
+                $vsql = "UPDATE lv_lv0007 SET lv005='$hashedPassword' WHERE lv001='$userIdEsc'";
+                $result = db_query($vsql);
+                
+                if ($result) {
+                    $vOutput = ['success' => true, 'message' => 'Đổi mật khẩu thành công'];
+                } else {
+                    $vOutput = ['success' => false, 'message' => 'Đổi mật khẩu thất bại'];
+                }
+                break;
+                
+            default:
+                $vOutput = ['success' => false, 'message' => 'Chức năng không hợp lệ'];
+                break;
+        }
+        break;
+        
+    case 'Mb_UserRights':
+        if (!function_exists('esc_str')) {
+            function esc_str($s) {
+                if (function_exists('db_escape_string')) return db_escape_string($s);
+                if (isset($GLOBALS['db_link']) && function_exists('mysqli_real_escape_string')) {
+                    return mysqli_real_escape_string($GLOBALS['db_link'], $s);
+                }
+                return addslashes($s);
+            }
+        }
+        
+        switch ($vfun) {
+            case 'getUserRights':
+                $userId = isset($input['userId']) ? trim($input['userId']) : '';
+                
+                if ($userId === '') {
+                    $vOutput = ['success' => false, 'message' => 'Thiếu mã người dùng'];
+                    break;
+                }
+                
+                $userIdEsc = esc_str($userId);
+                $vsql = "SELECT A.lv001, A.lv002, A.lv003, A.lv004, B.lv002 as permissionName 
+                         FROM lv_lv0008 A 
+                         LEFT JOIN lv_lv0006 B ON A.lv003 = B.lv001 
+                         WHERE A.lv002='$userIdEsc' ORDER BY A.lv001";
+                $vresult = db_query($vsql);
+                $vOutput = [];
+                
+                while ($vrow = db_fetch_array($vresult, MYSQLI_ASSOC)) {
+                    $vOutput[] = [
+                        'id' => $vrow['lv001'],
+                        'userId' => $vrow['lv002'],
+                        'rightId' => $vrow['lv003'],
+                        'enabled' => (int)$vrow['lv004'],
+                        'permissionName' => $vrow['permissionName']
+                    ];
+                }
+                break;
+                
+            case 'getRightDetails':
+                $rightId = isset($input['rightId']) ? trim($input['rightId']) : '';
+                
+                if ($rightId === '') {
+                    $vOutput = ['success' => false, 'message' => 'Thiếu mã quyền'];
+                    break;
+                }
+                
+                $rightIdEsc = esc_str($rightId);
+                $vsql = "SELECT A.lv001, A.lv002, A.lv003, A.lv004, B.lv002 as controlName 
+                         FROM lv_lv0009 A 
+                         LEFT JOIN lv_lv0006 B ON A.lv002 = B.lv001 
+                         WHERE A.lv003='$rightIdEsc' ORDER BY A.lv001";
+                $vresult = db_query($vsql);
+                $vOutput = [];
+                
+                while ($vrow = db_fetch_array($vresult, MYSQLI_ASSOC)) {
+                    $vOutput[] = [
+                        'id' => $vrow['lv001'],
+                        'controlType' => $vrow['lv002'],
+                        'rightId' => $vrow['lv003'],
+                        'enabled' => (int)$vrow['lv004'],
+                        'controlName' => $vrow['controlName']
+                    ];
+                }
+                break;
+                
+            case 'addRight':
+                $userId = isset($input['userId']) ? trim($input['userId']) : '';
+                $rightId = isset($input['rightId']) ? trim($input['rightId']) : '';
+                
+                if ($userId === '' || $rightId === '') {
+                    $vOutput = ['success' => false, 'message' => 'Thiếu thông tin'];
+                    break;
+                }
+                
+                // Get next ID
+                $vsql = "SELECT MAX(lv001) as maxId FROM lv_lv0008";
+                $vresult = db_query($vsql);
+                $vrow = db_fetch_array($vresult, MYSQLI_ASSOC);
+                $nextId = $vrow['maxId'] + 1;
+                
+                $userIdEsc = esc_str($userId);
+                $rightIdEsc = esc_str($rightId);
+                
+                $vsqlInsert = "INSERT INTO lv_lv0008(lv001, lv002, lv003, lv004) VALUES ($nextId, '$userIdEsc', '$rightIdEsc', 1)";
+                $result = db_query($vsqlInsert);
+                
+                if ($result) {
+                    $vOutput = ['success' => true, 'message' => 'Thêm quyền thành công'];
+                } else {
+                    $vOutput = ['success' => false, 'message' => 'Thêm quyền thất bại'];
+                }
+                break;
+                
+            case 'updateRight':
+                $id = isset($input['id']) ? (int)$input['id'] : 0;
+                $enabled = isset($input['enabled']) ? (int)$input['enabled'] : 0;
+                
+                if ($id === 0) {
+                    $vOutput = ['success' => false, 'message' => 'Thiếu ID'];
+                    break;
+                }
+                
+                $vsql = "UPDATE lv_lv0008 SET lv004=$enabled WHERE lv001=$id";
+                $result = db_query($vsql);
+                
+                if ($result) {
+                    $vOutput = ['success' => true, 'message' => 'Cập nhật quyền thành công'];
+                } else {
+                    $vOutput = ['success' => false, 'message' => 'Cập nhật quyền thất bại'];
+                }
+                break;
+                
+            case 'deleteRight':
+                $id = isset($input['id']) ? (int)$input['id'] : 0;
+                
+                if ($id === 0) {
+                    $vOutput = ['success' => false, 'message' => 'Thiếu ID'];
+                    break;
+                }
+                
+                $vsql = "DELETE FROM lv_lv0008 WHERE lv001=$id";
+                $result = db_query($vsql);
+                
+                if ($result) {
+                    $vOutput = ['success' => true, 'message' => 'Xóa quyền thành công'];
+                } else {
+                    $vOutput = ['success' => false, 'message' => 'Xóa quyền thất bại'];
+                }
+                break;
+                
+            case 'updateDetailRight':
+                $id = isset($input['id']) ? (int)$input['id'] : 0;
+                $enabled = isset($input['enabled']) ? (int)$input['enabled'] : 0;
+                
+                if ($id === 0) {
+                    $vOutput = ['success' => false, 'message' => 'Thiếu ID'];
+                    break;
+                }
+                
+                $vsql = "UPDATE lv_lv0009 SET lv004=$enabled WHERE lv001=$id";
+                $result = db_query($vsql);
+                
+                if ($result) {
+                    $vOutput = ['success' => true, 'message' => 'Cập nhật quyền chi tiết thành công'];
+                } else {
+                    $vOutput = ['success' => false, 'message' => 'Cập nhật quyền chi tiết thất bại'];
+                }
+                break;
+                
+            default:
+                $vOutput = ['success' => false, 'message' => 'Chức năng không hợp lệ'];
+                break;
+        }
+        break;
+        
+    case 'Mb_Permissions':
+        switch ($vfun) {
+            case 'getAll':
+                $vsql = "SELECT lv001, lv002 FROM lv_lv0006 ORDER BY lv001";
+                $vresult = db_query($vsql);
+                $vOutput = [];
+                
+                while ($vrow = db_fetch_array($vresult, MYSQLI_ASSOC)) {
+                    $vOutput[] = [
+                        'id' => $vrow['lv001'],
+                        'name' => $vrow['lv002']
+                    ];
+                }
+                break;
+                
+            default:
+                $vOutput = ['success' => false, 'message' => 'Chức năng không hợp lệ'];
+                break;
+        }
+        break;
+
 }
 ?>

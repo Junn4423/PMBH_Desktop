@@ -134,18 +134,35 @@ const ChonSanPham = ({ onAddToCart }) => {
 
           // Use existing image URL if available, otherwise null (lazy load in ProductCard)
           let imageUrl = null;
-          if (product.hinhAnh && product.hinhAnh !== DEFAULT_IMAGES.PRODUCT) {
-            imageUrl = getFullImageUrl(product.hinhAnh);
+          const imageValue = product.lv014 || product.hinhAnh;
+          if (imageValue && imageValue !== DEFAULT_IMAGES.PRODUCT) {
+            imageUrl = getFullImageUrl(imageValue);
           }
+
+          const rawGiaBan =
+            product.giaBan ??
+            product.lv007 ??
+            product.gia ??
+            product.donGia ??
+            0;
+
+          const gia =
+            typeof rawGiaBan === 'number'
+              ? rawGiaBan
+              : parseInt(String(rawGiaBan).replace(/[^\d]/g, ''), 10) || 0;
 
           return {
             id: productId,
             ten: product.tenSp || product.ten || product.tenSP,
-            gia: product.giaBan || product.gia || product.donGia || 0,
+            gia,
             danhMuc: categoryId,
             moTa: product.moTa || product.ghiChu || '',
             hinhAnh: imageUrl,
-            originalProduct: product
+            donVi: product.donVi || product.dvt || product.dvtGia || product.dvTinh || product.donViTinh || product.lv004 || product.lv005 || '',
+            originalProduct: {
+              ...product,
+              imageValue
+            }
           };
         });
 

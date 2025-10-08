@@ -754,20 +754,121 @@ export async function xoaLoaiNVL(lv001) {
   return await callApi('wh_lv0007', 'xoaLoaiNVL', { lv001 });
 }
 
+const DEFAULT_SANPHAM_CURRENCY = 'VND';
+const DEFAULT_SANPHAM_CONVERSION = 1;
+
+const hasLvStructure = (data) => (
+  data &&
+  (Object.prototype.hasOwnProperty.call(data, 'lv001') ||
+   Object.prototype.hasOwnProperty.call(data, 'lv002') ||
+   Object.prototype.hasOwnProperty.call(data, 'lv003'))
+);
+
+const toTrimmedString = (value, fallback = '') => {
+  if (value === null || value === undefined) {
+    return fallback;
+  }
+  return value.toString().trim();
+};
+
+const toNumber = (value, fallback = 0) => {
+  if (value === null || value === undefined || value === '') {
+    return fallback;
+  }
+
+  if (typeof value === 'number') {
+    return Number.isNaN(value) ? fallback : value;
+  }
+
+  if (typeof value === 'string') {
+    const cleaned = value.replace(/[^0-9.-]/g, '');
+    const parsed = Number(cleaned);
+    return Number.isNaN(parsed) ? fallback : parsed;
+  }
+
+  if (typeof value === 'boolean') {
+    return value ? 1 : 0;
+  }
+
+  if (typeof value === 'object' && value !== null && 'value' in value) {
+    return toNumber(value.value, fallback);
+  }
+
+  const parsed = Number(value);
+  return Number.isNaN(parsed) ? fallback : parsed;
+};
+
+const buildSanPhamPayload = (data, { includeImage = false } = {}) => {
+  if (!data || typeof data !== 'object') {
+    return {};
+  }
+
+  if (hasLvStructure(data)) {
+    const {
+      lv001 = '',
+      lv002 = '',
+      lv003 = '',
+      lv004 = '',
+      lv005 = '',
+      lv006 = DEFAULT_SANPHAM_CONVERSION,
+      lv007 = 0,
+      lv008 = DEFAULT_SANPHAM_CURRENCY,
+      lv009 = 0,
+      lv010 = 0,
+      lv014 = ''
+    } = data;
+
+    const payload = {
+      lv001,
+      lv002,
+      lv003,
+      lv004,
+      lv005,
+      lv006,
+      lv007,
+      lv008,
+      lv009,
+      lv010
+    };
+
+    if (includeImage || Object.prototype.hasOwnProperty.call(data, 'lv014')) {
+      payload.lv014 = lv014;
+    }
+
+    return payload;
+  }
+
+  const payload = {
+    lv001: toTrimmedString(data.maSanPham ?? data.id ?? data.maSp ?? data.maSP ?? ''),
+    lv002: toTrimmedString(data.tenSanPham ?? data.ten ?? data.tenSp ?? data.tenSP ?? ''),
+    lv003: toTrimmedString(data.maLoai ?? data.danhMuc ?? data.idLoai ?? ''),
+    lv004: toTrimmedString(data.donViTinh ?? data.donVi ?? data.dvt ?? ''),
+    lv005: toTrimmedString(data.donViQuyDoi ?? data.donViTinh ?? data.donVi ?? data.dvt ?? ''),
+    lv006: toNumber(data.giaTriQuyDoi ?? data.tyLeQuyDoi ?? DEFAULT_SANPHAM_CONVERSION, DEFAULT_SANPHAM_CONVERSION),
+    lv007: toNumber(data.giaBan ?? data.gia ?? data.donGia ?? data.price ?? 0, 0),
+    lv008: toTrimmedString(data.donViGia ?? data.currency ?? DEFAULT_SANPHAM_CURRENCY, DEFAULT_SANPHAM_CURRENCY),
+    lv009: toNumber(data.trangThai ?? data.trangThai_HienThiSP ?? data.status ?? 0, 0),
+    lv010: toNumber(data.soLuongTonToiThieu ?? data.tonKhoToiThieu ?? data.limitTonKho ?? 0, 0)
+  };
+
+  if (includeImage || data.imageUrl !== undefined || data.hinhAnh !== undefined) {
+    payload.lv014 = toTrimmedString(data.imageUrl ?? data.hinhAnh ?? '');
+  }
+
+  return payload;
+};
+
 // Thêm sản phẩm
 export async function themSanPham(sanPhamData) {
-  const { lv001, lv002, lv003, lv004, lv005, lv006, lv007, lv008, lv009, lv010 } = sanPhamData;
-  return await callApi('Mb_sanPham', 'add', {
-    lv001, lv002, lv003, lv004, lv005, lv006, lv007, lv008, lv009, lv010
-  });
+  const payload = buildSanPhamPayload(sanPhamData, { includeImage: true });
+  return await callApi('Mb_sanPham', 'add', payload);
 }
 
 // Cập nhật sản phẩm
 export async function capNhatSanPham(sanPhamData) {
-  const { lv001, lv002, lv003, lv004, lv005, lv006, lv007, lv008, lv009, lv010 } = sanPhamData;
-  return await callApi('Mb_sanPham', 'edit', {
-    lv001, lv002, lv003, lv004, lv005, lv006, lv007, lv008, lv009, lv010
-  });
+  const includeImage = sanPhamData && (sanPhamData.imageUrl !== undefined || sanPhamData.lv014 !== undefined);
+  const payload = buildSanPhamPayload(sanPhamData, { includeImage });
+  return await callApi('Mb_sanPham', 'edit', payload);
 }
 
 // Xóa sản phẩm
@@ -1527,5 +1628,106 @@ export async function taoChartDoanhThu(chartData) {
       message: error.message || 'Có lỗi xảy ra khi tạo biểu đồ'
     };
   }
+}
+
+
+// -------------------- USER MANAGEMENT & PERMISSIONS --------------------
+
+/**
+ * Lấy danh sách tất cả người dùng
+ */
+export async function getAllUsers() {
+  return await callApi('Mb_Users', 'getAll');
+}
+
+/**
+ * Lấy thông tin người dùng theo ID
+ */
+export async function getUserById(userId) {
+  return await callApi('Mb_Users', 'getById', { userId });
+}
+
+/**
+ * Thêm người dùng mới
+ */
+export async function addUser(userData) {
+  return await callApi('Mb_Users', 'add', userData);
+}
+
+/**
+ * Cập nhật thông tin người dùng
+ */
+export async function updateUser(userData) {
+  return await callApi('Mb_Users', 'edit', userData);
+}
+
+/**
+ * Xóa người dùng
+ */
+export async function deleteUser(userId) {
+  return await callApi('Mb_Users', 'delete', { userId });
+}
+
+/**
+ * Khóa/Mở khóa người dùng
+ */
+export async function toggleUserStatus(userId, status) {
+  return await callApi('Mb_Users', 'toggleStatus', { userId, status });
+}
+
+/**
+ * Đổi mật khẩu người dùng
+ */
+export async function changeUserPassword(userId, newPassword) {
+  return await callApi('Mb_Users', 'changePassword', { userId, newPassword });
+}
+
+/**
+ * Lấy danh sách quyền của người dùng
+ */
+export async function getUserRights(userId) {
+  return await callApi('Mb_UserRights', 'getUserRights', { userId });
+}
+
+/**
+ * Lấy chi tiết quyền
+ */
+export async function getRightDetails(rightId) {
+  return await callApi('Mb_UserRights', 'getRightDetails', { rightId });
+}
+
+/**
+ * Thêm quyền cho người dùng
+ */
+export async function addUserRight(userId, rightId) {
+  return await callApi('Mb_UserRights', 'addRight', { userId, rightId });
+}
+
+/**
+ * Cập nhật quyền của người dùng
+ */
+export async function updateUserRight(id, enabled) {
+  return await callApi('Mb_UserRights', 'updateRight', { id, enabled });
+}
+
+/**
+ * Xóa quyền của người dùng
+ */
+export async function deleteUserRight(id) {
+  return await callApi('Mb_UserRights', 'deleteRight', { id });
+}
+
+/**
+ * Cập nhật quyền chi tiết
+ */
+export async function updateDetailRight(id, enabled) {
+  return await callApi('Mb_UserRights', 'updateDetailRight', { id, enabled });
+}
+
+/**
+ * Lấy danh sách tất cả các loại quyền
+ */
+export async function getAllPermissions() {
+  return await callApi('Mb_Permissions', 'getAll');
 }
 

@@ -1,0 +1,62 @@
+.bang-dieu-khien-nguoi-dung-container {
+  padding: 20px;
+}
+
+.page-breadcrumb {
+  margin-bottom: 16px;
+}
+
+.main-card {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.page-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 600;
+  color: #197dd3;
+}
+
+.bang-dieu-khien-nguoi-dung-container .ant-table-thead > tr > th {
+  background-color: #77d4fb;
+  color: #4b4344;
+  font-weight: 600;
+}
+
+.bang-dieu-khien-nguoi-dung-container .ant-btn-primary {
+  background-color: #197dd3;
+  border-color: #197dd3;
+}
+
+.bang-dieu-khien-nguoi-dung-container .ant-btn-primary:hover {
+  background-color: #77d4fb;
+  border-color: #77d4fb;
+}
+
+.bang-dieu-khien-nguoi-dung-container .ant-input:focus,
+.bang-dieu-khien-nguoi-dung-container .ant-input-focused {
+  border-color: #197dd3;
+  box-shadow: 0 0 0 2px rgba(25, 125, 211, 0.2);
+}
+
+.bang-dieu-khien-nguoi-dung-container .ant-modal-header {
+  background-color: #77d4fb;
+}
+
+.bang-dieu-khien-nguoi-dung-container .ant-modal-title {
+  color: #4b4344;
+  font-weight: 600;
+}
+
+.bang-dieu-khien-nguoi-dung-container .ant-switch-checked {
+  background-color: #197dd3;
+}
+
+.bang-dieu-khien-nguoi-dung-container .ant-tabs-tab-active {
+  color: #197dd3;
+}
+
+.bang-dieu-khien-nguoi-dung-container .ant-tabs-ink-bar {
+  background-color: #197dd3;
+}

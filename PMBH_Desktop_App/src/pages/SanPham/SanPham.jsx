@@ -1,14 +1,111 @@
 import React, { useState, useEffect } from 'react';
 import { Card, Breadcrumb, Button, Typography, Input, message, Spin, Modal, Upload, Form, Select, InputNumber, Popconfirm } from 'antd';
-import { Package2, Search, Grid, Filter, Edit, Upload as UploadIcon, Link, Plus, Trash2 } from 'lucide-react';
-import { getLoaiSanPham, getSanPhamTheoIdLoai, getAllSanPham, loadProductImage, getFullImageUrl, updateProductImageUrl, uploadProductImage, themSanPham, capNhatSanPham, xoaSanPham, loadDonVi } from '../../services/apiServices';
+import { Package2, Search, Grid, Filter, Edit, Plus, Trash2 } from 'lucide-react';
+import { getLoaiSanPham, getSanPhamTheoIdLoai, getAllSanPham, getFullImageUrl, updateProductImageUrl, uploadProductImage, themSanPham, capNhatSanPham, xoaSanPham, loadDonVi } from '../../services/apiServices';
 import ProductCard from '../../components/common/ProductCard';
-import { DEFAULT_IMAGES } from '../../constants';
 import './SanPham.css';
 
-const { Title, Text } = Typography;
+const { Text } = Typography;
 const { Search: SearchInput } = Input;
 const { Option } = Select;
+
+const DEFAULT_CURRENCY = 'VND';
+const DEFAULT_CONVERSION_VALUE = 1;
+
+const parseGiaBanToNumber = (value) => {
+  if (value === null || value === undefined || value === '') {
+    return 0;
+  }
+
+  if (typeof value === 'number') {
+    return Number.isNaN(value) ? 0 : value;
+  }
+
+  if (typeof value === 'string') {
+    const cleaned = value.replace(/[^\d]/g, '');
+    const parsed = parseInt(cleaned, 10);
+    return Number.isNaN(parsed) ? 0 : parsed;
+  }
+
+  if (typeof value === 'object' && value !== null && 'value' in value) {
+    return parseGiaBanToNumber(value.value);
+  }
+
+  return 0;
+};
+
+const extractDonViFromProduct = (product = {}) => {
+  const candidate =
+    product.donVi ||
+    product.dvt ||
+    product.dvtGia ||
+    product.dvTinh ||
+    product.donViTinh ||
+    product.donvi ||
+    product.lv004 ||
+    product.lv005;
+
+  return candidate ? candidate.toString().trim() : '';
+};
+
+const extractImageValueFromProduct = (product = {}) => {
+  const rawValue =
+    product.imageValue !== undefined ? product.imageValue :
+    product.lv014 !== undefined ? product.lv014 :
+    product.imageUrl !== undefined ? product.imageUrl :
+    product.hinhAnh !== undefined ? product.hinhAnh : '';
+
+  if (!rawValue) {
+    return '';
+  }
+
+  return typeof rawValue === 'string' ? rawValue.trim() : rawValue;
+};
+
+const mapSanPhamFromApi = (product, productsByCategory = {}) => {
+  const productId =
+    product.maSp ||
+    product.id ||
+    product.maSP ||
+    product.idSp ||
+    product.lv001 || '';
+
+  const categoryId = productsByCategory[productId] ?? product.danhMuc ?? product.maLoai ?? product.maDanhMucSp ?? null;
+
+  const rawGiaBan =
+    product.giaBan ??
+    product.gia ??
+    product.donGia ??
+    product.lv007 ??
+    product.giaBanLe ??
+    product.giaBan1 ??
+    0;
+
+  const giaBanNumber = parseGiaBanToNumber(rawGiaBan);
+  const donVi = extractDonViFromProduct(product);
+  const imageValue = extractImageValueFromProduct(product);
+  const fullImageUrl = imageValue ? getFullImageUrl(imageValue) : null;
+  const moTa = product.moTa || product.ghiChu || product.lv006 || '';
+
+  const normalizedOriginalProduct = {
+    ...product,
+    giaBan: rawGiaBan,
+    donVi,
+    imageValue
+  };
+
+  return {
+    id: productId,
+    ten: product.tenSp || product.ten || product.tenSP || '',
+    gia: giaBanNumber,
+    donVi,
+    danhMuc: categoryId,
+    moTa,
+    hinhAnh: fullImageUrl,
+    imageValue,
+    originalProduct: normalizedOriginalProduct
+  };
+};
 
 const SanPham = () => {
   const [categories, setCategories] = useState([]);
@@ -182,66 +279,7 @@ const SanPham = () => {
           const productCode = product.maSp || product.id || product.maSP || '';
           return !productCode.toString().startsWith('NL');
         })
-        .map((product) => {
-          let imageUrl = null;
-          
-          // Only check if product has valid image URL (no async DB call)
-          if (product.hinhAnh && product.hinhAnh !== DEFAULT_IMAGES.PRODUCT) {
-            imageUrl = getFullImageUrl(product.hinhAnh);
-          }
-          // Note: Database image loading is removed for performance
-          // Images can be added/updated via the image edit modal
-
-          const productId = product.maSp || product.id || product.maSP || product.idSp;
-          const categoryId = productsByCategory[productId] || product.danhMuc || product.maLoai || product.maDanhMucSp || null;
-
-          const rawPrice =
-            product.giaBan ??
-            product.gia ??
-            product.donGia ??
-            product.lv004 ??
-            0;
-
-          const priceNumber =
-            typeof rawPrice === 'number'
-              ? rawPrice
-              : parseInt(String(rawPrice).replace(/[^\d]/g, ''), 10) || 0;
-
-          const donVi =
-            product.donVi ||
-            product.dvt ||
-            product.dvtGia ||
-            product.dvTinh ||
-            product.donViTinh ||
-            '';
-
-          const normalizedOriginalProduct = {
-            ...product,
-            donVi,
-            giaBan: rawPrice
-          };
-
-          console.log(`Mapping product ${productId}:`, {
-            giaBan: product.giaBan,
-            gia: product.gia,
-            donGia: product.donGia,
-            donVi,
-            hinhAnh: product.hinhAnh,
-            lv007: product.lv007,
-            allKeys: Object.keys(product)
-          });
-
-          return {
-            id: productId,
-            ten: product.tenSp || product.ten || product.tenSP || '',
-            gia: priceNumber,
-            donVi,
-            danhMuc: categoryId, // Use mapped category from getSanPhamTheoIdLoai
-            moTa: product.moTa || product.ghiChu || '',
-            hinhAnh: imageUrl, // Will be null if no valid image found, ProductCard will use placeholder
-            originalProduct: normalizedOriginalProduct // Keep reference for debugging if needed
-          };
-        });
+        .map((product) => mapSanPhamFromApi(product, productsByCategory));
 
       setProducts([...formattedProducts]); // Force new array reference
       setFilteredProducts([...formattedProducts]); // Force new array reference
@@ -262,14 +300,6 @@ const SanPham = () => {
     await loadCategoriesOnly();
     await loadProductsOnly();
   };
-
-
-
-
-
-
-
-
   // Image editing functions
   const handleEditImage = (product) => {
     setSelectedProduct(product);
@@ -328,39 +358,33 @@ const SanPham = () => {
     console.log('Editing product data:', product);
     console.log('Product gia:', product.gia);
     console.log('Original product:', product.originalProduct);
-    
+
     setEditingProduct(product);
-    
-    // Get original data if available
+
     const original = product.originalProduct || {};
-    
-    // Parse giá bán to ensure it's a number for the form - FIX: better parsing
-    let giaBan = product.gia || original.giaBan || original.gia || original.donGia || 0;
-    
-    // Convert string to number properly
-    if (typeof giaBan === 'string') {
-      giaBan = giaBan.replace(/[,\.]/g, ''); // Remove commas and dots
-      giaBan = parseInt(giaBan, 10);
-    }
-    
-    // Ensure it's a valid number
-    const giaBanNumber = (!isNaN(giaBan) && giaBan >= 0) ? giaBan : 0;
-    
-    console.log('Parsed giaBan:', giaBanNumber);
-    
+
+    const giaBanNumber = (() => {
+      if (typeof product.gia === 'number') {
+        return !Number.isNaN(product.gia) && product.gia >= 0 ? product.gia : 0;
+      }
+      return parseGiaBanToNumber(product.gia || original.giaBan || original.gia || original.donGia);
+    })();
+
+    const currentImageValue = extractImageValueFromProduct({
+      ...original,
+      imageValue: product.imageValue
+    });
+
     const formValues = {
-      lv001: product.id || original.maSp || product.maSp || '',
-      lv002: product.ten || original.tenSp || product.tenSp || '',
-      lv003: product.danhMuc || original.maLoai || product.maLoai || '',
-      lv004: giaBanNumber,
-      lv005: original.donVi || original.lv005 || product.donVi || '',
-      lv006: product.moTa || original.moTa || original.ghiChu || product.ghiChu || '',
-      lv007: product.hinhAnh || original.hinhAnh || '',
-      lv008: typeof original.lv008 === 'number' ? original.lv008 : (parseInt(original.lv008, 10) || 0),
-      lv009: typeof original.lv009 === 'number' ? original.lv009 : (parseInt(original.lv009, 10) || 0),
-      lv010: typeof original.lv010 === 'number' ? original.lv010 : (parseInt(original.lv010, 10) || 0)
+      maSanPham: product.id || original.maSp || original.lv001 || '',
+      tenSanPham: product.ten || original.tenSp || original.lv002 || '',
+      maLoai: product.danhMuc || original.maLoai || original.lv003 || '',
+      giaBan: giaBanNumber,
+      donViTinh: product.donVi || original.donVi || original.lv004 || original.lv005 || '',
+      moTa: product.moTa || original.moTa || original.ghiChu || original.lv006 || '',
+      imageUrl: currentImageValue || product.hinhAnh || ''
     };
-    
+
     console.log('Form values to set:', formValues);
     productForm.setFieldsValue(formValues);
     setIsProductModalVisible(true);
@@ -382,60 +406,60 @@ const SanPham = () => {
     try {
       console.log('Form values submitted:', values);
       console.log('Editing product:', editingProduct);
-      
-      // Get original data
+
+      const {
+        maSanPham,
+        tenSanPham,
+        maLoai,
+        giaBan,
+        donViTinh,
+        moTa,
+        imageUrl
+      } = values;
+
       const originalData = editingProduct?.originalProduct || editingProduct || {};
       console.log('Original data:', originalData);
-      
-      // Parse giá bán to ensure it's a number - FIX: Better validation
-      let giaBan = values.lv004;
-      
-      // Handle different input formats
-      if (typeof giaBan === 'string') {
-        giaBan = giaBan.replace(/[,\.]/g, ''); // Remove commas and dots
-        giaBan = parseInt(giaBan, 10);
-      }
-      
-      // Validate the price
-      if (isNaN(giaBan) || giaBan < 0) {
+
+      const giaBanNumber = parseGiaBanToNumber(giaBan);
+
+      if (Number.isNaN(giaBanNumber) || giaBanNumber < 0) {
         message.error('Giá bán không hợp lệ. Vui lòng nhập giá bán hợp lệ.');
         return;
       }
-      
-      console.log('Parsed giaBan:', giaBan);
-      
-      // When editing, get original product data to preserve fields
-      
-      const originalImageValue = (originalData.lv007 || originalData.hinhAnh || '').toString().trim();
-      const originalImageFull = originalImageValue ? getFullImageUrl(originalImageValue) : '';
-      const submittedImageUrl = typeof values.lv007 === 'string' ? values.lv007.trim() : '';
-      const finalImageValue = submittedImageUrl || originalImageValue;
-      const imageUrlChanged = !!submittedImageUrl && submittedImageUrl !== originalImageValue && submittedImageUrl !== originalImageFull;
 
-      // Đảm bảo có đầy đủ 10 field bắt buộc, giữ nguyên giá trị cũ nếu không có giá trị mới
+      console.log('Parsed giaBan:', giaBanNumber);
+
+      const normalizedMaSp = (maSanPham || '').toString().trim();
+      const normalizedTenSp = (tenSanPham || '').toString().trim();
+      const normalizedMaLoai = (maLoai || '').toString().trim();
+      const normalizedDonVi = (donViTinh || originalData.donVi || originalData.lv004 || originalData.lv005 || '').toString().trim();
+
+      const originalImageValue = extractImageValueFromProduct(originalData);
+      const editingImageValue = editingProduct?.imageValue || '';
+      const fallbackImage = typeof editingProduct?.hinhAnh === 'string' ? editingProduct.hinhAnh : '';
+      const currentImageValue = originalImageValue || editingImageValue || fallbackImage || '';
+      const currentImageFull = currentImageValue ? getFullImageUrl(currentImageValue) : '';
+      const submittedImageUrl = typeof imageUrl === 'string' ? imageUrl.trim() : '';
+      const finalImageValue = submittedImageUrl || currentImageValue;
+      const imageUrlChanged = !!submittedImageUrl && submittedImageUrl !== currentImageValue && submittedImageUrl !== currentImageFull;
+
       const payload = {
-        lv001: (values.lv001 || '').toString().trim(),
-        lv002: (values.lv002 || '').toString().trim(),
-        lv003: (values.lv003 || '').toString().trim(),
-        lv004: giaBan, // Must be a valid number
-        lv005: (values.lv005 || originalData.donVi || originalData.lv005 || '').toString().trim(),
-        lv006: (values.lv006 || originalData.moTa || originalData.ghiChu || originalData.lv006 || '').toString().trim(),
-        lv007: finalImageValue,
-        lv008: typeof values.lv008 === 'number' ? values.lv008 : (
-          typeof originalData.lv008 === 'number' ? originalData.lv008 : (parseInt(values.lv008 || originalData.lv008, 10) || 0)
-        ),
-        lv009: typeof values.lv009 === 'number' ? values.lv009 : (
-          typeof originalData.lv009 === 'number' ? originalData.lv009 : (parseInt(values.lv009 || originalData.lv009, 10) || 0)
-        ),
-        lv010: typeof values.lv010 === 'number' ? values.lv010 : (
-          typeof originalData.lv010 === 'number' ? originalData.lv010 : (parseInt(values.lv010 || originalData.lv010, 10) || 0)
-        )
+        maSanPham: normalizedMaSp,
+        tenSanPham: normalizedTenSp,
+        maLoai: normalizedMaLoai,
+        donViTinh: normalizedDonVi,
+        donViQuyDoi: originalData.donViQuyDoi || originalData.lv005 || normalizedDonVi,
+        giaTriQuyDoi: originalData.giaTriQuyDoi || originalData.lv006 || DEFAULT_CONVERSION_VALUE,
+        giaBan: giaBanNumber,
+        donViGia: originalData.donViGia || originalData.lv008 || DEFAULT_CURRENCY,
+        trangThai: originalData.trangThai ?? originalData.trangThai_HienThiSP ?? originalData.lv009 ?? 0,
+        soLuongTonToiThieu: originalData.soLuongTonToiThieu ?? originalData.lv010 ?? 0,
+        ghiChu: moTa ? moTa.toString().trim() : '',
+        imageUrl: finalImageValue
       };
-      
+
       console.log('Payload to send:', payload);
-      console.log('Price in payload (lv004):', payload.lv004, typeof payload.lv004);
-      console.log('Image URL in payload (lv007):', payload.lv007);
-      
+
       let result;
       if (editingProduct) {
         result = await capNhatSanPham(payload);
@@ -446,7 +470,7 @@ const SanPham = () => {
 
         if (imageUrlChanged) {
           console.log('Image URL changed via form:', submittedImageUrl);
-          const imageResult = await updateProductImageUrl(payload.lv001, submittedImageUrl);
+          const imageResult = await updateProductImageUrl(normalizedMaSp, submittedImageUrl);
           console.log('Image update result:', imageResult);
           if (!imageResult.success) {
             message.warning('Cập nhật sản phẩm thành công nhưng không thể đồng bộ URL hình ảnh mới. Vui lòng kiểm tra lại sau.');
@@ -465,7 +489,7 @@ const SanPham = () => {
 
         if (addSuccess) {
           if (submittedImageUrl) {
-            const imageResult = await updateProductImageUrl(payload.lv001, submittedImageUrl);
+            const imageResult = await updateProductImageUrl(normalizedMaSp, submittedImageUrl);
             console.log('Image sync after add result:', imageResult);
             if (!imageResult || !imageResult.success) {
               message.warning('Thêm sản phẩm thành công nhưng không thể lưu URL hình ảnh. Vui lòng thử lại trong mục chỉnh sửa ảnh.');
@@ -479,7 +503,7 @@ const SanPham = () => {
           message.success('Thêm sản phẩm thành công');
         }
       }
-      
+
       setIsProductModalVisible(false);
       productForm.resetFields();
       setEditingProduct(null);
@@ -751,7 +775,7 @@ const SanPham = () => {
           onFinish={handleProductSubmit}
         >
           <Form.Item
-            name="lv001"
+            name="maSanPham"
             label="Mã sản phẩm"
             rules={[{ required: true, message: 'Vui lòng nhập mã sản phẩm' }]}
           >
@@ -759,7 +783,7 @@ const SanPham = () => {
           </Form.Item>
           
           <Form.Item
-            name="lv002"
+            name="tenSanPham"
             label="Tên sản phẩm"
             rules={[{ required: true, message: 'Vui lòng nhập tên sản phẩm' }]}
           >
@@ -767,7 +791,7 @@ const SanPham = () => {
           </Form.Item>
           
           <Form.Item
-            name="lv003"
+            name="maLoai"
             label="Loại sản phẩm"
             rules={[{ required: true, message: 'Vui lòng chọn loại sản phẩm' }]}
           >
@@ -781,7 +805,7 @@ const SanPham = () => {
           </Form.Item>
           
           <Form.Item
-            name="lv004"
+            name="giaBan"
             label="Giá bán"
             rules={[
               { required: true, message: 'Vui lòng nhập giá bán' },
@@ -811,8 +835,8 @@ const SanPham = () => {
           </Form.Item>
           
           <Form.Item
-            name="lv005"
-            label="Đơn vị"
+            name="donViTinh"
+            label="Đơn vị tính"
           >
             <Select placeholder="Chọn đơn vị" showSearch optionFilterProp="children">
               {donViList.map(dv => (
@@ -824,14 +848,14 @@ const SanPham = () => {
           </Form.Item>
           
           <Form.Item
-            name="lv006"
+            name="moTa"
             label="Mô tả"
           >
             <Input.TextArea rows={3} placeholder="Nhập mô tả sản phẩm" />
           </Form.Item>
           
           <Form.Item
-            name="lv007"
+            name="imageUrl"
             label="URL hình ảnh"
           >
             <Input placeholder="Nhập URL hình ảnh" />

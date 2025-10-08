@@ -49,7 +49,7 @@ switch ($vtable) {
 
 	case 'Mb_sanPham':
 		include("../cafe/clsall/sl_lv0007.php");
-		$sl_lv0007 = new sl_lv0007($_SESSION['ERPSOFV2RRight'], $_SESSION['ERPSOFV2RUserID'], 'Jo0100');
+		$sl_lv0007 = new sl_lv0007('admin', 'admin', 'admin');
 		$findID = isset($input['findID']) ? $input['findID'] : (isset($_POST['findID']) ? $_POST['findID'] : "");
 		
 		$lv001 = isset($input['lv001']) ? $input['lv001'] : (isset($_POST['lv001']) ? $_POST['lv001'] : "");
@@ -75,6 +75,7 @@ switch ($vtable) {
 				$sl_lv0007->lv008 = $lv008;
 				$sl_lv0007->lv009 = $lv009;
 				$sl_lv0007->lv010 = $lv010;
+				$sl_lv0007->lv014 = $lv014;
 				$vOutput = $sl_lv0007->LV_Insert();
 				break;
 			case 'edit':
