@@ -39,6 +39,9 @@ const BangDieuKhienNguoiDung = () => {
   const [userGroups, setUserGroups] = useState([]);
   const [themes, setThemes] = useState([]);
   const [availableRights, setAvailableRights] = useState([]);
+  
+  // State cho checkbox quyền
+  const [selectedRightIds, setSelectedRightIds] = useState([]);
 
   useEffect(() => {
     loadUsers();
@@ -141,41 +144,33 @@ const BangDieuKhienNguoiDung = () => {
     try {
       console.log('Attempting to delete user:', record.userId);
       
-      // Bước 1: Lấy danh sách quyền của user
+      // Kiểm tra user có quyền trong hệ thống không
       const userRightsData = await getUserRights(record.userId);
       console.log('User rights:', userRightsData);
       
-      // Bước 2: Xóa tất cả quyền của user trước
       if (Array.isArray(userRightsData) && userRightsData.length > 0) {
-        message.loading({ content: 'Đang xóa quyền người dùng...', key: 'deleting' });
-        
-        for (const right of userRightsData) {
-          try {
-            await deleteUserRight(right.id);
-          } catch (err) {
-            console.warn('Error deleting right:', right.id, err);
-          }
-        }
-        
-        message.success({ content: 'Đã xóa quyền người dùng', key: 'deleting', duration: 1 });
+        message.warning({
+          content: `Không thể xóa người dùng "${record.fullName}" vì còn ${userRightsData.length} quyền trong hệ thống. Vui lòng xóa tất cả quyền của người dùng trước.`,
+          duration: 5
+        });
+        return;
       }
       
-      // Bước 3: Xóa user
-      message.loading({ content: 'Đang xóa người dùng...', key: 'deleting' });
+      // Xóa user
       const result = await deleteUser(record.userId);
       console.log('Delete user result:', result);
       
       if (result && result.success === false) {
-        message.error({ content: result.message || 'Không thể xóa người dùng', key: 'deleting' });
+        message.error(result.message || 'Không thể xóa người dùng');
         return;
       }
       
-      message.success({ content: 'Xóa người dùng thành công', key: 'deleting' });
+      message.success('Xóa người dùng thành công');
       loadUsers();
     } catch (error) {
       console.error('Error deleting user:', error);
       const errorMessage = error?.response?.data?.message || error?.message || 'Không thể xóa người dùng';
-      message.error({ content: errorMessage, key: 'deleting' });
+      message.error(errorMessage);
     }
   };
 
@@ -229,6 +224,7 @@ const BangDieuKhienNguoiDung = () => {
 
   const handleManagePermissions = async (record) => {
     setSelectedUser(record);
+    setSelectedRightIds([]); // Reset checkbox khi mở modal
     await loadUserRights(record.userId);
     setIsPermissionModalVisible(true);
   };
@@ -264,6 +260,65 @@ const BangDieuKhienNguoiDung = () => {
     } catch (error) {
       message.error('Không thể xóa quyền');
       console.error('Error deleting right:', error);
+    }
+  };
+  
+  const handleDeleteSelectedRights = async () => {
+    if (selectedRightIds.length === 0) {
+      message.warning('Vui lòng chọn ít nhất một quyền để xóa');
+      return;
+    }
+    
+    try {
+      message.loading({ content: `Đang xóa ${selectedRightIds.length} quyền...`, key: 'deletingRights' });
+      
+      let successCount = 0;
+      let failCount = 0;
+      
+      for (const rightId of selectedRightIds) {
+        try {
+          await deleteUserRight(rightId);
+          successCount++;
+        } catch (err) {
+          console.error('Error deleting right:', rightId, err);
+          failCount++;
+        }
+      }
+      
+      if (failCount === 0) {
+        message.success({ 
+          content: `Đã xóa thành công ${successCount} quyền`, 
+          key: 'deletingRights' 
+        });
+      } else {
+        message.warning({ 
+          content: `Đã xóa ${successCount} quyền, ${failCount} quyền thất bại`, 
+          key: 'deletingRights' 
+        });
+      }
+      
+      setSelectedRightIds([]);
+      await loadUserRights(selectedUser.userId);
+    } catch (error) {
+      message.error({ content: 'Không thể xóa quyền', key: 'deletingRights' });
+      console.error('Error deleting selected rights:', error);
+    }
+  };
+  
+  const handleSelectAllRights = (checked) => {
+    if (checked) {
+      const allIds = userRights.map(right => right.id);
+      setSelectedRightIds(allIds);
+    } else {
+      setSelectedRightIds([]);
+    }
+  };
+  
+  const handleSelectRight = (rightId, checked) => {
+    if (checked) {
+      setSelectedRightIds([...selectedRightIds, rightId]);
+    } else {
+      setSelectedRightIds(selectedRightIds.filter(id => id !== rightId));
     }
   };
 
@@ -359,6 +414,25 @@ const BangDieuKhienNguoiDung = () => {
   ];
 
   const rightColumns = [
+    {
+      title: (
+        <Checkbox
+          checked={userRights.length > 0 && selectedRightIds.length === userRights.length}
+          indeterminate={selectedRightIds.length > 0 && selectedRightIds.length < userRights.length}
+          onChange={(e) => handleSelectAllRights(e.target.checked)}
+        />
+      ),
+      dataIndex: 'checkbox',
+      key: 'checkbox',
+      width: 50,
+      align: 'center',
+      render: (_, record) => (
+        <Checkbox
+          checked={selectedRightIds.includes(record.id)}
+          onChange={(e) => handleSelectRight(record.id, e.target.checked)}
+        />
+      )
+    },
     {
       title: 'Mã quyền',
       dataIndex: 'rightId',
@@ -605,9 +679,15 @@ const BangDieuKhienNguoiDung = () => {
       <Modal
         title={`Quản lý quyền: ${selectedUser?.fullName || ''}`}
         open={isPermissionModalVisible}
-        onCancel={() => setIsPermissionModalVisible(false)}
+        onCancel={() => {
+          setIsPermissionModalVisible(false);
+          setSelectedRightIds([]);
+        }}
         footer={[
-          <Button key="close" onClick={() => setIsPermissionModalVisible(false)}>
+          <Button key="close" onClick={() => {
+            setIsPermissionModalVisible(false);
+            setSelectedRightIds([]);
+          }}>
             Đóng
           </Button>
         ]}
@@ -634,6 +714,37 @@ const BangDieuKhienNguoiDung = () => {
               Chọn quyền từ danh sách để thêm cho người dùng
             </span>
           </div>
+          
+          {selectedRightIds.length > 0 && (
+            <div style={{ 
+              display: 'flex', 
+              gap: '8px', 
+              alignItems: 'center', 
+              padding: '8px 12px',
+              background: '#e6f7ff',
+              borderRadius: '4px',
+              border: '1px solid #91d5ff'
+            }}>
+              <span style={{ flex: 1, color: '#0050b3' }}>
+                Đã chọn {selectedRightIds.length} quyền
+              </span>
+              <Popconfirm
+                title="Xác nhận xóa hàng loạt"
+                description={`Bạn có chắc chắn muốn xóa ${selectedRightIds.length} quyền đã chọn?`}
+                onConfirm={handleDeleteSelectedRights}
+                okText="Xóa"
+                cancelText="Hủy"
+                okButtonProps={{ danger: true }}
+              >
+                <Button 
+                  danger 
+                  icon={<Trash2 size={16} />}
+                >
+                  Xóa {selectedRightIds.length} quyền
+                </Button>
+              </Popconfirm>
+            </div>
+          )}
         </Space>
         
         <Table
