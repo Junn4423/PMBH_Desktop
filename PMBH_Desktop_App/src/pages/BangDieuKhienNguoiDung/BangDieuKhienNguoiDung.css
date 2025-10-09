@@ -1,56 +1,467 @@
+/* Container chính - Responsive padding */
 .bang-dieu-khien-nguoi-dung-container {
   padding: 20px;
+  max-width: 100%;
+  overflow-x: hidden;
 }
 
+/* Breadcrumb to rõ hơn */
 .page-breadcrumb {
-  margin-bottom: 16px;
+  margin-bottom: 20px;
+  font-size: 16px;
 }
 
+.bang-dieu-khien-nguoi-dung-container .page-breadcrumb .ant-breadcrumb-link {
+  font-size: 16px;
+}
+
+/* Card chính */
 .main-card {
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  border-radius: 8px;
 }
 
+/* Title to và rõ */
 .page-title {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
   font-weight: 600;
+  font-size: 18px;
   color: #197dd3;
 }
 
-.bang-dieu-khien-nguoi-dung-container .ant-table-thead > tr > th {
-  background-color: #77d4fb;
-  color: #4b4344;
-  font-weight: 600;
+/* ===== SEARCH INPUT & ADD BUTTON - CÙNG KÍCH THƯỚC ===== */
+
+/* Search input - Cùng chiều cao với button thêm */
+.bang-dieu-khien-nguoi-dung-container .search-input {
+  width: 250px;
+  height: 38px;
+  font-size: 14px;
 }
 
+/* Button thêm người dùng - Đặt width cố định để cân đối */
+.bang-dieu-khien-nguoi-dung-container .add-user-button {
+  width: 180px;
+  height: 38px;
+  font-size: 14px;
+  padding: 0 16px;
+}
+
+/* ===== BUTTONS - TO RÕ CHO CẢ PC VÀ MÁY POS CẢM ỨNG ===== */
+
+/* Button chính - Thêm người dùng */
 .bang-dieu-khien-nguoi-dung-container .ant-btn-primary {
   background-color: #197dd3;
   border-color: #197dd3;
+  height: 38px;
+  min-width: 140px;
+  font-size: 14px;
+  font-weight: 500;
+  padding: 0 16px;
+  border-radius: 6px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  transition: all 0.3s ease;
 }
 
 .bang-dieu-khien-nguoi-dung-container .ant-btn-primary:hover {
-  background-color: #77d4fb;
+  background-color: #1566b3;
+  border-color: #1566b3;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(25, 125, 211, 0.3);
+}
+
+.bang-dieu-khien-nguoi-dung-container .ant-btn-primary:active {
+  transform: translateY(0);
+}
+
+/* Button thao tác trong bảng - Nhỏ gọn hơn */
+.bang-dieu-khien-nguoi-dung-container .ant-btn-text {
+  height: 34px;
+  min-width: 34px;
+  padding: 0;
+  border-radius: 4px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
+.bang-dieu-khien-nguoi-dung-container .ant-btn-text:hover {
+  background-color: #e6f7ff;
+  transform: scale(1.08);
+}
+
+.bang-dieu-khien-nguoi-dung-container .ant-btn-text.ant-btn-dangerous:hover {
+  background-color: #fff1f0;
+}
+
+/* Button thao tác với icon vừa phải */
+.bang-dieu-khien-nguoi-dung-container .ant-btn-text svg {
+  width: 18px;
+  height: 18px;
+}
+
+/* Button trong modal */
+.bang-dieu-khien-nguoi-dung-container .ant-modal-footer .ant-btn {
+  height: 38px;
+  min-width: 100px;
+  font-size: 14px;
+  padding: 0 20px;
+  border-radius: 6px;
+}
+
+/* Button xóa hàng loạt */
+.bang-dieu-khien-nguoi-dung-container .ant-btn-dangerous {
+  height: 38px;
+  font-size: 14px;
+  padding: 0 16px;
+  border-radius: 6px;
+}
+
+/* ===== INPUT & SELECT - VỪA PHẢI DỄ NHẬP ===== */
+
+/* Input tìm kiếm */
+.bang-dieu-khien-nguoi-dung-container .ant-input {
+  height: 38px;
+  font-size: 14px;
+  padding: 6px 12px;
+  border-radius: 6px;
+  border: 2px solid #d9d9d9;
+  transition: all 0.3s ease;
+}
+
+.bang-dieu-khien-nguoi-dung-container .ant-input:hover {
   border-color: #77d4fb;
 }
 
 .bang-dieu-khien-nguoi-dung-container .ant-input:focus,
 .bang-dieu-khien-nguoi-dung-container .ant-input-focused {
   border-color: #197dd3;
-  box-shadow: 0 0 0 2px rgba(25, 125, 211, 0.2);
+  box-shadow: 0 0 0 3px rgba(25, 125, 211, 0.15);
 }
+
+/* Input prefix icon */
+.bang-dieu-khien-nguoi-dung-container .ant-input-prefix {
+  margin-right: 8px;
+}
+
+.bang-dieu-khien-nguoi-dung-container .ant-input-prefix svg {
+  width: 16px;
+  height: 16px;
+  color: #bdbcc4;
+}
+
+/* Select dropdown */
+.bang-dieu-khien-nguoi-dung-container .ant-select {
+  font-size: 14px;
+}
+
+.bang-dieu-khien-nguoi-dung-container .ant-select-selector {
+  height: 38px !important;
+  padding: 0 12px !important;
+  border: 2px solid #d9d9d9 !important;
+  border-radius: 6px !important;
+  align-items: center;
+  font-size: 14px;
+}
+
+.bang-dieu-khien-nguoi-dung-container .ant-select-selection-search-input {
+  height: 36px !important;
+  font-size: 14px;
+}
+
+.bang-dieu-khien-nguoi-dung-container .ant-select-selection-placeholder {
+  line-height: 36px !important;
+  font-size: 14px;
+}
+
+.bang-dieu-khien-nguoi-dung-container .ant-select:hover .ant-select-selector {
+  border-color: #77d4fb !important;
+}
+
+.bang-dieu-khien-nguoi-dung-container .ant-select-focused .ant-select-selector {
+  border-color: #197dd3 !important;
+  box-shadow: 0 0 0 3px rgba(25, 125, 211, 0.15) !important;
+}
+
+/* Input password */
+.bang-dieu-khien-nguoi-dung-container .ant-input-password {
+  height: 38px;
+  padding: 0 12px;
+  border: 2px solid #d9d9d9;
+  border-radius: 6px;
+}
+
+.bang-dieu-khien-nguoi-dung-container .ant-input-password input {
+  height: 34px;
+  font-size: 14px;
+}
+
+/* ===== TABLE - TO RÕ DỄ ĐỌC ===== */
+
+/* Table container - Layout tách biệt giữa table và pagination */
+.bang-dieu-khien-nguoi-dung-container .ant-table-wrapper {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.bang-dieu-khien-nguoi-dung-container .ant-spin-nested-loading,
+.bang-dieu-khien-nguoi-dung-container .ant-spin-container {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  flex: 1;
+}
+
+.bang-dieu-khien-nguoi-dung-container .ant-table {
+  border-radius: 8px 8px 0 0;
+  flex: 1;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.bang-dieu-khien-nguoi-dung-container .ant-table-container {
+  flex: 1;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Table header - Cố định khi scroll, nhỏ gọn hơn */
+.bang-dieu-khien-nguoi-dung-container .ant-table-thead > tr > th {
+  background-color: #77d4fb;
+  color: #4b4344;
+  font-weight: 600;
+  font-size: 14px;
+  padding: 10px 8px;
+  border-bottom: 2px solid #197dd3;
+  white-space: nowrap;
+}
+
+/* Table body - Scroll riêng phần này, pagination ở ngoài */
+.bang-dieu-khien-nguoi-dung-container .ant-table-body {
+  overflow-y: auto !important;
+  overflow-x: auto !important;
+  flex: 1;
+}
+
+/* Custom scrollbar cho table body - nhỏ hơn */
+.bang-dieu-khien-nguoi-dung-container .ant-table-body::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.bang-dieu-khien-nguoi-dung-container .ant-table-body::-webkit-scrollbar-track {
+  background: #f0f0f0;
+  border-radius: 3px;
+}
+
+.bang-dieu-khien-nguoi-dung-container .ant-table-body::-webkit-scrollbar-thumb {
+  background: #bdbcc4;
+  border-radius: 3px;
+}
+
+.bang-dieu-khien-nguoi-dung-container .ant-table-body::-webkit-scrollbar-thumb:hover {
+  background: #197dd3;
+}
+
+/* Table cells - Nhỏ gọn để hiển thị đầy đủ */
+.bang-dieu-khien-nguoi-dung-container .ant-table-tbody > tr > td {
+  font-size: 14px;
+  padding: 10px 8px;
+  border-bottom: 1px solid #f0f0f0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Table row hover */
+.bang-dieu-khien-nguoi-dung-container .ant-table-tbody > tr:hover > td {
+  background-color: #e6f7ff;
+}
+
+/* Cột có ellipsis */
+.bang-dieu-khien-nguoi-dung-container .ant-table-cell-ellipsis {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Fixed column (Thao tác) */
+.bang-dieu-khien-nguoi-dung-container .ant-table-cell-fix-right {
+  background: #fff;
+  position: sticky !important;
+  right: 0;
+  box-shadow: -2px 0 4px rgba(0, 0, 0, 0.08);
+}
+
+.bang-dieu-khien-nguoi-dung-container .ant-table-tbody > tr:hover > .ant-table-cell-fix-right {
+  background-color: #e6f7ff;
+}
+
+/* Pagination gọn - LUÔN Ở NGOÀI, KHÔNG SCROLL */
+.bang-dieu-khien-nguoi-dung-container .ant-table-pagination {
+  margin: 0;
+  padding: 12px 16px;
+  border-top: 2px solid #f0f0f0;
+  background: #fff;
+  position: relative;
+  flex-shrink: 0;
+}
+
+.bang-dieu-khien-nguoi-dung-container .ant-pagination {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+}
+
+.bang-dieu-khien-nguoi-dung-container .ant-pagination-item,
+.bang-dieu-khien-nguoi-dung-container .ant-pagination-prev,
+.bang-dieu-khien-nguoi-dung-container .ant-pagination-next {
+  min-width: 34px;
+  height: 34px;
+  line-height: 32px;
+  font-size: 14px;
+  border-radius: 4px;
+}
+
+.bang-dieu-khien-nguoi-dung-container .ant-pagination-item-active {
+  background-color: #197dd3;
+  border-color: #197dd3;
+}
+
+.bang-dieu-khien-nguoi-dung-container .ant-pagination-item-active a {
+  color: white;
+}
+
+/* Page size changer */
+.bang-dieu-khien-nguoi-dung-container .ant-select-dropdown .ant-select-item {
+  font-size: 14px;
+  padding: 6px 10px;
+  min-height: 34px;
+}
+
+.bang-dieu-khien-nguoi-dung-container .ant-pagination-options {
+  margin-left: 12px;
+}
+
+.bang-dieu-khien-nguoi-dung-container .ant-pagination-options .ant-select-selector {
+  height: 34px !important;
+  padding: 0 10px !important;
+  font-size: 14px;
+}
+
+.bang-dieu-khien-nguoi-dung-container .ant-pagination-options .ant-select-selection-item {
+  line-height: 32px !important;
+}
+
+/* ===== MODAL - GỌN HỢP LÝ ===== */
 
 .bang-dieu-khien-nguoi-dung-container .ant-modal-header {
   background-color: #77d4fb;
+  padding: 16px 20px;
+  border-radius: 8px 8px 0 0;
 }
 
 .bang-dieu-khien-nguoi-dung-container .ant-modal-title {
   color: #4b4344;
   font-weight: 600;
+  font-size: 17px;
+}
+
+.bang-dieu-khien-nguoi-dung-container .ant-modal-body {
+  padding: 20px;
+  font-size: 14px;
+}
+
+.bang-dieu-khien-nguoi-dung-container .ant-modal-footer {
+  padding: 12px 20px;
+}
+
+/* Form labels */
+.bang-dieu-khien-nguoi-dung-container .ant-form-item-label > label {
+  font-size: 14px;
+  font-weight: 500;
+  height: 28px;
+}
+
+.bang-dieu-khien-nguoi-dung-container .ant-form-item-extra {
+  font-size: 13px;
+  margin-top: 4px;
+}
+
+/* ===== SWITCH - VỪA PHẢI ===== */
+
+.bang-dieu-khien-nguoi-dung-container .ant-switch {
+  min-width: 44px;
+  height: 24px;
+  line-height: 24px;
+}
+
+.bang-dieu-khien-nguoi-dung-container .ant-switch-handle {
+  width: 20px;
+  height: 20px;
+  top: 2px;
 }
 
 .bang-dieu-khien-nguoi-dung-container .ant-switch-checked {
   background-color: #197dd3;
+}
+
+.bang-dieu-khien-nguoi-dung-container .ant-switch-checked .ant-switch-handle {
+  left: calc(100% - 20px - 2px);
+}
+
+/* ===== CHECKBOX - VỪA PHẢI ===== */
+
+.bang-dieu-khien-nguoi-dung-container .ant-checkbox-wrapper {
+  font-size: 14px;
+}
+
+.bang-dieu-khien-nguoi-dung-container .ant-checkbox-inner {
+  width: 18px;
+  height: 18px;
+  border: 2px solid #d9d9d9;
+  border-radius: 3px;
+}
+
+.bang-dieu-khien-nguoi-dung-container .ant-checkbox-checked .ant-checkbox-inner {
+  background-color: #197dd3;
+  border-color: #197dd3;
+}
+
+.bang-dieu-khien-nguoi-dung-container .ant-checkbox-inner::after {
+  width: 5px;
+  height: 8px;
+}
+
+/* ===== SPACE & LAYOUT ===== */
+
+.bang-dieu-khien-nguoi-dung-container .ant-space {
+  gap: 8px !important;
+}
+
+.bang-dieu-khien-nguoi-dung-container .ant-space-item {
+  display: flex;
+  align-items: center;
+}
+
+/* Action buttons spacing */
+.bang-dieu-khien-nguoi-dung-container .ant-space-compact {
+  gap: 6px;
+}
+
+/* ===== TABS ===== */
+
+.bang-dieu-khien-nguoi-dung-container .ant-tabs-tab {
+  padding: 10px 14px;
+  font-size: 14px;
 }
 
 .bang-dieu-khien-nguoi-dung-container .ant-tabs-tab-active {
@@ -59,4 +470,153 @@
 
 .bang-dieu-khien-nguoi-dung-container .ant-tabs-ink-bar {
   background-color: #197dd3;
+  height: 3px;
+}
+
+/* ===== POPCONFIRM ===== */
+
+.bang-dieu-khien-nguoi-dung-container .ant-popover-message-title {
+  font-size: 16px;
+  padding-left: 28px;
+}
+
+.bang-dieu-khien-nguoi-dung-container .ant-popover-buttons .ant-btn {
+  height: 36px;
+  padding: 0 16px;
+  font-size: 15px;
+}
+
+/* ===== BATCH DELETE TOOLBAR ===== */
+
+.bang-dieu-khien-nguoi-dung-container .batch-delete-toolbar {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  padding: 12px 16px;
+  background: #e6f7ff;
+  border-radius: 6px;
+  border: 2px solid #91d5ff;
+  margin-bottom: 16px;
+}
+
+.bang-dieu-khien-nguoi-dung-container .batch-delete-toolbar span {
+  flex: 1;
+  color: #0050b3;
+  font-size: 16px;
+  font-weight: 500;
+}
+
+/* ===== RESPONSIVE - CHO CÁC KÍCH THƯỚC MÀN HÌNH MÁY TÍNH ===== */
+
+/* Màn hình lớn (Desktop 1920px+) */
+@media (min-width: 1920px) {
+  .bang-dieu-khien-nguoi-dung-container {
+    padding: 32px;
+  }
+  
+  .page-title {
+    font-size: 26px;
+  }
+  
+  .bang-dieu-khien-nguoi-dung-container .ant-table-thead > tr > th {
+    font-size: 18px;
+    padding: 20px 16px;
+  }
+  
+  .bang-dieu-khien-nguoi-dung-container .ant-table-tbody > tr > td {
+    font-size: 16px;
+    padding: 18px 16px;
+  }
+}
+
+/* Màn hình vừa (Desktop 1366px - 1920px) */
+@media (min-width: 1366px) and (max-width: 1919px) {
+  .bang-dieu-khien-nguoi-dung-container {
+    padding: 24px;
+  }
+}
+
+/* Màn hình nhỏ (Desktop 1024px - 1365px) */
+@media (min-width: 1024px) and (max-width: 1365px) {
+  .bang-dieu-khien-nguoi-dung-container {
+    padding: 20px;
+  }
+  
+  .page-title {
+    font-size: 20px;
+  }
+  
+  .bang-dieu-khien-nguoi-dung-container .ant-btn-primary {
+    min-width: 140px;
+    font-size: 15px;
+  }
+  
+  .bang-dieu-khien-nguoi-dung-container .ant-table-thead > tr > th {
+    font-size: 15px;
+    padding: 14px 10px;
+  }
+  
+  .bang-dieu-khien-nguoi-dung-container .ant-table-tbody > tr > td {
+    font-size: 14px;
+    padding: 12px 10px;
+  }
+}
+
+/* Màn hình tablet/POS nhỏ (768px - 1023px) */
+@media (min-width: 768px) and (max-width: 1023px) {
+  .bang-dieu-khien-nguoi-dung-container {
+    padding: 16px;
+  }
+  
+  .page-title {
+    font-size: 18px;
+  }
+  
+  /* Search input và button cùng kích thước cho POS */
+  .bang-dieu-khien-nguoi-dung-container .search-input {
+    width: 280px;
+    height: 48px;
+  }
+  
+  .bang-dieu-khien-nguoi-dung-container .add-user-button {
+    width: 200px;
+    height: 48px;
+  }
+  
+  .bang-dieu-khien-nguoi-dung-container .ant-btn-primary {
+    height: 48px;
+    min-width: 160px;
+    font-size: 16px;
+  }
+  
+  .bang-dieu-khien-nguoi-dung-container .ant-btn-text {
+    height: 44px;
+    min-width: 44px;
+  }
+  
+  .bang-dieu-khien-nguoi-dung-container .ant-input {
+    height: 48px;
+    font-size: 17px;
+  }
+  
+  .bang-dieu-khien-nguoi-dung-container .ant-select-selector {
+    height: 48px !important;
+  }
+  
+  .bang-dieu-khien-nguoi-dung-container .ant-table-thead > tr > th {
+    font-size: 15px;
+    padding: 14px 8px;
+  }
+  
+  .bang-dieu-khien-nguoi-dung-container .ant-table-tbody > tr > td {
+    font-size: 14px;
+    padding: 12px 8px;
+  }
+  
+  /* Modal footer buttons to hơn cho cảm ứng */
+  .bang-dieu-khien-nguoi-dung-container .ant-modal-footer .ant-btn {
+    height: 48px;
+    min-width: 140px;
+    font-size: 17px;
+  }
 }

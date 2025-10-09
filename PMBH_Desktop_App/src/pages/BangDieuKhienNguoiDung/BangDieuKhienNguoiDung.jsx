@@ -334,32 +334,38 @@ const BangDieuKhienNguoiDung = () => {
       title: 'Mã người dùng',
       dataIndex: 'userId',
       key: 'userId',
-      width: 150
+      width: 110,
+      ellipsis: true
     },
     {
       title: 'Tên đầy đủ',
       dataIndex: 'fullName',
-      key: 'fullName'
+      key: 'fullName',
+      width: 150,
+      ellipsis: true
     },
     {
       title: 'Nhóm người dùng',
       dataIndex: 'groupUserId',
       key: 'groupUserId',
-      width: 150
+      width: 120,
+      ellipsis: true
     },
     {
       title: 'Mã nhân viên',
       dataIndex: 'employeeId',
       key: 'employeeId',
-      width: 120
+      width: 110,
+      ellipsis: true
     },
     {
       title: 'Trạng thái',
       dataIndex: 'status',
       key: 'status',
-      width: 100,
+      width: 95,
+      align: 'center',
       render: (status) => (
-        <span style={{ color: status === 1 ? '#ff4d4f' : '#52c41a' }}>
+        <span style={{ color: status === 1 ? '#ff4d4f' : '#52c41a', fontSize: '14px' }}>
           {status === 1 ? 'Đã khóa' : 'Hoạt động'}
         </span>
       )
@@ -367,7 +373,9 @@ const BangDieuKhienNguoiDung = () => {
     {
       title: 'Thao tác',
       key: 'action',
-      width: 250,
+      width: 200,
+      align: 'center',
+      fixed: 'right',
       render: (_, record) => (
         <Space size="small">
           <Button
@@ -437,18 +445,21 @@ const BangDieuKhienNguoiDung = () => {
       title: 'Mã quyền',
       dataIndex: 'rightId',
       key: 'rightId',
-      width: 120
+      width: 90,
+      ellipsis: true
     },
     {
       title: 'Tên quyền / Module',
       dataIndex: 'rightName',
       key: 'rightName',
+      width: 250,
+      ellipsis: true,
       render: (text, record) => (
         <div>
-          <div style={{ fontWeight: 500 }}>{text || record.rightId}</div>
+          <div style={{ fontWeight: 500, fontSize: '14px' }}>{text || record.rightId}</div>
           {record.rightPath && (
-            <div style={{ fontSize: '12px', color: '#888', marginTop: '4px' }}>
-              Đường dẫn: {record.rightPath}
+            <div style={{ fontSize: '12px', color: '#888', marginTop: '2px' }}>
+              {record.rightPath}
             </div>
           )}
         </div>
@@ -458,7 +469,7 @@ const BangDieuKhienNguoiDung = () => {
       title: 'Trạng thái',
       dataIndex: 'enabled',
       key: 'enabled',
-      width: 100,
+      width: 85,
       align: 'center',
       render: (enabled, record) => (
         <Switch
@@ -472,6 +483,7 @@ const BangDieuKhienNguoiDung = () => {
       key: 'action',
       width: 80,
       align: 'center',
+      fixed: 'right',
       render: (_, record) => (
         <Popconfirm
           title="Xác nhận xóa"
@@ -516,12 +528,13 @@ const BangDieuKhienNguoiDung = () => {
               prefix={<Search size={16} />}
               value={searchText}
               onChange={(e) => setSearchText(e.target.value)}
-              style={{ width: 250 }}
+              className="search-input"
             />
             <Button
               type="primary"
               icon={<Plus size={16} />}
               onClick={handleAdd}
+              className="add-user-button"
             >
               Thêm người dùng
             </Button>
@@ -534,10 +547,13 @@ const BangDieuKhienNguoiDung = () => {
           dataSource={filteredUsers}
           loading={loading}
           rowKey="userId"
+          scroll={{ y: 'calc(100vh - 320px)', x: 'max-content' }}
           pagination={{
-            pageSize: 10,
+            defaultPageSize: 10,
+            pageSizeOptions: ['10', '20', '50', '100'],
             showSizeChanger: true,
-            showTotal: (total) => `Tổng ${total} người dùng`
+            showTotal: (total) => `Tổng ${total} người dùng`,
+            position: ['bottomRight']
           }}
         />
       </Card>
@@ -751,10 +767,13 @@ const BangDieuKhienNguoiDung = () => {
           columns={rightColumns}
           dataSource={userRights}
           rowKey="id"
+          scroll={{ y: 'calc(100vh - 480px)', x: 'max-content' }}
           pagination={{
-            pageSize: 10,
+            defaultPageSize: 10,
+            pageSizeOptions: ['10', '20', '50', '100'],
             showSizeChanger: true,
-            showTotal: (total) => `Tổng ${total} quyền`
+            showTotal: (total) => `Tổng ${total} quyền`,
+            position: ['bottomRight']
           }}
         />
       </Modal>
