@@ -1731,3 +1731,38 @@ export async function getAllPermissions() {
   return await callApi('Mb_Permissions', 'getAll');
 }
 
+/**
+ * Lấy danh sách nhóm người dùng cho dropdown
+ */
+export async function getUserGroups() {
+  return await callApi('Mb_UserFormData', 'getUserGroups');
+}
+
+/**
+ * Lấy danh sách nhân viên cho dropdown
+ */
+export async function getEmployees() {
+  return await callApi('Mb_UserFormData', 'getEmployees');
+}
+
+/**
+ * Lấy danh sách chi nhánh cho dropdown
+ */
+export async function getBranches() {
+  return await callApi('Mb_UserFormData', 'getBranches');
+}
+
+/**
+ * Lấy danh sách themes cho dropdown
+ */
+export async function getThemes() {
+  return await callApi('Mb_UserFormData', 'getThemes');
+}
+
+/**
+ * Lấy danh sách quyền có thể gán cho người dùng
+ */
+export async function getAvailableRights() {
+  return await callApi('Mb_UserFormData', 'getAvailableRights');
+}
+

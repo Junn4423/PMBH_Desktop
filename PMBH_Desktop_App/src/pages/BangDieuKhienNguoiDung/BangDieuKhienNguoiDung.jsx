@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Card, Breadcrumb, Button, Table, Modal, Form, Input, message, Space, Popconfirm, Switch, Tabs, Checkbox } from 'antd';
+import { Card, Breadcrumb, Button, Table, Modal, Form, Input, message, Space, Popconfirm, Switch, Tabs, Checkbox, Select } from 'antd';
 import { Users, Plus, Edit, Trash2, Search, Lock, Unlock, Key, ShieldCheck } from 'lucide-react';
 import { 
   getAllUsers, 
@@ -14,7 +14,10 @@ import {
   deleteUserRight,
   getRightDetails,
   updateDetailRight,
-  getAllPermissions
+  getAllPermissions,
+  getUserGroups,
+  getThemes,
+  getAvailableRights
 } from '../../services/apiServices';
 import './BangDieuKhienNguoiDung.css';
 
@@ -31,10 +34,16 @@ const BangDieuKhienNguoiDung = () => {
   const [searchText, setSearchText] = useState('');
   const [form] = Form.useForm();
   const [passwordForm] = Form.useForm();
+  
+  // State cho dropdown data
+  const [userGroups, setUserGroups] = useState([]);
+  const [themes, setThemes] = useState([]);
+  const [availableRights, setAvailableRights] = useState([]);
 
   useEffect(() => {
     loadUsers();
     loadPermissions();
+    loadDropdownData();
   }, []);
 
   const loadUsers = async () => {
@@ -72,6 +81,23 @@ const BangDieuKhienNguoiDung = () => {
       setPermissions(permissionsData);
     } catch (error) {
       console.error('Error loading permissions:', error);
+    }
+  };
+  
+  const loadDropdownData = async () => {
+    try {
+      // Load tất cả dữ liệu dropdown song song
+      const [groupsRes, themesRes, rightsRes] = await Promise.all([
+        getUserGroups(),
+        getThemes(),
+        getAvailableRights()
+      ]);
+      
+      setUserGroups(Array.isArray(groupsRes) ? groupsRes : []);
+      setThemes(Array.isArray(themesRes) ? themesRes : []);
+      setAvailableRights(Array.isArray(rightsRes) ? rightsRes : []);
+    } catch (error) {
+      console.error('Error loading dropdown data:', error);
     }
   };
 
@@ -113,12 +139,43 @@ const BangDieuKhienNguoiDung = () => {
 
   const handleDelete = async (record) => {
     try {
-      await deleteUser(record.userId);
-      message.success('Xóa người dùng thành công');
+      console.log('Attempting to delete user:', record.userId);
+      
+      // Bước 1: Lấy danh sách quyền của user
+      const userRightsData = await getUserRights(record.userId);
+      console.log('User rights:', userRightsData);
+      
+      // Bước 2: Xóa tất cả quyền của user trước
+      if (Array.isArray(userRightsData) && userRightsData.length > 0) {
+        message.loading({ content: 'Đang xóa quyền người dùng...', key: 'deleting' });
+        
+        for (const right of userRightsData) {
+          try {
+            await deleteUserRight(right.id);
+          } catch (err) {
+            console.warn('Error deleting right:', right.id, err);
+          }
+        }
+        
+        message.success({ content: 'Đã xóa quyền người dùng', key: 'deleting', duration: 1 });
+      }
+      
+      // Bước 3: Xóa user
+      message.loading({ content: 'Đang xóa người dùng...', key: 'deleting' });
+      const result = await deleteUser(record.userId);
+      console.log('Delete user result:', result);
+      
+      if (result && result.success === false) {
+        message.error({ content: result.message || 'Không thể xóa người dùng', key: 'deleting' });
+        return;
+      }
+      
+      message.success({ content: 'Xóa người dùng thành công', key: 'deleting' });
       loadUsers();
     } catch (error) {
-      message.error('Không thể xóa người dùng');
       console.error('Error deleting user:', error);
+      const errorMessage = error?.response?.data?.message || error?.message || 'Không thể xóa người dùng';
+      message.error({ content: errorMessage, key: 'deleting' });
     }
   };
 
@@ -184,6 +241,29 @@ const BangDieuKhienNguoiDung = () => {
     } catch (error) {
       message.error('Không thể cập nhật quyền');
       console.error('Error updating right:', error);
+    }
+  };
+  
+  const handleAddRight = async (rightId) => {
+    try {
+      if (!selectedUser) return;
+      await addUserRight(selectedUser.userId, rightId);
+      message.success('Thêm quyền thành công');
+      await loadUserRights(selectedUser.userId);
+    } catch (error) {
+      message.error('Không thể thêm quyền');
+      console.error('Error adding right:', error);
+    }
+  };
+  
+  const handleDeleteRight = async (rightId) => {
+    try {
+      await deleteUserRight(rightId);
+      message.success('Xóa quyền thành công');
+      await loadUserRights(selectedUser.userId);
+    } catch (error) {
+      message.error('Không thể xóa quyền');
+      console.error('Error deleting right:', error);
     }
   };
 
@@ -280,26 +360,59 @@ const BangDieuKhienNguoiDung = () => {
 
   const rightColumns = [
     {
-      title: 'Tên quyền',
-      dataIndex: 'permissionName',
-      key: 'permissionName'
-    },
-    {
       title: 'Mã quyền',
       dataIndex: 'rightId',
       key: 'rightId',
-      width: 100
+      width: 120
+    },
+    {
+      title: 'Tên quyền / Module',
+      dataIndex: 'rightName',
+      key: 'rightName',
+      render: (text, record) => (
+        <div>
+          <div style={{ fontWeight: 500 }}>{text || record.rightId}</div>
+          {record.rightPath && (
+            <div style={{ fontSize: '12px', color: '#888', marginTop: '4px' }}>
+              Đường dẫn: {record.rightPath}
+            </div>
+          )}
+        </div>
+      )
     },
     {
       title: 'Trạng thái',
       dataIndex: 'enabled',
       key: 'enabled',
       width: 100,
+      align: 'center',
       render: (enabled, record) => (
         <Switch
           checked={enabled === 1}
           onChange={(checked) => handleToggleRight(record.id, checked)}
         />
+      )
+    },
+    {
+      title: 'Thao tác',
+      key: 'action',
+      width: 80,
+      align: 'center',
+      render: (_, record) => (
+        <Popconfirm
+          title="Xác nhận xóa"
+          description="Bạn có chắc chắn muốn xóa quyền này?"
+          onConfirm={() => handleDeleteRight(record.id)}
+          okText="Xóa"
+          cancelText="Hủy"
+        >
+          <Button
+            type="text"
+            danger
+            icon={<Trash2 size={16} />}
+            title="Xóa quyền"
+          />
+        </Popconfirm>
       )
     }
   ];
@@ -388,15 +501,25 @@ const BangDieuKhienNguoiDung = () => {
           </Form.Item>
           <Form.Item
             name="groupId"
-            label="Mã nhóm"
+            label="Mã nhóm (tùy chọn)"
+            extra="Có thể để trống hoặc nhập thủ công"
           >
             <Input placeholder="Nhập mã nhóm" />
           </Form.Item>
           <Form.Item
             name="groupUserId"
             label="Nhóm người dùng"
+            extra="Chọn từ danh sách hoặc nhập thủ công"
           >
-            <Input placeholder="Nhập nhóm người dùng" />
+            <Select
+              showSearch
+              allowClear
+              placeholder="Chọn nhóm người dùng"
+              options={userGroups}
+              filterOption={(input, option) =>
+                (option?.label ?? '').toLowerCase().includes(input.toLowerCase())
+              }
+            />
           </Form.Item>
           <Form.Item
             name="employeeId"
@@ -406,9 +529,13 @@ const BangDieuKhienNguoiDung = () => {
           </Form.Item>
           <Form.Item
             name="theme"
-            label="Theme"
+            label="Giao diện"
+            initialValue="themes1"
           >
-            <Input placeholder="themes1, themes2, themes3, themes4" />
+            <Select
+              placeholder="Chọn giao diện"
+              options={themes}
+            />
           </Form.Item>
           <Form.Item
             name="branchId"
@@ -484,15 +611,39 @@ const BangDieuKhienNguoiDung = () => {
             Đóng
           </Button>
         ]}
-        width={800}
+        width={1000}
       >
+        <Space direction="vertical" style={{ width: '100%', marginBottom: 16 }}>
+          <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+            <Select
+              showSearch
+              allowClear
+              placeholder="Chọn quyền để thêm"
+              style={{ flex: 1 }}
+              options={availableRights}
+              filterOption={(input, option) =>
+                (option?.label ?? '').toLowerCase().includes(input.toLowerCase())
+              }
+              onChange={(value) => {
+                if (value) {
+                  handleAddRight(value);
+                }
+              }}
+            />
+            <span style={{ fontSize: '12px', color: '#888' }}>
+              Chọn quyền từ danh sách để thêm cho người dùng
+            </span>
+          </div>
+        </Space>
+        
         <Table
           columns={rightColumns}
           dataSource={userRights}
           rowKey="id"
           pagination={{
             pageSize: 10,
-            showSizeChanger: false
+            showSizeChanger: true,
+            showTotal: (total) => `Tổng ${total} quyền`
           }}
         />
       </Modal>
