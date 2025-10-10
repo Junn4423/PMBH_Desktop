@@ -1,5 +1,0 @@
-Nhập kho
-Trang chủ
-Quản lí kho
-Chức năng này sẽ sớm được hoàn thiện.
-Màn hình Nhập kho cần gói premium để sử dụng

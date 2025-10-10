@@ -1,210 +1,250 @@
-import { useState, useEffect, useCallback } from 'react';
-import languageLoader, { 
-  getText, 
-  getTexts, 
-  getAllTexts, 
-  setLanguage, 
-  getCurrentLanguage,
-  addLanguageChangeListener,
-  removeLanguageChangeListener 
-} from '../utils/languageLoader';
+/**/**
 
-/**
- * React hook for using the language system
- * @param {string} module - Module name to load by default
- * @returns {Object} Language utilities and state
- */
-export function useLanguage(module = null) {
-  const [currentLanguage, setCurrentLanguage] = useState(() => getCurrentLanguage());
-  const [isLoading, setIsLoading] = useState(false);
-  const [moduleTexts, setModuleTexts] = useState(new Map());
+ * Custom hook for accessing language text * Custom hook for accessing language text
 
-  // Handle language changes
-  useEffect(() => {
-    const handleLanguageChange = (newLanguage) => {
-      setCurrentLanguage(newLanguage);
-      if (module) {
-        loadModuleTexts();
-      }
-    };
+ * Uses the JSON language files loaded by LanguageContext * Uses the JSON language files loaded by LanguageContext
 
-    addLanguageChangeListener(handleLanguageChange);
+ */ */
 
-    return () => {
-      removeLanguageChangeListener(handleLanguageChange);
-    };
-  }, [module]);
 
-  // Load module texts when module changes
-  const loadModuleTexts = useCallback(async () => {
-    if (!module) return;
+
+import { useLanguageContext } from '../contexts/LanguageContext';import { useLanguageContext } from '../contexts/LanguageContext';
+
+import EN from '../Languages/EN/en/en.json';import EN from '../Languages/EN/en/en.json';
+
+import VN from '../Languages/VN/vi/vi.json';import VN from '../Languages/VN/vi/vi.json';
+
+
+
+// Language data map// Language data map
+
+const languageData = {const languageData = {
+
+  EN: EN,  EN: EN,
+
+  VN: VN,  VN: VN,
+
+  // CN: CN  // Add Chinese when available  // CN: CN  // Add Chinese when available
+
+};};
+
+
+
+/**/**
+
+ * Custom hook to get text from language files * Custom hook to get text from language files
+
+ * @returns {Object} Object with getText function and language info * @returns {Object} Object with getText function and language info
+
+ */ */
+
+export const useLanguage = () => {export const useLanguage = () => {
+
+  const { currentLanguage, isLoading, changeLanguage } = useLanguageContext();  const { currentLanguage, isLoading, changeLanguage } = useLanguageContext();
+
     
-    setIsLoading(true);
-    try {
-      const texts = await getAllTexts(module);
-      setModuleTexts(texts);
-    } catch (error) {
-      console.error(`Error loading module ${module}:`, error);
-    } finally {
-      setIsLoading(false);
-    }
-  }, [module]);
 
-  useEffect(() => {
-    if (module) {
-      loadModuleTexts();
-    }
-  }, [module, loadModuleTexts]);
+  /**  /**
 
-  // Get single text
-  const t = useCallback(async (moduleOrLine, line = null) => {
-    if (typeof line === 'number') {
-      // t('module', line) format
-      return await getText(moduleOrLine, line);
-    } else {
-      // t(line) format - use default module
-      if (!module) {
-        throw new Error('No default module specified. Use t(module, line) format.');
-      }
-      return await getText(module, moduleOrLine);
-    }
-  }, [module]);
+   * Get text from language file using dot notation path   * Get text from language file using dot notation path
 
-  // Get multiple texts
-  const tMultiple = useCallback(async (moduleOrLines, lines = null) => {
-    if (Array.isArray(lines)) {
-      // tMultiple('module', [lines]) format
-      return await getTexts(moduleOrLines, lines);
-    } else {
-      // tMultiple([lines]) format - use default module
-      if (!module) {
-        throw new Error('No default module specified. Use tMultiple(module, lines) format.');
-      }
-      return await getTexts(module, moduleOrLines);
-    }
-  }, [module]);
+   * @param {string} path - Path to text in format "category.subcategory.key"   * @param {string} path - Path to text in format "category.subcategory.key"
 
-  // Change language
-  const changeLanguage = useCallback(async (newLanguage) => {
-    setIsLoading(true);
-    try {
-      await setLanguage(newLanguage);
-    } catch (error) {
-      console.error('Error changing language:', error);
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
+   * @param {string} defaultText - Default text if not found   * @param {string} defaultText - Default text if not found
 
-  // Get text synchronously from loaded module (returns fallback if not loaded)
-  const tSync = useCallback((line) => {
-    if (!module || !moduleTexts.has(line)) {
-      return `[${module || 'unknown'}.${line}]`;
-    }
-    return moduleTexts.get(line);
-  }, [module, moduleTexts]);
+   * @returns {string} The translated text   * @returns {string} The translated text
 
-  // Get all texts from loaded module
-  const getAllLoadedTexts = useCallback(() => {
-    return moduleTexts;
-  }, [moduleTexts]);
+   *    * 
 
-  return {
-    // State
-    currentLanguage,
-    isLoading,
-    moduleTexts,
-    
-    // Functions
-    t,              // Get single text (async)
-    tSync,          // Get single text (sync, from loaded module)
-    tMultiple,      // Get multiple texts (async)
-    changeLanguage, // Change language
-    getAllLoadedTexts, // Get all texts from loaded module
-    
-    // Utilities
-    getCurrentLanguage,
-    loadModuleTexts
-  };
-}
+   * @example   * @example
 
-/**
- * Hook specifically for common texts (most frequently used)
- * @returns {Object} Common text utilities
- */
-export function useCommonTexts() {
-  return useLanguage('common');
-}
+   * getText('other.general.ban_trong') // Returns "Empty table" in EN   * getText('other.general.ban_trong') // Returns "Empty table" in EN
 
-/**
- * Hook for getting texts from multiple modules
- * @param {string[]} modules - Array of module names to load
- * @returns {Object} Multi-module text utilities
- */
-export function useMultipleModules(modules = []) {
-  const [currentLanguage, setCurrentLanguage] = useState(() => getCurrentLanguage());
-  const [isLoading, setIsLoading] = useState(false);
-  const [allModuleTexts, setAllModuleTexts] = useState(new Map());
+   * getText('list.header.ban_nha_hang') // Returns "Restaurant Table" in EN   * getText('list.header.ban_nha_hang') // Returns "Restaurant Table" in EN
 
-  // Handle language changes
-  useEffect(() => {
-    const handleLanguageChange = (newLanguage) => {
-      setCurrentLanguage(newLanguage);
-      loadAllModules();
-    };
+   */   */
 
-    addLanguageChangeListener(handleLanguageChange);
+  const getText = (path, defaultText = '') => {  const getText = (path, defaultText = '') => {
 
-    return () => {
-      removeLanguageChangeListener(handleLanguageChange);
-    };
-  }, []);
+    try {    try {
 
-  // Load all modules
-  const loadAllModules = useCallback(async () => {
-    if (modules.length === 0) return;
+      const langData = languageData[currentLanguage];      const langData = languageData[currentLanguage];
 
-    setIsLoading(true);
-    try {
-      const moduleTextMap = new Map();
-      
-      await Promise.all(modules.map(async (module) => {
-        const texts = await getAllTexts(module);
-        moduleTextMap.set(module, texts);
-      }));
-      
-      setAllModuleTexts(moduleTextMap);
-    } catch (error) {
-      console.error('Error loading multiple modules:', error);
-    } finally {
-      setIsLoading(false);
-    }
-  }, [modules]);
+      if (!langData || !langData.texts) {      if (!langData || !langData.texts) {
 
-  useEffect(() => {
-    loadAllModules();
-  }, [modules, loadAllModules]);
+        console.warn(`Language data not found for: ${currentLanguage}`);        console.warn(`Language data not found for: ${currentLanguage}`);
 
-  // Get text from any loaded module
-  const t = useCallback((module, line) => {
-    const moduleTexts = allModuleTexts.get(module);
-    if (!moduleTexts || !moduleTexts.has(line)) {
-      return `[${module}.${line}]`;
-    }
-    return moduleTexts.get(line);
-  }, [allModuleTexts]);
+        return defaultText || path;        return defaultText || path;
 
-  // Change language
-  const changeLanguage = useCallback(async (newLanguage) => {
-    setIsLoading(true);
-    try {
-      await setLanguage(newLanguage);
-    } catch (error) {
-      console.error('Error changing language:', error);
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
+      }      }
+
+
+
+      // Split path and navigate through the object      // Split path and navigate through the object
+
+      const keys = path.split('.');      const keys = path.split('.');
+
+      let value = langData.texts;      let value = langData.texts;
+
+            
+
+      for (const key of keys) {      for (const key of keys) {
+
+        if (value && typeof value === 'object' && key in value) {        if (value && typeof value === 'object' && key in value) {
+
+          value = value[key];          value = value[key];
+
+        } else {        } else {
+
+          console.warn(`Text not found for path: ${path} in language: ${currentLanguage}`);          console.warn(`Text not found for path: ${path} in language: ${currentLanguage}`);
+
+          return defaultText || path;          return defaultText || path;
+
+        }        }
+
+      }      }
+
+            
+
+      return typeof value === 'string' ? value : defaultText || path;      return typeof value === 'string' ? value : defaultText || path;
+
+    } catch (error) {    } catch (error) {
+
+      console.error('Error getting text:', error);      console.error('Error getting text:', error);
+
+      return defaultText || path;      return defaultText || path;
+
+    }    }
+
+  };  };
+
+
+
+  /**  /**
+
+   * Get multiple texts at once   * Get multiple texts at once
+
+   * @param {Object} pathMap - Object with keys and paths   * @param {Object} pathMap - Object with keys and paths
+
+   * @returns {Object} Object with same keys but translated values   * @returns {Object} Object with same keys but translated values
+
+   *    * 
+
+   * @example   * @example
+
+   * getTexts({   * getTexts({
+
+   *   emptyTable: 'other.general.ban_trong',   *   emptyTable: 'other.general.ban_trong',
+
+   *   restaurantTable: 'list.header.ban_nha_hang'   *   restaurantTable: 'list.header.ban_nha_hang'
+
+   * })   * })
+
+   * // Returns: { emptyTable: "Empty table", restaurantTable: "Restaurant Table" }   * // Returns: { emptyTable: "Empty table", restaurantTable: "Restaurant Table" }
+
+   */   */
+
+  const getTexts = (pathMap) => {  const getTexts = (pathMap) => {
+
+    const result = {};    const result = {};
+
+    for (const [key, path] of Object.entries(pathMap)) {    for (const [key, path] of Object.entries(pathMap)) {
+
+      result[key] = getText(path);      result[key] = getText(path);
+
+    }    }
+
+    return result;    return result;
+
+  };  };
+
+
+
+  /**  /**
+
+   * Check if a text exists in current language   * Check if a text exists in current language
+
+   * @param {string} path - Path to text   * @param {string} path - Path to text
+
+   * @returns {boolean} True if text exists   * @returns {boolean} True if text exists
+
+   */   */
+
+  const hasText = (path) => {  const hasText = (path) => {
+
+    try {    try {
+
+      const langData = languageData[currentLanguage];      const langData = languageData[currentLanguage];
+
+      if (!langData || !langData.texts) return false;      if (!langData || !langData.texts) return false;
+
+
+
+      const keys = path.split('.');      const keys = path.split('.');
+
+      let value = langData.texts;      let value = langData.texts;
+
+            
+
+      for (const key of keys) {      for (const key of keys) {
+
+        if (value && typeof value === 'object' && key in value) {        if (value && typeof value === 'object' && key in value) {
+
+          value = value[key];          value = value[key];
+
+        } else {        } else {
+
+          return false;          return false;
+
+        }        }
+
+      }      }
+
+            
+
+      return typeof value === 'string';      return typeof value === 'string';
+
+    } catch (error) {    } catch (error) {
+
+      return false;      return false;
+
+    }    }
+
+  };  };
+
+
+
+  // Short alias for getText  // Short alias for getText
+
+  const t = getText;  const t = getText;
+
+
+
+  return {  return {
+
+    getText,    getText,
+
+    getTexts,    getTexts,
+
+    hasText,    hasText,
+
+    t,  // Shorthand for getText    t,  // Shorthand for getText
+
+    currentLanguage,    currentLanguage,
+
+    isLoading,    isLoading,
+
+    changeLanguage    changeLanguage
+
+  };  };
+
+};};
+
+
+
+export default useLanguage;export default useLanguage;
+
+
 
   return {
     currentLanguage,

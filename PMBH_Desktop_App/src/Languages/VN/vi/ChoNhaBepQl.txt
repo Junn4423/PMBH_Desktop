@@ -1,5 +1,0 @@
-Trang chủ
-Cho nhà bếp
-Quản lý bán nhà hàng
-Chức năng này sẽ sớm được hoàn thiện.
-Màn hình Cho nhà bếp cần gói premium để sử dụng

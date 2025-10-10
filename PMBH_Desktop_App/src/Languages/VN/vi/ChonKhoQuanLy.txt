@@ -1,5 +1,0 @@
-Mục chung
-Chọn kho quản lý
-Bảng điều khiển người dùng
-Màn hình Chọn kho quản lý cần gói premium để sử dụng
-Tính năng này sẽ sớm có mặt trong phiên bản tiếp theo...

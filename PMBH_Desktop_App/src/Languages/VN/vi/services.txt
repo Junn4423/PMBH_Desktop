@@ -1,6 +1,0 @@
-X-USER-TOKEN
-Đăng nhập thất bại
-Tạo biểu đồ thành công
-Không nhận được dữ liệu biểu đồ
-Không thể kết nối đến server GMAC
-,  maHoaDonBanCanChuyen: maHoaDonBanCanChuyen, maHoaDonBanChuyen:

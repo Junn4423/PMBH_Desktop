@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Typography, Card, Row, Col, Divider, Space, Upload, Input, Select, Button, message, Progress, Table, Modal, Tag, Popconfirm } from 'antd';
+import { Typography, Card, Row, Col, Divider, Space, Upload, Input, Select, Button, message, Progress, Table, Modal, Tag, Popconfirm, Switch } from 'antd';
 import { GlobalOutlined, SettingOutlined } from '@ant-design/icons';
 import { Image as ImageIcon, Upload as UploadIcon, Link as LinkIcon, Trash2, HardDrive, Database, Download, Eye, RefreshCw } from 'lucide-react';
 import { LanguageSelect, LanguageDropdown, LanguageFlagSelector } from '../../components/common/LanguageSelector';
@@ -12,7 +12,11 @@ import './CaiDat.css';
 const { Title, Paragraph } = Typography;
 
 const CaiDat = () => {
-  const { currentLanguage, getLanguageName, availableLanguages } = useLanguageContext();
+  const { currentLanguage, getLanguageName, availableLanguages, changeLanguage } = useLanguageContext();
+  
+  // Language loading states
+  const [languageLoading, setLanguageLoading] = useState(false);
+  const [languageProgress, setLanguageProgress] = useState(0);
   
   // Receipt logo states
   const [receiptLogo, setReceiptLogo] = useState('');
@@ -41,6 +45,42 @@ const CaiDat = () => {
   useEffect(() => {
     loadStorageStats();
   }, [refreshKey]);
+
+  // Handle language switch with loading bar
+  const handleLanguageSwitch = async (checked) => {
+    const newLanguage = checked ? 'EN' : 'VN';
+    if (newLanguage === currentLanguage) return;
+
+    setLanguageLoading(true);
+    setLanguageProgress(0);
+
+    // Simulate 5 second loading with progress updates
+    const progressInterval = setInterval(() => {
+      setLanguageProgress(prev => {
+        if (prev >= 100) {
+          clearInterval(progressInterval);
+          return 100;
+        }
+        return prev + 2; // 100% in 5 seconds (50 steps * 100ms)
+      });
+    }, 100);
+
+    try {
+      // Wait for 5 seconds
+      await new Promise(resolve => setTimeout(resolve, 5000));
+      
+      // Change language after loading completes
+      await changeLanguage(newLanguage);
+      message.success(`Đã chuyển sang ${newLanguage === 'EN' ? 'Tiếng Anh' : 'Tiếng Việt'}`);
+    } catch (error) {
+      console.error('Error changing language:', error);
+      message.error('Lỗi khi chuyển đổi ngôn ngữ');
+    } finally {
+      clearInterval(progressInterval);
+      setLanguageLoading(false);
+      setLanguageProgress(0);
+    }
+  };
 
   // Handle logo file change
   const handleLogoFileChange = ({ fileList: newFileList }) => {
@@ -264,6 +304,46 @@ const CaiDat = () => {
               </div>
 
               <Space direction="vertical" size="middle" style={{ width: '100%' }}>
+                {/* Language Switch (VN/EN) with Loading Bar */}
+                <div>
+                  <Paragraph strong>Chuyển đổi ngôn ngữ (VN/EN)</Paragraph>
+                  <Space direction="vertical" style={{ width: '100%' }}>
+                    <Space>
+                      <span>Tiếng Việt</span>
+                      <Switch 
+                        checked={currentLanguage === 'EN'}
+                        onChange={handleLanguageSwitch}
+                        loading={languageLoading}
+                        disabled={languageLoading}
+                        checkedChildren="EN"
+                        unCheckedChildren="VN"
+                      />
+                      <span>English</span>
+                    </Space>
+                    {languageLoading && (
+                      <div style={{ width: '100%', marginTop: '8px' }}>
+                        <Progress 
+                          percent={languageProgress} 
+                          status="active"
+                          strokeColor={{
+                            from: '#108ee9',
+                            to: '#87d068',
+                          }}
+                          format={percent => `${percent}%`}
+                        />
+                        <Text 
+                          type="secondary" 
+                          style={{ fontSize: '12px', marginTop: '4px', display: 'block' }}
+                        >
+                          Đang chuyển đổi ngôn ngữ, vui lòng chờ...
+                        </Text>
+                      </div>
+                    )}
+                  </Space>
+                </div>
+
+                <Divider />
+
                 {/* Language Select Dropdown */}
                 <div>
                   <Paragraph strong>

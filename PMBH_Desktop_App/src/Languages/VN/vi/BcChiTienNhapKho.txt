@@ -1,6 +1,0 @@
-Mục chung
-Trang chủ
-Giao diện MB
-BC chi tiền + nhập kho
-Chức năng này sẽ sớm được hoàn thiện.
-Màn hình BC chi tiền + nhập kho cần gói premium để sử dụng

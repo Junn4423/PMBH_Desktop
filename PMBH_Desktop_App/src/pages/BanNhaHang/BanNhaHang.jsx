@@ -189,12 +189,13 @@ const BanNhaHang = () => {
       console.log('Editing table:', editingTable);
       console.log('Khu vuc list:', khuVucList);
       
-      // Tìm khu vực từ tên (format: {idKhuVuc, ten})
+      // Tìm khu vực từ tên (format: {idKhuVuc, ten} hoặc {maKhuVuc, tenKhuVuc})
       const khuVuc = khuVucList.find(k => {
         const tenKV = k.ten || k.tenKhuVuc;
         return tenKV === values.khuVuc;
       });
-      const maKhuVuc = khuVuc ? khuVuc.idKhuVuc : '';
+      // Lấy mã khu vực từ các property có thể có
+      const maKhuVuc = khuVuc ? (khuVuc.idKhuVuc || khuVuc.maKhuVuc || khuVuc.id) : '';
       
       console.log('Found khu vuc:', khuVuc, 'maKhuVuc:', maKhuVuc);
       

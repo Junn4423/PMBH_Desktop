@@ -103,6 +103,7 @@ import TableMergeModal from '../../components/TableOperations/TableMergeModal';
 import TableTransferModal from '../../components/TableOperations/TableTransferModal';
 import TableSplitModal from '../../components/TableOperations/TableSplitModal';
 import TableMergeAnimation from '../../components/TableOperations/TableMergeAnimation';
+import { useText } from '../../components/common/Text';
 
 // Debug utilities
 import { debugAPIFunctions, testPaymentAPI as quickPaymentTest } from '../../utils/debugAPI';
@@ -122,6 +123,9 @@ const VIEW_STATES = {
 };
 
 const BanHang = () => {
+  const { translate } = useText();
+  const __ = (key, values, fallback) => translate(key, { values, defaultText: fallback ?? key });
+
   // View state management
   const [currentView, setCurrentView] = useState(VIEW_STATES.TABLES);
   
@@ -381,7 +385,7 @@ const BanHang = () => {
   const handleManualRefresh = async () => {
     setLastRefresh(new Date());
     await loadTables();
-    message.success('Đã cập nhật trạng thái bàn');
+    message.success(__('Đã cập nhật trạng thái bàn'));
   };
 
   // Refresh chỉ trạng thái bàn (không reload toàn bộ)
@@ -479,7 +483,7 @@ const BanHang = () => {
       
     } catch (error) {
   // Silent console
-      message.error('Không thể tải danh sách bàn');
+        message.error(__('Không thể tải danh sách bàn'));
     } finally {
       setLoading(false);
     }
@@ -674,7 +678,7 @@ const BanHang = () => {
       setAreas(areasData);
     } catch (error) {
   // console.error('Error loading areas:', error);
-      message.error('Không thể tải danh sách khu vực');
+    message.error(__('Không thể tải danh sách khu vực'));
     }
   };
 
@@ -729,13 +733,13 @@ const BanHang = () => {
       
       if (mappedCategories.length === 0) {
         
-        message.warning('Không tìm thấy danh mục sản phẩm');
+  message.warning(__('Không tìm thấy danh mục sản phẩm'));
       }
     } catch (error) {
       // Silent console
       
       // Tuân thủ .rules: không mock dữ liệu
-      message.error('Không thể tải danh mục sản phẩm.');
+  message.error(__('Không thể tải danh mục sản phẩm.'));
       setCategories([]);
     }
   };
@@ -797,7 +801,7 @@ const BanHang = () => {
       setProducts(mappedProducts);
     } catch (error) {
       console.error('[LOAD_PRODUCTS] Lỗi tải sản phẩm:', error);
-      message.error('Không thể tải danh sách sản phẩm.');
+      message.error(__('Không thể tải danh sách sản phẩm.'));
       setProducts([]);
     }
   };
@@ -813,7 +817,7 @@ const BanHang = () => {
       );
       
       if (isMergedSlave) {
-        message.warning(`Bàn ${table.tenBan} đã được gộp vào bàn khác. Chỉ được thao tác trên bàn chính của nhóm.`);
+        message.warning(__('pages.banhang.table_merged_warning', { table: table.tenBan }, `Bàn ${table.tenBan} đã được gộp vào bàn khác. Chỉ được thao tác trên bàn chính của nhóm.`));
         return; // Không cho phép chọn bàn đã gộp
       }
       
@@ -829,7 +833,7 @@ const BanHang = () => {
         const mainTable = groupTables.find(t => t.id === mainTableId);
         if (mainTable) {
           actualTable = mainTable;
-          message.info(`Bàn ${table.tenBan} đã được gộp vào bàn ${mainTable.tenBan}`);
+          message.info(__('pages.banhang.table_merged_info', { table: table.tenBan, mainTable: mainTable.tenBan }, `Bàn ${table.tenBan} đã được gộp vào bàn ${mainTable.tenBan}`));
         }
       }
       
@@ -864,9 +868,9 @@ const BanHang = () => {
         }
         
         if (table.isEmptyInvoice) {
-          message.success(`Đã load hóa đơn rỗng cho bàn ${table.name} - Sẵn sàng chọn món`);
+          message.success(__('pages.banhang.empty_invoice_loaded', { table: table.name }, `Đã load hóa đơn rỗng cho bàn ${table.name} - Sẵn sàng chọn món`));
         } else {
-          message.success(`Đã load hóa đơn cho bàn ${table.name} - #${table.invoiceId}`);
+          message.success(__('pages.banhang.invoice_loaded', { table: table.name, invoice: table.invoiceId }, `Đã load hóa đơn cho bàn ${table.name} - #${table.invoiceId}`));
         }
       } else {
         // Bàn trống - tự động tạo hóa đơn mới và chuyển sang combined layout
@@ -882,7 +886,7 @@ const BanHang = () => {
           setCurrentInvoice(newInvoice);
           setInvoiceDetails([]);
           
-          message.success(`Đã tạo hóa đơn mới cho bàn ${table.name} - #${response.message}`);
+          message.success(__('pages.banhang.invoice_created_for_table', { table: table.name, code: response.message }, `Đã tạo hóa đơn mới cho bàn ${table.name} - #${response.message}`));
           
           // Trigger refresh để cập nhật trạng thái bàn
           triggerQuickRefresh('INVOICE_CREATE');

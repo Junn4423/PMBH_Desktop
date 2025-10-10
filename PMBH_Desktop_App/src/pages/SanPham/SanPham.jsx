@@ -393,12 +393,27 @@ const SanPham = () => {
   const handleDeleteProduct = async (product) => {
     try {
       const id = product.id || product.lv001 || product.maSp;
-      await xoaSanPham(id);
+      console.log('Deleting product with ID:', id);
+      const result = await xoaSanPham(id);
+      console.log('Delete result:', result);
+      
+      // Kiểm tra kết quả trả về từ backend
+      if (result && typeof result === 'object' && result.success === false) {
+        message.error(result.message || 'Không thể xóa sản phẩm này vì đã được sử dụng trong hóa đơn/phiếu xuất');
+        return;
+      }
+      
+      // Kiểm tra các trường hợp khác
+      if (result === false || result === 0 || result === '0' || !result) {
+        message.error('Không thể xóa sản phẩm này vì đã được sử dụng trong hóa đơn/phiếu xuất');
+        return;
+      }
+      
       message.success('Xóa sản phẩm thành công');
       loadCategoriesAndProducts();
     } catch (error) {
-      message.error('Không thể xóa sản phẩm');
       console.error('Error deleting product:', error);
+      message.error('Không thể xóa sản phẩm này vì đã được sử dụng trong hóa đơn/phiếu xuất');
     }
   };
 

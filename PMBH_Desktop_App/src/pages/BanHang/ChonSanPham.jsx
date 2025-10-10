@@ -4,6 +4,7 @@ import { Search } from 'lucide-react';
 import { getAllSanPham, getLoaiSanPham, getSanPhamTheoIdLoai, loadProductImage, getFullImageUrl } from '../../services/apiServices';
 import ProductCard from '../../components/common/ProductCard';
 import { DEFAULT_IMAGES } from '../../constants';
+import { useText } from '../../components/common/Text';
 import './ChonSanPham.css';
 
 const { Text } = Typography;
@@ -14,6 +15,8 @@ const ChonSanPham = ({ onAddToCart }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [loading, setLoading] = useState(false);
+  const { translate } = useText();
+  const __ = (key, values, fallback) => translate(key, { values, defaultText: fallback ?? key });
 
   // Memoized filtered products to prevent unnecessary re-renders
   const filteredProducts = useMemo(() => {
@@ -169,7 +172,7 @@ const ChonSanPham = ({ onAddToCart }) => {
       setProducts(formattedProducts);
     } catch (error) {
       console.error('Error loading products:', error);
-      message.error('Không thể tải danh sách sản phẩm');
+      message.error(__('Không thể tải danh sách sản phẩm'));
     } finally {
       setLoading(false);
     }
@@ -182,7 +185,7 @@ const ChonSanPham = ({ onAddToCart }) => {
       gia: product.gia,
       quantity: 1
     });
-    message.success(`Đã thêm ${product.ten} vào giỏ hàng`);
+    message.success(__('pages.banhang.item_added_to_cart', { name: product.ten }, `Đã thêm ${product.ten} vào giỏ hàng`));
   }, [onAddToCart]);
 
   return (
@@ -190,14 +193,14 @@ const ChonSanPham = ({ onAddToCart }) => {
       {/* Sidebar categories */}
       <aside className="categories-sidebar">
         <div className="sidebar-header">
-          <h4>Danh mục</h4>
+          <h4>{__('Danh mục')}</h4>
         </div>
         <div className="categories-list">
           <div
             className={`category-item ${selectedCategory === 'all' ? 'active' : ''}`}
             onClick={() => setSelectedCategory('all')}
           >
-            <span>Tất cả</span>
+            <span>{__('Tất cả')}</span>
             <span className="category-count">({products.length})</span>
           </div>
           {categories.filter(c => c.value !== 'all').map(category => {
@@ -220,11 +223,15 @@ const ChonSanPham = ({ onAddToCart }) => {
       <section className="products-pane">
         <div className="products-header">
           <div className="products-title">
-            <span>{selectedCategory === 'all' ? 'Tất cả' : (categories.find(c => c.value === selectedCategory)?.label || '')}</span>
+            <span>
+              {selectedCategory === 'all'
+                ? __('Tất cả')
+                : (categories.find(c => c.value === selectedCategory)?.label || '')}
+            </span>
           </div>
           <div className="products-search">
             <Input
-              placeholder="Tìm kiếm sản phẩm..."
+              placeholder={__('Tìm kiếm sản phẩm...', {}, 'Tìm kiếm sản phẩm...')}
               prefix={<Search size={16} />}
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
@@ -236,12 +243,12 @@ const ChonSanPham = ({ onAddToCart }) => {
           <div className="loading-container">
             <Spin size="large" />
             <div className="loading-text">
-              <Text>Đang tải sản phẩm...</Text>
+              <Text>{__('Đang tải sản phẩm...')}</Text>
             </div>
           </div>
         ) : filteredProducts.length === 0 ? (
           <div className="empty-container">
-            <Text type="secondary">Không tìm thấy sản phẩm nào</Text>
+            <Text type="secondary">{__('Không tìm thấy sản phẩm nào')}</Text>
           </div>
         ) : (
           <div className="products-grid">

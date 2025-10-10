@@ -1,4 +1,0 @@
-Quản lý bán nhà hàng
-Chương trình kinh doanh
-Tính năng này sẽ sớm có mặt trong phiên bản tiếp theo...
-Màn hình Chương trình kinh doanh cần gói premium để sử dụng
