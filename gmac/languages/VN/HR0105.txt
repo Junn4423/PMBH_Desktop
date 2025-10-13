@@ -1,0 +1,28 @@
+Thêm Mục Quan Hệ Gia Đình
+Lọc Mục Quan Hệ Gia Đình
+Lưu
+Lọc
+Quay lại
+Nạp lại trang này
+Nạp lại
+Trợ giúp
+Trợ giúp
+Thêm thành công.
+Thêm không được, lỗi: 
+Sửa thành công.
+Sửa không được, lỗi: 
+...//Bắt đầu từ phần hiển thị thông tin trong bảng
+Sửa Mục Quan Hệ Gia Đình
+Mã tự động
+Mã nhân viên
+Tên người quan hệ
+Quan hệ
+Ngày sinh
+Số CMND
+Nghề nghiệp
+Thu nhập
+Nơi cư trú
+Đơn vị
+Mã nhân viên không được rỗng
+Tên không được rỗng
+Ngày sinh không rổng

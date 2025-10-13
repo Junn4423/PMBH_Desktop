@@ -1,0 +1,40 @@
+Cấu hình
+Thêm mới
+Thêm
+Sửa
+Sửa
+Xóa
+Xóa
+Lọc
+Quay lại
+Nạp lại trang này
+Nạp lại
+Trợ giúp
+Trợ giúp
+BÁO CÁO LỊCH CÔNG TÁC
+BÁO CÁO CƠM
+Từ ngày
+Đến ngày
+NHẬP CƠM
+NHẬP CÔNG
+STT
+Mã PB
+Mã KH
+Tên KH
+Khóa / mở
+Hệ số
+Xếp loại
+Chấm công theo ngày(con trỏ chạy theo từng cột)
+Về trước
+Tiếp
+Tổng cơm
+Tổng công
+Cách hiển thị
+Kết xuất dữ liệu
+Tạo tập tin exel
+Tạo tập tin word
+Tạo tập tin pdf
+Cập nhật thông tin tháng và năm
+Phòng ban
+Mã nhân viên
+Ký nhận

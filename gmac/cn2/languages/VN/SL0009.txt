@@ -1,0 +1,26 @@
+Thêm Mục Sản Phẩm Khách Hàng
+Lọc Mục Sản Phẩm Khách Hàng
+Lưu
+Lọc
+Quay lại
+Nạp lại trang này
+Nạp lại
+Trợ giúp
+Trợ giúp
+Thêm thành công.
+Thêm không được, lỗi: 
+Sửa thành công.
+Sửa không được, lỗi: 
+...//Bắt đầu từ phần hiển thị thông tin trong bảng
+Sửa Mục Sản Phẩm Khách Hàng
+Mã tự động
+Mã khách hàng
+Mã sản phẩm
+Tên sản phẩm
+Đặc điểm
+Định lượng
+Mã hàng
+Ghi chú
+Mã khách hàng không được rỗng
+Mã sản phẩm không được rỗng
+Tên sản phẩm không được rỗng

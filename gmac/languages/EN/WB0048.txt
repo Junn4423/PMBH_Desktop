@@ -1,0 +1,26 @@
+Thêm Mục Khách Hàng Chấp Nhận Thẻ
+Lọc Mục Khách Hàng Chấp Nhận Thẻ
+Lưu
+Lọc
+Quay lại
+Nạp lại trang này
+Nạp lại
+Trợ giúp
+Trợ giúp
+Thêm thành công.
+Thêm không được, lỗi: 
+Sửa thành công.
+Sửa không được, lỗi: 
+...//Bắt đầu từ phần hiển thị thông tin trong bảng
+Sửa Mục Khách Hàng Chấp Nhận Thẻ
+Mã tự đồng
+Mã liên hệ
+Tên doanh nghiệp
+Người đại diện
+Loại hình dịch vụ
+Địa chỉ
+Số điện thoại
+Email
+Website
+Ghi chú
+Ngày tạo

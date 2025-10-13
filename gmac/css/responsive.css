@@ -1,0 +1,331 @@
+/******** For mobile device ********/
+/******************************/
+/*---- Responsive base screen witdh ------- */
+/* width - 30 */
+/* Tablet Devices Resizing */
+@media screen and  (max-width: 2024px){
+	#maytinh {display:none;}
+	#mobil {display:block;padding-top:20px;}
+	.col {float:left;margin-left:26px;width:480px;}
+	#hd_title_left {width:254px;}
+	.bangtitlemini {width: 120px;}
+	.bangtitlecurmini {width:120px;}
+	.bangleftmini {width:120px;}
+	.monanbang {display:block;width:70%;}
+	.chitietbang {display:block;width:30%;}
+	.chonsanpham {overflow:relative;}
+	.tang_right {width:90%};
+	.lv_functext {display:block;}
+	.menusubT1 {display:block;}
+	.mb_thanhnhom {width:105px;height:100%;}
+	.monsp_sp {width:520px;height:100%;}
+	input {padding:0px;}
+	select {padding:0px;}
+}
+@media screen and  (max-width: 1024px){
+	body{float:left!important;width:100%!important;}
+	#sof_left {display:none;width:100%;}
+	#maytinh {display:none;}
+	#mobil {display:block;padding-top:20px;}
+	.col {float:left;margin-left:26px;width:470px;}
+	#hd_title_left {width:254px;}
+	.bangtitlemini {width: 120px;}
+	.bangtitlecurmini {width:120px;}
+	.bangleftmini {width:120px;}
+	.monanbang {display:block;width:70%;}
+	.chitietbang {display:block;width:30%;}
+	.chonsanpham {overflow:relative;}
+	.tang_right {width:85%};
+	.lv_functext {display:block;}
+	.menusubT1 {display:block;}
+	.mb_thanhnhom {width:105px;height:100%;}
+	.monsp_sp {width:520px;height:100%;}
+	input {padding:0px;}
+	select {padding:0px;}
+}
+@media screen and (max-width:768px){
+	#sof_left {display:none;width:100%;}
+	#maytinh {display:none;}
+	#mobil {display:block;padding-top:20px;}
+	.col {float:left;margin-left:20px;width:354px;}
+	#hd_title_left {width:254px;}
+	.bangtitlemini {width: 120px;}
+	.bangtitlecurmini {width:120px;}
+	.bangleftmini {width:120px;}
+	.monanbang {display:block;width:100%;}
+	.chitietbang {display:block;width:100%;}
+	.c.chonsanpham {overflow:relative;}
+	.tang_right {width:85%};
+	.lv_functext {display:block;}
+	.mb_thanhnhom {width:105px;height:100%;}
+	.monsp_sp {width:520px;height:100%;}
+	input {padding:0px;}
+	select {padding:0px;}
+}
+@media screen and (max-width: 736px){
+	#sof_left {display:none;width:100%;}
+	#maytinh {display:none;}
+	#mobil {display:block;padding-top:20px;}
+	.col {float:left;margin-left:20px;width:338px;}
+	#hd_title_left {width:254px;}
+	.bangtitlemini {width: 120px;}
+	.bangtitlecurmini {width:120px;}
+	.bangleftmini {width:120px;}
+	.monanbang {display:block;width:100%;}
+	.chitietbang {display:block;width:100%;}
+	.c.chonsanpham {overflow:relative;}
+	.tang_right {width:85%};
+	.lv_functext {display:block;}
+	.menusubT1 {display:block;}
+	.mb_thanhnhom {width:105px;height:100%;}
+	.monsp_sp {width:520px;height:100%;}
+	input {padding:0px;}
+	select {padding:0px;}
+}
+@media screen and (max-width: 667px){
+	#sof_left {display:none;width:100%;}
+	#maytinh {display:none;}
+	#mobil {display:block;padding-top:20px;}
+	.tang_leftmini {display:none;}
+	.curday {display:none;}
+	.countdown {display:none;}
+	.licafecur {padding:12px;}
+	.licafe {padding:12px;}
+	.viewcalandarmini {left:0px!important;}
+	.col {float:left;margin-left:12px;width:170px;}
+	#hd_title_left {width:100%!important;}
+	#hd_menumain_left {display:none;}
+	#sof_pages_content {width:100%;}
+	#hd_title_content {display:none;}
+	#hd_title_right {display:none;}
+	.bangtitlemini {width: 120px;}
+	.bangtitlecurmini {width:120px;}
+	.bangleftmini {width:120px;}
+	.monanbang {display:none;width:100%;}
+	.chitietbang {display:block;width:100%;}
+	.chonsanpham {overflow:relative;}
+	.sof_pages_footer_left {width:160px;}
+	.tang_right {width:100%};
+	.mb_thanhnhom {width:105px;height:100%;}
+	.monsp_sp {width:240px;height:100%;}
+	.detailview {max-width:375px;}
+	.lv_functext {display:none;}
+	.lv_funcshowtext {display:none;}
+	.lviconimg {height:30px;}
+	.lv_funcshowimg {height:30px;}
+	.menusubT1 {display:none;}
+	input {padding:0px;}
+	select {padding:0px;}
+}
+@media screen and (max-width: 640px){
+	#sof_left {display:none;width:100%;}
+	#maytinh {display:none;}
+	#mobil {display:block;padding-top:20px;}
+	.tang_leftmini {display:none;}
+	.curday {display:none;}
+	.countdown {display:none;}
+	.licafecur {padding:12px;}
+	.licafe {padding:12px;}
+	.viewcalandarmini {left:0px!important;}
+	.col {float:left;margin-left:12px;width:170px;}
+	#hd_title_left {width:100%!important;}
+	#hd_menumain_left {display:none;}
+	#sof_pages_content {width:100%;}
+	#hd_title_content {display:none;}
+	#hd_title_right {display:none;}
+	.bangtitlemini {width: 120px;}
+	.bangtitlecurmini {width:120px;}
+	.bangleftmini {width:120px;}
+	.monanbang {display:none;width:100%;}
+	.chitietbang {display:block;width:100%;}
+	.chonsanpham {overflow:relative;}
+	.sof_pages_footer_left {width:160px;}
+	.tang_right {width:100%};
+	.mb_thanhnhom {width:105px;height:100%;}
+	.monsp_sp {width:240px;height:100%;}
+	.detailview {max-width:375px;}
+	.lv_functext {display:none;}
+	.lv_funcshowtext {display:none;}
+	.lviconimg {height:30px;}
+	.lv_funcshowimg {height:30px;}
+	.menusubT1 {display:none;}
+	input {padding:0px;}
+	select {padding:0px;}
+}
+@media screen and (max-width: 570px){
+	#sof_left {display:none;width:100%;}
+	#maytinh {display:none;}
+	#mobil {display:block;padding-top:20px;}
+	.tang_leftmini {display:none;}
+	.curday {display:none;}
+	.countdown {display:none;}
+	.licafecur {padding:12px;}
+	.licafe {padding:12px;}
+	.viewcalandarmini {left:0px!important;}
+	.col {float:left;margin-left:12px;width:170px;}
+	#hd_title_left {width:100%!important;}
+	#hd_menumain_left {display:none;}
+	#sof_pages_content {width:100%;}
+	#hd_title_content {display:none;}
+	#hd_title_right {display:none;}
+	.bangtitlemini {width: 120px;}
+	.bangtitlecurmini {width:120px;}
+	.bangleftmini {width:120px;}
+	.monanbang {display:none;width:100%;}
+	.chitietbang {display:block;width:100%;}
+	.chonsanpham {overflow:relative;}
+	.sof_pages_footer_left {width:160px;}
+	.tang_right {width:100%};
+	.mb_thanhnhom {width:105px;height:100%;}
+	.monsp_sp {width:240px;height:100%;}
+	.detailview {max-width:375px;}
+	.lv_functext {display:none;}
+	.lv_funcshowtext {display:none;}
+	.lviconimg {height:30px;}
+	.lv_funcshowimg {height:30px;}
+	.menusubT1 {display:none;}
+	input {padding:0px;}
+	select {padding:0px;}
+}
+@media screen and (max-width:414px){
+	#sof_left {display:none;width:100%;}
+	#maytinh {display:none;}
+	#mobil {display:block;padding-top:20px;}
+	.tang_leftmini {display:none;}
+	.curday {display:none;}
+	.countdown {display:none;}
+	.licafecur {padding:12px;}
+	.licafe {padding:12px;}
+	.viewcalandarmini {left:0px!important;}
+	.col {float:left;margin-left:12px;width:170px;}
+	#hd_title_left {width:100%!important;}
+	#hd_menumain_left {display:none;}
+	#sof_pages_content {width:100%;}
+	#hd_title_content {display:none;}
+	#hd_title_right {display:none;}
+	.bangtitlemini {width: 120px;}
+	.bangtitlecurmini {width:120px;}
+	.bangleftmini {width:120px;}
+	.monanbang {display:none;width:100%;}
+	.chitietbang {display:block;width:100%;}
+	.chonsanpham {overflow:relative;}
+	.sof_pages_footer_left {width:160px;}
+	.tang_right {width:100%};
+	.mb_thanhnhom {width:105px;height:100%;}
+	.monsp_sp {width:240px;height:100%;}
+	.detailview {max-width:375px;}
+	.lv_functext {display:none;}
+	.lv_funcshowtext {display:none;}
+	.lviconimg {height:30px;}
+	.lv_funcshowimg {height:30px;}
+	.menusubT1 {display:none;}
+	input {padding:0px;}
+	select {padding:0px;}
+}
+@media screen and (max-width: 375px){
+	#sof_left {display:none;width:100%;}
+	#maytinh {display:none;}
+	#mobil {display:block;padding-top:20px;}
+	.tang_leftmini {display:none;}
+	.curday {display:none;}
+	.countdown {display:none;}
+	.licafecur {padding:12px;}
+	.licafe {padding:12px;}
+	.viewcalandarmini {left:0px!important;}
+	.col {float:left;margin-left:12px;width:170px;}
+	#hd_title_left {width:100%!important;}
+	#hd_menumain_left {display:none;}
+	#sof_pages_content {width:100%;}
+	#hd_title_content {display:none;}
+	#hd_title_right {display:none;}
+	.bangtitlemini {width:105px;}
+	.bangtitlecurmini {width:105px;}
+	.bangleftmini {width:105px;}
+	.monanbang {display:none;width:100%;}
+	.chitietbang {display:block;width:100%;}
+	.chonsanpham {overflow:relative;}
+	.sof_pages_footer_left {width:160px;}
+	.tang_right {width:100%};
+	.mb_thanhnhom {width:105px;height:100%;}
+	.monsp_sp {width:240px;height:100%;}
+	.detailview {max-width:375px;}
+	.lv_functext {display:none;}
+	.lv_funcshowtext {display:none;}
+	.lviconimg {height:30px;}
+	.lv_funcshowimg {height:30px;}
+	.menusubT1 {display:none;}
+	input {padding:0px;}
+	select {padding:0px;}
+}
+@media screen and (max-width: 360px){
+	#sof_left {display:none;width:100%;}
+	#maytinh {display:none;}
+	#mobil {display:block;padding-top:20px;}
+	.tang_leftmini {display:none;}
+	.curday {display:none;}
+	.countdown {display:none;}
+	.licafecur {padding:12px;}
+	.licafe {padding:12px;}
+	.viewcalandarmini {left:0px!important;}
+	.col {float:left;margin-left:10px;width:160px;}
+	#hd_title_left {width:100%;}
+	#hd_menumain_left {display:none;}
+	#sof_pages_content {width:100%;}
+	#hd_title_content {display:none;}
+	#hd_title_right {display:none;}
+	.bangtitlemini {width:105px;}
+	.bangtitlecurmini {width:105px;}
+	.bangleftmini {width:90px;}
+	.monanbang {display:none;width:100%;}
+	.chitietbang {display:block;width:100%;}
+	.chonsanpham {overflow:relative;}
+	.sof_pages_footer_left {width:160px;}
+	.tang_right {width:100%};
+	.mb_thanhnhom {width:105px;height:100%;}
+	.monsp_sp {width:240px;height:100%;}
+	.detailview {max-width:360px;}
+	.lv_functext {display:none;}
+	.lv_funcshowtext {display:none;}
+	.lv_funcshowimg {height:30px;}
+	.lviconimg {height:30px;}
+	.menusubT1 {display:none;}
+	input {padding:0px;}
+	select {padding:0px;}
+}
+@media screen and (max-width:320px){
+	#sof_left {display:none;width:100%;}
+	#maytinh {display:none;}
+	#mobil {display:block;padding-top:20px;}
+	.tang_leftmini {display:none;}
+	.curday {display:none;}
+	.countdown {display:none;}
+	.licafecur {padding:12px;}
+	.licafe {padding:12px;}
+	.viewcalandarmini {left:0px!important;}
+	.col {float:left;margin-left:10px;width:150px;}
+	#hd_title_left {width:100%;}
+	#sof_pages_content {width:100%;}
+	#hd_menumain_left {display:none;}
+	#hd_title_content {display:none;}
+	#hd_title_right {display:none;}
+	.bangtitlemini {width:90px;}
+	.bangtitlecurmini {width:90px;}
+	.bangleftmini {width:90px;}
+	.monanbang {display:none;width:100%;}
+	.chitietbang {display:block;width:100%;}
+	.chonsanpham {overflow:relative;}
+	.sof_pages_footer_left {width:160px;}
+	.tang_right {width:100%};
+	.mb_thanhnhom {width:105px;height:100%;}
+	.monsp_sp {width:210px;height:100%;}
+	.lv_functext {display:none;}
+	.lv_funcshowtext {display:none;}
+	.lv_funcshowimg {height:30px;}
+	.lviconimg {height:30px;}
+	.menusubT1 {display:none;}
+	input {padding:0px;}
+	select {padding:0px;}
+
+}
+
+/*---- end Responsive base screen witdh ------- */

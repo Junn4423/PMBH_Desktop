@@ -1,0 +1,63 @@
+Cấu hình
+Thêm mới
+Thêm
+Sửa
+Sửa
+Xóa
+Xóa
+Lọc
+Quay lại
+Nạp lại trang này
+Nạp lại
+Trợ giúp
+Trợ giúp
+...///Bắt đầu từ phần thông báo
+Xóa thành công.
+Xóa không được, lỗi: 
+Danh Mục Tính Lương
+Danh Mục Danh Sách Lương
+STT
+Mã
+Mã nhân viên
+Ngày tính lương
+Ngày bắt đầu
+Ngày kết thúc
+Lương để tính bảo hiểm
+Lương không tính bảo hiểm
+Lương thưởng
+Khoản lương trừ
+Chi phí tạm ứng
+Chi phí công tác
+Bảo hiểm xã hội
+Bảo hiểm y tế
+Bảo hiểm thất nghiệp
+Giờ bình thường
+Giờ tăng ca
+Lương theo giờ
+Tổng thu nhập
+Thực thu chưa thuế
+Mã lần tính lương
+Mã hợp đồng lao động
+Lương trên một giờ
+Khóa
+Số lượng sản phẩm
+Lương theo sản phẩm
+Lương trừ người phụ thuộc
+Số tiền tính thuế TNCN
+Tiền thuế TNCN
+Thực thu có thuế
+Lưu
+Số dòng hiển thị
+Cách hiển thị
+Kết xuất dữ liệu
+Tạo tập tin exel
+Tạo tập tin word
+Tạo tập tin pdf
+Tính
+Tỷ lệ thuế
+Tiền thuế
+Kiểu tính lương
+Mã doanh thu phòng ban
+Tên phòng ban
+Tên nhân viên
+Thu phí NetViet

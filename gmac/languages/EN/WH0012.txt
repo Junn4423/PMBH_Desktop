@@ -1,0 +1,45 @@
+Config
+Add New
+New
+Edit
+Edit
+Delete
+Delete
+Filter
+Back
+Reload
+Reload
+Help
+Help
+...//Begin messages part
+Delete successfully!
+Could not deleted, error:
+...//Begin show data part
+List Detail Receiption
+Order
+AutoID 
+RecieptionID
+ItemID
+Quantity
+UnitID
+OtherQuantity
+OtherUnitID
+Price
+Currency
+Tax
+Expiration Date
+Discount
+Quantity Inventory Lot
+LotID
+Note
+DateCreate
+Save
+Number rows display
+Display style
+Export data
+Create excel file
+Create word file
+Create pdf file
+Money
+Tax
+Total amount

@@ -1,0 +1,35 @@
+Thêm Mục Voucher
+Lọc Mục Voucher
+Lưu
+Lọc
+Quay lại
+Nạp lại trang này
+Nạp lại
+Trợ giúp
+Trợ giúp
+Thêm thành công.
+Thêm không được, lỗi: 
+Sửa thành công.
+Sửa không được, lỗi: 
+...//Bắt đầu từ phần hiển thị thông tin trong bảng
+Sửa Mục Voucher
+Mã tự động
+Mã khách hàng
+Mã phiếu
+Số điểm
+Ngày hiệu lực
+Ngày hết hạn
+Ngày tạo
+Thông tin thêm
+Khách hàng không rỗng.
+Số điểm khác không.
+Ngày tạo khác rỗng
+Ngày hết hạn không rỗng
+Comment Is not empty!
+Mã đơn hàng
+Ngày đơn hàng
+Ghi chú 1
+Ghi chú 2
+Ghi chú 3
+Mã liên kết
+Khóa

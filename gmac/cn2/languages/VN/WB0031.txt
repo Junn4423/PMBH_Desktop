@@ -1,0 +1,26 @@
+Thêm Mục Chi Tiết Tin Tức
+Lọc Mục Chi Tiết Tin Tức
+Lưu
+Lọc
+Quay lại
+Nạp lại trang này
+Nạp lại
+Trợ giúp
+Trợ giúp
+Thêm thành công.
+Thêm không được, lỗi: 
+Sửa thành công.
+Sửa không được, lỗi: 
+...//Bắt đầu từ phần hiển thị thông tin trong bảng
+Sửa Mục Chi Tiết Tin Tức
+Mã tự đồng
+Mã nội dung
+Chủ đề
+Nội dung ngắn
+Nội dung
+Ngôn ngữ
+Mổ tả seo
+Từ khoá seo
+Từ khoá seo
+Mã tin tức' không rổng
+Bạn phải nhập chủ đề

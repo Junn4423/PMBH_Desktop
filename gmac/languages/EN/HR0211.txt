@@ -1,0 +1,22 @@
+Thêm Mục Biểu Phí Đóng Tiền
+Lọc Mục Biểu Phí Đóng Tiền
+Lưu
+Lọc
+Quay lại
+Nạp lại trang này
+Nạp lại
+Trợ giúp
+Trợ giúp
+Thêm thành công.
+Thêm không được, lỗi: 
+Sửa thành công.
+Sửa không được, lỗi: 
+...//Bắt đầu từ phần hiển thị thông tin trong bảng
+Sửa Mục Biểu Phí Đóng Tiền
+Mã
+Mức nạp tiền
+Mức chiết khấu
+Mã ca không được rỗng
+Tên không được rỗng
+Mức nạp tiền không được rỗng.
+Mức triết khấu không được rỗng.

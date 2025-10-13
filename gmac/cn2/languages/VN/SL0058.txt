@@ -1,0 +1,35 @@
+Cấu hình
+Thêm mới
+Thêm
+Sửa
+Sửa
+Xóa
+Xóa
+Lọc
+Quay lại
+Nạp lại trang này
+Nạp lại
+Trợ giúp
+Trợ giúp
+...///Bắt đầu từ phần thông báo
+Xóa thành công.
+Xóa không được, lỗi: 
+...//Bắt đầu từ phần hiển thị thông tin trong bảng
+Danh Sách Cấu Hình Hoa Hồng
+STT
+Chọn hết
+Mã cấu hình
+Mức doanh thu
+Điểm cho người bán
+Điểm cho người người giới thiệu
+Điểm cho người quản lý
+Ghi chú
+Ngày chấp nhận
+Chấp nhận
+Lưu
+Số dòng hiển thị
+Cách hiển thị
+Kết xuất dữ liệu
+Tạo tập tin exel
+Tạo tập tin word
+Tạo tập tin pdf

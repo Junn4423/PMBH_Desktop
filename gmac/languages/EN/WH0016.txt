@@ -1,0 +1,31 @@
+Add OutStock
+Filter OutStock
+Save
+Filter
+Back
+Reload
+Reload
+Help
+Help
+Add new successfully!
+Could not added, error: 
+Edit successfully!
+Could not editted, error!
+...//Begin show data part
+Edit OutStock
+OutStockID
+WarehouseID
+EmployeeID
+Title
+Source
+ReferenceID
+Locked
+Note
+DateOutStock
+MethodOutStock
+ReceiverID
+OutStockID is not empty
+Title is not empty
+Choose file template of Receiption
+Download file template
+Please!Unzip file,open file MAU_XUAT_KHO.xml by microsoft excel,by open office

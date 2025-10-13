@@ -1,0 +1,28 @@
+Thêm Mục Bán Lẽ
+Lọc Mục Bán Lẽ
+Lưu
+Lọc
+Quay lại
+Nạp lại trang này
+Nạp lại
+Trợ giúp
+Trợ giúp
+Thêm thành công.
+Thêm không được, lỗi: 
+Sửa thành công.
+Sửa không được, lỗi: 
+...//Bắt đầu từ phần hiển thị thông tin trong bảng
+Sửa Mục Bán Lẽ
+Mã bán
+Mã kho
+Mã nhân viên
+Chủ đề xuất kho
+Nguồn xuất kho
+Mã tham chiếu
+Khóa
+Ghi chú
+Ngày xuất kho
+0.Chưa xác nhận
+1.Đã xác nhận
+Bạn phải nhập mã xuất kho
+Chủ đề kiểm kho không rỗng

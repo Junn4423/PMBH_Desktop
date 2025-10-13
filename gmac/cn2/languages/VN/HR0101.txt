@@ -1,0 +1,30 @@
+...Bắt đầu từ phần biểu tượng điều khiển
+Quay lại
+Quay lại
+Nạp lại trang này
+Nạp lại
+Trợ giúp
+Trợ giúp
+...//Begin control icon part
+Lý lịch
+Liên hệ
+LH khẩn
+Phụ thuộc
+Nhập cảnh
+Hợp đồng
+Trả lương
+K. Nghiệm
+Giáo dục
+Kỹ năng
+Ngôn ngữ
+Bằng cấp
+Thành viên
+..//Information basic employee
+Mã
+Họ
+Tên
+Tên lót
+Tên riêng
+Họ và Tên
+Đánh giá
+Tài liệu

@@ -1,0 +1,25 @@
+Thêm Mục Danh Mục Qui Đổi
+Lọc Mục Danh Mục Qui Đổi
+Lưu
+Lọc
+Quay lại
+Nạp lại trang này
+Nạp lại
+Trợ giúp
+Trợ giúp
+Thêm thành công.
+Thêm không được, lỗi: 
+Sửa thành công.
+Sửa không được, lỗi: 
+...//Bắt đầu từ phần hiển thị thông tin trong bảng
+Sửa Mục Danh Mục Qui Đổi
+Mã tự đồng
+Mã sản phẩm
+Đơn vị
+Qui đổi
+Ghi chú
+Khóa
+Lưu
+Ghi chú
+Mã sản phẩm không rổng
+Bạn phải nhập số lượng
