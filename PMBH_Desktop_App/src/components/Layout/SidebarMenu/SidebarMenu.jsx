@@ -258,7 +258,7 @@ const SidebarMenu = () => {
             {
               key: '/cho-quay-bar-ql',
               label: 'Cho quầy bar',
-            }
+            } 
           ]
         },
         {

@@ -14,6 +14,23 @@ contextBridge.exposeInMainWorld('electronAPI', {
   appQuit: () => ipcRenderer.invoke('app-quit'),
   exitApp: () => ipcRenderer.invoke('app-quit'),
   
+  // Customer Display controls
+  openCustomerDisplay: () => ipcRenderer.invoke('open-customer-display'),
+  closeCustomerDisplay: () => ipcRenderer.invoke('close-customer-display'),
+  sendToCustomerDisplay: (data) => ipcRenderer.invoke('send-to-customer-display', data),
+  requestCustomerDisplayData: () => ipcRenderer.invoke('request-customer-display-data'),
+  
+  // Customer Display listeners
+  onCustomerDisplayUpdate: (callback) => {
+    ipcRenderer.on('customer-display-update', (event, data) => callback(data));
+  },
+  onCustomerDisplayClosed: (callback) => {
+    ipcRenderer.on('customer-display-closed', () => callback());
+  },
+  onRequestCartData: (callback) => {
+    ipcRenderer.on('request-cart-data-for-display', () => callback());
+  },
+  
   // Add other IPC methods as needed
   onMenuAction: (callback) => ipcRenderer.on('menu-action', callback),
   removeAllListeners: (channel) => ipcRenderer.removeAllListeners(channel)

@@ -1,5 +1,5 @@
 import React, { Suspense } from 'react';
-import { Routes, Route, Navigate } from 'react-router-dom';
+import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { Layout, Spin } from 'antd';
 import { useAuth } from './contexts/AuthContext';
 import { LanguageProvider } from './contexts/LanguageContext';
@@ -48,6 +48,7 @@ const NhapKhoMb = React.lazy(() => import('./pages/NhapKhoMb/NhapKhoMb'));
 const KiemKhoMb = React.lazy(() => import('./pages/KiemKhoMb/KiemKhoMb'));
 const LoaiSanPham = React.lazy(() => import('./pages/LoaiSanPham/LoaiSanPham'));
 const SanPham = React.lazy(() => import('./pages/SanPham/SanPham'));
+const CustomerDisplay = React.lazy(() => import('./components/CustomerDisplay/CustomerDisplay'));
 const TangNhaHang = React.lazy(() => import('./pages/TangNhaHang/TangNhaHang'));
 const BanNhaHang = React.lazy(() => import('./pages/BanNhaHang/BanNhaHang'));
 const Kho = React.lazy(() => import('./pages/Kho/Kho'));
@@ -65,7 +66,25 @@ const { Sider, Content } = Layout;
 
 function App() {
   const { isAuthenticated } = useAuth();
+  const location = useLocation();
+  
+  // Check if current route is customer display
+  const isCustomerDisplay = location.pathname === '/customer-display';
 
+  // Customer Display without authentication - shown directly without login
+  if (isCustomerDisplay) {
+    return (
+      <LanguageProvider>
+        <Suspense fallback={<div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}><Spin size="large" /></div>}>
+          <Routes>
+            <Route path="/customer-display" element={<CustomerDisplay />} />
+          </Routes>
+        </Suspense>
+      </LanguageProvider>
+    );
+  }
+
+  // Require authentication for all other routes
   if (!isAuthenticated) {
     return (
       <LanguageProvider>

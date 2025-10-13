@@ -5,6 +5,7 @@ const IPCHandlers = require('./ipcHandlers');
 
 let mainWindow;
 let ipcHandlers;
+let customerDisplayWindow = null;
 
 function createWindow() {
   mainWindow = new BrowserWindow({
@@ -133,6 +134,71 @@ function createWindow() {
   Menu.setApplicationMenu(menu);
 }
 
+// Create customer display window
+function createCustomerDisplayWindow() {
+  if (customerDisplayWindow) {
+    customerDisplayWindow.focus();
+    return { success: true, message: 'Window already exists' };
+  }
+
+  customerDisplayWindow = new BrowserWindow({
+    width: 1024,
+    height: 768,
+    minWidth: 800,
+    minHeight: 600,
+    webPreferences: {
+      nodeIntegration: false,
+      contextIsolation: true,
+      enableRemoteModule: false,
+      preload: path.join(__dirname, 'preload.js')
+    },
+    title: 'Customer Display - POS CAFE',
+    show: false,
+    autoHideMenuBar: true,
+    backgroundColor: '#f5f7fa'
+  });
+
+  const displayURL = isDev
+    ? 'http://localhost:3000/#/customer-display'
+    : `file://${path.join(__dirname, '../build/index.html')}#/customer-display`;
+
+  customerDisplayWindow.loadURL(displayURL);
+
+  customerDisplayWindow.once('ready-to-show', () => {
+    customerDisplayWindow.show();
+    if (isDev) console.log('Customer display window shown');
+  });
+
+  customerDisplayWindow.on('closed', () => {
+    customerDisplayWindow = null;
+    // Notify main window that customer display is closed
+    if (mainWindow && !mainWindow.isDestroyed()) {
+      mainWindow.webContents.send('customer-display-closed');
+    }
+  });
+
+  return { success: true, message: 'Customer display window created' };
+}
+
+// Close customer display window
+function closeCustomerDisplayWindow() {
+  if (customerDisplayWindow && !customerDisplayWindow.isDestroyed()) {
+    customerDisplayWindow.close();
+    customerDisplayWindow = null;
+    return { success: true, message: 'Customer display closed' };
+  }
+  return { success: false, message: 'No customer display window to close' };
+}
+
+// Send data to customer display
+function sendToCustomerDisplay(data) {
+  if (customerDisplayWindow && !customerDisplayWindow.isDestroyed()) {
+    customerDisplayWindow.webContents.send('customer-display-update', data);
+    return { success: true };
+  }
+  return { success: false, message: 'Customer display not available' };
+}
+
 app.whenReady().then(() => {
   createWindow();
   
@@ -193,4 +259,25 @@ ipcMain.handle('show-save-dialog', async (event, options) => {
 ipcMain.handle('show-open-dialog', async (event, options) => {
   const result = await dialog.showOpenDialog(mainWindow, options);
   return result;
+});
+
+// Customer Display IPC handlers
+ipcMain.handle('open-customer-display', async () => {
+  return createCustomerDisplayWindow();
+});
+
+ipcMain.handle('close-customer-display', async () => {
+  return closeCustomerDisplayWindow();
+});
+
+ipcMain.handle('send-to-customer-display', async (event, data) => {
+  return sendToCustomerDisplay(data);
+});
+
+ipcMain.handle('request-customer-display-data', async () => {
+  // Request main window to send current cart data
+  if (mainWindow && !mainWindow.isDestroyed()) {
+    mainWindow.webContents.send('request-cart-data-for-display');
+  }
+  return { success: true };
 });

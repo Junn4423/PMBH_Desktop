@@ -32,6 +32,10 @@ const CaiDat = () => {
   const [selectedItem, setSelectedItem] = useState(null);
   const [refreshKey, setRefreshKey] = useState(0);
 
+  // Dual Screen Mode states
+  const [dualScreenEnabled, setDualScreenEnabled] = useState(false);
+  const [dualScreenLoading, setDualScreenLoading] = useState(false);
+
   // Load receipt logo on mount
   useEffect(() => {
     const savedLogo = receiptLogoManager.getLogo();
@@ -39,6 +43,12 @@ const CaiDat = () => {
       setReceiptLogo(savedLogo);
     }
     loadStorageStats();
+    
+    // Load dual screen mode setting
+    const savedDualScreen = localStorage.getItem('pmbh_dual_screen_mode');
+    if (savedDualScreen) {
+      setDualScreenEnabled(savedDualScreen === 'true');
+    }
   }, []);
 
   // Reload storage stats when refreshKey changes
@@ -147,6 +157,42 @@ const CaiDat = () => {
       setStorageEstimate(estimate);
     } catch (error) {
       console.error('Error loading storage stats:', error);
+    }
+  };
+
+  // Handle dual screen mode toggle
+  const handleDualScreenToggle = async (checked) => {
+    try {
+      setDualScreenLoading(true);
+      
+      if (checked) {
+        // Open customer display window
+        if (window.electronAPI && window.electronAPI.openCustomerDisplay) {
+          const result = await window.electronAPI.openCustomerDisplay();
+          if (result.success) {
+            setDualScreenEnabled(true);
+            localStorage.setItem('pmbh_dual_screen_mode', 'true');
+            message.success('Đã bật chế độ màn hình kép');
+          } else {
+            message.error('Không thể mở màn hình khách hàng');
+          }
+        } else {
+          message.error('Chức năng chưa được hỗ trợ');
+        }
+      } else {
+        // Close customer display window
+        if (window.electronAPI && window.electronAPI.closeCustomerDisplay) {
+          await window.electronAPI.closeCustomerDisplay();
+          setDualScreenEnabled(false);
+          localStorage.setItem('pmbh_dual_screen_mode', 'false');
+          message.success('Đã tắt chế độ màn hình kép');
+        }
+      }
+    } catch (error) {
+      console.error('Error toggling dual screen:', error);
+      message.error('Lỗi khi chuyển đổi chế độ màn hình');
+    } finally {
+      setDualScreenLoading(false);
     }
   };
 
@@ -736,13 +782,53 @@ const CaiDat = () => {
             }
             bordered={false}
           >
-            <Paragraph>
-              <Text 
-                module="settings" 
-                line={55} 
-                fallback="Các tùy chọn giao diện khác sẽ có sẵn trong phiên bản premium" 
-              />
-            </Paragraph>
+            <Space direction="vertical" size="large" style={{ width: '100%' }}>
+              {/* Dual Screen Mode */}
+              <div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                  <div>
+                    <Paragraph strong style={{ margin: 0 }}>
+                      Chế độ màn hình kép (Dual Screen Mode)
+                    </Paragraph>
+                    <Paragraph type="secondary" style={{ margin: '4px 0 0 0', fontSize: '12px' }}>
+                      Mở màn hình riêng để hiển thị đơn hàng cho khách hàng
+                    </Paragraph>
+                  </div>
+                  <Switch 
+                    checked={dualScreenEnabled}
+                    onChange={handleDualScreenToggle}
+                    loading={dualScreenLoading}
+                    disabled={dualScreenLoading}
+                    checkedChildren="BẬT"
+                    unCheckedChildren="TẮT"
+                  />
+                </div>
+                
+                {dualScreenEnabled && (
+                  <div style={{ 
+                    padding: '12px', 
+                    background: '#e6f7ff', 
+                    borderRadius: '6px',
+                    borderLeft: '3px solid #197dd3',
+                    marginTop: '12px'
+                  }}>
+                    <Paragraph style={{ margin: 0, fontSize: '12px', color: '#197dd3' }}>
+                      ✓ Màn hình khách hàng đang hoạt động
+                    </Paragraph>
+                  </div>
+                )}
+              </div>
+
+              <Divider style={{ margin: '12px 0' }} />
+
+              <Paragraph type="secondary" style={{ fontSize: '12px', margin: 0 }}>
+                <Text 
+                  module="settings" 
+                  line={55} 
+                  fallback="Các tùy chọn giao diện khác sẽ có sẵn trong phiên bản premium" 
+                />
+              </Paragraph>
+            </Space>
           </Card>
         </Col>
       </Row>

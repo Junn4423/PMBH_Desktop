@@ -108,6 +108,9 @@ import { useText } from '../../components/common/Text';
 // Debug utilities
 import { debugAPIFunctions, testPaymentAPI as quickPaymentTest } from '../../utils/debugAPI';
 
+// Customer display hook
+import useCustomerDisplaySync from '../../hooks/useCustomerDisplaySync';
+
 import './BanHang.css';
 import '../../styles/components/TableOperations.css';
 
@@ -245,6 +248,15 @@ const BanHang = () => {
 
   // Performance refs to avoid duplicated network calls/timeouts
   const tableStatusRequestRef = useRef(null);
+
+  // Customer Display Sync - Auto sync cart data to customer display window
+  useCustomerDisplaySync(
+    invoiceDetails,
+    selectedTable,
+    orderTotal,
+    0, // discount placeholder
+    orderTotal
+  );
   const quickRefreshTimeoutRef = useRef(null);
 
   const pendingKitchenIdSet = useMemo(() => {
