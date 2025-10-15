@@ -1,0 +1,62 @@
+.vnpay-return-loading {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  background: #f0f2f5;
+}
+
+.vnpay-return-container {
+  min-height: 100vh;
+  background: #f0f2f5;
+  padding: 40px 20px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.vnpay-return-card {
+  max-width: 800px;
+  width: 100%;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  border-radius: 8px;
+}
+
+.vnpay-return-card .ant-result {
+  padding: 40px 20px;
+}
+
+.vnpay-return-card .transaction-details {
+  background: #fafafa;
+}
+
+.vnpay-return-card .notice-card {
+  margin-bottom: 0;
+}
+
+/* Animation */
+.vnpay-return-card {
+  animation: slideUp 0.4s ease-out;
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .vnpay-return-container {
+    padding: 20px 12px;
+  }
+  
+  .vnpay-return-card .ant-result {
+    padding: 24px 12px;
+  }
+}

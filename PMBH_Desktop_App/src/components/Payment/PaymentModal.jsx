@@ -11,11 +11,13 @@ import {
   ArrowLeft,
   Printer,
   Split,
-  Plus
+  Plus,
+  QrCode
 } from 'lucide-react';
 import { thanhToanHoaDon } from '../../services/apiServices';
 import ReceiptPrinter from '../Print/ReceiptPrinter';
 import receiptLogoManager from '../../utils/receiptLogoManager';
+import VNPayQRModal from './VNPayQRModal';
 import './PaymentModal.css';
 
 const { Text } = Typography;
@@ -43,6 +45,7 @@ const PaymentModal = ({
   const [isMixedPaymentMode, setIsMixedPaymentMode] = useState(false);
   const [mixedPayments, setMixedPayments] = useState([]);
   const [partialPaidAmount, setPartialPaidAmount] = useState(0);
+  const [showVNPayQR, setShowVNPayQR] = useState(false);
 
   // Currency exchange rates
   const exchangeRates = {
@@ -139,6 +142,12 @@ const PaymentModal = ({
 
   const handlePaymentMethodChange = (value) => {
     setPaymentMethod(value);
+    
+    // Nếu chọn VNPay, mở modal QR
+    if (value === 'VNPAY') {
+      setShowVNPayQR(true);
+      return;
+    }
     
     if (value !== 'Cash') {
       const exactAmount = convertFromVND(finalTotal, currency);
@@ -770,6 +779,51 @@ const PaymentModal = ({
     message.success('Đã gửi hóa đơn đến máy in');
   };
 
+  /**
+   * Xử lý thanh toán thành công từ VNPay
+   */
+  const handleVNPaySuccess = async (paymentResult) => {
+    try {
+      setPaymentLoading(true);
+      setShowVNPayQR(false);
+
+      // Gọi API thanh toán hóa đơn
+      const result = await thanhToanHoaDon(invoice.maHd);
+      
+      if (result && (result.success !== false)) {
+        message.success('Thanh toán VNPay thành công!');
+        
+        // In hóa đơn
+        setTimeout(() => {
+          handlePrintReceipt();
+        }, 500);
+        
+        // Gọi callback
+        const paymentData = {
+          maHd: invoice?.maHd,
+          tongTien: orderTotal,
+          discount: discountAmount,
+          discountType,
+          finalTotal,
+          tienKhachDua: finalTotal,
+          tienThua: 0,
+          phuongThucThanhToan: 'VNPay',
+          ghiChu: `Thanh toan VNPay - TxnRef: ${paymentResult.txnRef}`,
+          ngayThanhToan: new Date().toISOString(),
+          vnpayData: paymentResult,
+        };
+        
+        await onConfirm(paymentData);
+      } else {
+        message.error('Thanh toán thất bại: ' + (result?.error || 'Lỗi không xác định'));
+      }
+    } catch (error) {
+      message.error('Lỗi thanh toán VNPay: ' + (error.message || 'Lỗi không xác định'));
+    } finally {
+      setPaymentLoading(false);
+    }
+  };
+
   const customerPaidInVND = convertToVND(customerPaid, currency);
   const finalTotalInCurrency = convertFromVND(finalTotal, currency);
   const changeInVND = Math.max(0, customerPaidInVND - finalTotal);
@@ -1118,6 +1172,16 @@ const PaymentModal = ({
           </div>
         </div>
       </div>
+
+      {/* VNPay QR Modal */}
+      <VNPayQRModal
+        visible={showVNPayQR}
+        onCancel={() => setShowVNPayQR(false)}
+        onSuccess={handleVNPaySuccess}
+        invoice={invoice}
+        amount={finalTotal}
+        description={`Thanh toan hoa don ${invoice?.maHd || invoice?.invoice_number}`}
+      />
     </Modal>
   );
 };
