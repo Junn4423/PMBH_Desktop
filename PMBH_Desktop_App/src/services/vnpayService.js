@@ -143,7 +143,7 @@ export const createVNPayPaymentUrl = (invoiceData, directToQR = true) => {
     const vnpParams = filterParams(baseParams);
 
     // Log all parameters for debugging
-    console.log('🔍 VNPay Request Parameters:');
+    console.log('VNPay Request Parameters:');
     console.log('  - vnp_TmnCode:', vnpParams.vnp_TmnCode);
     console.log('  - vnp_Amount:', vnpParams.vnp_Amount);
     console.log('  - vnp_OrderType:', vnpParams.vnp_OrderType);
