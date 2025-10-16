@@ -23,7 +23,7 @@ const vnpayConfig = {
   vnp_Url: getEnvVar('REACT_APP_VNP_PAYMENT_URL', 'https://sandbox.vnpayment.vn/paymentv2/vpcpay.html'),
 
   // URL nhận kết quả trả về sau khi thanh toán (Return URL)
-  vnp_ReturnUrl: getEnvVar('REACT_APP_VNP_RETURN_URL', 'http://localhost:3000/payment/vnpay-return'),
+  vnp_ReturnUrl: getEnvVar('REACT_APP_VNP_RETURN_URL', 'http://localhost:3000/payment/vnpay-success'),
 
   // URL nhận thông báo IPN (Instant Payment Notification)
   vnp_IpnUrl: getEnvVar('REACT_APP_VNP_IPN_URL', ''),

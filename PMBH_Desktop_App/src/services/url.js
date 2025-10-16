@@ -1,47 +1,41 @@
-// Detect environment
-const isElectron = () => {
-  // Check if we're in Electron renderer process
-  if (typeof window !== 'undefined' && window.process && window.process.type === 'renderer') {
-    return true;
+import { isElectron, isDevelopment, normalizeOrigin } from '../utils/environment';
+
+const API_BASE_PATH = '/gmac';
+const LOGIN_PATH = `${API_BASE_PATH}/login.sof.vn/index.php`;
+const LOGOUT_PATH = `${API_BASE_PATH}/signout.sof.vn/index.php`;
+const SERVICES_PATH = `${API_BASE_PATH}/services.sof.vn/index.php`;
+
+const DEFAULT_API_ORIGIN = normalizeOrigin(process.env.REACT_APP_API_ORIGIN || 'http://192.168.1.19');
+const DEFAULT_IMAGE_ORIGIN = normalizeOrigin(process.env.REACT_APP_IMAGE_ORIGIN || DEFAULT_API_ORIGIN);
+const DEFAULT_CHART_URL = process.env.REACT_APP_CHART_API_URL || 'http://192.168.1.91:5000/areaCharts';
+const CHART_PROXY_PATH = process.env.REACT_APP_CHART_PROXY_PATH || '';
+
+const shouldUseDevProxy = !isElectron && isDevelopment && process.env.REACT_APP_DISABLE_DEV_PROXY !== 'true';
+
+const apiOriginForRuntime = shouldUseDevProxy ? '' : DEFAULT_API_ORIGIN;
+const imageOriginForRuntime = shouldUseDevProxy ? '' : DEFAULT_IMAGE_ORIGIN;
+
+const buildUrl = (origin, path) => {
+  if (!origin) {
+    return path;
   }
-  // Check if we're in Electron main process
-  if (typeof process !== 'undefined' && process.versions && process.versions.electron) {
-    return true;
+
+  if (!path.startsWith('/')) {
+    return `${origin}/${path}`;
   }
-  // Check for electron in user agent
-  if (typeof navigator !== 'undefined' && navigator.userAgent.toLowerCase().indexOf('electron') > -1) {
-    return true;
-  }
-  return false;
+
+  return `${origin}${path}`;
 };
 
-const isElectronEnv = isElectron();
-const isDevelopment = process.env.NODE_ENV === 'development';
+const baseUrl = buildUrl(apiOriginForRuntime, API_BASE_PATH);
+const loginUrl = buildUrl(apiOriginForRuntime, LOGIN_PATH);
+const logoutUrl = buildUrl(apiOriginForRuntime, LOGOUT_PATH);
+const servicesUrl = buildUrl(apiOriginForRuntime, SERVICES_PATH);
+const imageBaseUrl = buildUrl(imageOriginForRuntime, API_BASE_PATH);
 
-// API URLs Configuration
-let baseUrl, loginUrl, logoutUrl, servicesUrl;
-
-let chartUrl;
-let imageBaseUrl;
-
-if (isElectronEnv) {
-  // Direct URLs for Electron (no CORS issues)
-  baseUrl = "http://192.168.1.19/gmac";
-  loginUrl = "http://192.168.1.19/gmac/login.sof.vn/index.php";
-  logoutUrl = "http://192.168.1.19/gmac/signout.sof.vn/index.php";
-  servicesUrl = "http://192.168.1.19/gmac/services.sof.vn/index.php";
-  chartUrl = "http://192.168.1.91:5000/areaCharts";
-  imageBaseUrl = "http://192.168.1.19/gmac";
-} else {
-  // For development in browser, use proxy URLs
-  // The proxy in package.json will redirect these to http://localhost
-  baseUrl = "/gmac";
-  loginUrl = "/gmac/login.sof.vn/index.php";
-  logoutUrl = "/gmac/signout.sof.vn/index.php";
-  servicesUrl = "/gmac/services.sof.vn/index.php";
-  chartUrl = "http://192.168.1.91:5000/areaCharts";
-  imageBaseUrl = "/gmac";
-}
+const chartUrl = shouldUseDevProxy && CHART_PROXY_PATH
+  ? CHART_PROXY_PATH
+  : DEFAULT_CHART_URL;
 
 export const url_api_services = servicesUrl;
 export const url_login_api = loginUrl;
@@ -50,14 +44,16 @@ export const url_api = baseUrl;
 export const url_chart_api = chartUrl;
 export const url_image_base = imageBaseUrl;
 
-// Export environment info for debugging
 export const environment = {
-  isElectron: isElectronEnv,
+  isElectron,
   isDevelopment,
+  usesDevProxy: shouldUseDevProxy,
+  apiOrigin: apiOriginForRuntime || 'relative',
+  imageOrigin: imageOriginForRuntime || 'relative',
   baseUrl,
   loginUrl,
   logoutUrl,
   servicesUrl,
   chartUrl,
-  imageBaseUrl
+  imageBaseUrl,
 };

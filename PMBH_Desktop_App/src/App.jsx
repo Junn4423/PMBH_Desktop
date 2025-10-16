@@ -32,6 +32,7 @@ const CanhBaoMaxMin = React.lazy(() => import('./pages/CanhBaoMaxMin/CanhBaoMaxM
 const VNPayReturn = React.lazy(() => import('./pages/Payment/VNPayReturn'));
 const DonVi = React.lazy(() => import('./pages/DonVi/DonVi'));
 const VNPaySuccess = React.lazy(() => import('./pages/Payment/VNPaySuccess'));
+const PaymentSuccess = React.lazy(() => import('./pages/Payment/PaymentSuccess'));
 const ChuongTrinhKinhDoanh = React.lazy(() => import('./pages/ChuongTrinhKinhDoanh/ChuongTrinhKinhDoanh'));
 const NguoiDangKy = React.lazy(() => import('./pages/NguoiDangKy/NguoiDangKy'));
 const ChoNguoiQuanLy = React.lazy(() => import('./pages/ChoNguoiQuanLy/ChoNguoiQuanLy'));
@@ -74,7 +75,8 @@ function App() {
   const isCustomerDisplay = location.pathname === '/customer-display';
   const isVNPayReturn = location.pathname.startsWith('/payment/vnpay-return');
   const isVNPaySuccess = location.pathname.startsWith('/payment/vnpay-success');
-  const isVNPayStandalone = isVNPayReturn || isVNPaySuccess;
+  const isPaymentSuccess = location.pathname.startsWith('/payment/success');
+  const isVNPayStandalone = isVNPayReturn || isVNPaySuccess || isPaymentSuccess;
 
   // Customer Display without authentication - shown directly without login
   if (isCustomerDisplay) {
@@ -96,6 +98,7 @@ function App() {
           <Routes>
             <Route path="/payment/vnpay-return" element={<VNPayReturn />} />
             <Route path="/payment/vnpay-success" element={<VNPaySuccess />} />
+            <Route path="/payment/success" element={<PaymentSuccess />} />
           </Routes>
         </Suspense>
       </LanguageProvider>

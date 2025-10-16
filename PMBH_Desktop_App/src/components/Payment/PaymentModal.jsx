@@ -845,7 +845,7 @@ const PaymentModal = ({
         opened = true;
         message.info('Đã mở cổng thanh toán VNPay. Vui lòng hoàn tất giao dịch trong cửa sổ mới.');
       } else {
-        const popup = window.open(result.paymentUrl, '_blank', 'noopener,noreferrer');
+        const popup = window.open(result.paymentUrl, '_blank');
         opened = !!popup;
         if (!opened) {
           message.warning('Trình duyệt đã chặn cửa sổ thanh toán VNPay. Vui lòng cho phép cửa sổ bật lên hoặc mở lại liên kết.');
@@ -870,21 +870,17 @@ const PaymentModal = ({
    * Xử lý thanh toán thành công từ VNPay
    */
   const handleVNPaySuccess = async (paymentResult) => {
+    console.log('VNPay payment result:', paymentResult);
     try {
       setPaymentLoading(true);
       setPendingVNPayTxn(null);
 
       const normalizedResponseCode =
         paymentResult?.responseCode === '0' ? '00' : paymentResult?.responseCode || '00';
-      const normalizedTransactionStatus =
-        paymentResult?.transactionStatus === '0'
-          ? '00'
-          : paymentResult?.transactionStatus || '00';
 
-      if (normalizedResponseCode !== '00' || normalizedTransactionStatus !== '00') {
-        message.error(
-          `Thanh toán VNPay không hợp lệ (mã ${normalizedResponseCode}/${normalizedTransactionStatus})`
-        );
+      // Chỉ kiểm tra vnp_response_code = 00
+      if (normalizedResponseCode !== '00') {
+        message.error(`Thanh toán VNPay không hợp lệ (mã ${normalizedResponseCode})`);
         return;
       }
 

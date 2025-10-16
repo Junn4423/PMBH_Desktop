@@ -77,7 +77,6 @@ const normalizeVNPayCode = (code) => {
   if (code === null || code === undefined) {
     return '';
   }
-
   const value = String(code);
   return value === '0' ? '00' : value;
 };
@@ -136,7 +135,7 @@ export const createVNPayPaymentUrl = (invoiceData, directToQR = true) => {
       vnp_Amount: amount,
       vnp_CreateDate: createDate,
       vnp_CurrCode: vnpayConfig.vnp_CurrCode,
-      vnp_IpAddr: vnpayConfig.vnp_ClientIp || getClientIpAddress(), 
+      vnp_IpAddr: vnpayConfig.vnp_ClientIp || getClientIpAddress(),
       vnp_Locale: vnpayConfig.vnp_Locale,
       vnp_OrderInfo: sanitizeOrderInfo(moTa || `Thanh toan hoa don ${maHd}`),
       vnp_OrderType: vnpayConfig.vnp_OrderType, // BẮT BUỘC - loại đơn hàng
@@ -161,7 +160,6 @@ export const createVNPayPaymentUrl = (invoiceData, directToQR = true) => {
     console.log('  - vnp_ReturnUrl:', vnpParams.vnp_ReturnUrl);
 
     const signData = buildSignedQuery(vnpParams);
-    
     const secureHash = createHmacSHA512(vnpayConfig.vnp_HashSecret, signData);
 
     const paymentUrl = `${vnpayConfig.vnp_Url}?${signData}&vnp_SecureHash=${secureHash}`;
@@ -196,7 +194,7 @@ export const createVNPayPaymentUrl = (invoiceData, directToQR = true) => {
 /**
  * Xác thực chữ ký từ VNPay Return URL
  * @param {Object} queryParams - Các tham số từ return URL
- * @returns {Object} { isValid, message }
+ * @returns {Object} { isValid, message, vnp_ResponseCode, vnp_TransactionStatus, ... }
  */
 export const verifyVNPayReturnUrl = (queryParams) => {
   try {
@@ -220,16 +218,41 @@ export const verifyVNPayReturnUrl = (queryParams) => {
     // So sánh chữ ký
     const isValid = secureHash === vnp_SecureHash;
 
+    // Lấy thêm các field quan trọng để caller sử dụng
+    const vnp_ResponseCode = normalizeVNPayCode(queryParams.vnp_ResponseCode);
+    const vnp_TransactionStatus = normalizeVNPayCode(queryParams.vnp_TransactionStatus);
+    const vnp_TxnRef = queryParams.vnp_TxnRef;
+
+    const vnp_Amount = Number.isFinite(parseInt(queryParams.vnp_Amount))
+      ? parseInt(queryParams.vnp_Amount)
+      : undefined;
+
+    const isSuccess = vnp_ResponseCode === '00' && vnp_TransactionStatus === '00';
+
     console.log('=== VNPay Return URL Verification ===');
     console.log('Sign Data:', signData);
     console.log('Expected Hash:', secureHash);
     console.log('Received Hash:', vnp_SecureHash);
     console.log('Is Valid:', isValid);
+    console.log('vnp_ResponseCode:', vnp_ResponseCode);
+    console.log('vnp_TransactionStatus:', vnp_TransactionStatus);
+    console.log('TxnRef:', vnp_TxnRef);
     console.log('=====================================');
 
     return {
       isValid,
       message: isValid ? 'Chữ ký hợp lệ' : 'Chữ ký không hợp lệ',
+      vnp_ResponseCode,
+      vnp_TransactionStatus,
+      isSuccess,
+      txnRef: vnp_TxnRef,
+      amount: vnp_Amount ? vnp_Amount / 100 : undefined,
+      bankCode: queryParams.vnp_BankCode,
+      bankTranNo: queryParams.vnp_BankTranNo,
+      cardType: queryParams.vnp_CardType,
+      payDate: queryParams.vnp_PayDate,
+      transactionNo: queryParams.vnp_TransactionNo,
+      orderInfo: queryParams.vnp_OrderInfo,
     };
   } catch (error) {
     console.error('Error verifying VNPay return URL:', error);
@@ -243,13 +266,13 @@ export const verifyVNPayReturnUrl = (queryParams) => {
 /**
  * Xác thực IPN từ VNPay
  * @param {Object} queryParams - Các tham số từ IPN request
- * @returns {Object} { isValid, shouldConfirm, responseCode, message }
+ * @returns {Object} { isValid, shouldConfirm, responseCode, vnp_ResponseCode, vnp_TransactionStatus, ... }
  */
 export const verifyVNPayIPN = (queryParams) => {
   try {
     // Bước 1: Kiểm tra chữ ký
     const verification = verifyVNPayReturnUrl(queryParams);
-    
+
     if (!verification.isValid) {
       return {
         isValid: false,
@@ -260,24 +283,18 @@ export const verifyVNPayIPN = (queryParams) => {
     }
 
     // Bước 2: Kiểm tra mã phản hồi từ VNPay
-    const rawResponseCode = queryParams.vnp_ResponseCode;
-    const rawTransactionStatus = queryParams.vnp_TransactionStatus;
-    const vnp_ResponseCode = normalizeVNPayCode(rawResponseCode);
-    const vnp_TransactionStatus = normalizeVNPayCode(rawTransactionStatus);
+    const vnp_ResponseCode = normalizeVNPayCode(queryParams.vnp_ResponseCode);
+    const vnp_TransactionStatus = normalizeVNPayCode(queryParams.vnp_TransactionStatus);
 
     // Chỉ coi là thành công khi cả 2 mã đều là 00
     const isSuccess = vnp_ResponseCode === '00' && vnp_TransactionStatus === '00';
 
     // Bước 3: Kiểm tra TxnRef
     const vnp_TxnRef = queryParams.vnp_TxnRef;
-    
-    // TODO: Kiểm tra TxnRef có tồn tại và chưa được xử lý chưa
-    // Cần implement database check để đảm bảo không xử lý trùng
 
     // Bước 4: Kiểm tra số tiền
     const vnp_Amount = parseInt(queryParams.vnp_Amount);
-    
-    // TODO: Kiểm tra số tiền có khớp với database không
+    // TODO: So khớp số tiền với database
     // const expectedAmount = getAmountFromDatabase(vnp_TxnRef);
     // if (vnp_Amount !== expectedAmount * 100) {
     //   return { isValid: false, shouldConfirm: false, responseCode: '04', message: 'Số tiền không khớp' };
@@ -294,7 +311,9 @@ export const verifyVNPayIPN = (queryParams) => {
     return {
       isValid: true,
       shouldConfirm: isSuccess,
-      responseCode: isSuccess ? '00' : vnp_ResponseCode,
+      responseCode: isSuccess ? '00' : vnp_ResponseCode, // Mã trả về cho VNPay
+      vnp_ResponseCode,
+      vnp_TransactionStatus,
       message: isSuccess ? 'Giao dịch thành công' : 'Giao dịch thất bại',
       txnRef: vnp_TxnRef,
       amount: vnp_Amount / 100,
@@ -303,6 +322,7 @@ export const verifyVNPayIPN = (queryParams) => {
       cardType: queryParams.vnp_CardType,
       payDate: queryParams.vnp_PayDate,
       transactionNo: queryParams.vnp_TransactionNo,
+      orderInfo: queryParams.vnp_OrderInfo,
     };
   } catch (error) {
     console.error('Error verifying VNPay IPN:', error);
@@ -322,19 +342,19 @@ export const getVNPayResponseMessage = (responseCode) => {
   const messages = {
     '00': 'Giao dịch thành công',
     '07': 'Trừ tiền thành công. Giao dịch bị nghi ngờ (liên quan tới lừa đảo, giao dịch bất thường)',
-    '09': 'Giao dịch không thành công do: Thẻ/Tài khoản của khách hàng chưa đăng ký dịch vụ InternetBanking tại ngân hàng',
-    '10': 'Giao dịch không thành công do: Khách hàng xác thực thông tin thẻ/tài khoản không đúng quá 3 lần',
-    '11': 'Giao dịch không thành công do: Đã hết hạn chờ thanh toán. Xin quý khách vui lòng thực hiện lại giao dịch',
-    '12': 'Giao dịch không thành công do: Thẻ/Tài khoản của khách hàng bị khóa',
-    '13': 'Giao dịch không thành công do Quý khách nhập sai mật khẩu xác thực giao dịch (OTP)',
-    '24': 'Giao dịch không thành công do: Khách hàng hủy giao dịch',
-    '51': 'Giao dịch không thành công do: Tài khoản của quý khách không đủ số dư để thực hiện giao dịch',
-    '65': 'Giao dịch không thành công do: Tài khoản của Quý khách đã vượt quá hạn mức giao dịch trong ngày',
+    '09': 'Thẻ/Tài khoản chưa đăng ký InternetBanking',
+    '10': 'Xác thực thông tin thẻ/tài khoản sai quá 3 lần',
+    '11': 'Hết hạn chờ thanh toán, vui lòng thanh toán lại',
+    '12': 'Thẻ/Tài khoản bị khóa',
+    '13': 'Nhập sai OTP',
+    '24': 'Khách hàng hủy giao dịch',
+    '51': 'Không đủ số dư',
+    '65': 'Vượt hạn mức giao dịch trong ngày',
     '75': 'Ngân hàng thanh toán đang bảo trì',
-    '79': 'Giao dịch không thành công do: KH nhập sai mật khẩu thanh toán quá số lần quy định',
-    '99': 'Các lỗi khác (lỗi còn lại, không có trong danh sách mã lỗi đã liệt kê)',
+    '79': 'Nhập sai mật khẩu thanh toán quá số lần quy định',
+    '97': 'Chữ ký không hợp lệ',
+    '99': 'Các lỗi khác',
   };
-
   return messages[responseCode] || 'Lỗi không xác định';
 };
 
@@ -356,7 +376,7 @@ export const logVNPayTransaction = (logData) => {
 
   // TODO: Lưu vào database hoặc file log
   // saveToDatabase(log);
-  
+
   return log;
 };
 

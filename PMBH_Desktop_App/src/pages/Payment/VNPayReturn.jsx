@@ -145,7 +145,7 @@ const VNPayReturn = () => {
       const amount = parseInt(vnp_Amount, 10) / 100; // Chia cho 100 để lấy số tiền thực
       const normalizedResponseCode = normalizeVNPayCode(vnp_ResponseCode);
       const normalizedTransactionStatus = normalizeVNPayCode(vnp_TransactionStatus);
-      const isSuccess = normalizedResponseCode === '00' && normalizedTransactionStatus === '00';
+      const isSuccess = normalizedResponseCode === '00';
 
       const result = {
         success: isSuccess,
@@ -227,7 +227,11 @@ const VNPayReturn = () => {
    * Quay lại trang bán hàng
    */
   const handleBackToSales = () => {
-    navigate('/ban-hang');
+    if (window.opener && !window.opener.closed) {
+      window.close();
+    } else {
+      navigate('/ban-hang');
+    }
   };
 
   /**

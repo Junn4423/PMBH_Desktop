@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { 
   Layout, 
   Row, 
@@ -163,6 +164,7 @@ const BanHang = () => {
   const [invoiceHistory, setInvoiceHistory] = useState([]);
   const [showInvoiceHistory, setShowInvoiceHistory] = useState(false);
   const [editingInvoice, setEditingInvoice] = useState(false);
+  const navigate = useNavigate();
   const [draftInvoices, setDraftInvoices] = useState([]);
   const [includeVAT, setIncludeVAT] = useState(false); // Checkbox for VAT tax
   const [invoiceSummary, setInvoiceSummary] = useState({
@@ -1387,6 +1389,12 @@ const BanHang = () => {
       // Trigger refresh to update table status
       triggerQuickRefresh('PAYMENT_COMPLETE');
       
+      // Navigate to success page for online payments
+      if (paymentData.phuongThucThanhToan && paymentData.phuongThucThanhToan !== 'Cash') {
+        navigate('/payment/success', { state: { paymentResult: paymentData } });
+        return;
+      }
+      
       // Clear current invoice state
       setCurrentInvoice(null);
       setInvoiceDetails([]);
@@ -2041,6 +2049,7 @@ const BanHang = () => {
     };
 
   // Enhanced Tách bàn - Tách theo món lẻ
+ 
   const handleSplitTable = async () => {
     
 

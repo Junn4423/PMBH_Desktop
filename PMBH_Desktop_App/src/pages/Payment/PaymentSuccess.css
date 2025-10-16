@@ -1,0 +1,62 @@
+.payment-success-loading {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  background: #f0f2f5;
+}
+
+.payment-success-container {
+  min-height: 100vh;
+  background: #f0f2f5;
+  padding: 40px 20px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.payment-success-card {
+  max-width: 800px;
+  width: 100%;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  border-radius: 8px;
+}
+
+.payment-success-card .ant-result {
+  padding: 40px 20px;
+}
+
+.payment-success-card .transaction-details {
+  background: #fafafa;
+}
+
+.payment-success-card .notice-card {
+  margin-bottom: 0;
+}
+
+/* Animation */
+.payment-success-card {
+  animation: slideUp 0.4s ease-out;
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .payment-success-container {
+    padding: 20px 12px;
+  }
+
+  .payment-success-card .ant-result {
+    padding: 24px 12px;
+  }
+}

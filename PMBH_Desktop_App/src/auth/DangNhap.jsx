@@ -14,6 +14,7 @@ import {
   Clock
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
+import { getElectronAPI } from '../utils/environment';
 import logoImg from '../assets/Logo/logo.png';
 import '../styles/pages/DangNhap.css';
 
@@ -25,11 +26,11 @@ const DangNhap = () => {
   const [showError, setShowError] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
   const { login: authLogin } = useAuth();
+  const electronAPI = getElectronAPI();
+  const isElectronRuntime = Boolean(electronAPI);
 
   const handleExitApp = () => {
-    if (window.electronAPI) {
-      window.electronAPI.exitApp();
-    }
+    electronAPI?.exitApp?.();
   };
 
   const xuLyDangNhap = async (values) => {
@@ -99,13 +100,15 @@ const DangNhap = () => {
   return (
     <div className="login-container">
       {/* Exit Button */}
-      <Button 
+      {isElectronRuntime && (
+        <Button
         className="login-exit-btn"
-        type="text" 
+        type="text"
         icon={<X size={20} />}
         onClick={handleExitApp}
         title="Thoát ứng dụng"
       />
+      )}
       
       {/* Left Side - Introduction */}
       <div className="login-intro-section">

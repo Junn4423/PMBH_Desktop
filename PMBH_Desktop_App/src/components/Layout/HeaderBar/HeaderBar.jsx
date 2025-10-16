@@ -1,8 +1,8 @@
 import React from 'react';
 import { Layout, Dropdown, Avatar, Space, Typography, Button } from 'antd';
-import { 
-  Minimize2, 
-  Maximize2, 
+import {
+  Minimize2,
+  Maximize2,
   X,
   Bell,
   Settings,
@@ -10,6 +10,7 @@ import {
   User
 } from 'lucide-react';
 import { useAuth } from '../../../contexts/AuthContext';
+import { getElectronAPI } from '../../../utils/environment';
 import './HeaderBar.css';
 
 const { Header } = Layout;
@@ -17,23 +18,19 @@ const { Text } = Typography;
 
 const HeaderBar = () => {
   const { user, logout } = useAuth();
+  const electronAPI = getElectronAPI();
+  const isElectronRuntime = Boolean(electronAPI);
 
   const handleMinimize = () => {
-    if (window.electronAPI) {
-      window.electronAPI.windowMinimize();
-    }
+    electronAPI?.windowMinimize?.();
   };
 
   const handleMaximize = () => {
-    if (window.electronAPI) {
-      window.electronAPI.windowMaximize();
-    }
+    electronAPI?.windowMaximize?.();
   };
 
   const handleClose = () => {
-    if (window.electronAPI) {
-      window.electronAPI.appQuit();
-    }
+    electronAPI?.appQuit?.();
   };
 
   const userMenuItems = [
@@ -90,28 +87,30 @@ const HeaderBar = () => {
           </Dropdown>
         </Space>
       </div>
-      
+
       <div className="header-right">
-        <div className="window-controls">
-          <Button 
-            type="text" 
-            icon={<Minimize2 size={14} />} 
-            className="window-control-btn minimize-btn"
-            onClick={handleMinimize}
-          />
-          <Button 
-            type="text" 
-            icon={<Maximize2 size={14} />} 
-            className="window-control-btn maximize-btn"
-            onClick={handleMaximize}
-          />
-          <Button 
-            type="text" 
-            icon={<X size={14} />} 
-            className="window-control-btn close-btn"
-            onClick={handleClose}
-          />
-        </div>
+        {isElectronRuntime && (
+          <div className="window-controls">
+            <Button
+              type="text"
+              icon={<Minimize2 size={14} />}
+              className="window-control-btn minimize-btn"
+              onClick={handleMinimize}
+            />
+            <Button
+              type="text"
+              icon={<Maximize2 size={14} />}
+              className="window-control-btn maximize-btn"
+              onClick={handleMaximize}
+            />
+            <Button
+              type="text"
+              icon={<X size={14} />}
+              className="window-control-btn close-btn"
+              onClick={handleClose}
+            />
+          </div>
+        )}
       </div>
     </Header>
   );
