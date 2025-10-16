@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Result, Button, Spin, Card, Descriptions, Typography } from 'antd';
 import { CheckCircle, XCircle, AlertCircle } from 'lucide-react';
@@ -20,10 +20,70 @@ const VNPayReturn = () => {
   const location = useLocation();
   const [loading, setLoading] = useState(true);
   const [paymentResult, setPaymentResult] = useState(null);
+  const hasPostedResultRef = useRef(false);
 
   useEffect(() => {
     processReturnUrl();
   }, [location.search]);
+
+  const normalizeVNPayCode = (code) => {
+    const value = (code ?? '').toString();
+    return value === '0' ? '00' : value;
+  };
+
+  const notifyParentWindow = (resultPayload, queryParams) => {
+    if (typeof window === 'undefined' || hasPostedResultRef.current) {
+      return;
+    }
+
+    const targetOrigin = window.location.origin;
+    const payload = {
+      ...resultPayload,
+      responseCode:
+        resultPayload.responseCode ||
+        resultPayload.vnp_ResponseCode ||
+        resultPayload?.rawQuery?.vnp_ResponseCode ||
+        '',
+      vnp_ResponseCode:
+        resultPayload.vnp_ResponseCode ||
+        resultPayload.responseCode ||
+        resultPayload?.rawQuery?.vnp_ResponseCode ||
+        '',
+      transactionStatus:
+        resultPayload.transactionStatus ||
+        resultPayload.vnp_TransactionStatus ||
+        resultPayload?.rawQuery?.vnp_TransactionStatus ||
+        '',
+      vnp_TransactionStatus:
+        resultPayload.vnp_TransactionStatus ||
+        resultPayload.transactionStatus ||
+        resultPayload?.rawQuery?.vnp_TransactionStatus ||
+        '',
+    };
+
+    const message = {
+      type: 'VNPAY_PAYMENT_RESULT',
+      payload: {
+        ...payload,
+        rawQuery: queryParams,
+      },
+    };
+
+    try {
+      if (window.opener && !window.opener.closed) {
+        window.opener.postMessage(message, targetOrigin);
+        hasPostedResultRef.current = true;
+        return;
+      }
+
+      if (window.parent && window.parent !== window) {
+        window.parent.postMessage(message, targetOrigin);
+        hasPostedResultRef.current = true;
+      }
+    } catch (error) {
+      console.error('Unable to notify parent window about VNPay result:', error);
+    }
+  };
 
   /**
    * Xử lý URL trả về từ VNPay
@@ -31,6 +91,7 @@ const VNPayReturn = () => {
   const processReturnUrl = async () => {
     try {
       setLoading(true);
+      hasPostedResultRef.current = false;
 
       // Parse query parameters
       const searchParams = new URLSearchParams(location.search);
@@ -47,11 +108,14 @@ const VNPayReturn = () => {
       const verification = verifyVNPayReturnUrl(queryParams);
 
       if (!verification.isValid) {
-        setPaymentResult({
+        const invalidResult = {
           success: false,
           message: 'Chữ ký không hợp lệ. Giao dịch có thể bị giả mạo.',
           status: 'error',
-        });
+        };
+
+        setPaymentResult(invalidResult);
+        notifyParentWindow(invalidResult, queryParams);
         
         // Log giao dịch thất bại
         logVNPayTransaction({
@@ -78,26 +142,28 @@ const VNPayReturn = () => {
         vnp_TransactionStatus,
       } = queryParams;
 
-      const amount = parseInt(vnp_Amount) / 100; // Chia cho 100 để lấy số tiền thực
-      const isSuccess = vnp_ResponseCode === '00' && vnp_TransactionStatus === '00';
+      const amount = parseInt(vnp_Amount, 10) / 100; // Chia cho 100 để lấy số tiền thực
+      const normalizedResponseCode = normalizeVNPayCode(vnp_ResponseCode);
+      const normalizedTransactionStatus = normalizeVNPayCode(vnp_TransactionStatus);
+      const isSuccess = normalizedResponseCode === '00' && normalizedTransactionStatus === '00';
 
       const result = {
         success: isSuccess,
-        message: getVNPayResponseMessage(vnp_ResponseCode),
+        message: getVNPayResponseMessage(normalizedResponseCode),
         status: isSuccess ? 'success' : 'error',
         txnRef: vnp_TxnRef,
         amount,
         orderInfo: vnp_OrderInfo,
-        responseCode: vnp_ResponseCode,
+        responseCode: normalizedResponseCode,
         transactionNo: vnp_TransactionNo,
         bankCode: vnp_BankCode,
         bankTranNo: vnp_BankTranNo,
         cardType: vnp_CardType,
         payDate: vnp_PayDate,
-        transactionStatus: vnp_TransactionStatus,
+        transactionStatus: normalizedTransactionStatus,
       };
 
-      setPaymentResult(result);
+      notifyParentWindow(result, queryParams);
 
       // Log giao dịch
       logVNPayTransaction({
@@ -106,23 +172,36 @@ const VNPayReturn = () => {
         queryParams,
       });
 
-      // TODO: Gửi kết quả lên server để cập nhật database
-      // await updatePaymentStatus(result);
-
       if (isSuccess) {
-        // TODO: Cập nhật trạng thái hóa đơn trong database
-        console.log('Payment successful, updating invoice status...');
-        
-        // Có thể gọi API để cập nhật
-        // await updateInvoicePaymentStatus(vnp_TxnRef, result);
+        const successParams = new URLSearchParams({
+          txnRef: result.txnRef || '',
+          amount: result.amount !== undefined ? String(result.amount) : '',
+          orderInfo: result.orderInfo || '',
+          bankCode: result.bankCode || '',
+          payDate: result.payDate || '',
+          responseCode: result.responseCode || '',
+        });
+
+        navigate(`/payment/vnpay-success?${successParams.toString()}`, {
+          replace: true,
+          state: {
+            paymentResult: result,
+            rawQuery: queryParams,
+          },
+        });
+        return;
       }
+
+      setPaymentResult(result);
     } catch (error) {
       console.error('Error processing VNPay return URL:', error);
-      setPaymentResult({
+      const errorResult = {
         success: false,
         message: 'Có lỗi xảy ra khi xử lý kết quả thanh toán',
         status: 'error',
-      });
+      };
+      setPaymentResult(errorResult);
+      notifyParentWindow(errorResult, {});
     } finally {
       setLoading(false);
     }

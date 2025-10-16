@@ -33,5 +33,18 @@ contextBridge.exposeInMainWorld('electronAPI', {
   
   // Add other IPC methods as needed
   onMenuAction: (callback) => ipcRenderer.on('menu-action', callback),
-  removeAllListeners: (channel) => ipcRenderer.removeAllListeners(channel)
+  removeAllListeners: (channel) => ipcRenderer.removeAllListeners(channel),
+
+  // VNPay helpers
+  openVNPayPaymentWindow: (paymentUrl, returnUrl) =>
+    ipcRenderer.invoke('vnpay:open-payment-window', { paymentUrl, returnUrl }),
+  closeVNPayPaymentWindow: () => ipcRenderer.invoke('vnpay:close-payment-window'),
+  onVNPayPaymentResult: (callback) => {
+    const listener = (_event, data) => callback(data);
+    ipcRenderer.on('vnpay:payment-result', listener);
+    return () => ipcRenderer.removeListener('vnpay:payment-result', listener);
+  },
+  onceVNPayPaymentClosed: (callback) => {
+    ipcRenderer.once('vnpay:payment-window-closed', () => callback());
+  }
 });

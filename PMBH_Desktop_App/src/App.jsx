@@ -29,7 +29,9 @@ const ChonKhoQuanLy = React.lazy(() => import('./pages/ChonKhoQuanLy/ChonKhoQuan
 const TaiKhoanMB = React.lazy(() => import('./pages/TaiKhoanMB/TaiKhoanMB'));
 const NhapChi = React.lazy(() => import('./pages/NhapChi/NhapChi'));
 const CanhBaoMaxMin = React.lazy(() => import('./pages/CanhBaoMaxMin/CanhBaoMaxMin'));
+const VNPayReturn = React.lazy(() => import('./pages/Payment/VNPayReturn'));
 const DonVi = React.lazy(() => import('./pages/DonVi/DonVi'));
+const VNPaySuccess = React.lazy(() => import('./pages/Payment/VNPaySuccess'));
 const ChuongTrinhKinhDoanh = React.lazy(() => import('./pages/ChuongTrinhKinhDoanh/ChuongTrinhKinhDoanh'));
 const NguoiDangKy = React.lazy(() => import('./pages/NguoiDangKy/NguoiDangKy'));
 const ChoNguoiQuanLy = React.lazy(() => import('./pages/ChoNguoiQuanLy/ChoNguoiQuanLy'));
@@ -70,6 +72,9 @@ function App() {
   
   // Check if current route is customer display
   const isCustomerDisplay = location.pathname === '/customer-display';
+  const isVNPayReturn = location.pathname.startsWith('/payment/vnpay-return');
+  const isVNPaySuccess = location.pathname.startsWith('/payment/vnpay-success');
+  const isVNPayStandalone = isVNPayReturn || isVNPaySuccess;
 
   // Customer Display without authentication - shown directly without login
   if (isCustomerDisplay) {
@@ -78,6 +83,19 @@ function App() {
         <Suspense fallback={<div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}><Spin size="large" /></div>}>
           <Routes>
             <Route path="/customer-display" element={<CustomerDisplay />} />
+          </Routes>
+        </Suspense>
+      </LanguageProvider>
+    );
+  }
+
+  if (isVNPayStandalone) {
+    return (
+      <LanguageProvider>
+        <Suspense fallback={<div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}><Spin size="large" /></div>}>
+          <Routes>
+            <Route path="/payment/vnpay-return" element={<VNPayReturn />} />
+            <Route path="/payment/vnpay-success" element={<VNPaySuccess />} />
           </Routes>
         </Suspense>
       </LanguageProvider>
@@ -187,6 +205,8 @@ function App() {
               <Route path="/cho-nguoi-quan-ly" element={<ChoNguoiQuanLy />} />
               <Route path="/cho-nha-bep-ql" element={<ChoNhaBepQl />} />
               <Route path="/cho-quay-bar-ql" element={<ChoQuayBarQl />} />
+              <Route path="/payment/vnpay-return" element={<VNPayReturn />} />
+              <Route path="/payment/vnpay-success" element={<VNPaySuccess />} />
             </Routes>
           </Suspense>
         </Content>

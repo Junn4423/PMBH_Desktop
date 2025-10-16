@@ -6,12 +6,14 @@
 import React from 'react';
 import { Routes, Route } from 'react-router-dom';
 import VNPayReturn from './pages/Payment/VNPayReturn';
+import VNPaySuccess from './pages/Payment/VNPaySuccess';
 
 // Thêm route này vào router config của bạn
 const VNPayRoutes = () => (
   <>
     {/* Route xử lý kết quả thanh toán VNPay */}
     <Route path="/payment/vnpay-return" element={<VNPayReturn />} />
+    <Route path="/payment/vnpay-success" element={<VNPaySuccess />} />
   </>
 );
 

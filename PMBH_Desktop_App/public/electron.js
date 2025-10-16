@@ -1,11 +1,160 @@
-const { app, BrowserWindow, Menu, ipcMain, dialog } = require('electron');
+﻿const { app, BrowserWindow, Menu, ipcMain, dialog, shell } = require('electron');
 const path = require('path');
 const isDev = require('electron-is-dev');
 const IPCHandlers = require('./ipcHandlers');
+const { URL } = require('url');
 
 let mainWindow;
 let ipcHandlers;
 let customerDisplayWindow = null;
+let vnpayPaymentWindow = null;
+let vnpayPaymentParent = null;
+let vnpayReturnUrl = null;
+
+const notifyVNPayParent = (payload) => {
+  if (vnpayPaymentParent && !vnpayPaymentParent.isDestroyed()) {
+    vnpayPaymentParent.send('vnpay:payment-result', payload);
+  }
+};
+
+const closeVNPayPaymentWindow = () => {
+  if (vnpayPaymentWindow && !vnpayPaymentWindow.isDestroyed()) {
+    vnpayPaymentWindow.close();
+  }
+  vnpayPaymentWindow = null;
+  vnpayPaymentParent = null;
+  vnpayReturnUrl = null;
+};
+
+const handleVNPayReturnUrl = (targetUrl) => {
+  if (!targetUrl || !vnpayReturnUrl) {
+    return false;
+  }
+
+  try {
+    const normalizedReturn = vnpayReturnUrl.trim();
+    if (!normalizedReturn) {
+      return false;
+    }
+
+    const parsedTarget = new URL(targetUrl);
+    const parsedReturn = new URL(normalizedReturn, parsedTarget.origin);
+
+    if (parsedTarget.origin !== parsedReturn.origin) {
+      return false;
+    }
+
+    if (!parsedTarget.pathname.startsWith(parsedReturn.pathname)) {
+      return false;
+    }
+
+    const queryEntries = Object.fromEntries(parsedTarget.searchParams.entries());
+
+    notifyVNPayParent({
+      source: 'vnpay-window',
+      url: targetUrl,
+      query: queryEntries,
+    });
+
+    closeVNPayPaymentWindow();
+    return true;
+  } catch (error) {
+    console.error('Failed to process VNPay return URL:', error);
+    notifyVNPayParent({
+      source: 'vnpay-window',
+      error: error.message,
+      url: targetUrl,
+    });
+    closeVNPayPaymentWindow();
+    return false;
+  }
+};
+
+const openVNPayPaymentWindow = ({ paymentUrl, returnUrl }, sender) => {
+  try {
+    if (!paymentUrl) {
+      throw new Error('Missing VNPay payment URL');
+    }
+
+    vnpayPaymentParent = sender;
+    vnpayReturnUrl = returnUrl || null;
+
+    if (vnpayPaymentWindow && !vnpayPaymentWindow.isDestroyed()) {
+      vnpayPaymentWindow.loadURL(paymentUrl);
+      vnpayPaymentWindow.focus();
+      return { success: true };
+    }
+
+    vnpayPaymentWindow = new BrowserWindow({
+      width: 480,
+      height: 720,
+      minWidth: 360,
+      minHeight: 640,
+      show: false,
+      backgroundColor: '#ffffff',
+      autoHideMenuBar: true,
+      parent: mainWindow ?? undefined,
+      modal: false,
+      webPreferences: {
+        contextIsolation: true,
+        nodeIntegration: false,
+        sandbox: true,
+      },
+    });
+
+    vnpayPaymentWindow.on('closed', () => {
+      if (vnpayPaymentParent && !vnpayPaymentParent.isDestroyed()) {
+        vnpayPaymentParent.send('vnpay:payment-window-closed');
+      }
+      closeVNPayPaymentWindow();
+    });
+
+    vnpayPaymentWindow.webContents.on('will-redirect', (event, url) => {
+      if (handleVNPayReturnUrl(url)) {
+        event.preventDefault();
+      }
+    });
+
+    vnpayPaymentWindow.webContents.on('did-navigate', (_event, url) => {
+      handleVNPayReturnUrl(url);
+    });
+
+    vnpayPaymentWindow.webContents.setWindowOpenHandler(({ url }) => {
+      if (url) {
+        shell.openExternal(url);
+      }
+      return { action: 'deny' };
+    });
+
+    vnpayPaymentWindow.webContents.on('did-fail-load', (event, errorCode, errorDescription, validatedURL) => {
+      if (errorCode === -105 && vnpayReturnUrl && validatedURL && validatedURL.startsWith(vnpayReturnUrl)) {
+        // Host unreachable for return URL, but we already handled it in will-redirect
+        return;
+      }
+      console.error('VNPay window failed to load:', errorCode, errorDescription, validatedURL);
+    });
+
+    vnpayPaymentWindow.loadURL(paymentUrl);
+    vnpayPaymentWindow.once('ready-to-show', () => {
+      if (vnpayPaymentWindow) {
+        vnpayPaymentWindow.show();
+        vnpayPaymentWindow.focus();
+      }
+    });
+
+    return { success: true };
+  } catch (error) {
+    console.error('Error opening VNPay payment window:', error);
+    if (sender && !sender.isDestroyed()) {
+      sender.send('vnpay:payment-result', {
+        source: 'vnpay-window',
+        error: error.message,
+      });
+    }
+    closeVNPayPaymentWindow();
+    return { success: false, error: error.message };
+  }
+};
 
 function createWindow() {
   mainWindow = new BrowserWindow({
@@ -17,7 +166,8 @@ function createWindow() {
       nodeIntegration: false,
       contextIsolation: true,
       enableRemoteModule: false,
-      preload: path.join(__dirname, 'preload.js')
+      preload: path.join(__dirname, 'preload.js'),
+      webviewTag: true
     },
     icon: path.join(__dirname, 'assets/icon.png'),
     show: false,
@@ -281,3 +431,13 @@ ipcMain.handle('request-customer-display-data', async () => {
   }
   return { success: true };
 });
+
+ipcMain.handle('vnpay:open-payment-window', (event, payload) => {
+  return openVNPayPaymentWindow(payload, event.sender);
+});
+
+ipcMain.handle('vnpay:close-payment-window', () => {
+  closeVNPayPaymentWindow();
+  return { success: true };
+});
+

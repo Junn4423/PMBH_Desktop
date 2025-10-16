@@ -73,6 +73,15 @@ const formatDateTime = (date = new Date()) => {
   return `${year}${month}${day}${hours}${minutes}${seconds}`;
 };
 
+const normalizeVNPayCode = (code) => {
+  if (code === null || code === undefined) {
+    return '';
+  }
+
+  const value = String(code);
+  return value === '0' ? '00' : value;
+};
+
 /**
  * Tạo mã giao dịch duy nhất (TxnRef)
  * Format: Chỉ [A-Z a-z 0-9], độ dài ≤ 34 (theo VNPay sandbox)
@@ -251,8 +260,10 @@ export const verifyVNPayIPN = (queryParams) => {
     }
 
     // Bước 2: Kiểm tra mã phản hồi từ VNPay
-    const vnp_ResponseCode = queryParams.vnp_ResponseCode;
-    const vnp_TransactionStatus = queryParams.vnp_TransactionStatus;
+    const rawResponseCode = queryParams.vnp_ResponseCode;
+    const rawTransactionStatus = queryParams.vnp_TransactionStatus;
+    const vnp_ResponseCode = normalizeVNPayCode(rawResponseCode);
+    const vnp_TransactionStatus = normalizeVNPayCode(rawTransactionStatus);
 
     // Chỉ coi là thành công khi cả 2 mã đều là 00
     const isSuccess = vnp_ResponseCode === '00' && vnp_TransactionStatus === '00';
