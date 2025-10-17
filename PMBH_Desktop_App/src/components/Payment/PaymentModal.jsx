@@ -593,18 +593,62 @@ const PaymentModal = ({
             .amount-line .secondary { font-size: 11px; color: #555; }
             .receipt-footer { text-align: center; margin-top: 20px; border-top: 1px dashed #000; padding-top: 10px; }
             .no-print { display: block; }
+            .countdown-timer { 
+              text-align: center; 
+              font-size: 14px; 
+              font-weight: bold; 
+              color: #ff4d4f; 
+              margin: 10px 0; 
+              padding: 8px; 
+              background: #fff2f0; 
+              border: 1px solid #ffccc7; 
+              border-radius: 4px; 
+            }
             @media print {
               .no-print { display: none; }
+              .countdown-timer { display: none; }
               body { margin: 0; }
             }
           </style>
         </head>
         <body>
           ${printContent}
+          ${(() => {
+            const timeoutSetting = localStorage.getItem('pmbh_receipt_print_timeout');
+            const timeoutSeconds = timeoutSetting ? parseInt(timeoutSetting, 10) : 15;
+            return timeoutSeconds > 0 ? `<div class="countdown-timer no-print">
+              Cửa sổ sẽ tự động đóng sau <span id="countdown">${timeoutSeconds}</span> giây
+            </div>` : '';
+          })()}
           <div class="no-print" style="text-align: center; margin-top: 20px; padding-top: 20px; border-top: 1px dashed #000;">
             <button onclick="window.print()" style="padding: 10px 20px; background: #197dd3; color: white; border: none; border-radius: 4px; cursor: pointer; margin: 5px;">In hóa đơn</button>
             <button onclick="window.close()" style="padding: 10px 20px; background: #ccc; color: black; border: none; border-radius: 4px; cursor: pointer; margin: 5px;">Đóng</button>
           </div>
+          ${(() => {
+            const timeoutSetting = localStorage.getItem('pmbh_receipt_print_timeout');
+            const timeoutSeconds = timeoutSetting ? parseInt(timeoutSetting, 10) : 15;
+            return timeoutSeconds > 0 ? `<script>
+              let countdown = ${timeoutSeconds};
+              const countdownElement = document.getElementById('countdown');
+              
+              const timer = setInterval(() => {
+                countdown--;
+                if (countdownElement) {
+                  countdownElement.textContent = countdown;
+                }
+                
+                if (countdown <= 0) {
+                  clearInterval(timer);
+                  window.close();
+                }
+              }, 1000);
+              
+              // Clear timer when window is closed manually
+              window.addEventListener('beforeunload', () => {
+                clearInterval(timer);
+              });
+            </script>` : '';
+          })()}
         </body>
       </html>
     `);
@@ -744,6 +788,10 @@ const PaymentModal = ({
         </div>
       `;
 
+      // Get timeout setting from localStorage
+      const timeoutSetting = localStorage.getItem('pmbh_receipt_print_timeout');
+      const timeoutSeconds = timeoutSetting ? parseInt(timeoutSetting, 10) : 15;
+
       const printWindow = window.open('', '_blank', 'width=400,height=600');
       printWindow.document.write(`
         <html>
@@ -772,18 +820,54 @@ const PaymentModal = ({
               .amount-line .secondary { font-size: 11px; color: #555; }
               .receipt-footer { text-align: center; margin-top: 20px; border-top: 1px dashed #000; padding-top: 10px; }
               .no-print { display: block; }
+              .countdown-timer { 
+                text-align: center; 
+                font-size: 14px; 
+                font-weight: bold; 
+                color: #ff4d4f; 
+                margin: 10px 0; 
+                padding: 8px; 
+                background: #fff2f0; 
+                border: 1px solid #ffccc7; 
+                border-radius: 4px; 
+              }
               @media print {
                 .no-print { display: none; }
+                .countdown-timer { display: none; }
                 body { margin: 0; }
               }
             </style>
           </head>
           <body>
             ${printContent}
+            ${timeoutSeconds > 0 ? `<div class="countdown-timer no-print">
+              Cửa sổ sẽ tự động đóng sau <span id="countdown">${timeoutSeconds}</span> giây
+            </div>` : ''}
             <div class="no-print" style="text-align: center; margin-top: 20px; padding-top: 20px; border-top: 1px dashed #000;">
               <button onclick="window.print()" style="padding: 10px 20px; background: #197dd3; color: white; border: none; border-radius: 4px; cursor: pointer; margin: 5px;">In hóa đơn</button>
               <button onclick="window.close()" style="padding: 10px 20px; background: #ccc; color: black; border: none; border-radius: 4px; cursor: pointer; margin: 5px;">Đóng</button>
             </div>
+            ${timeoutSeconds > 0 ? `<script>
+              let countdown = ${timeoutSeconds};
+              const countdownElement = document.getElementById('countdown');
+              
+              const timer = setInterval(() => {
+                countdown--;
+                if (countdownElement) {
+                  countdownElement.textContent = countdown;
+                }
+                
+                if (countdown <= 0) {
+                  clearInterval(timer);
+                  window.close();
+                }
+              }, 1000);
+              
+              // Clear timer when window is closed manually
+              window.addEventListener('beforeunload', () => {
+                clearInterval(timer);
+              });
+            </script>` : ''}
           </body>
         </html>
       `);

@@ -1,4 +1,4 @@
-import React, { useMemo, useEffect } from 'react';
+import React, { useMemo, useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Result, Button, Card, Descriptions, Typography } from 'antd';
 import { CheckCircle } from 'lucide-react';
@@ -35,6 +35,9 @@ const formatPayDate = (payDate) => {
 const PaymentSuccess = () => {
   const location = useLocation();
   const navigate = useNavigate();
+
+  // Auto close countdown state
+  const [countdown, setCountdown] = useState(null);
 
   const result = useMemo(() => {
     const paymentData = location.state?.paymentResult;
@@ -84,6 +87,29 @@ const PaymentSuccess = () => {
     }
   }, [result]);
 
+  // Auto close functionality
+  useEffect(() => {
+    const timeoutSetting = localStorage.getItem('pmbh_payment_success_timeout');
+    const timeoutSeconds = timeoutSetting ? parseInt(timeoutSetting, 10) : 10;
+
+    if (timeoutSeconds > 0) {
+      setCountdown(timeoutSeconds);
+
+      const interval = setInterval(() => {
+        setCountdown(prev => {
+          if (prev <= 1) {
+            clearInterval(interval);
+            handleCloseWindow();
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+
+      return () => clearInterval(interval);
+    }
+  }, []);
+
   const handleCloseWindow = () => {
     if (window.opener && !window.opener.closed) {
       window.close();
@@ -103,7 +129,11 @@ const PaymentSuccess = () => {
           icon={<CheckCircle size={72} color="#52c41a" />}
           status="success"
           title="Thanh toán thành công!"
-          subTitle={result.message || 'Giao dịch đã được xác nhận.'}
+          subTitle={
+            countdown !== null && countdown > 0 
+              ? `Giao dịch đã được xác nhận. Cửa sổ sẽ tự động đóng sau ${countdown} giây.`
+              : 'Giao dịch đã được xác nhận.'
+          }
           extra={[
             <Button type="primary" key="close" onClick={handleCloseWindow}>
               Đóng cửa sổ

@@ -36,6 +36,10 @@ const CaiDat = () => {
   const [dualScreenEnabled, setDualScreenEnabled] = useState(false);
   const [dualScreenLoading, setDualScreenLoading] = useState(false);
 
+  // Timeout settings states
+  const [paymentSuccessTimeout, setPaymentSuccessTimeout] = useState(10);
+  const [receiptPrintTimeout, setReceiptPrintTimeout] = useState(15);
+
   // Load receipt logo on mount
   useEffect(() => {
     const savedLogo = receiptLogoManager.getLogo();
@@ -48,6 +52,17 @@ const CaiDat = () => {
     const savedDualScreen = localStorage.getItem('pmbh_dual_screen_mode');
     if (savedDualScreen) {
       setDualScreenEnabled(savedDualScreen === 'true');
+    }
+
+    // Load timeout settings
+    const savedPaymentSuccessTimeout = localStorage.getItem('pmbh_payment_success_timeout');
+    if (savedPaymentSuccessTimeout) {
+      setPaymentSuccessTimeout(parseInt(savedPaymentSuccessTimeout, 10));
+    }
+
+    const savedReceiptPrintTimeout = localStorage.getItem('pmbh_receipt_print_timeout');
+    if (savedReceiptPrintTimeout) {
+      setReceiptPrintTimeout(parseInt(savedReceiptPrintTimeout, 10));
     }
   }, []);
 
@@ -194,6 +209,19 @@ const CaiDat = () => {
     } finally {
       setDualScreenLoading(false);
     }
+  };
+
+  // Handle timeout settings change
+  const handlePaymentSuccessTimeoutChange = (value) => {
+    setPaymentSuccessTimeout(value);
+    localStorage.setItem('pmbh_payment_success_timeout', value.toString());
+    message.success(`Đã cập nhật thời gian tự động đóng trang thanh toán thành công: ${value} giây`);
+  };
+
+  const handleReceiptPrintTimeoutChange = (value) => {
+    setReceiptPrintTimeout(value);
+    localStorage.setItem('pmbh_receipt_print_timeout', value.toString());
+    message.success(`Đã cập nhật thời gian tự động đóng trang in hóa đơn: ${value} giây`);
   };
 
   // Handle view item details
@@ -828,6 +856,86 @@ const CaiDat = () => {
                   fallback="Các tùy chọn giao diện khác sẽ có sẵn trong phiên bản premium" 
                 />
               </Paragraph>
+            </Space>
+          </Card>
+        </Col>
+
+        {/* Auto Close Settings */}
+        <Col xs={24}>
+          <Card 
+            className="caidat-card"
+            title={
+              <Space>
+                <SettingOutlined />
+                <span>Cài đặt tự động đóng</span>
+              </Space>
+            }
+            bordered={false}
+          >
+            <Space direction="vertical" size="large" style={{ width: '100%' }}>
+              {/* Payment Success Timeout */}
+              <div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                  <div>
+                    <Paragraph strong style={{ margin: 0 }}>
+                      Thời gian tự động đóng trang thanh toán thành công
+                    </Paragraph>
+                    <Paragraph type="secondary" style={{ margin: '4px 0 0 0', fontSize: '12px' }}>
+                      Tự động đóng cửa sổ thanh toán thành công sau thời gian quy định (giây)
+                    </Paragraph>
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <Input
+                      type="number"
+                      min={1}
+                      max={300}
+                      value={paymentSuccessTimeout}
+                      onChange={(e) => handlePaymentSuccessTimeoutChange(parseInt(e.target.value, 10) || 10)}
+                      style={{ width: '80px' }}
+                      suffix="giây"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Receipt Print Timeout */}
+              <div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                  <div>
+                    <Paragraph strong style={{ margin: 0 }}>
+                      Thời gian tự động đóng trang in hóa đơn
+                    </Paragraph>
+                    <Paragraph type="secondary" style={{ margin: '4px 0 0 0', fontSize: '12px' }}>
+                      Tự động đóng cửa sổ in hóa đơn sau thời gian quy định (giây)
+                    </Paragraph>
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <Input
+                      type="number"
+                      min={1}
+                      max={300}
+                      value={receiptPrintTimeout}
+                      onChange={(e) => handleReceiptPrintTimeoutChange(parseInt(e.target.value, 10) || 15)}
+                      style={{ width: '80px' }}
+                      suffix="giây"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <Divider style={{ margin: '12px 0' }} />
+
+              <div style={{ 
+                padding: '12px', 
+                background: '#f6ffed', 
+                borderRadius: '6px',
+                borderLeft: '3px solid #52c41a'
+              }}>
+                <Paragraph style={{ margin: 0, fontSize: '12px', color: '#389e0d' }}>
+                  💡 <strong>Lưu ý:</strong> Thời gian timeout sẽ được áp dụng cho các cửa sổ popup mở ra sau khi thanh toán thành công. 
+                  Đặt giá trị 0 để tắt tính năng tự động đóng.
+                </Paragraph>
+              </div>
             </Space>
           </Card>
         </Col>
