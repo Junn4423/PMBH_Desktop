@@ -615,8 +615,10 @@ const PaymentModal = ({
           ${printContent}
           ${(() => {
             const timeoutSetting = localStorage.getItem('pmbh_receipt_print_timeout');
+            const timeoutEnabled = localStorage.getItem('pmbh_receipt_print_timeout_enabled');
             const timeoutSeconds = timeoutSetting ? parseInt(timeoutSetting, 10) : 15;
-            return timeoutSeconds > 0 ? `<div class="countdown-timer no-print">
+            const isEnabled = timeoutEnabled !== 'false'; // Mặc định true nếu chưa set
+            return timeoutSeconds > 0 && isEnabled ? `<div class="countdown-timer no-print">
               Cửa sổ sẽ tự động đóng sau <span id="countdown">${timeoutSeconds}</span> giây
             </div>` : '';
           })()}
@@ -626,8 +628,10 @@ const PaymentModal = ({
           </div>
           ${(() => {
             const timeoutSetting = localStorage.getItem('pmbh_receipt_print_timeout');
+            const timeoutEnabled = localStorage.getItem('pmbh_receipt_print_timeout_enabled');
             const timeoutSeconds = timeoutSetting ? parseInt(timeoutSetting, 10) : 15;
-            return timeoutSeconds > 0 ? `<script>
+            const isEnabled = timeoutEnabled !== 'false'; // Mặc định true nếu chưa set
+            return timeoutSeconds > 0 && isEnabled ? `<script>
               let countdown = ${timeoutSeconds};
               const countdownElement = document.getElementById('countdown');
               
@@ -790,7 +794,9 @@ const PaymentModal = ({
 
       // Get timeout setting from localStorage
       const timeoutSetting = localStorage.getItem('pmbh_receipt_print_timeout');
+      const timeoutEnabled = localStorage.getItem('pmbh_receipt_print_timeout_enabled');
       const timeoutSeconds = timeoutSetting ? parseInt(timeoutSetting, 10) : 15;
+      const isEnabled = timeoutEnabled !== 'false'; // Mặc định true nếu chưa set
 
       const printWindow = window.open('', '_blank', 'width=400,height=600');
       printWindow.document.write(`
@@ -840,14 +846,14 @@ const PaymentModal = ({
           </head>
           <body>
             ${printContent}
-            ${timeoutSeconds > 0 ? `<div class="countdown-timer no-print">
+            ${timeoutSeconds > 0 && isEnabled ? `<div class="countdown-timer no-print">
               Cửa sổ sẽ tự động đóng sau <span id="countdown">${timeoutSeconds}</span> giây
             </div>` : ''}
             <div class="no-print" style="text-align: center; margin-top: 20px; padding-top: 20px; border-top: 1px dashed #000;">
               <button onclick="window.print()" style="padding: 10px 20px; background: #197dd3; color: white; border: none; border-radius: 4px; cursor: pointer; margin: 5px;">In hóa đơn</button>
               <button onclick="window.close()" style="padding: 10px 20px; background: #ccc; color: black; border: none; border-radius: 4px; cursor: pointer; margin: 5px;">Đóng</button>
             </div>
-            ${timeoutSeconds > 0 ? `<script>
+            ${timeoutSeconds > 0 && isEnabled ? `<script>
               let countdown = ${timeoutSeconds};
               const countdownElement = document.getElementById('countdown');
               

@@ -90,9 +90,11 @@ const PaymentSuccess = () => {
   // Auto close functionality
   useEffect(() => {
     const timeoutSetting = localStorage.getItem('pmbh_payment_success_timeout');
+    const timeoutEnabled = localStorage.getItem('pmbh_payment_success_timeout_enabled');
     const timeoutSeconds = timeoutSetting ? parseInt(timeoutSetting, 10) : 10;
+    const isEnabled = timeoutEnabled !== 'false'; // Mặc định true nếu chưa set
 
-    if (timeoutSeconds > 0) {
+    if (timeoutSeconds > 0 && isEnabled) {
       setCountdown(timeoutSeconds);
 
       const interval = setInterval(() => {

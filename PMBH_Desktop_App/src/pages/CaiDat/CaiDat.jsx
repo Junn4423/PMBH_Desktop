@@ -39,6 +39,8 @@ const CaiDat = () => {
   // Timeout settings states
   const [paymentSuccessTimeout, setPaymentSuccessTimeout] = useState(10);
   const [receiptPrintTimeout, setReceiptPrintTimeout] = useState(15);
+  const [paymentSuccessTimeoutEnabled, setPaymentSuccessTimeoutEnabled] = useState(true);
+  const [receiptPrintTimeoutEnabled, setReceiptPrintTimeoutEnabled] = useState(true);
 
   // Load receipt logo on mount
   useEffect(() => {
@@ -63,6 +65,17 @@ const CaiDat = () => {
     const savedReceiptPrintTimeout = localStorage.getItem('pmbh_receipt_print_timeout');
     if (savedReceiptPrintTimeout) {
       setReceiptPrintTimeout(parseInt(savedReceiptPrintTimeout, 10));
+    }
+
+    // Load timeout enabled states
+    const savedPaymentSuccessTimeoutEnabled = localStorage.getItem('pmbh_payment_success_timeout_enabled');
+    if (savedPaymentSuccessTimeoutEnabled !== null) {
+      setPaymentSuccessTimeoutEnabled(savedPaymentSuccessTimeoutEnabled === 'true');
+    }
+
+    const savedReceiptPrintTimeoutEnabled = localStorage.getItem('pmbh_receipt_print_timeout_enabled');
+    if (savedReceiptPrintTimeoutEnabled !== null) {
+      setReceiptPrintTimeoutEnabled(savedReceiptPrintTimeoutEnabled === 'true');
     }
   }, []);
 
@@ -213,15 +226,30 @@ const CaiDat = () => {
 
   // Handle timeout settings change
   const handlePaymentSuccessTimeoutChange = (value) => {
-    setPaymentSuccessTimeout(value);
-    localStorage.setItem('pmbh_payment_success_timeout', value.toString());
-    message.success(`Đã cập nhật thời gian tự động đóng trang thanh toán thành công: ${value} giây`);
+    const validValue = Math.max(1, value || 1); // Không cho phép giá trị 0
+    setPaymentSuccessTimeout(validValue);
+    localStorage.setItem('pmbh_payment_success_timeout', validValue.toString());
+    message.success(`Đã cập nhật thời gian tự động đóng trang thanh toán thành công: ${validValue} giây`);
   };
 
   const handleReceiptPrintTimeoutChange = (value) => {
-    setReceiptPrintTimeout(value);
-    localStorage.setItem('pmbh_receipt_print_timeout', value.toString());
-    message.success(`Đã cập nhật thời gian tự động đóng trang in hóa đơn: ${value} giây`);
+    const validValue = Math.max(1, value || 1); // Không cho phép giá trị 0
+    setReceiptPrintTimeout(validValue);
+    localStorage.setItem('pmbh_receipt_print_timeout', validValue.toString());
+    message.success(`Đã cập nhật thời gian tự động đóng trang in hóa đơn: ${validValue} giây`);
+  };
+
+  // Handle timeout enable/disable toggle
+  const handlePaymentSuccessTimeoutToggle = (enabled) => {
+    setPaymentSuccessTimeoutEnabled(enabled);
+    localStorage.setItem('pmbh_payment_success_timeout_enabled', enabled.toString());
+    message.success(enabled ? 'Đã bật tự động đóng trang thanh toán thành công' : 'Đã tắt tự động đóng trang thanh toán thành công');
+  };
+
+  const handleReceiptPrintTimeoutToggle = (enabled) => {
+    setReceiptPrintTimeoutEnabled(enabled);
+    localStorage.setItem('pmbh_receipt_print_timeout_enabled', enabled.toString());
+    message.success(enabled ? 'Đã bật tự động đóng trang in hóa đơn' : 'Đã tắt tự động đóng trang in hóa đơn');
   };
 
   // Handle view item details
@@ -342,7 +370,7 @@ const CaiDat = () => {
       {/* Header */}
       <div className="caidat-header">
         <Space size="middle">
-          <SettingOutlined style={{ fontSize: '24px', color: '#1890ff' }} />
+          <SettingOutlined style={{ fontSize: '24px', color: '#197dd3' }} />
           <Title level={2} style={{ margin: 0 }}>
             <Text module="settings" line={1} fallback="Cài đặt" />
           </Title>
@@ -362,102 +390,42 @@ const CaiDat = () => {
             }
             bordered={false}
           >
-            <div style={{ padding: '8px 0' }}>
-              <Paragraph>
-                <Text module="settings" line={47} fallback="Chọn ngôn ngữ hiển thị cho ứng dụng" />
-              </Paragraph>
-              
-              <div style={{ marginBottom: '16px' }}>
-                <Text 
-                  module="common" 
-                  line={39} 
-                  fallback="Ngôn ngữ hiện tại:" 
-                  style={{ fontWeight: 'bold', marginRight: '8px' }}
-                />
-                <Text>{getLanguageName(currentLanguage)}</Text>
+            <div className="language-section">
+              <div className="language-current">
+                <GlobalOutlined />
+                <span>{getLanguageName(currentLanguage)}</span>
               </div>
 
-              <Space direction="vertical" size="middle" style={{ width: '100%' }}>
-                {/* Language Switch (VN/EN) with Loading Bar */}
-                <div>
-                  <Paragraph strong>Chuyển đổi ngôn ngữ (VN/EN)</Paragraph>
-                  <Space direction="vertical" style={{ width: '100%' }}>
-                    <Space>
-                      <span>Tiếng Việt</span>
-                      <Switch 
-                        checked={currentLanguage === 'EN'}
-                        onChange={handleLanguageSwitch}
-                        loading={languageLoading}
-                        disabled={languageLoading}
-                        checkedChildren="EN"
-                        unCheckedChildren="VN"
-                      />
-                      <span>English</span>
-                    </Space>
-                    {languageLoading && (
-                      <div style={{ width: '100%', marginTop: '8px' }}>
-                        <Progress 
-                          percent={languageProgress} 
-                          status="active"
-                          strokeColor={{
-                            from: '#108ee9',
-                            to: '#87d068',
-                          }}
-                          format={percent => `${percent}%`}
-                        />
-                        <Text 
-                          type="secondary" 
-                          style={{ fontSize: '12px', marginTop: '4px', display: 'block' }}
-                        >
-                          Đang chuyển đổi ngôn ngữ, vui lòng chờ...
-                        </Text>
-                      </div>
-                    )}
-                  </Space>
-                </div>
-
-                <Divider />
-
-                {/* Language Select Dropdown */}
-                <div>
-                  <Paragraph strong>
-                    <Text module="settings" line={48} fallback="Chọn ngôn ngữ (Select Style)" />
-                  </Paragraph>
-                  <LanguageSelect 
-                    style={{ width: '200px' }}
-                    placeholder="Chọn ngôn ngữ"
+              <div className="language-switch-container">
+                <div className="language-switch-label">Chuyển đổi ngôn ngữ</div>
+                <div className="language-switch-wrapper">
+                  <span className="language-switch-text">Tiếng Việt</span>
+                  <Switch 
+                    checked={currentLanguage === 'EN'}
+                    onChange={handleLanguageSwitch}
+                    loading={languageLoading}
+                    disabled={languageLoading}
+                    checkedChildren="EN"
+                    unCheckedChildren="VN"
                   />
+                  <span className="language-switch-text">English</span>
                 </div>
-
-                <Divider />
-
-                {/* Language Dropdown Button */}
-                <div>
-                  <Paragraph strong>
-                    <Text module="settings" line={49} fallback="Chọn ngôn ngữ (Button Style)" />
-                  </Paragraph>
-                  <LanguageDropdown />
-                </div>
-
-                <Divider />
-
-                {/* Language Flag Selector */}
-                <div>
-                  <Paragraph strong>
-                    <Text module="settings" line={50} fallback="Chọn ngôn ngữ (Flag Style)" />
-                  </Paragraph>
-                  <LanguageFlagSelector />
-                </div>
-              </Space>
-
-              <div style={{ marginTop: '24px', padding: '12px', backgroundColor: '#f6f8fa', borderRadius: '6px' }}>
-                <Paragraph type="secondary" style={{ fontSize: '12px', margin: 0 }}>
-                  <Text 
-                    module="settings" 
-                    line={51} 
-                    fallback="Thay đổi ngôn ngữ sẽ được áp dụng ngay lập tức và lưu cho lần sử dụng tiếp theo" 
-                  />
-                </Paragraph>
+                {languageLoading && (
+                  <div className="language-loading">
+                    <Progress 
+                      percent={languageProgress} 
+                      status="active"
+                      strokeColor={{
+                        from: '#197dd3',
+                        to: '#77d4fb',
+                      }}
+                      format={percent => `${percent}%`}
+                    />
+                    <p className="language-loading-text">
+                      Đang chuyển đổi ngôn ngữ, vui lòng chờ...
+                    </p>
+                  </div>
+                )}
               </div>
             </div>
           </Card>
@@ -472,35 +440,33 @@ const CaiDat = () => {
             }
             bordered={false}
           >
-            <Space direction="vertical" size="small" style={{ width: '100%' }}>
-              <div>
-                <Text strong>
-                  <Text module="settings" line={52} fallback="Phiên bản:" />
-                </Text>
-                <Text style={{ marginLeft: '8px' }}>1.0.0</Text>
-              </div>
-              
-              <div>
-                <Text strong>
-                  <Text module="common" line={39} fallback="Ngôn ngữ hiện tại:" />
-                </Text>
-                <Text style={{ marginLeft: '8px' }}>{getLanguageName(currentLanguage)}</Text>
-              </div>
-              
-              <div>
-                <Text strong>
-                  <Text module="settings" line={53} fallback="Ngôn ngữ hỗ trợ:" />
-                </Text>
-                <div style={{ marginTop: '8px' }}>
-                  {availableLanguages.map((lang, index) => (
-                    <span key={lang.code}>
-                      {lang.name}
-                      {index < availableLanguages.length - 1 && ', '}
-                    </span>
-                  ))}
-                </div>
-              </div>
-            </Space>
+            <div className="system-info-item">
+              <span className="system-info-label">
+                <Text module="settings" line={52} fallback="Phiên bản:" />
+              </span>
+              <span className="system-info-value">1.0.0</span>
+            </div>
+            
+            <div className="system-info-item">
+              <span className="system-info-label">
+                <Text module="common" line={39} fallback="Ngôn ngữ hiện tại:" />
+              </span>
+              <span className="system-info-value">{getLanguageName(currentLanguage)}</span>
+            </div>
+            
+            <div className="system-info-item">
+              <span className="system-info-label">
+                <Text module="settings" line={53} fallback="Ngôn ngữ hỗ trợ:" />
+              </span>
+              <span className="system-info-value">
+                {availableLanguages.map((lang, index) => (
+                  <span key={lang.code}>
+                    {lang.name}
+                    {index < availableLanguages.length - 1 && ', '}
+                  </span>
+                ))}
+              </span>
+            </div>
 
             <Divider />
             
@@ -556,8 +522,8 @@ const CaiDat = () => {
               <Divider />
 
               {/* Logo Update Form */}
-              <Space direction="vertical" size="middle" style={{ width: '100%' }}>
-                <div>
+              <div className="logo-upload-form">
+                <div className="logo-upload-option">
                   <Paragraph strong>Phương thức cập nhật:</Paragraph>
                   <Select 
                     value={logoUpdateType}
@@ -580,7 +546,7 @@ const CaiDat = () => {
                 </div>
 
                 {logoUpdateType === 'url' ? (
-                  <div>
+                  <div className="logo-upload-option">
                     <Paragraph strong>URL ảnh logo:</Paragraph>
                     <Input
                       value={logoUrl}
@@ -590,7 +556,7 @@ const CaiDat = () => {
                     />
                   </div>
                 ) : (
-                  <div>
+                  <div className="logo-upload-option">
                     <Paragraph strong>Chọn ảnh logo:</Paragraph>
                     <Upload
                       listType="picture-card"
@@ -611,18 +577,17 @@ const CaiDat = () => {
                 )}
 
                 <Button 
-                  type="primary"
+                  className="logo-upload-button"
                   onClick={handleLogoUpdate}
                   loading={updatingLogo}
                   disabled={
                     (logoUpdateType === 'url' && !logoUrl.trim()) ||
                     (logoUpdateType === 'upload' && logoFileList.length === 0)
                   }
-                  style={{ width: '100%', background: '#197dd3' }}
                 >
                   Cập nhật logo
                 </Button>
-              </Space>
+              </div>
 
               <div className="info-box">
                 <Paragraph type="secondary" style={{ fontSize: '12px', margin: 0 }}>
@@ -666,56 +631,59 @@ const CaiDat = () => {
             {storageStats && (
               <div style={{ padding: '8px 0' }}>
                 {/* Storage Overview */}
-                <Row gutter={[16, 16]} style={{ marginBottom: '24px' }}>
+                <Row gutter={[16, 16]} className="storage-overview">
                   <Col xs={24} md={8}>
                     <Card 
                       size="small" 
+                      className="storage-card"
                       style={{ background: '#f0f9ff', borderColor: '#197dd3' }}
                     >
                       <div style={{ textAlign: 'center' }}>
-                        <Database size={32} color="#197dd3" />
-                        <div style={{ fontSize: '24px', fontWeight: 'bold', marginTop: '8px' }}>
+                        <Database size={32} color="#197dd3" className="storage-card-icon" />
+                        <div className="storage-card-value">
                           {storageStats.itemCount}
                         </div>
-                        <div style={{ color: '#666', fontSize: '12px' }}>Items trong LocalStorage</div>
+                        <div className="storage-card-label">Items trong LocalStorage</div>
                       </div>
                     </Card>
                   </Col>
                   <Col xs={24} md={8}>
                     <Card 
                       size="small" 
+                      className="storage-card"
                       style={{ background: '#f0fdf4', borderColor: '#22c55e' }}
                     >
                       <div style={{ textAlign: 'center' }}>
-                        <HardDrive size={32} color="#22c55e" />
-                        <div style={{ fontSize: '24px', fontWeight: 'bold', marginTop: '8px' }}>
+                        <HardDrive size={32} color="#22c55e" className="storage-card-icon" />
+                        <div className="storage-card-value">
                           {storageStats.totalSizeFormatted}
                         </div>
-                        <div style={{ color: '#666', fontSize: '12px' }}>Đã sử dụng</div>
+                        <div className="storage-card-label">Đã sử dụng</div>
                       </div>
                     </Card>
                   </Col>
                   <Col xs={24} md={8}>
                     <Card 
                       size="small" 
+                      className="storage-card"
                       style={{ background: '#fef3c7', borderColor: '#f59e0b' }}
                     >
                       <div style={{ textAlign: 'center' }}>
-                        <Database size={32} color="#f59e0b" />
-                        <div style={{ fontSize: '24px', fontWeight: 'bold', marginTop: '8px' }}>
+                        <Database size={32} color="#f59e0b" className="storage-card-icon" />
+                        <div className="storage-card-value">
                           {storageStats.remainingFormatted}
                         </div>
-                        <div style={{ color: '#666', fontSize: '12px' }}>Còn lại (ước tính)</div>
+                        <div className="storage-card-label">Còn lại (ước tính)</div>
                       </div>
                     </Card>
                   </Col>
                 </Row>
 
                 {/* Storage Progress Bar */}
-                <div style={{ marginBottom: '24px' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
-                    <span style={{ fontWeight: 'bold' }}>LocalStorage Usage:</span>
-                    <span style={{ color: '#666' }}>
+                <div className="storage-progress-container">
+                  <div className="storage-progress-label">
+                    <span>LocalStorage Usage:</span>
+                    <span>
                       {storageStats.totalSizeFormatted} / {storageStats.quotaFormatted} 
                       ({storageStats.percentage}%)
                     </span>
@@ -732,18 +700,16 @@ const CaiDat = () => {
 
                 {/* Chromium Storage Estimate */}
                 {storageEstimate && (
-                  <div style={{ marginBottom: '24px', padding: '12px', background: '#f6f8fa', borderRadius: '6px' }}>
-                    <Paragraph strong>Chromium Storage Estimate:</Paragraph>
-                    <Row gutter={[8, 8]}>
-                      <Col span={12}>
-                        <div style={{ fontSize: '12px', color: '#666' }}>Đã sử dụng:</div>
-                        <div style={{ fontWeight: 'bold' }}>{storageEstimate.usageFormatted}</div>
-                      </Col>
-                      <Col span={12}>
-                        <div style={{ fontSize: '12px', color: '#666' }}>Quota:</div>
-                        <div style={{ fontWeight: 'bold' }}>{storageEstimate.quotaFormatted}</div>
-                      </Col>
-                    </Row>
+                  <div className="storage-estimate">
+                    <div className="storage-estimate-title">Chromium Storage Estimate:</div>
+                    <div className="storage-estimate-row">
+                      <span className="storage-estimate-label">Đã sử dụng:</span>
+                      <span className="storage-estimate-value">{storageEstimate.usageFormatted}</span>
+                    </div>
+                    <div className="storage-estimate-row">
+                      <span className="storage-estimate-label">Quota:</span>
+                      <span className="storage-estimate-value">{storageEstimate.quotaFormatted}</span>
+                    </div>
                     <Progress 
                       percent={parseFloat(storageEstimate.percentage)} 
                       size="small"
@@ -810,53 +776,43 @@ const CaiDat = () => {
             }
             bordered={false}
           >
-            <Space direction="vertical" size="large" style={{ width: '100%' }}>
+            <div className="interface-section">
               {/* Dual Screen Mode */}
-              <div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-                  <div>
-                    <Paragraph strong style={{ margin: 0 }}>
-                      Chế độ màn hình kép (Dual Screen Mode)
-                    </Paragraph>
-                    <Paragraph type="secondary" style={{ margin: '4px 0 0 0', fontSize: '12px' }}>
-                      Mở màn hình riêng để hiển thị đơn hàng cho khách hàng
-                    </Paragraph>
+              <div className="interface-item">
+                <div className="interface-info">
+                  <div className="interface-title">
+                    Chế độ màn hình kép (Dual Screen Mode)
                   </div>
-                  <Switch 
-                    checked={dualScreenEnabled}
-                    onChange={handleDualScreenToggle}
-                    loading={dualScreenLoading}
-                    disabled={dualScreenLoading}
-                    checkedChildren="BẬT"
-                    unCheckedChildren="TẮT"
-                  />
+                  <div className="interface-description">
+                    Mở màn hình riêng để hiển thị đơn hàng cho khách hàng
+                  </div>
                 </div>
-                
-                {dualScreenEnabled && (
-                  <div style={{ 
-                    padding: '12px', 
-                    background: '#e6f7ff', 
-                    borderRadius: '6px',
-                    borderLeft: '3px solid #197dd3',
-                    marginTop: '12px'
-                  }}>
-                    <Paragraph style={{ margin: 0, fontSize: '12px', color: '#197dd3' }}>
-                      ✓ Màn hình khách hàng đang hoạt động
-                    </Paragraph>
-                  </div>
-                )}
+                <Switch 
+                  checked={dualScreenEnabled}
+                  onChange={handleDualScreenToggle}
+                  loading={dualScreenLoading}
+                  disabled={dualScreenLoading}
+                  checkedChildren="BẬT"
+                  unCheckedChildren="TẮT"
+                />
               </div>
+              
+              {dualScreenEnabled && (
+                <div className="interface-status">
+                  <p>✓ Màn hình khách hàng đang hoạt động</p>
+                </div>
+              )}
 
               <Divider style={{ margin: '12px 0' }} />
 
-              <Paragraph type="secondary" style={{ fontSize: '12px', margin: 0 }}>
+              <div className="interface-notice">
                 <Text 
                   module="settings" 
                   line={55} 
                   fallback="Các tùy chọn giao diện khác sẽ có sẵn trong phiên bản premium" 
                 />
-              </Paragraph>
-            </Space>
+              </div>
+            </div>
           </Card>
         </Col>
 
@@ -872,71 +828,80 @@ const CaiDat = () => {
             }
             bordered={false}
           >
-            <Space direction="vertical" size="large" style={{ width: '100%' }}>
+            <div className="timeout-section">
               {/* Payment Success Timeout */}
-              <div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-                  <div>
-                    <Paragraph strong style={{ margin: 0 }}>
-                      Thời gian tự động đóng trang thanh toán thành công
-                    </Paragraph>
-                    <Paragraph type="secondary" style={{ margin: '4px 0 0 0', fontSize: '12px' }}>
-                      Tự động đóng cửa sổ thanh toán thành công sau thời gian quy định (giây)
-                    </Paragraph>
+              <div className="timeout-item">
+                <div className="timeout-info">
+                  <div className="timeout-title">Thời gian tự động đóng trang thanh toán thành công</div>
+                  <div className="timeout-description">
+                    Tự động đóng cửa sổ thanh toán thành công sau thời gian quy định (giây)
                   </div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                </div>
+                <div className="timeout-controls">
+                  <div className="timeout-toggle">
+                    <Switch
+                      checked={paymentSuccessTimeoutEnabled}
+                      onChange={handlePaymentSuccessTimeoutToggle}
+                      checkedChildren="BẬT"
+                      unCheckedChildren="TẮT"
+                      size="small"
+                    />
+                  </div>
+                  <div className="timeout-input-group">
                     <Input
                       type="number"
                       min={1}
                       max={300}
                       value={paymentSuccessTimeout}
-                      onChange={(e) => handlePaymentSuccessTimeoutChange(parseInt(e.target.value, 10) || 10)}
-                      style={{ width: '80px' }}
+                      onChange={(e) => handlePaymentSuccessTimeoutChange(parseInt(e.target.value, 10) || 1)}
+                      className="timeout-input"
                       suffix="giây"
+                      disabled={!paymentSuccessTimeoutEnabled}
                     />
                   </div>
                 </div>
               </div>
 
               {/* Receipt Print Timeout */}
-              <div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-                  <div>
-                    <Paragraph strong style={{ margin: 0 }}>
-                      Thời gian tự động đóng trang in hóa đơn
-                    </Paragraph>
-                    <Paragraph type="secondary" style={{ margin: '4px 0 0 0', fontSize: '12px' }}>
-                      Tự động đóng cửa sổ in hóa đơn sau thời gian quy định (giây)
-                    </Paragraph>
+              <div className="timeout-item">
+                <div className="timeout-info">
+                  <div className="timeout-title">Thời gian tự động đóng trang in hóa đơn</div>
+                  <div className="timeout-description">
+                    Tự động đóng cửa sổ in hóa đơn sau thời gian quy định (giây)
                   </div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                </div>
+                <div className="timeout-controls">
+                  <div className="timeout-toggle">
+                    <Switch
+                      checked={receiptPrintTimeoutEnabled}
+                      onChange={handleReceiptPrintTimeoutToggle}
+                      checkedChildren="BẬT"
+                      unCheckedChildren="TẮT"
+                      size="small"
+                    />
+                  </div>
+                  <div className="timeout-input-group">
                     <Input
                       type="number"
                       min={1}
                       max={300}
                       value={receiptPrintTimeout}
-                      onChange={(e) => handleReceiptPrintTimeoutChange(parseInt(e.target.value, 10) || 15)}
-                      style={{ width: '80px' }}
+                      onChange={(e) => handleReceiptPrintTimeoutChange(parseInt(e.target.value, 10) || 1)}
+                      className="timeout-input"
                       suffix="giây"
+                      disabled={!receiptPrintTimeoutEnabled}
                     />
                   </div>
                 </div>
               </div>
 
-              <Divider style={{ margin: '12px 0' }} />
-
-              <div style={{ 
-                padding: '12px', 
-                background: '#f6ffed', 
-                borderRadius: '6px',
-                borderLeft: '3px solid #52c41a'
-              }}>
-                <Paragraph style={{ margin: 0, fontSize: '12px', color: '#389e0d' }}>
-                  💡 <strong>Lưu ý:</strong> Thời gian timeout sẽ được áp dụng cho các cửa sổ popup mở ra sau khi thanh toán thành công. 
-                  Đặt giá trị 0 để tắt tính năng tự động đóng.
-                </Paragraph>
+              <div className="timeout-notice">
+                <p className="timeout-notice-text">
+                  💡 <strong>Lưu ý:</strong> Sử dụng switch để bật/tắt tính năng tự động đóng. 
+                  Thời gian timeout tối thiểu là 1 giây và sẽ được áp dụng cho các cửa sổ popup mở ra sau khi thanh toán thành công.
+                </p>
               </div>
-            </Space>
+            </div>
           </Card>
         </Col>
       </Row>
@@ -975,46 +940,42 @@ const CaiDat = () => {
           </Popconfirm>
         ]}
         width={700}
+        className="view-item-modal"
       >
         {selectedItem && (
           <div>
-            <div style={{ marginBottom: '16px' }}>
-              <div style={{ fontWeight: 'bold', marginBottom: '4px' }}>Key:</div>
+            <div className="modal-item-field">
+              <div className="modal-field-label">Key:</div>
               <Input value={selectedItem.key} readOnly />
             </div>
 
-            <div style={{ marginBottom: '16px' }}>
-              <div style={{ fontWeight: 'bold', marginBottom: '4px' }}>Loại dữ liệu:</div>
+            <div className="modal-item-field">
+              <div className="modal-field-label">Loại dữ liệu:</div>
               <Tag color="blue">{localStorageManager.getValueType(selectedItem.value)}</Tag>
             </div>
 
-            <div style={{ marginBottom: '16px' }}>
-              <div style={{ fontWeight: 'bold', marginBottom: '4px' }}>Kích thước:</div>
+            <div className="modal-item-field">
+              <div className="modal-field-label">Kích thước:</div>
               <Tag color="green">{selectedItem.sizeFormatted}</Tag>
             </div>
 
-            <div style={{ marginBottom: '16px' }}>
-              <div style={{ fontWeight: 'bold', marginBottom: '4px' }}>Nội dung:</div>
+            <div className="modal-item-field">
+              <div className="modal-field-label">Nội dung:</div>
               {localStorageManager.getValueType(selectedItem.value) === 'Base64 Image' ? (
-                <div style={{ 
-                  textAlign: 'center', 
-                  padding: '16px', 
-                  background: '#f5f5f5', 
-                  borderRadius: '6px' 
-                }}>
+                <div className="modal-image-preview">
                   <img 
                     src={selectedItem.value} 
-                    alt="Preview" 
-                    style={{ maxWidth: '100%', maxHeight: '300px', objectFit: 'contain' }}
+                    alt="Preview"
                   />
                 </div>
               ) : (
-                <Input.TextArea 
-                  value={selectedItem.value} 
-                  rows={10}
-                  readOnly
-                  style={{ fontFamily: 'monospace', fontSize: '12px' }}
-                />
+                <div className="modal-text-content">
+                  <Input.TextArea 
+                    value={selectedItem.value} 
+                    rows={10}
+                    readOnly
+                  />
+                </div>
               )}
             </div>
           </div>
