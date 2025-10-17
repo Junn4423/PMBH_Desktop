@@ -568,6 +568,33 @@
   margin: 0 20px;
 }
 
+.mixed-payment-actions {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.cancel-partial-btn {
+  height: 44px;
+  background: #ff4d4f;
+  border: 1px solid #ff4d4f;
+  color: white;
+  border-radius: 6px;
+  transition: all 0.2s;
+}
+
+.cancel-partial-btn:hover:not(:disabled) {
+  background: #d4380d;
+  border-color: #d4380d;
+}
+
+.cancel-partial-btn:disabled {
+  background: #bdbcc4;
+  border-color: #bdbcc4;
+  color: white;
+  opacity: 0.6;
+}
+
 .footer-right {
   flex-shrink: 0;
 }

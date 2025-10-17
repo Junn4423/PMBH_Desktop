@@ -1414,15 +1414,26 @@ const PaymentModal = ({
           </div>
           <div className="footer-center">
             {isMixedPaymentMode ? (
-              <Button 
-                icon={<Plus size={16} />}
-                onClick={handleAddPartialPayment}
-                className="add-partial-btn"
-                size="large"
-                disabled={customerPaid <= 0 || remainingMixedPayment <= 0}
-              >
-                Thêm thanh toán
-              </Button>
+              <div className="mixed-payment-actions">
+                <Button 
+                  onClick={() => setCustomerPaid(0)}
+                  className="cancel-partial-btn"
+                  size="large"
+                  disabled={customerPaid <= 0}
+                >
+                  Hủy
+                </Button>
+                <Button 
+                  icon={<Plus size={16} />}
+                  onClick={handleAddPartialPayment}
+                  className="add-partial-btn"
+                  size="large"
+                  disabled={customerPaid <= 0 || remainingMixedPayment <= 0}
+                  type="primary"
+                >
+                  Thêm thanh toán
+                </Button>
+              </div>
             ) : (
               <Button 
                 icon={<Printer size={16} />}
