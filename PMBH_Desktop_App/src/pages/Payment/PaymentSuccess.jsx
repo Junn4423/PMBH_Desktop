@@ -1,5 +1,5 @@
 import React, { useMemo, useEffect, useState } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { Result, Button, Card, Descriptions, Typography } from 'antd';
 import { CheckCircle } from 'lucide-react';
 import './PaymentSuccess.css';
@@ -35,12 +35,28 @@ const formatPayDate = (payDate) => {
 const PaymentSuccess = () => {
   const location = useLocation();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
 
   // Auto close countdown state
   const [countdown, setCountdown] = useState(null);
 
   const result = useMemo(() => {
-    const paymentData = location.state?.paymentResult;
+    const key = searchParams.get('key');
+    let paymentData = null;
+    if (key) {
+      try {
+        const stored = localStorage.getItem(key);
+        if (stored) {
+          paymentData = JSON.parse(stored);
+        }
+      } catch (error) {
+        console.error('Error parsing payment data from localStorage:', error);
+      }
+    } else {
+      // Fallback to location.state for backward compatibility
+      paymentData = location.state?.paymentResult;
+    }
+
     if (paymentData) {
       return {
         success: true,
@@ -69,7 +85,7 @@ const PaymentSuccess = () => {
       paymentMethod: 'online',
       payDate: new Date().toISOString(),
     };
-  }, [location.state]);
+  }, [location.state, searchParams]);
 
   useEffect(() => {
     try {
@@ -85,7 +101,13 @@ const PaymentSuccess = () => {
     } catch (error) {
       console.error('Unable to post payment success message to opener:', error);
     }
-  }, [result]);
+
+    // Clean up localStorage
+    const key = searchParams.get('key');
+    if (key) {
+      localStorage.removeItem(key);
+    }
+  }, [result, searchParams]);
 
   // Auto close functionality
   useEffect(() => {
@@ -113,15 +135,16 @@ const PaymentSuccess = () => {
   }, []);
 
   const handleCloseWindow = () => {
+    // Notify opener to navigate back to tables view
     if (window.opener && !window.opener.closed) {
-      window.close();
-    } else {
-      navigate('/ban-hang', { replace: true });
+      window.opener.postMessage(
+        {
+          type: 'PAYMENT_SUCCESS_CLOSED',
+        },
+        window.location.origin
+      );
     }
-  };
-
-  const handleViewOrders = () => {
-    navigate('/ban-hang', { replace: true });
+    window.close();
   };
 
   return (
@@ -139,9 +162,6 @@ const PaymentSuccess = () => {
           extra={[
             <Button type="primary" key="close" onClick={handleCloseWindow}>
               Đóng cửa sổ
-            </Button>,
-            <Button key="orders" onClick={handleViewOrders}>
-              Quay lại bán hàng
             </Button>,
           ]}
         />

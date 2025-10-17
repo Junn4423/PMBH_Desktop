@@ -46,5 +46,9 @@ contextBridge.exposeInMainWorld('electronAPI', {
   },
   onceVNPayPaymentClosed: (callback) => {
     ipcRenderer.once('vnpay:payment-window-closed', () => callback());
-  }
+  },
+
+  // Payment Success Window
+  openPaymentSuccessWindow: (key) =>
+    ipcRenderer.invoke('open-payment-success-window', { key }),
 });

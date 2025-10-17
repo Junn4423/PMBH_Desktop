@@ -1389,9 +1389,31 @@ const BanHang = () => {
       // Trigger refresh to update table status
       triggerQuickRefresh('PAYMENT_COMPLETE');
       
-      // Navigate to success page for online payments
+      // Open success popup for online payments
       if (paymentData.phuongThucThanhToan && paymentData.phuongThucThanhToan !== 'Cash') {
-        navigate('/payment/success', { state: { paymentResult: paymentData } });
+        const key = `payment_success_${Date.now()}`;
+        localStorage.setItem(key, JSON.stringify(paymentData));
+
+        if (window.electronAPI?.openPaymentSuccessWindow) {
+          const response = await window.electronAPI.openPaymentSuccessWindow(key);
+          if (!response?.success) {
+            message.warning(response?.error || 'Không thể mở cửa sổ thanh toán thành công.');
+          }
+        } else {
+          // Fallback for web version
+          const popupUrl = `${window.location.origin}/#/payment/success?key=${key}`;
+          const popup = window.open(
+            popupUrl,
+            '_blank',
+            `width=${Math.floor(screen.width * 0.7)},height=${screen.height},left=0,top=0,scrollbars=yes,resizable=yes`
+          );
+          if (!popup) {
+            message.warning('Không thể mở cửa sổ thanh toán thành công. Vui lòng cho phép cửa sổ bật lên.');
+          }
+        }
+        
+        // Close payment modal
+        setShowPaymentModal(false);
         return;
       }
       
@@ -3309,6 +3331,23 @@ const BanHang = () => {
       />
     </div>
   );
+  // Listen for payment success popup close messages
+  useEffect(() => {
+    const handleMessage = (event) => {
+      // Remove origin check since it's from same app
+      if (event.data?.type === 'PAYMENT_SUCCESS_CLOSED') {
+        // Navigate back to tables view
+        setCurrentInvoice(null);
+        setInvoiceDetails([]);
+        setSelectedTable(null);
+        setCurrentView(VIEW_STATES.TABLES);
+      }
+    };
+
+    window.addEventListener('message', handleMessage);
+    return () => window.removeEventListener('message', handleMessage);
+  }, []);
+
 };
 
 export default BanHang;

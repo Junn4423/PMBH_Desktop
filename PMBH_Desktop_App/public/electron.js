@@ -10,6 +10,7 @@ let customerDisplayWindow = null;
 let vnpayPaymentWindow = null;
 let vnpayPaymentParent = null;
 let vnpayReturnUrl = null;
+let paymentSuccessWindow = null;
 
 const notifyVNPayParent = (payload) => {
   if (vnpayPaymentParent && !vnpayPaymentParent.isDestroyed()) {
@@ -152,6 +153,67 @@ const openVNPayPaymentWindow = ({ paymentUrl, returnUrl }, sender) => {
       });
     }
     closeVNPayPaymentWindow();
+    return { success: false, error: error.message };
+  }
+};
+
+const openPaymentSuccessWindow = ({ key }) => {
+  try {
+    if (!key) {
+      throw new Error('Missing payment success key');
+    }
+
+    const { screen } = require('electron');
+    const primaryDisplay = screen.getPrimaryDisplay();
+    const { width: screenWidth, height: screenHeight } = primaryDisplay.workAreaSize;
+
+    const windowWidth = Math.floor(screenWidth * 0.7);
+    const windowHeight = screenHeight;
+
+    if (paymentSuccessWindow && !paymentSuccessWindow.isDestroyed()) {
+      paymentSuccessWindow.close();
+    }
+
+    paymentSuccessWindow = new BrowserWindow({
+      width: windowWidth,
+      height: windowHeight,
+      x: 0,
+      y: 0,
+      show: false,
+      backgroundColor: '#ffffff',
+      autoHideMenuBar: true,
+      parent: mainWindow ?? undefined,
+      modal: false,
+      webPreferences: {
+        contextIsolation: true,
+        nodeIntegration: false,
+        enableRemoteModule: false,
+        preload: path.join(__dirname, 'preload.js'),
+      },
+    });
+
+    const baseURL = isDev
+      ? 'http://localhost:3000'
+      : `file://${path.join(__dirname, '../build/index.html')}`;
+
+    const fullURL = `${baseURL}#/payment/success?key=${key}`;
+
+    paymentSuccessWindow.loadURL(fullURL);
+
+    paymentSuccessWindow.once('ready-to-show', () => {
+      if (paymentSuccessWindow) {
+        paymentSuccessWindow.show();
+        paymentSuccessWindow.focus();
+      }
+    });
+
+    paymentSuccessWindow.on('closed', () => {
+      paymentSuccessWindow = null;
+    });
+
+    return { success: true };
+  } catch (error) {
+    console.error('Error opening payment success window:', error);
     return { success: false, error: error.message };
   }
 };
@@ -439,5 +501,9 @@ ipcMain.handle('vnpay:open-payment-window', (event, payload) => {
 ipcMain.handle('vnpay:close-payment-window', () => {
   closeVNPayPaymentWindow();
   return { success: true };
+});
+
+ipcMain.handle('open-payment-success-window', (event, payload) => {
+  return openPaymentSuccessWindow(payload);
 });
 
