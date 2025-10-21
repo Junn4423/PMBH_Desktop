@@ -48,6 +48,19 @@ contextBridge.exposeInMainWorld('electronAPI', {
     ipcRenderer.once('vnpay:payment-window-closed', () => callback());
   },
 
+  // MoMo helpers
+  openMoMoPaymentWindow: (paymentUrl, returnUrl) =>
+    ipcRenderer.invoke('momo:open-payment-window', { paymentUrl, returnUrl }),
+  closeMoMoPaymentWindow: () => ipcRenderer.invoke('momo:close-payment-window'),
+  onMoMoPaymentResult: (callback) => {
+    const listener = (_event, data) => callback(data);
+    ipcRenderer.on('momo:payment-result', listener);
+    return () => ipcRenderer.removeListener('momo:payment-result', listener);
+  },
+  onceMoMoPaymentClosed: (callback) => {
+    ipcRenderer.once('momo:payment-window-closed', () => callback());
+  },
+
   // Payment Success Window
   openPaymentSuccessWindow: (key) =>
     ipcRenderer.invoke('open-payment-success-window', { key }),

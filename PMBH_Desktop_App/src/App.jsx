@@ -30,6 +30,7 @@ const TaiKhoanMB = React.lazy(() => import('./pages/TaiKhoanMB/TaiKhoanMB'));
 const NhapChi = React.lazy(() => import('./pages/NhapChi/NhapChi'));
 const CanhBaoMaxMin = React.lazy(() => import('./pages/CanhBaoMaxMin/CanhBaoMaxMin'));
 const VNPayReturn = React.lazy(() => import('./pages/Payment/VNPayReturn'));
+const MoMoReturn = React.lazy(() => import('./pages/Payment/MoMoReturn'));
 const DonVi = React.lazy(() => import('./pages/DonVi/DonVi'));
 const VNPaySuccess = React.lazy(() => import('./pages/Payment/VNPaySuccess'));
 const PaymentSuccess = React.lazy(() => import('./pages/Payment/PaymentSuccess'));
@@ -76,8 +77,8 @@ function App() {
   const isVNPayReturn = location.pathname.startsWith('/payment/vnpay-return');
   const isVNPaySuccess = location.pathname.startsWith('/payment/vnpay-success');
   const isPaymentSuccess = location.pathname.startsWith('/payment/success');
-  const isVNPayStandalone = isVNPayReturn || isVNPaySuccess || isPaymentSuccess;
-
+  const isMoMoReturn = location.pathname.startsWith('/payment/momo-return');
+  const isStandalonePayment = isVNPayReturn || isVNPaySuccess || isPaymentSuccess || isMoMoReturn;
   // Customer Display without authentication - shown directly without login
   if (isCustomerDisplay) {
     return (
@@ -91,12 +92,13 @@ function App() {
     );
   }
 
-  if (isVNPayStandalone) {
+  if (isStandalonePayment) {
     return (
       <LanguageProvider>
         <Suspense fallback={<div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}><Spin size="large" /></div>}>
           <Routes>
             <Route path="/payment/vnpay-return" element={<VNPayReturn />} />
+            <Route path="/payment/momo-return" element={<MoMoReturn />} />
             <Route path="/payment/vnpay-success" element={<VNPaySuccess />} />
             <Route path="/payment/success" element={<PaymentSuccess />} />
           </Routes>
@@ -209,6 +211,7 @@ function App() {
               <Route path="/cho-nha-bep-ql" element={<ChoNhaBepQl />} />
               <Route path="/cho-quay-bar-ql" element={<ChoQuayBarQl />} />
               <Route path="/payment/vnpay-return" element={<VNPayReturn />} />
+              <Route path="/payment/momo-return" element={<MoMoReturn />} />
               <Route path="/payment/vnpay-success" element={<VNPaySuccess />} />
             </Routes>
           </Suspense>
@@ -220,3 +223,5 @@ function App() {
 }
 
 export default App;
+
+

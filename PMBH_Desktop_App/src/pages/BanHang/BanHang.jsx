@@ -1047,6 +1047,12 @@ const BanHang = () => {
       return;
     }
 
+    const currentItem = invoiceDetails.find(item => item.maCt === maCt || item.cthd === maCt);
+    if (!currentItem) {
+      message.error('Không tìm thấy sản phẩm trong đơn hàng');
+      return;
+    }
+
     if (newQuantity <= 0) {
       // Xóa sản phẩm nếu số lượng <= 0
       try {
@@ -1405,6 +1411,7 @@ const BanHang = () => {
           const popup = window.open(
             popupUrl,
             '_blank',
+            // eslint-disable-next-line no-restricted-globals
             `width=${Math.floor(screen.width * 0.7)},height=${screen.height},left=0,top=0,scrollbars=yes,resizable=yes`
           );
           if (!popup) {
@@ -1546,12 +1553,15 @@ const BanHang = () => {
   // Copy invoice
   const copyInvoice = async (maHd) => {
     try {
-      const result = await api.saoChepHoaDon(maHd, selectedTable.name);
+      const result = await saoChepHoaDon(maHd, selectedTable.name);
       if (result.success) {
         message.success('Sao chép hóa đơn thành công!');
         // Refresh current invoice data
-        await loadInvoiceData();
-        await triggerTableRefresh();
+        const detailsResponse = await getChiTietHoaDonTheoMaHD(currentInvoice.maHd);
+        if (Array.isArray(detailsResponse)) {
+          setInvoiceDetails(detailsResponse.filter(item => parseInt(item.sl) > 0));
+        }
+        triggerQuickRefresh('COPY_INVOICE');
       } else {
         message.error('Không thể sao chép hóa đơn: ' + (result.message || 'Lỗi không xác định'));
       }
@@ -1595,8 +1605,8 @@ const BanHang = () => {
       const updatedSummary = calculateInvoiceSummary();
       
       // Update invoice with new data
-      await api.capNhatHoaDon(selectedTable.currentInvoice.maHd, {
-        chiTietMon: invoiceItems,
+      await capNhatHd({
+        maHd: currentInvoice.maHd,
         tongTien: updatedSummary.total,
         thue: updatedSummary.tax,
         giamGia: updatedSummary.discount
@@ -1606,8 +1616,11 @@ const BanHang = () => {
       message.success('Đã lưu thay đổi hóa đơn');
       
       // Refresh data
-      await loadInvoiceData();
-      await triggerTableRefresh();
+      const detailsResponse = await getChiTietHoaDonTheoMaHD(currentInvoice.maHd);
+      if (Array.isArray(detailsResponse)) {
+        setInvoiceDetails(detailsResponse.filter(item => parseInt(item.sl) > 0));
+      }
+      triggerQuickRefresh('SAVE_EDITS');
       
     } catch (error) {
   // Silent console
@@ -1621,7 +1634,13 @@ const BanHang = () => {
   const cancelInvoiceEdits = () => {
     setEditingInvoice(false);
     // Reload original invoice data
-    loadInvoiceData();
+    if (currentInvoice) {
+      getChiTietHoaDonTheoMaHD(currentInvoice.maHd).then(detailsResponse => {
+        if (Array.isArray(detailsResponse)) {
+          setInvoiceDetails(detailsResponse.filter(item => parseInt(item.sl) > 0));
+        }
+      });
+    }
     message.info('Đã hủy chỉnh sửa hóa đơn');
   };
 
@@ -3054,6 +3073,23 @@ const BanHang = () => {
     </div>
   );
 
+  // Listen for payment success popup close messages
+  useEffect(() => {
+    const handleMessage = (event) => {
+      // Remove origin check since it's from same app
+      if (event.data?.type === 'PAYMENT_SUCCESS_CLOSED') {
+        // Navigate back to tables view
+        setCurrentInvoice(null);
+        setInvoiceDetails([]);
+        setSelectedTable(null);
+        setCurrentView(VIEW_STATES.TABLES);
+      }
+    };
+
+    window.addEventListener('message', handleMessage);
+    return () => window.removeEventListener('message', handleMessage);
+  }, []);
+
   // Main render
   return (
     <div className="banhang-container">
@@ -3331,22 +3367,6 @@ const BanHang = () => {
       />
     </div>
   );
-  // Listen for payment success popup close messages
-  useEffect(() => {
-    const handleMessage = (event) => {
-      // Remove origin check since it's from same app
-      if (event.data?.type === 'PAYMENT_SUCCESS_CLOSED') {
-        // Navigate back to tables view
-        setCurrentInvoice(null);
-        setInvoiceDetails([]);
-        setSelectedTable(null);
-        setCurrentView(VIEW_STATES.TABLES);
-      }
-    };
-
-    window.addEventListener('message', handleMessage);
-    return () => window.removeEventListener('message', handleMessage);
-  }, []);
 
 };
 

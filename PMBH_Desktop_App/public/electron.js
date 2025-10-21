@@ -10,6 +10,9 @@ let customerDisplayWindow = null;
 let vnpayPaymentWindow = null;
 let vnpayPaymentParent = null;
 let vnpayReturnUrl = null;
+let momoPaymentWindow = null;
+let momoPaymentParent = null;
+let momoReturnUrl = null;
 let paymentSuccessWindow = null;
 
 const notifyVNPayParent = (payload) => {
@@ -153,6 +156,141 @@ const openVNPayPaymentWindow = ({ paymentUrl, returnUrl }, sender) => {
       });
     }
     closeVNPayPaymentWindow();
+    return { success: false, error: error.message };
+  }
+};
+
+const notifyMoMoParent = (payload) => {
+  if (momoPaymentParent && !momoPaymentParent.isDestroyed()) {
+    momoPaymentParent.send('momo:payment-result', payload);
+  }
+};
+
+const closeMoMoPaymentWindow = () => {
+  if (momoPaymentWindow && !momoPaymentWindow.isDestroyed()) {
+    momoPaymentWindow.close();
+  }
+  momoPaymentWindow = null;
+  momoPaymentParent = null;
+  momoReturnUrl = null;
+};
+
+const handleMoMoReturnUrl = (targetUrl) => {
+  if (!targetUrl || !momoReturnUrl) {
+    return false;
+  }
+
+  try {
+    const normalizedReturn = momoReturnUrl.trim();
+    if (!normalizedReturn) {
+      return false;
+    }
+
+    const parsedTarget = new URL(targetUrl);
+    const parsedReturn = new URL(normalizedReturn, parsedTarget.origin);
+
+    if (parsedTarget.origin !== parsedReturn.origin) {
+      return false;
+    }
+
+    if (!parsedTarget.pathname.startsWith(parsedReturn.pathname)) {
+      return false;
+    }
+
+    const queryEntries = Object.fromEntries(parsedTarget.searchParams.entries());
+
+    notifyMoMoParent({
+      source: 'momo-window',
+      url: targetUrl,
+      query: queryEntries,
+    });
+
+    closeMoMoPaymentWindow();
+    return true;
+  } catch (error) {
+    console.error('Failed to process MoMo return URL:', error);
+    notifyMoMoParent({
+      source: 'momo-window',
+      error: error.message,
+      url: targetUrl,
+    });
+    closeMoMoPaymentWindow();
+    return false;
+  }
+};
+
+const openMoMoPaymentWindow = ({ paymentUrl, returnUrl }, sender) => {
+  try {
+    if (!paymentUrl) {
+      throw new Error('Missing MoMo payment URL');
+    }
+
+    momoPaymentParent = sender;
+    momoReturnUrl = returnUrl || null;
+
+    if (momoPaymentWindow && !momoPaymentWindow.isDestroyed()) {
+      momoPaymentWindow.loadURL(paymentUrl);
+      momoPaymentWindow.focus();
+      return { success: true };
+    }
+
+    momoPaymentWindow = new BrowserWindow({
+      width: 480,
+      height: 720,
+      minWidth: 360,
+      minHeight: 640,
+      show: false,
+      backgroundColor: '#ffffff',
+      autoHideMenuBar: true,
+      parent: mainWindow ?? undefined,
+      modal: false,
+      webPreferences: {
+        contextIsolation: true,
+        nodeIntegration: false,
+        sandbox: true,
+      },
+    });
+
+    momoPaymentWindow.on('closed', () => {
+      if (momoPaymentParent && !momoPaymentParent.isDestroyed()) {
+        momoPaymentParent.send('momo:payment-window-closed');
+      }
+      closeMoMoPaymentWindow();
+    });
+
+    momoPaymentWindow.webContents.on('will-redirect', (event, url) => {
+      if (handleMoMoReturnUrl(url)) {
+        event.preventDefault();
+      }
+    });
+
+    momoPaymentWindow.webContents.on('did-navigate', (_event, url) => {
+      handleMoMoReturnUrl(url);
+    });
+
+    momoPaymentWindow.webContents.setWindowOpenHandler(({ url }) => {
+      if (url) {
+        shell.openExternal(url);
+      }
+      return { action: 'deny' };
+    });
+
+    momoPaymentWindow.once('ready-to-show', () => {
+      if (momoPaymentWindow && !momoPaymentWindow.isDestroyed()) {
+        momoPaymentWindow.show();
+      }
+    });
+
+    momoPaymentWindow.loadURL(paymentUrl);
+
+    return { success: true };
+  } catch (error) {
+    console.error('Failed to open MoMo payment window:', error);
+    notifyMoMoParent({
+      source: 'momo-window',
+      error: error.message,
+    });
+    closeMoMoPaymentWindow();
     return { success: false, error: error.message };
   }
 };
@@ -503,7 +641,15 @@ ipcMain.handle('vnpay:close-payment-window', () => {
   return { success: true };
 });
 
+ipcMain.handle('momo:open-payment-window', (event, payload) => {
+  return openMoMoPaymentWindow(payload, event.sender);
+});
+
+ipcMain.handle('momo:close-payment-window', () => {
+  closeMoMoPaymentWindow();
+  return { success: true };
+});
+
 ipcMain.handle('open-payment-success-window', (event, payload) => {
   return openPaymentSuccessWindow(payload);
 });
-

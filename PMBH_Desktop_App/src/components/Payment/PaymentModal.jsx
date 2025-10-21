@@ -15,7 +15,15 @@ import {
 } from 'lucide-react';
 import { thanhToanHoaDon } from '../../services/apiServices';
 import { createVNPayPaymentUrl } from '../../services/vnpayService';
+import {
+  createMoMoPayment,
+  verifyMoMoReturnSignature,
+  normalizeMoMoResultCode,
+  getMoMoResultMessage,
+  logMoMoTransaction,
+} from '../../services/momoService';
 import vnpayConfig from '../../config/vnpayConfig';
+import momoConfig from '../../config/momoConfig';
 import ReceiptPrinter from '../Print/ReceiptPrinter';
 import receiptLogoManager from '../../utils/receiptLogoManager';
 import './PaymentModal.css';
@@ -46,6 +54,7 @@ const PaymentModal = ({
   const [mixedPayments, setMixedPayments] = useState([]);
   const [partialPaidAmount, setPartialPaidAmount] = useState(0);
   const [pendingVNPayTxn, setPendingVNPayTxn] = useState(null);
+  const [pendingMoMoTxn, setPendingMoMoTxn] = useState(null);
 
   // Currency exchange rates
   const exchangeRates = {
@@ -95,6 +104,7 @@ const PaymentModal = ({
       setPaymentMethod('Cash');
       setCurrency('VND');
       setPendingVNPayTxn(null);
+      setPendingMoMoTxn(null);
       
       // Load partial payment from localStorage
       if (invoice?.maHd) {
@@ -115,7 +125,11 @@ const PaymentModal = ({
       if (window.electronAPI?.closeVNPayPaymentWindow) {
         window.electronAPI.closeVNPayPaymentWindow();
       }
+      if (window.electronAPI?.closeMoMoPaymentWindow) {
+        window.electronAPI.closeMoMoPaymentWindow();
+      }
       setPendingVNPayTxn(null);
+      setPendingMoMoTxn(null);
     }
   }, [visible, orderTotal, invoice?.maHd]);
 
@@ -150,11 +164,20 @@ const PaymentModal = ({
     if (paymentMethod === 'VNPAY' && value !== 'VNPAY' && window.electronAPI?.closeVNPayPaymentWindow) {
       window.electronAPI.closeVNPayPaymentWindow();
     }
+    if (paymentMethod === 'MoMo' && value !== 'MoMo' && window.electronAPI?.closeMoMoPaymentWindow) {
+      window.electronAPI.closeMoMoPaymentWindow();
+    }
     setPaymentMethod(value);
     setPendingVNPayTxn(null);
+    setPendingMoMoTxn(null);
 
     if (value === 'VNPAY') {
-      // VNPay chỉ hỗ trợ VND, tự động đặt số tiền chính xác
+      setCurrency('VND');
+      setCustomerPaid(finalTotal);
+      return;
+    }
+
+    if (value === 'MoMo') {
       setCurrency('VND');
       setCustomerPaid(finalTotal);
       return;
@@ -209,6 +232,10 @@ const PaymentModal = ({
   const handleConfirmPayment = async () => {
     if (paymentMethod === 'VNPAY') {
       await initiateVNPayPayment();
+      return;
+    }
+    if (paymentMethod === 'MoMo') {
+      await initiateMoMoPayment();
       return;
     }
 
@@ -885,6 +912,269 @@ const PaymentModal = ({
     message.success('Đã gửi hóa đơn đến máy in');
   };
 
+  const initiateMoMoPayment = async () => {
+    try {
+      if (pendingMoMoTxn) {
+        message.warning('Dang cho ket qua thanh toan MoMo hien tai. Vui long hoan tat giao dich truoc khi tao moi.');
+        return;
+      }
+
+      if (!invoice?.maHd) {
+        message.error('Khong co ma hoa don de thanh toan MoMo');
+        return;
+      }
+
+      setPaymentLoading(true);
+
+      const paymentRequest = await createMoMoPayment({
+        invoiceCode: invoice.maHd,
+        amount: finalTotal,
+        orderInfo: `Thanh toan hoa don ${invoice.maHd}`,
+        extraData: {
+          invoiceCode: invoice.maHd,
+          amount: finalTotal,
+          source: 'PMBH_POS',
+        },
+      });
+
+      const paymentUrl = paymentRequest.payUrl || paymentRequest.deeplink || paymentRequest.qrCodeUrl;
+
+      if (!paymentUrl) {
+        message.error('Khong tim thay duong dan thanh toan MoMo.');
+        return;
+      }
+
+      setPendingMoMoTxn({
+        orderId: paymentRequest.orderId,
+        requestId: paymentRequest.requestId,
+        amount: finalTotal,
+      });
+
+      logMoMoTransaction({
+        action: 'CREATE_PAYMENT',
+        invoiceCode: invoice.maHd,
+        payload: paymentRequest.payload,
+        response: paymentRequest.response,
+      });
+
+      let opened = false;
+
+      if (window.electronAPI?.openMoMoPaymentWindow) {
+        const response = await window.electronAPI.openMoMoPaymentWindow(
+          paymentUrl,
+          momoConfig.redirectUrl
+        );
+
+        if (!response?.success) {
+          setPendingMoMoTxn(null);
+          message.error(response?.error || 'Khong the mo cua so thanh toan MoMo.');
+          return;
+        }
+
+        opened = true;
+        message.info('Da mo cong thanh toan MoMo. Vui long hoan tat giao dich trong cua so moi.');
+      } else {
+        const popup = window.open(paymentUrl, '_blank');
+        opened = !!popup;
+        if (!opened) {
+          message.warning('Trinh duyet da chan cua so thanh toan MoMo. Vui long cho phep cua so bat len hoac mo lai lien ket.');
+        } else {
+          message.info('Da mo cong thanh toan MoMo. Vui long hoan tat giao dich trong cua so moi.');
+        }
+      }
+
+      if (!opened) {
+        setPendingMoMoTxn(null);
+      }
+    } catch (error) {
+      console.error('MoMo initialization error:', error);
+      message.error(error?.message ? `Khong the khoi tao thanh toan MoMo: ${error.message}` : 'Co loi khi khoi tao thanh toan MoMo');
+      setPendingMoMoTxn(null);
+    } finally {
+      setPaymentLoading(false);
+    }
+  };
+
+  const handleMoMoSuccess = async (paymentResult, verificationResult) => {
+    try {
+      setPaymentLoading(true);
+
+      logMoMoTransaction({
+        action: 'RETURN_SUCCESS',
+        invoiceCode: invoice?.maHd,
+        paymentResult,
+        verification: verificationResult,
+      });
+
+      const result = await thanhToanHoaDon(invoice.maHd);
+
+      if (result && (result.success !== false)) {
+        message.success('Thanh toan MoMo thanh cong!');
+
+        setTimeout(() => {
+          handlePrintReceipt();
+        }, 500);
+
+        const paymentData = {
+          maHd: invoice?.maHd,
+          tongTien: orderTotal,
+          discount: discountAmount,
+          discountType,
+          finalTotal,
+          tienKhachDua: finalTotal,
+          tienThua: 0,
+          phuongThucThanhToan: 'MoMo',
+          ghiChu: `Thanh toan MoMo - OrderId: ${paymentResult.orderId}`,
+          ngayThanhToan: new Date().toISOString(),
+          momoData: {
+            ...paymentResult,
+            verification: verificationResult,
+          },
+        };
+
+        await onConfirm(paymentData);
+      } else {
+        message.error('Thanh toan that bai: ' + (result?.error || 'Loi khong xac dinh'));
+      }
+    } catch (error) {
+      message.error('Loi thanh toan MoMo: ' + (error.message || 'Loi khong xac dinh'));
+    } finally {
+      setPaymentLoading(false);
+    }
+  };
+
+  const processMoMoPayload = React.useCallback(
+    (rawPayload = {}) => {
+      if (!pendingMoMoTxn) {
+        return;
+      }
+
+      const payload = rawPayload.payload || rawPayload;
+      const rawQuery = payload.rawQuery || payload.query || {};
+      const mergedPayload = {
+        ...rawQuery,
+        ...payload,
+      };
+
+      const targetOrderId = mergedPayload.orderId || rawQuery.orderId;
+
+      if (
+        pendingMoMoTxn.orderId &&
+        targetOrderId &&
+        targetOrderId !== pendingMoMoTxn.orderId
+      ) {
+        return;
+      }
+
+      if (payload.error) {
+        logMoMoTransaction({
+          action: 'RETURN_ERROR',
+          invoiceCode: invoice?.maHd,
+          payload,
+        });
+        setPendingMoMoTxn(null);
+        message.error(`Thanh toan MoMo khong hoan tat: ${payload.error}`);
+        return;
+      }
+
+      const verification =
+        payload.verification ||
+        verifyMoMoReturnSignature(rawQuery && Object.keys(rawQuery).length ? rawQuery : mergedPayload);
+
+      const enrichedPayload = {
+        ...mergedPayload,
+        verification,
+      };
+
+      logMoMoTransaction({
+        action: 'RETURN_CALLBACK',
+        invoiceCode: invoice?.maHd,
+        payload: enrichedPayload,
+        verification,
+      });
+
+      setPendingMoMoTxn(null);
+
+      if (!verification.isValid) {
+        message.error('Chu ky MoMo khong hop le. Vui long kiem tra lai giao dich.');
+        return;
+      }
+
+      const normalizedCode = normalizeMoMoResultCode(enrichedPayload.resultCode);
+      const normalizedPayload = {
+        ...enrichedPayload,
+        resultCode: normalizedCode,
+        message: enrichedPayload.message || getMoMoResultMessage(normalizedCode),
+      };
+
+      if (normalizedCode === '0' || normalizedCode === '9000') {
+        handleMoMoSuccess(normalizedPayload, verification);
+        return;
+      }
+
+      const errorMessage = normalizedPayload.message || 'Thanh toan MoMo that bai.';
+      message.error(`Thanh toan MoMo that bai: ${errorMessage}`);
+    },
+    [pendingMoMoTxn, handleMoMoSuccess]
+  );
+
+  useEffect(() => {
+    if (typeof window === 'undefined') {
+      return undefined;
+    }
+
+    const handleMoMoMessage = (event) => {
+      if (!event || !event.data) {
+        return;
+      }
+
+      const { type, payload } = event.data;
+      if (type !== 'MOMO_PAYMENT_RESULT') {
+        return;
+      }
+
+      processMoMoPayload(payload || event.data.payload || {});
+    };
+
+    window.addEventListener('message', handleMoMoMessage);
+    return () => {
+      window.removeEventListener('message', handleMoMoMessage);
+    };
+  }, [processMoMoPayload]);
+
+  useEffect(() => {
+    if (!window.electronAPI?.onMoMoPaymentResult) {
+      return undefined;
+    }
+
+    const removeListener = window.electronAPI.onMoMoPaymentResult((payload) => {
+      processMoMoPayload(payload);
+    });
+
+    return () => {
+      if (typeof removeListener === 'function') {
+        removeListener();
+      }
+    };
+  }, [processMoMoPayload]);
+
+  useEffect(() => {
+    if (!pendingMoMoTxn) {
+      return;
+    }
+
+    if (window.electronAPI?.onceMoMoPaymentClosed) {
+      window.electronAPI.onceMoMoPaymentClosed(() => {
+        setPendingMoMoTxn((prev) => {
+          if (prev) {
+            message.warning('Cua so thanh toan MoMo da dong truoc khi hoan tat.');
+          }
+          return null;
+        });
+      });
+    }
+  }, [pendingMoMoTxn]);
+
   const initiateVNPayPayment = async () => {
     try {
       if (pendingVNPayTxn) {
@@ -1117,7 +1407,7 @@ const PaymentModal = ({
   const changeInVND = Math.max(0, customerPaidInVND - finalTotal);
   const remainingMixedPayment = finalTotal - partialPaidAmount;
   const enoughPayment =
-    paymentMethod === 'VNPAY'
+    paymentMethod === 'VNPAY' || paymentMethod === 'MoMo'
       ? true
       : isMixedPaymentMode
         ? partialPaidAmount >= finalTotal
@@ -1158,7 +1448,7 @@ const PaymentModal = ({
             <div className="payment-column">
               <Text className="column-title">Phương thức thanh toán</Text>
               <div className="method-list">
-                {['Cash', 'Bank Transfer', 'GrabPay', 'ZaloPay', 'VNPAY', 'OnAccount', 'Others', 'Credit'].map(method => (
+                {['Cash', 'Bank Transfer', 'MoMo', 'ZaloPay', 'VNPAY', 'OnAccount', 'Others', 'Credit'].map(method => (
                   <Button 
                     key={method}
                     className={paymentMethod === method ? 'method-item active' : 'method-item'}
@@ -1468,7 +1758,9 @@ const PaymentModal = ({
                 size="large"
                 type="primary"
                 disabled={
-                  !enoughPayment || (paymentMethod === 'VNPAY' && Boolean(pendingVNPayTxn))
+                  !enoughPayment ||
+                  (paymentMethod === 'VNPAY' && Boolean(pendingVNPayTxn)) ||
+                  (paymentMethod === 'MoMo' && Boolean(pendingMoMoTxn))
                 }
               >
                 <span>THANH TOÁN</span>

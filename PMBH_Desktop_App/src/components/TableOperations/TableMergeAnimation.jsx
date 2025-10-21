@@ -6,8 +6,6 @@ const TableMergeAnimation = ({
   isVisible, 
   onComplete 
 }) => {
-  if (!isVisible || !sourceTable || !targetTable) return null;
-
   React.useEffect(() => {
     if (isVisible) {
       const timer = setTimeout(() => {
@@ -17,6 +15,8 @@ const TableMergeAnimation = ({
       return () => clearTimeout(timer);
     }
   }, [isVisible, onComplete]);
+
+  if (!isVisible || !sourceTable || !targetTable) return null;
 
   const sourcePosition = sourceTable.position || { x: 100, y: 100 };
   const targetPosition = targetTable.position || { x: 300, y: 100 };
