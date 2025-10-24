@@ -19,7 +19,7 @@ $psaveget=getsaveget($plang,$popt,$pitem,$plink,$pgroup,$pitemlst,$pchildlst,$pl
 $lvsl_lv0059->lv001=$_GET['ID'];
 if($plang=="") $plang="EN";
 	$vLangArr=GetLangFile("../../","SL0071.txt",$plang);
-$mosl_lv0059->lang=strtoupper($plang);
+$lvsl_lv0059->lang=strtoupper($plang);
 $curPage=(int)$_POST['curPg'];	
 $vFlag=(int)$_POST['txtFlag'];
 if($vFlag==1)
