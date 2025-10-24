@@ -1449,9 +1449,15 @@ const BanHang = () => {
     }
   };
 
+  // Handle payment success modal close - back to tables
+  const handlePaymentSuccessClose = () => {
+    // Simply back to tables view
+    setCurrentView(VIEW_STATES.TABLES);
+    message.success('Đã quay lại trang chọn bàn');
+  };
+    
   // Open payment modal
   const openPaymentModal = () => {
-    
     if (!currentInvoice || invoiceDetails.length === 0) {
       message.error('Không có đơn hàng để thanh toán');
       return;
@@ -3359,6 +3365,7 @@ const BanHang = () => {
         visible={showPaymentModal}
         onCancel={() => setShowPaymentModal(false)}
         onConfirm={processPaymentEnhanced}
+        onPaymentSuccessClose={handlePaymentSuccessClose}
         invoice={currentInvoice}
         orderTotal={orderTotal}
         invoiceDetails={invoiceDetails}

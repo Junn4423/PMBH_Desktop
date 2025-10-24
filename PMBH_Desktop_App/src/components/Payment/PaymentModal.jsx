@@ -11,7 +11,8 @@ import {
   ArrowLeft,
   Printer,
   Split,
-  Plus
+  Plus,
+  CheckCircle
 } from 'lucide-react';
 import { thanhToanHoaDon } from '../../services/apiServices';
 import { createVNPayPaymentUrl } from '../../services/vnpayService';
@@ -39,7 +40,8 @@ const PaymentModal = ({
   orderTotal,
   invoiceDetails = [],
   loading = false,
-  includeVAT = false
+  includeVAT = false,
+  onPaymentSuccessClose
 }) => {
   const [paymentMethod, setPaymentMethod] = useState('Cash');
   const [currency, setCurrency] = useState('VND');
@@ -55,6 +57,7 @@ const PaymentModal = ({
   const [partialPaidAmount, setPartialPaidAmount] = useState(0);
   const [pendingVNPayTxn, setPendingVNPayTxn] = useState(null);
   const [pendingMoMoTxn, setPendingMoMoTxn] = useState(null);
+  const [showPaymentSuccessModal, setShowPaymentSuccessModal] = useState(false);
 
   // Currency exchange rates
   const exchangeRates = {
@@ -105,6 +108,7 @@ const PaymentModal = ({
       setCurrency('VND');
       setPendingVNPayTxn(null);
       setPendingMoMoTxn(null);
+      setShowPaymentSuccessModal(false);
       
       // Load partial payment from localStorage
       if (invoice?.maHd) {
@@ -260,12 +264,13 @@ const PaymentModal = ({
       const result = await thanhToanHoaDon(invoice.maHd);
       
       if (result && (result.success !== false)) {
-        message.success('Thanh toán thành công!');
-        
         // Tự động in hóa đơn sau khi thanh toán thành công
         setTimeout(() => {
           handlePrintReceipt();
         }, 500);
+        
+        // Hiển thị modal payment success
+        setShowPaymentSuccessModal(true);
         
         // Call parent onConfirm with payment data for additional processing
         const paymentData = {
@@ -1770,6 +1775,67 @@ const PaymentModal = ({
           </div>
         </div>
       </div>
+
+      {/* Payment Success Modal */}
+      <Modal
+        title="Thanh toán thành công"
+        visible={showPaymentSuccessModal}
+        onCancel={() => {
+          setShowPaymentSuccessModal(false);
+          // Call custom close handler for payment success
+          if (onPaymentSuccessClose) {
+            onPaymentSuccessClose();
+          } else {
+            onCancel();
+          }
+        }}
+        footer={[
+          <Button
+            key="close"
+            type="primary"
+            onClick={() => {
+              setShowPaymentSuccessModal(false);
+              // Call custom close handler for payment success
+              if (onPaymentSuccessClose) {
+                onPaymentSuccessClose();
+              } else {
+                onCancel();
+              }
+            }}
+          >
+            Đóng
+          </Button>
+        ]}
+        width={500}
+        centered
+      >
+        <div style={{ textAlign: 'center', padding: '20px' }}>
+          <CheckCircle size={64} color="#52c41a" style={{ marginBottom: 16 }} />
+          <h3 style={{ color: '#52c41a', marginBottom: 8 }}>Thanh toán thành công!</h3>
+          <p style={{ marginBottom: 16 }}>
+            Hóa đơn #{invoice?.maHd} đã được thanh toán thành công.
+          </p>
+          <div style={{ background: '#f6ffed', padding: '12px', borderRadius: '6px', marginBottom: 16 }}>
+            <Text strong>Tổng tiền: {formatWithCurrency(finalTotal, 'VND')}</Text>
+            {discountAmount > 0 && (
+              <div>
+                <Text>Giảm giá: {formatWithCurrency(discountAmount, 'VND')}</Text>
+              </div>
+            )}
+            <div>
+              <Text>Tiền khách đưa: {formatWithCurrency(customerPaidInVND, 'VND')}</Text>
+            </div>
+            {changeAmount > 0 && (
+              <div>
+                <Text>Tiền thừa: {formatWithCurrency(Math.max(0, customerPaidInVND - finalTotal), 'VND')}</Text>
+              </div>
+            )}
+          </div>
+          <Text type="secondary">
+            Hệ thống sẽ tự động quay lại trang chọn bàn.
+          </Text>
+        </div>
+      </Modal>
 
     </Modal>
   );
