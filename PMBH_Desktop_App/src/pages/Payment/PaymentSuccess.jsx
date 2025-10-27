@@ -1,4 +1,4 @@
-import React, { useMemo, useEffect, useState } from 'react';
+import React, { useMemo, useEffect, useState, useCallback } from 'react';
 import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { Result, Button, Card, Descriptions, Typography } from 'antd';
 import { CheckCircle } from 'lucide-react';
@@ -109,6 +109,34 @@ const PaymentSuccess = () => {
     }
   }, [result, searchParams]);
 
+  const notifyParentAboutClose = useCallback(() => {
+    // Notify opener to navigate back to tables view
+    if (window.opener && !window.opener.closed) {
+      window.opener.postMessage(
+        {
+          type: 'PAYMENT_SUCCESS_CLOSED',
+        },
+        window.location.origin
+      );
+    }
+  }, []);
+
+  useEffect(() => {
+    const handleBeforeUnload = () => {
+      notifyParentAboutClose();
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+    };
+  }, [notifyParentAboutClose]);
+
+  const handleCloseWindow = useCallback(() => {
+    notifyParentAboutClose();
+    window.close();
+  }, [notifyParentAboutClose]);
+
   // Auto close functionality
   useEffect(() => {
     const timeoutSetting = localStorage.getItem('pmbh_payment_success_timeout');
@@ -132,20 +160,7 @@ const PaymentSuccess = () => {
 
       return () => clearInterval(interval);
     }
-  }, []);
-
-  const handleCloseWindow = () => {
-    // Notify opener to navigate back to tables view
-    if (window.opener && !window.opener.closed) {
-      window.opener.postMessage(
-        {
-          type: 'PAYMENT_SUCCESS_CLOSED',
-        },
-        window.location.origin
-      );
-    }
-    window.close();
-  };
+  }, [handleCloseWindow]);
 
   return (
     <div className="payment-success-container">

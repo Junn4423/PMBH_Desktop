@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useRef } from 'react';
+import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
   Layout, 
@@ -177,6 +177,13 @@ const BanHang = () => {
   // State cho Enhanced Payment System
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [paymentLoading, setPaymentLoading] = useState(false);
+  const [awaitingPaymentSuccessClose, setAwaitingPaymentSuccessClose] = useState(false);
+  const awaitingPaymentSuccessCloseRef = useRef(false);
+
+  useEffect(() => {
+    awaitingPaymentSuccessCloseRef.current = awaitingPaymentSuccessClose;
+  }, [awaitingPaymentSuccessClose]);
+
   
   // State cho Order Status Tracking
   const [orderStatus, setOrderStatus] = useState(null);
@@ -212,7 +219,7 @@ const BanHang = () => {
   }); // {mainTableId: [table1, table2, ...]}
   
   // Helper function để xóa bàn khỏi mergedTableGroups và localStorage
-  const clearMergedTableGroups = (tableToRemove) => {
+  const clearMergedTableGroups = useCallback((tableToRemove) => {
     if (tableToRemove) {
       setMergedTableGroups(prev => {
         const newGroups = { ...prev };
@@ -238,8 +245,31 @@ const BanHang = () => {
     } catch (error) {
       console.warn('Không thể xóa mergedTableGroups khỏi localStorage:', error);
     }
-  };
+  }, []);
   
+  const resetViewAfterPayment = useCallback(() => {
+    const tableToClear = selectedTable;
+
+    setCurrentInvoice(null);
+    setInvoiceDetails([]);
+    setSelectedTable(null);
+    setCurrentView(VIEW_STATES.TABLES);
+    setShowPaymentModal(false);
+
+    if (tableToClear) {
+      clearMergedTableGroups(tableToClear);
+    }
+
+    try {
+      localStorage.removeItem('mergedTableGroups');
+    } catch (error) {
+      console.warn('Kh?ng th? x?a mergedTableGroups kh?i localStorage:', error);
+    }
+
+    setAwaitingPaymentSuccessClose(false);
+    awaitingPaymentSuccessCloseRef.current = false;
+  }, [selectedTable, clearMergedTableGroups]);
+
   // State cho Animation
   const [showMergeAnimation, setShowMergeAnimation] = useState(false);
   const [animationTables, setAnimationTables] = useState({ source: null, target: null });
@@ -1395,15 +1425,24 @@ const BanHang = () => {
       // Trigger refresh to update table status
       triggerQuickRefresh('PAYMENT_COMPLETE');
       
-      // Open success popup for online payments
-      if (paymentData.phuongThucThanhToan && paymentData.phuongThucThanhToan !== 'Cash') {
+      const isOnlinePayment =
+        paymentData.phuongThucThanhToan && paymentData.phuongThucThanhToan !== 'Cash';
+      
+      if (isOnlinePayment) {
+        setAwaitingPaymentSuccessClose(true);
+        awaitingPaymentSuccessCloseRef.current = true;
+
         const key = `payment_success_${Date.now()}`;
         localStorage.setItem(key, JSON.stringify(paymentData));
 
+        let successWindowOpened = false;
+
         if (window.electronAPI?.openPaymentSuccessWindow) {
           const response = await window.electronAPI.openPaymentSuccessWindow(key);
-          if (!response?.success) {
-            message.warning(response?.error || 'Không thể mở cửa sổ thanh toán thành công.');
+          if (response?.success) {
+            successWindowOpened = true;
+          } else {
+            message.warning(response?.error || 'Kh?ng th? m? c?a s? thanh to?n th?nh c?ng.');
           }
         } else {
           // Fallback for web version
@@ -1414,47 +1453,46 @@ const BanHang = () => {
             // eslint-disable-next-line no-restricted-globals
             `width=${Math.floor(screen.width * 0.7)},height=${screen.height},left=0,top=0,scrollbars=yes,resizable=yes`
           );
-          if (!popup) {
-            message.warning('Không thể mở cửa sổ thanh toán thành công. Vui lòng cho phép cửa sổ bật lên.');
+          if (popup) {
+            successWindowOpened = true;
+          } else {
+            message.warning('Kh?ng th? m? c?a s? thanh to?n th?nh c?ng. Vui l?ng cho ph?p c?a s? b?t l?n.');
           }
         }
-        
-        // Close payment modal
-        setShowPaymentModal(false);
+
+        if (successWindowOpened) {
+          return;
+        }
+
+        localStorage.removeItem(key);
+        setAwaitingPaymentSuccessClose(false);
+        awaitingPaymentSuccessCloseRef.current = false;
+        handlePaymentSuccessClose();
         return;
       }
-      
-      // Clear current invoice state
-      setCurrentInvoice(null);
-      setInvoiceDetails([]);
-      setSelectedTable(null);
-      setCurrentView(VIEW_STATES.TABLES);
-      setShowPaymentModal(false);
-      
-      // Xóa bàn khỏi mergedTableGroups và localStorage
-      clearMergedTableGroups(selectedTable);
-      
-      // Xóa dữ liệu mergedTableGroups khỏi localStorage sau khi thanh toán
-      try {
-        localStorage.removeItem('mergedTableGroups');
-      } catch (error) {
-        console.warn('Không thể xóa mergedTableGroups khỏi localStorage:', error);
-      }
-      
+
+      handlePaymentSuccessClose();
+      return;
+
     } catch (error) {
   // Silent console
-      message.error('Không thể xử lý thanh toán: ' + (error.message || 'Lỗi không xác định'));
+      setAwaitingPaymentSuccessClose(false);
+      awaitingPaymentSuccessCloseRef.current = false;
+      message.error('Kh?ng th? x? l? thanh to?n: ' + (error.message || 'L?i kh?ng x?c ??nh'));
     } finally {
       setPaymentLoading(false);
     }
   };
 
-  // Handle payment success modal close - back to tables
-  const handlePaymentSuccessClose = () => {
-    // Simply back to tables view
-    setCurrentView(VIEW_STATES.TABLES);
+  // Handle payment success modal close logic
+  const handlePaymentSuccessClose = useCallback(({ fromExternalEvent = false } = {}) => {
+    if (fromExternalEvent && !awaitingPaymentSuccessCloseRef.current) {
+      return;
+    }
+
+    resetViewAfterPayment();
     message.success('Đã quay lại trang chọn bàn');
-  };
+  }, [resetViewAfterPayment]);
     
   // Open payment modal
   const openPaymentModal = () => {
@@ -3082,19 +3120,30 @@ const BanHang = () => {
   // Listen for payment success popup close messages
   useEffect(() => {
     const handleMessage = (event) => {
-      // Remove origin check since it's from same app
       if (event.data?.type === 'PAYMENT_SUCCESS_CLOSED') {
-        // Navigate back to tables view
-        setCurrentInvoice(null);
-        setInvoiceDetails([]);
-        setSelectedTable(null);
-        setCurrentView(VIEW_STATES.TABLES);
+        handlePaymentSuccessClose({ fromExternalEvent: true });
       }
     };
 
     window.addEventListener('message', handleMessage);
     return () => window.removeEventListener('message', handleMessage);
-  }, []);
+  }, [handlePaymentSuccessClose]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined' || !window.electronAPI?.onPaymentSuccessWindowClosed) {
+      return undefined;
+    }
+
+    const removeListener = window.electronAPI.onPaymentSuccessWindowClosed(() => {
+      handlePaymentSuccessClose({ fromExternalEvent: true });
+    });
+
+    return () => {
+      if (typeof removeListener === 'function') {
+        removeListener();
+      }
+    };
+  }, [handlePaymentSuccessClose]);
 
   // Main render
   return (

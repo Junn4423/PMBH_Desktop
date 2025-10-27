@@ -61,7 +61,26 @@ contextBridge.exposeInMainWorld('electronAPI', {
     ipcRenderer.once('momo:payment-window-closed', () => callback());
   },
 
+  // ZaloPay helpers
+  openZaloPayPaymentWindow: (paymentUrl, returnUrl) =>
+    ipcRenderer.invoke('zalopay:open-payment-window', { paymentUrl, returnUrl }),
+  closeZaloPayPaymentWindow: (options) =>
+    ipcRenderer.invoke('zalopay:close-payment-window', options ?? {}),
+  onZaloPayPaymentResult: (callback) => {
+    const listener = (_event, data) => callback(data);
+    ipcRenderer.on('zalopay:payment-result', listener);
+    return () => ipcRenderer.removeListener('zalopay:payment-result', listener);
+  },
+  onceZaloPayPaymentClosed: (callback) => {
+    ipcRenderer.once('zalopay:payment-window-closed', () => callback());
+  },
+
   // Payment Success Window
   openPaymentSuccessWindow: (key) =>
     ipcRenderer.invoke('open-payment-success-window', { key }),
+  onPaymentSuccessWindowClosed: (callback) => {
+    const listener = () => callback();
+    ipcRenderer.on('payment-success-window-closed', listener);
+    return () => ipcRenderer.removeListener('payment-success-window-closed', listener);
+  },
 });

@@ -13,6 +13,9 @@ let vnpayReturnUrl = null;
 let momoPaymentWindow = null;
 let momoPaymentParent = null;
 let momoReturnUrl = null;
+let zalopayPaymentWindow = null;
+let zalopayPaymentParent = null;
+let zalopayReturnUrl = null;
 let paymentSuccessWindow = null;
 
 const notifyVNPayParent = (payload) => {
@@ -295,6 +298,184 @@ const openMoMoPaymentWindow = ({ paymentUrl, returnUrl }, sender) => {
   }
 };
 
+const notifyZaloPayParent = (payload) => {
+  if (zalopayPaymentParent && !zalopayPaymentParent.isDestroyed()) {
+    zalopayPaymentParent.send('zalopay:payment-result', payload);
+  }
+};
+
+const closeZaloPayPaymentWindow = ({ force = false } = {}) => {
+  if (!zalopayPaymentWindow || zalopayPaymentWindow.isDestroyed()) {
+    return;
+  }
+
+  const targetWindow = zalopayPaymentWindow;
+
+  const destroyWindow = () => {
+    if (targetWindow.isDestroyed()) {
+      return;
+    }
+    try {
+      targetWindow.destroy();
+    } catch (error) {
+      console.error('Failed to destroy ZaloPay payment window:', error);
+    }
+  };
+
+  try {
+    if (force) {
+      destroyWindow();
+      return;
+    }
+
+    targetWindow.close();
+
+    setTimeout(() => {
+      if (
+        zalopayPaymentWindow === targetWindow &&
+        zalopayPaymentWindow &&
+        !zalopayPaymentWindow.isDestroyed()
+      ) {
+        destroyWindow();
+      }
+    }, 400);
+  } catch (error) {
+    console.error('Failed to close ZaloPay payment window gracefully:', error);
+    destroyWindow();
+  }
+};
+
+const handleZaloPayReturnUrl = (targetUrl) => {
+  if (!targetUrl || !zalopayReturnUrl) {
+    return false;
+  }
+
+  try {
+    const normalizedReturn = zalopayReturnUrl.trim();
+    if (!normalizedReturn) {
+      return false;
+    }
+
+    const parsedTarget = new URL(targetUrl);
+    const parsedReturn = new URL(normalizedReturn, parsedTarget.origin);
+
+    if (parsedTarget.origin !== parsedReturn.origin) {
+      return false;
+    }
+
+    if (!parsedTarget.pathname.startsWith(parsedReturn.pathname)) {
+      return false;
+    }
+
+    const queryEntries = Object.fromEntries(parsedTarget.searchParams.entries());
+
+    notifyZaloPayParent({
+      source: 'zalopay-window',
+      url: targetUrl,
+      query: queryEntries,
+    });
+
+    closeZaloPayPaymentWindow({ force: true });
+    return true;
+  } catch (error) {
+    console.error('Failed to process ZaloPay return URL:', error);
+    notifyZaloPayParent({
+      source: 'zalopay-window',
+      error: error.message,
+      url: targetUrl,
+    });
+    closeZaloPayPaymentWindow({ force: true });
+    return false;
+  }
+};
+
+const openZaloPayPaymentWindow = ({ paymentUrl, returnUrl }, sender) => {
+  try {
+    if (!paymentUrl) {
+      throw new Error('Missing ZaloPay payment URL');
+    }
+
+    zalopayPaymentParent = sender;
+    zalopayReturnUrl = returnUrl || null;
+
+    if (zalopayPaymentWindow && !zalopayPaymentWindow.isDestroyed()) {
+      zalopayPaymentWindow.loadURL(paymentUrl);
+      zalopayPaymentWindow.focus();
+      return { success: true };
+    }
+
+    zalopayPaymentWindow = new BrowserWindow({
+      width: 480,
+      height: 720,
+      minWidth: 360,
+      minHeight: 640,
+      show: false,
+      backgroundColor: '#ffffff',
+      autoHideMenuBar: true,
+      parent: mainWindow ?? undefined,
+      modal: false,
+      webPreferences: {
+        contextIsolation: true,
+        nodeIntegration: false,
+        sandbox: true,
+      },
+    });
+
+    zalopayPaymentWindow.on('closed', () => {
+      if (zalopayPaymentParent && !zalopayPaymentParent.isDestroyed()) {
+        zalopayPaymentParent.send('zalopay:payment-window-closed');
+      }
+      zalopayPaymentWindow = null;
+      zalopayPaymentParent = null;
+      zalopayReturnUrl = null;
+    });
+
+    zalopayPaymentWindow.webContents.on('will-redirect', (event, url) => {
+      if (handleZaloPayReturnUrl(url)) {
+        event.preventDefault();
+      }
+    });
+
+    zalopayPaymentWindow.webContents.on('did-navigate', (_event, url) => {
+      handleZaloPayReturnUrl(url);
+    });
+
+    zalopayPaymentWindow.webContents.on('will-prevent-unload', (event) => {
+      console.warn('ZaloPay window attempted to block unload, forcing close.');
+      event.preventDefault();
+      closeZaloPayPaymentWindow({ force: true });
+    });
+
+    zalopayPaymentWindow.webContents.setWindowOpenHandler(({ url }) => {
+      if (url) {
+        shell.openExternal(url);
+      }
+      return { action: 'deny' };
+    });
+
+    zalopayPaymentWindow.once('ready-to-show', () => {
+      if (zalopayPaymentWindow && !zalopayPaymentWindow.isDestroyed()) {
+        zalopayPaymentWindow.show();
+      }
+    });
+
+    zalopayPaymentWindow.loadURL(paymentUrl);
+
+    return { success: true };
+  } catch (error) {
+    console.error('Failed to open ZaloPay payment window:', error);
+    notifyZaloPayParent({
+      source: 'zalopay-window',
+      error: error.message,
+    });
+    closeZaloPayPaymentWindow({ force: true });
+    zalopayPaymentWindow = null;
+    zalopayPaymentParent = null;
+    zalopayReturnUrl = null;
+    return { success: false, error: error.message };
+  }
+};
+
 const openPaymentSuccessWindow = ({ key }) => {
   try {
     if (!key) {
@@ -309,6 +490,7 @@ const openPaymentSuccessWindow = ({ key }) => {
     const windowHeight = screenHeight;
 
     if (paymentSuccessWindow && !paymentSuccessWindow.isDestroyed()) {
+      paymentSuccessWindow.__skipNotifyOnClose = true;
       paymentSuccessWindow.close();
     }
 
@@ -329,6 +511,8 @@ const openPaymentSuccessWindow = ({ key }) => {
         preload: path.join(__dirname, 'preload.js'),
       },
     });
+    const successWindow = paymentSuccessWindow;
+    successWindow.__skipNotifyOnClose = false;
 
     const baseURL = isDev
       ? 'http://localhost:3000'
@@ -336,17 +520,23 @@ const openPaymentSuccessWindow = ({ key }) => {
 
     const fullURL = `${baseURL}#/payment/success?key=${key}`;
 
-    paymentSuccessWindow.loadURL(fullURL);
+    successWindow.loadURL(fullURL);
 
-    paymentSuccessWindow.once('ready-to-show', () => {
-      if (paymentSuccessWindow) {
-        paymentSuccessWindow.show();
-        paymentSuccessWindow.focus();
+    successWindow.once('ready-to-show', () => {
+      if (successWindow && !successWindow.isDestroyed()) {
+        successWindow.show();
+        successWindow.focus();
       }
     });
 
-    paymentSuccessWindow.on('closed', () => {
-      paymentSuccessWindow = null;
+    successWindow.on('closed', () => {
+      if (!successWindow.__skipNotifyOnClose && mainWindow && !mainWindow.isDestroyed()) {
+        mainWindow.webContents.send('payment-success-window-closed');
+      }
+      if (paymentSuccessWindow === successWindow) {
+        paymentSuccessWindow = null;
+      }
+      successWindow.__skipNotifyOnClose = false;
     });
 
     return { success: true };
@@ -647,6 +837,15 @@ ipcMain.handle('momo:open-payment-window', (event, payload) => {
 
 ipcMain.handle('momo:close-payment-window', () => {
   closeMoMoPaymentWindow();
+  return { success: true };
+});
+
+ipcMain.handle('zalopay:open-payment-window', (event, payload) => {
+  return openZaloPayPaymentWindow(payload, event.sender);
+});
+
+ipcMain.handle('zalopay:close-payment-window', (_event, options = {}) => {
+  closeZaloPayPaymentWindow(options);
   return { success: true };
 });
 

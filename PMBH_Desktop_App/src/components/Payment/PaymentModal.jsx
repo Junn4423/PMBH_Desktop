@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { 
   Modal, 
   InputNumber, 
@@ -23,8 +23,14 @@ import {
   getMoMoResultMessage,
   logMoMoTransaction,
 } from '../../services/momoService';
+import {
+  createZaloPayPayment,
+  queryZaloPayOrder,
+  logZaloPayTransaction,
+} from '../../services/zaloPayService';
 import vnpayConfig from '../../config/vnpayConfig';
 import momoConfig from '../../config/momoConfig';
+import zalopayConfig from '../../config/zalopayConfig';
 import ReceiptPrinter from '../Print/ReceiptPrinter';
 import receiptLogoManager from '../../utils/receiptLogoManager';
 import './PaymentModal.css';
@@ -57,7 +63,68 @@ const PaymentModal = ({
   const [partialPaidAmount, setPartialPaidAmount] = useState(0);
   const [pendingVNPayTxn, setPendingVNPayTxn] = useState(null);
   const [pendingMoMoTxn, setPendingMoMoTxn] = useState(null);
+  const [pendingZaloPayTxn, setPendingZaloPayTxn] = useState(null);
+  const zalopayPopupRef = useRef(null);
+  const zalopayPollRef = useRef(null);
   const [showPaymentSuccessModal, setShowPaymentSuccessModal] = useState(false);
+
+  const cleanupZaloPayPayment = useCallback(() => {
+    try {
+      if (zalopayPollRef.current) {
+        clearInterval(zalopayPollRef.current);
+        zalopayPollRef.current = null;
+      }
+    } catch (error) {
+      console.error('Failed to clear ZaloPay polling interval:', error);
+    }
+
+    if (typeof window !== 'undefined') {
+      try {
+        if (window.electronAPI?.closeZaloPayPaymentWindow) {
+          window.electronAPI.closeZaloPayPaymentWindow({ force: true });
+        }
+      } catch (error) {
+        console.error('Failed to close ZaloPay electron window:', error);
+      }
+    }
+
+    try {
+      const popupWindow = zalopayPopupRef.current;
+      if (popupWindow && !popupWindow.closed) {
+        let closed = false;
+        try {
+          if (typeof popupWindow.close === 'function') {
+            popupWindow.close();
+            closed = popupWindow.closed;
+          }
+        } catch (error) {
+          console.error('Failed to close ZaloPay popup window directly:', error);
+        }
+
+        if (!closed) {
+          try {
+            popupWindow.location.href = 'data:text/html,<html><body><script>window.close();</script></body></html>';
+          } catch (error) {
+            console.error('Failed to trigger ZaloPay popup self-close:', error);
+          }
+
+          setTimeout(() => {
+            try {
+              if (popupWindow && !popupWindow.closed) {
+                popupWindow.close();
+              }
+            } catch (error) {
+              console.error('Failed to close ZaloPay popup after redirect:', error);
+            }
+          }, 300);
+        }
+      }
+    } catch (error) {
+      console.error('Failed to close ZaloPay popup window:', error);
+    } finally {
+      zalopayPopupRef.current = null;
+    }
+  }, []);
 
   // Currency exchange rates
   const exchangeRates = {
@@ -108,6 +175,7 @@ const PaymentModal = ({
       setCurrency('VND');
       setPendingVNPayTxn(null);
       setPendingMoMoTxn(null);
+      setPendingZaloPayTxn(null);
       setShowPaymentSuccessModal(false);
       
       // Load partial payment from localStorage
@@ -132,10 +200,12 @@ const PaymentModal = ({
       if (window.electronAPI?.closeMoMoPaymentWindow) {
         window.electronAPI.closeMoMoPaymentWindow();
       }
+      cleanupZaloPayPayment();
       setPendingVNPayTxn(null);
       setPendingMoMoTxn(null);
+      setPendingZaloPayTxn(null);
     }
-  }, [visible, orderTotal, invoice?.maHd]);
+  }, [visible, orderTotal, invoice?.maHd, cleanupZaloPayPayment]);
 
   // Calculate discount amount and final total
   useEffect(() => {
@@ -162,7 +232,7 @@ const PaymentModal = ({
     const remainingInVND = paidInVND - finalTotal;
     const changeInCurrency = remainingInVND > 0 ? convertFromVND(remainingInVND, currency) : 0;
     setChangeAmount(changeInCurrency);
-  }, [customerPaid, finalTotal, currency]);
+  }, [customerPaid, finalTotal, currency, convertToVND, convertFromVND]);
 
   const handlePaymentMethodChange = (value) => {
     if (paymentMethod === 'VNPAY' && value !== 'VNPAY' && window.electronAPI?.closeVNPayPaymentWindow) {
@@ -171,9 +241,13 @@ const PaymentModal = ({
     if (paymentMethod === 'MoMo' && value !== 'MoMo' && window.electronAPI?.closeMoMoPaymentWindow) {
       window.electronAPI.closeMoMoPaymentWindow();
     }
+    if (paymentMethod === 'ZaloPay' && value !== 'ZaloPay') {
+      cleanupZaloPayPayment();
+    }
     setPaymentMethod(value);
     setPendingVNPayTxn(null);
     setPendingMoMoTxn(null);
+    setPendingZaloPayTxn(null);
 
     if (value === 'VNPAY') {
       setCurrency('VND');
@@ -182,6 +256,12 @@ const PaymentModal = ({
     }
 
     if (value === 'MoMo') {
+      setCurrency('VND');
+      setCustomerPaid(finalTotal);
+      return;
+    }
+
+    if (value === 'ZaloPay') {
       setCurrency('VND');
       setCustomerPaid(finalTotal);
       return;
@@ -203,10 +283,6 @@ const PaymentModal = ({
     } else {
       setCustomerPaid(0);
     }
-  };
-
-  const handleCustomerPaidChange = (value) => {
-    setCustomerPaid(value || 0);
   };
 
   const handleDiscountChange = (value) => {
@@ -240,6 +316,10 @@ const PaymentModal = ({
     }
     if (paymentMethod === 'MoMo') {
       await initiateMoMoPayment();
+      return;
+    }
+    if (paymentMethod === 'ZaloPay') {
+      await initiateZaloPayPayment();
       return;
     }
 
@@ -1000,6 +1080,173 @@ const PaymentModal = ({
     }
   };
 
+  const initiateZaloPayPayment = async () => {
+    try {
+      if (pendingZaloPayTxn) {
+        message.warning('Dang cho ket qua thanh toan ZaloPay hien tai. Vui long hoan tat giao dich truoc khi tao moi.');
+        return;
+      }
+
+      if (!invoice?.maHd) {
+        message.error('Khong co ma hoa don de thanh toan ZaloPay');
+        return;
+      }
+
+      setPaymentLoading(true);
+
+      const paymentRequest = await createZaloPayPayment({
+        invoiceCode: invoice.maHd,
+        amount: finalTotal,
+        orderInfo: `Thanh toan hoa don ${invoice.maHd}`,
+        embedData: JSON.stringify({
+          invoiceCode: invoice.maHd,
+          amount: finalTotal,
+          source: 'PMBH_POS',
+        }),
+      });
+
+      const paymentUrl = paymentRequest.orderUrl;
+
+      if (!paymentUrl) {
+        message.error('Khong tim thay duong dan thanh toan ZaloPay.');
+        return;
+      }
+
+      setPendingZaloPayTxn({
+        appTransId: paymentRequest.appTransId,
+        zpTransToken: paymentRequest.zpTransToken,
+        amount: finalTotal,
+      });
+
+      logZaloPayTransaction({
+        action: 'CREATE_PAYMENT',
+        invoiceCode: invoice.maHd,
+        payload: paymentRequest.payload,
+        response: paymentRequest.response,
+      });
+
+      let opened = false;
+
+      if (window.electronAPI?.openZaloPayPaymentWindow) {
+        const response = await window.electronAPI.openZaloPayPaymentWindow(
+          paymentUrl,
+          zalopayConfig.redirectUrl
+        );
+
+        if (!response?.success) {
+          setPendingZaloPayTxn(null);
+          message.error(response?.error || 'Khong the mo cua so thanh toan ZaloPay.');
+          return;
+        }
+
+        opened = true;
+        message.info('Da mo cong thanh toan ZaloPay. Vui long hoan tat giao dich trong cua so moi.');
+      } else {
+        const popup = window.open(paymentUrl, '_blank');
+        zalopayPopupRef.current = popup;
+        opened = !!popup;
+        if (!opened) {
+          message.warning('Trinh duyet da chan cua so thanh toan ZaloPay. Vui long cho phep cua so bat len hoac mo lai lien ket.');
+        } else {
+          message.info('Da mo cong thanh toan ZaloPay. Vui long hoan tat giao dich trong cua so moi.');
+        }
+      }
+
+      if (!opened) {
+        setPendingZaloPayTxn(null);
+        return;
+      }
+
+      // Start polling ZaloPay order status in background so we can auto-complete the invoice
+      // Poll every 3s. Stop when success or terminal error.
+      if (zalopayPollRef.current) {
+        clearInterval(zalopayPollRef.current);
+        zalopayPollRef.current = null;
+      }
+
+      zalopayPollRef.current = setInterval(async () => {
+        try {
+          const appTransId = paymentRequest.appTransId;
+          const q = await queryZaloPayOrder(appTransId);
+          if (!q) return;
+
+          console.log('ZaloPay poll result:', q);
+
+          // If API indicates success: return_code = 1 and sub_return_code = 1
+          const returnCode = Number(q.data.return_code);
+          const subReturnCode = Number(q.data.sub_return_code);
+          console.log('ZaloPay codes - return_code:', returnCode, 'sub_return_code:', subReturnCode);
+
+          if (q.success && q.data && returnCode === 1 && subReturnCode === 1) {
+            console.log('ZaloPay payment successful, auto-completing invoice');
+
+            // Clear poll
+            clearInterval(zalopayPollRef.current);
+            zalopayPollRef.current = null;
+
+            cleanupZaloPayPayment();
+
+            setPendingZaloPayTxn(null);
+
+            // finalize invoice on backend
+            setPaymentLoading(true);
+            try {
+              const result = await thanhToanHoaDon(invoice.maHd);
+              if (result && (result.success !== false)) {
+                message.success('Thanh toán ZaloPay thành công!');
+                setTimeout(() => { handlePrintReceipt(); }, 500);
+
+                const paymentData = {
+                  maHd: invoice?.maHd,
+                  tongTien: orderTotal,
+                  discount: discountAmount,
+                  discountType,
+                  finalTotal,
+                  tienKhachDua: finalTotal,
+                  tienThua: 0,
+                  phuongThucThanhToan: 'ZaloPay',
+                  ghiChu: `Thanh toan ZaloPay - app_trans_id: ${paymentRequest.appTransId}`,
+                  ngayThanhToan: new Date().toISOString(),
+                  zalopayData: q.data,
+                };
+
+                await onConfirm(paymentData);
+              } else {
+                message.error('Thanh toán thất bại: ' + (result?.error || 'Lỗi không xác định'));
+              }
+            } catch (ex) {
+              console.error('Error finalizing invoice after ZaloPay success:', ex);
+              message.error('Lỗi khi xử lý hoá đơn sau ZaloPay');
+            } finally {
+              setPaymentLoading(false);
+            }
+          }
+
+          // If explicitly failed or user cancelled (negative sub_return_code except -101 which is refund)
+          else if (q.data && Number(q.data.sub_return_code) < 0 && Number(q.data.sub_return_code) !== -101) {
+            console.log('ZaloPay payment failed or cancelled:', q.data.sub_return_code);
+            clearInterval(zalopayPollRef.current);
+            zalopayPollRef.current = null;
+
+            cleanupZaloPayPayment();
+
+            setPendingZaloPayTxn(null);
+            message.warning('Giao dịch ZaloPay không thành công hoặc đã bị huỷ.');
+          }
+        } catch (err) {
+          // ignore transient errors
+          console.error('Error polling ZaloPay order:', err);
+        }
+      }, 3000); // Poll every 3 seconds
+    } catch (error) {
+      console.error('ZaloPay initialization error:', error);
+      message.error(error?.message ? `Khong the khoi tao thanh toan ZaloPay: ${error.message}` : 'Co loi khi khoi tao thanh toan ZaloPay');
+      setPendingZaloPayTxn(null);
+    } finally {
+      setPaymentLoading(false);
+    }
+  };
+
   const handleMoMoSuccess = async (paymentResult, verificationResult) => {
     try {
       setPaymentLoading(true);
@@ -1254,7 +1501,7 @@ const PaymentModal = ({
   /**
    * Xử lý thanh toán thành công từ VNPay
    */
-  const handleVNPaySuccess = async (paymentResult) => {
+  const handleVNPaySuccess = React.useCallback(async (paymentResult) => {
     console.log('VNPay payment result:', paymentResult);
     try {
       setPaymentLoading(true);
@@ -1309,7 +1556,7 @@ const PaymentModal = ({
     } finally {
       setPaymentLoading(false);
     }
-  };
+  }, [setPaymentLoading, setPendingVNPayTxn, invoice?.maHd, thanhToanHoaDon, handlePrintReceipt, orderTotal, discountAmount, discountType, finalTotal, onConfirm]);
 
   const processVNPayPayload = React.useCallback(
     (rawPayload = {}) => {
@@ -1348,6 +1595,97 @@ const PaymentModal = ({
       handleVNPaySuccess(normalizedPayload);
     },
     [handleVNPaySuccess, pendingVNPayTxn]
+  );
+
+  const processZaloPayPayload = React.useCallback(
+    (rawPayload = {}) => {
+      if (!pendingZaloPayTxn) {
+        return;
+      }
+
+      const payload = rawPayload.payload || rawPayload;
+
+      if (
+        pendingZaloPayTxn.appTransId &&
+        payload.appTransId &&
+        payload.appTransId !== pendingZaloPayTxn.appTransId
+      ) {
+        console.warn('AppTransId mismatch:', payload.appTransId, 'vs', pendingZaloPayTxn.appTransId);
+        return;
+      }
+
+      const normalizedPayload = {
+        ...payload,
+        return_code: payload.return_code || payload.returnCode || '',
+        return_message: payload.return_message || payload.returnMessage || '',
+        sub_return_code: payload.sub_return_code || payload.subReturnCode || '',
+        sub_return_message: payload.sub_return_message || payload.subReturnMessage || '',
+        zp_trans_token: payload.zp_trans_token || payload.zpTransToken || '',
+        app_trans_id: payload.app_trans_id || payload.appTransId || '',
+      };
+
+      cleanupZaloPayPayment();
+      setPendingZaloPayTxn(null);
+
+      // Handle ZaloPay success inline
+      const handleZaloPaySuccessInline = async (paymentResult) => {
+        console.log('ZaloPay payment result:', paymentResult);
+        try {
+          setPaymentLoading(true);
+
+          const normalizedReturnCode = paymentResult?.return_code || '1';
+
+          // Check if payment was successful (return_code = 1)
+          if (normalizedReturnCode !== '1') {
+            message.error(`Thanh toán ZaloPay không hợp lệ (mã ${normalizedReturnCode})`);
+            return;
+          }
+
+          const normalizedResult = {
+            ...paymentResult,
+            return_code: normalizedReturnCode,
+          };
+
+          // Call API to complete invoice payment
+          const result = await thanhToanHoaDon(invoice.maHd);
+
+          if (result && (result.success !== false)) {
+            message.success('Thanh toán ZaloPay thành công!');
+
+            // Print receipt
+            setTimeout(() => {
+              handlePrintReceipt();
+            }, 500);
+
+            // Call callback
+            const paymentData = {
+              maHd: invoice?.maHd,
+              tongTien: orderTotal,
+              discount: discountAmount,
+              discountType,
+              finalTotal,
+              tienKhachDua: finalTotal,
+              tienThua: 0,
+              phuongThucThanhToan: 'ZaloPay',
+              ghiChu: `Thanh toan ZaloPay - AppTransId: ${normalizedResult.app_trans_id}`,
+              ngayThanhToan: new Date().toISOString(),
+              zalopayData: normalizedResult,
+            };
+
+            await onConfirm(paymentData);
+          } else {
+            message.error('Thanh toán thất bại: ' + (result?.error || 'Lỗi không xác định'));
+          }
+        } catch (error) {
+          message.error('Lỗi thanh toán ZaloPay: ' + (error.message || 'Lỗi không xác định'));
+        } finally {
+          setPaymentLoading(false);
+        }
+      };
+
+      handleZaloPaySuccessInline(normalizedPayload);
+    },
+    [pendingZaloPayTxn, setPaymentLoading, setPendingZaloPayTxn, invoice?.maHd, thanhToanHoaDon, handlePrintReceipt, orderTotal, discountAmount, discountType, finalTotal, onConfirm, cleanupZaloPayPayment]
   );
 
   useEffect(() => {
@@ -1391,6 +1729,46 @@ const PaymentModal = ({
   }, [processVNPayPayload]);
 
   useEffect(() => {
+    if (typeof window === 'undefined') {
+      return undefined;
+    }
+
+    const handleZaloPayMessage = (event) => {
+      if (!event || !event.data) {
+        return;
+      }
+
+      const { type, payload } = event.data;
+      if (type !== 'ZALOPAY_PAYMENT_RESULT') {
+        return;
+      }
+
+      processZaloPayPayload(payload || event.data.payload || {});
+    };
+
+    window.addEventListener('message', handleZaloPayMessage);
+    return () => {
+      window.removeEventListener('message', handleZaloPayMessage);
+    };
+  }, [processZaloPayPayload]);
+
+  useEffect(() => {
+    if (!window.electronAPI?.onZaloPayPaymentResult) {
+      return undefined;
+    }
+
+    const removeListener = window.electronAPI.onZaloPayPaymentResult((payload) => {
+      processZaloPayPayload(payload);
+    });
+
+    return () => {
+      if (typeof removeListener === 'function') {
+        removeListener();
+      }
+    };
+  }, [processZaloPayPayload]);
+
+  useEffect(() => {
     if (!pendingVNPayTxn) {
       return;
     }
@@ -1407,12 +1785,30 @@ const PaymentModal = ({
     }
   }, [pendingVNPayTxn]);
 
+  useEffect(() => {
+    if (!pendingZaloPayTxn) {
+      return;
+    }
+
+    if (window.electronAPI?.onceZaloPayPaymentClosed) {
+      window.electronAPI.onceZaloPayPaymentClosed(() => {
+        cleanupZaloPayPayment();
+        setPendingZaloPayTxn((prev) => {
+          if (prev) {
+            message.warning('Cửa sổ thanh toán ZaloPay đã đóng trước khi hoàn tất.');
+          }
+          return null;
+        });
+      });
+    }
+  }, [pendingZaloPayTxn, cleanupZaloPayPayment]);
+
   const customerPaidInVND = convertToVND(customerPaid, currency);
   const finalTotalInCurrency = convertFromVND(finalTotal, currency);
   const changeInVND = Math.max(0, customerPaidInVND - finalTotal);
   const remainingMixedPayment = finalTotal - partialPaidAmount;
   const enoughPayment =
-    paymentMethod === 'VNPAY' || paymentMethod === 'MoMo'
+    paymentMethod === 'VNPAY' || paymentMethod === 'MoMo' || paymentMethod === 'ZaloPay'
       ? true
       : isMixedPaymentMode
         ? partialPaidAmount >= finalTotal
@@ -1842,3 +2238,5 @@ const PaymentModal = ({
 };
 
 export default PaymentModal;
+
+

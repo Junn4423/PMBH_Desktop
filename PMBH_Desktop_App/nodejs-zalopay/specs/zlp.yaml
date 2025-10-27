@@ -1,0 +1,1863 @@
+openapi: 3.0.1
+info:
+  title: Swagger ZaloPay OpenApi
+  description: >-
+    ZaloPay OpenApi interface for merchant onboarding, more information can be
+    found at [https://docs.zalopay.vn](https://docs.zalopay.vn)
+  termsOfService: http://swagger.io/terms/
+  contact:
+    email: developer@zalopay.vn
+  license:
+    name: Apache 2.0
+    url: http://www.apache.org/licenses/LICENSE-2.0.html
+  version: 1.0.0
+externalDocs:
+  description: Find out more about ZaloPay
+  url: https://docs.zalopay.vn
+servers:
+  - url: https://sb-openapi.zalopay.vn
+    description: Sandbox server (uses test data)
+  - url: https://openapi.zalopay.vn
+    description: Production server (uses live data)
+tags:
+  - name: order
+    description: Payment Orders
+    x-displayName: Order
+  - name: refund
+    description: Refund a transaction
+    x-displayName: Refund
+  - name: tokenization
+    description: Tokenization
+    x-displayName: Tokenization
+  - name: disbursement
+    description: Disbursement
+    x-displayName: Disbursement
+  - name: gateway
+    description: Payment Gateway
+    x-displayName: Payment Gateway
+  - name: zod
+    description: ZaloPay On Delivery
+    x-displayName: ZOD
+paths:
+  /v2/create:
+    post:
+      tags:
+        - order
+      summary: Create a new order
+      operationId: OrderCreate
+      requestBody:
+        description: Order request
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/OrderCreateRequest"
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: "#/components/schemas/OrderCreateRequest"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OrderCreateResponse"
+          description: OK
+  /v2/query:
+    post:
+      tags:
+        - order
+      summary: Query status of a order
+      operationId: OrderQuery
+      requestBody:
+        description: Order query
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/OrderQueryRequest"
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: "#/components/schemas/OrderQueryRequest"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OrderQueryResponse"
+          description: OK
+  /v2/refund:
+    post:
+      tags:
+        - refund
+      summary: Refund for a transaction
+      operationId: OrderRefund
+      requestBody:
+        description: Refund
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RefundCreateRequest"
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: "#/components/schemas/RefundCreateRequest"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RefundCreateResponse"
+          description: OK
+  /v2/query_refund:
+    post:
+      tags:
+        - refund
+      summary: Query for refund status
+      operationId: OrderQueryRefund
+      requestBody:
+        description: Query refund
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RefundQueryRequest"
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: "#/components/schemas/RefundQueryRequest"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RefundQueryResponse"
+          description: OK
+
+  /v2/agreement/bind:
+    post:
+      tags:
+        - tokenization
+      summary: Create new binding for the agreement
+      operationId: AgreementBind
+      requestBody:
+        description: Agreement Binding
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AgreementBindRequest"
+          application/xml:
+            schema:
+              $ref: "#/components/schemas/AgreementBindRequest"
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: "#/components/schemas/AgreementBindRequest"
+        required: true
+      responses:
+        200:
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AgreementBindResponse"
+          description: OK
+        405:
+          description: Invalid input
+          content: {}
+  /v2/agreement/unbind:
+    post:
+      tags:
+        - tokenization
+      summary: Unbind an agreement
+      operationId: AgreementUnbind
+      requestBody:
+        description: Agreement Unbinding
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AgreementUnbindRequest"
+          application/xml:
+            schema:
+              $ref: "#/components/schemas/AgreementUnbindRequest"
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: "#/components/schemas/AgreementUnbindRequest"
+        required: true
+      responses:
+        200:
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AgreementUnbindResponse"
+          description: OK
+        405:
+          description: Invalid input
+          content: {}
+  /v2/agreement/query:
+    post:
+      tags:
+        - tokenization
+      summary: Query for the payment token of a binding
+      operationId: AgreementQuery
+      requestBody:
+        description: Agreement Query
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AgreementQueryRequest"
+          application/xml:
+            schema:
+              $ref: "#/components/schemas/AgreementQueryRequest"
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: "#/components/schemas/AgreementQueryRequest"
+        required: true
+      responses:
+        200:
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AgreementQueryResponse"
+          description: OK
+        405:
+          description: Invalid input
+          content: {}
+  /v2/agreement/balance:
+    post:
+      tags:
+        - tokenization
+      summary: Query the balance of a specific user before paying
+      operationId: AgreementBalance
+      requestBody:
+        description: Agreement Balance
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AgreementBalanceRequest"
+          application/xml:
+            schema:
+              $ref: "#/components/schemas/AgreementBalanceRequest"
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: "#/components/schemas/AgreementBalanceRequest"
+        required: true
+      responses:
+        200:
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AgreementBalanceResponse"
+          description: OK
+        405:
+          description: Invalid input
+          content: {}
+  /v2/agreement/pay:
+    post:
+      tags:
+        - tokenization
+      summary: Request for agreement pay
+      operationId: AgreementPay
+      requestBody:
+        description: Agreement Pay
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AgreementPayRequest"
+          application/xml:
+            schema:
+              $ref: "#/components/schemas/AgreementPayRequest"
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: "#/components/schemas/AgreementPayRequest"
+        required: true
+      responses:
+        200:
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AgreementPayResponse"
+          description: OK
+        405:
+          description: Invalid input
+          content: {}
+  /v2/agreement/query_user:
+    post:
+      tags:
+        - tokenization
+      summary: Query the basic user info
+      operationId: AgreementQueryUser
+      requestBody:
+        description: Agreement Query User Info
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AgreementQueryUserRequest"
+          application/xml:
+            schema:
+              $ref: "#/components/schemas/AgreementQueryUserRequest"
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: "#/components/schemas/AgreementQueryUserRequest"
+        required: true
+      responses:
+        200:
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AgreementQueryUserResponse"
+          description: OK
+        405:
+          description: Invalid input
+          content: {}
+
+  /v2/disbursement/user:
+    post:
+      tags:
+        - disbursement
+      summary: Query user account info
+      operationId: DisbursementQueryUser
+      requestBody:
+        description: Query user ZaloPay account info
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DisbursementQueryUserRequest"
+          application/xml:
+            schema:
+              $ref: "#/components/schemas/DisbursementQueryUserRequest"
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: "#/components/schemas/DisbursementQueryUserRequest"
+        required: true
+      responses:
+        200:
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DisbursementQueryUserResponse"
+          description: OK
+  /v2/disbursement/topup:
+    post:
+      tags:
+        - disbursement
+      summary: Topup for a user
+      operationId: DisbursementTopup
+      requestBody:
+        description: Topup for a user
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DisbursementTopupRequest"
+          application/xml:
+            schema:
+              $ref: "#/components/schemas/DisbursementTopupRequest"
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: "#/components/schemas/DisbursementTopupRequest"
+        required: true
+      responses:
+        200:
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DisbursementTopupResponse"
+          description: OK
+  /v2/disbursement/txn:
+    post:
+      tags:
+        - disbursement
+      summary: Query order status
+      operationId: DisbursementQueryOrder
+      requestBody:
+        description: Query order status
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DisbursementQueryOrderRequest"
+          application/xml:
+            schema:
+              $ref: "#/components/schemas/DisbursementQueryOrderRequest"
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: "#/components/schemas/DisbursementQueryOrderRequest"
+        required: true
+      responses:
+        200:
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DisbursementQueryOrderResponse"
+          description: OK
+  /v2/disbursement/balance:
+    post:
+      tags:
+        - disbursement
+      summary: Query merchant's account balance
+      operationId: DisbursementQueryMerchantBalance
+      requestBody:
+        description: Query merchant's account balance
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DisbursementQueryMerchantBalanceRequest"
+          application/xml:
+            schema:
+              $ref: "#/components/schemas/DisbursementQueryMerchantBalanceRequest"
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: "#/components/schemas/DisbursementQueryMerchantBalanceRequest"
+        required: true
+      responses:
+        200:
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DisbursementQueryMerchantBalanceResponse"
+          description: OK
+
+  /v2/zod:
+    servers:
+      - url: https://sbapimep.zalopay.vn
+        description: Sandbox server (uses test data)
+      - url: https://apimep.zalopay.vn
+        description: Production server (uses live data)
+    post:
+      tags:
+        - zod
+      servers:
+        - url: https://sbapimep.zalopay.vn
+      summary: Create ZOD invoice
+      operationId: ZODCreateInvoice
+      requestBody:
+        description: Create ZOD invoice request
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ZodCreateInvoiceRequest"
+          application/xml:
+            schema:
+              $ref: "#/components/schemas/ZodCreateInvoiceRequest"
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: "#/components/schemas/ZodCreateInvoiceRequest"
+        required: true
+      responses:
+        200:
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ZodCreateInvoiceResponse"
+          description: OK
+  /v2/zod/invoice:
+    servers:
+      - url: https://sbapimep.zalopay.vn
+        description: Sandbox server (uses test data)
+      - url: https://apimep.zalopay.vn
+        description: Production server (uses live data)
+    get:
+      tags:
+        - zod
+      servers:
+        - url: https://sbapimep.zalopay.vn
+      summary: Query ZOD invoice
+      operationId: QueryZODInvoice
+      parameters:
+        - in: query
+          name: appId
+          schema:
+            type: string
+          description: "AppID provided by ZaloPay"
+          required: true
+        - in: query
+          name: mcRefId
+          schema:
+            type: string
+          description: "Merchant's reference ID of the order"
+          required: true
+        - in: query
+          name: mac
+          schema:
+            type: string
+          description: >-
+            It is signature of request. It’s calculated by following input: hmacInput = (app_id + “|” + mc_ref_id) and use sha256 with app’s hmac key
+          required: true
+      responses:
+        200:
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ZodQueryInvoiceResponse"
+          description: OK
+  /v2/zod/status:
+    servers:
+      - url: https://sbapimep.zalopay.vn
+        description: Sandbox server (uses test data)
+      - url: https://apimep.zalopay.vn
+        description: Production server (uses live data)
+    get:
+      tags:
+        - zod
+      servers:
+        - url: https://sbapimep.zalopay.vn
+      summary: Query ZOD order status
+      operationId: QueryZODOrderStatus
+      parameters:
+        - in: query
+          name: appId
+          schema:
+            type: string
+          description: "AppID provided by ZaloPay"
+          required: true
+        - in: query
+          name: mcRefId
+          schema:
+            type: string
+          description: "Merchant's reference ID of the order"
+          required: true
+        - in: query
+          name: mac
+          schema:
+            type: string
+          description: >-
+            It is signature of request. It’s calculated by following input: hmacInput = (appId + “|” + mcRefId) and use sha256 with app’s hmac key
+          required: true
+      responses:
+        200:
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ZodQueryStatusResponse"
+          description: OK
+  /api/getlistmerchantbanks:
+    servers:
+      - url: https://sbgateway.zalopay.vn
+        description: Sandbox server (uses test data)
+      - url: https://gateway.zalopay.vn
+        description: Production server (uses live data)
+    post:
+      tags:
+        - gateway
+      summary: List supported banks
+      description: Returns a list of supported banks.
+      requestBody:
+        description: List supported banks request
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: "#/components/schemas/GatewayGetListBanksRequest"
+        required: true
+      responses:
+        200:
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GatewayGetListBanksResponse"
+          description: OK
+components:
+  schemas:
+    OrderQueryRequest:
+      type: object
+      properties:
+        app_id:
+          type: integer
+          description: >-
+            The unique ID of the application will be provided after the merchant
+            registered successfully with ZaloPay.
+        app_trans_id:
+          type: string
+          description: The transaction ID that is used for querying.
+        mac:
+          type: string
+          description: >-
+            It is signature of order. It's calculated by following input:
+            hmacinput = appid + `|` + apptransid + `|` + key1 and use sha256 with app's hmac
+            key as sign key
+      required:
+        - app_id
+        - app_trans_id
+        - mac
+      xml:
+        name: OrderQueryRequest
+    OrderQueryResponse:
+      type: object
+      properties:
+        return_code:
+          type: integer
+          description: |-
+            Return codes:
+
+            1 - SUCCESS
+
+            2 - FAIL
+
+            3 - PROCESSING
+
+            -500 - SYSTEM_ERROR
+
+            -429 - LIMIT_REQUEST_REACH
+
+            406 - ILLEGAL_STATUS
+
+            -405 - ILLEGAL_CLIENT_REQUEST
+
+            -403 - ILLEGAL_SIGNATURE_REQUEST
+
+            -402 - ILLEGAL_APP_REQUEST
+
+            -401 - ILLEGAL_DATA_REQUEST
+        return_message:
+          type: string
+        sub_return_code:
+          type: integer
+          description: >-
+            Possible codes:
+
+
+            1 - Giao dịch thành công
+
+
+            -32 - Hệ thống đang có lỗi, vui lòng quay lại sau.
+
+
+            -33 - Ứng dụng đang bảo trì, vui lòng quay lại sau.
+
+
+            -34 - Kênh thanh toán đang bảo trì, vui lòng chọn kênh khác.
+
+
+            -35 - Kênh thanh toán không hỗ trợ hoặc đang bảo trì, vui lòng chọn
+            kênh khác.
+
+
+            -43 - Ngân hàng đang bảo trì, vui lòng chọn ngân hàng khác.
+
+
+            -88 - Chức năng này đang bảo trì, vui lòng quay lại sau.
+
+
+            -101 - Hoàn tiền thành công. Chủ thẻ ATM, Thẻ VISA/Master/JCB sẽ
+            được hoàn tiền trong 3-5 ngày làm việc.
+
+
+            -135 - Hệ thống đang bảo trì, vui lòng quay lại sau.
+
+
+            -301 - Hệ thống đang có lỗi. Vui lòng thử lại sau.
+
+
+            -322 - Payment Code hết hạn, giao dịch thất bại, tài khoản chưa bị
+            trừ tiền. Vui lòng thực hiện lại.
+
+
+            -329 - User huỷ giao dịch thanh toán.
+        sub_return_message:
+          type: string
+        is_processing:
+          type: boolean
+        amount:
+          type: integer
+          format: int64
+        zp_trans_id:
+          type: integer
+          format: int64
+    RefundCreateRequest:
+      type: object
+      properties:
+        app_id:
+          type: integer
+          description: >-
+            The unique ID of the application will be provided after the merchant
+            registered successfully with ZaloPay.
+        m_refund_id:
+          type: string
+          description: >-
+            Refund ID will be generated by the application. Format:
+            yymmdd_appid_xxxxxxxxxx.
+        zp_trans_id:
+          type: string
+          description: ZaloPay transaction ID for refunding.
+        amount:
+          type: integer
+          format: int64
+          description: Amount of money for refunding.
+        timestamp:
+          type: integer
+          format: int64
+          description: The timestamp that refund order was created at in ms
+        description:
+          type: string
+          description: Reason for refunding.
+        mac:
+          type: string
+          description: >-
+            It is signature of order. It's calculated by following input:
+            hmacinput = appid + `|` + zptransid + `|` + amount + `|` +
+            description + `|` + timestamp and use sha256 with app's hmac key as
+            sign key
+      required:
+        - app_id
+        - m_refund_id
+        - zp_trans_id
+        - amount
+        - timestamp
+        - description
+        - mac
+      xml:
+        name: RefundCreateRequest
+    RefundCreateResponse:
+      type: object
+      properties:
+        return_code:
+          type: integer
+        return_message:
+          type: string
+        sub_return_code:
+          type: integer
+        sub_return_message:
+          type: string
+        refund_id:
+          type: integer
+          format: int64
+    RefundQueryRequest:
+      type: object
+      properties:
+        app_id:
+          type: integer
+          description: >-
+            The unique ID of the application will be provided after the merchant
+            registered successfully with ZaloPay.
+        m_refund_id:
+          type: string
+          description: Refund ID that is used for requesting refund.
+        timestamp:
+          type: integer
+          format: int64
+          description: Timestamp of request in ms.
+        mac:
+          type: string
+          description: >-
+            It is signature of order. It's calculated by following input:
+            hmacinput = appid + `|` + mrefundid + `|` + timestamp and use sha256
+            with app's hmac key as sign key
+      required:
+        - app_id
+        - m_refund_id
+        - timestamp
+        - mac
+      xml:
+        name: QueryRefundRequest
+    RefundQueryResponse:
+      type: object
+      properties:
+        return_code:
+          type: integer
+          description: |-
+            Return codes:
+
+            1 - SUCCESS
+
+            2 - FAIL
+
+            3 - PROCESSING
+
+            -500 - SYSTEM_ERROR
+
+            -429 - LIMIT_REQUEST_REACH
+
+            406 - ILLEGAL_STATUS
+
+            -405 - ILLEGAL_CLIENT_REQUEST
+
+            -403 - ILLEGAL_SIGNATURE_REQUEST
+
+            -402 - ILLEGAL_APP_REQUEST
+
+            -401 - ILLEGAL_DATA_REQUEST
+        return_message:
+          type: string
+        sub_return_code:
+          type: integer
+          description: >-
+            Possible codes:
+
+
+            1 - Giao dịch thành công
+
+
+            -32 - Hệ thống đang có lỗi, vui lòng quay lại sau.
+
+
+            -33 - Ứng dụng đang bảo trì, vui lòng quay lại sau.
+
+
+            -34 - Kênh thanh toán đang bảo trì, vui lòng chọn kênh khác.
+
+
+            -35 - Kênh thanh toán không hỗ trợ hoặc đang bảo trì, vui lòng chọn
+            kênh khác.
+
+
+            -43 - Ngân hàng đang bảo trì, vui lòng chọn ngân hàng khác.
+
+
+            -88 - Chức năng này đang bảo trì, vui lòng quay lại sau.
+
+
+            -101 - Hoàn tiền thành công. Chủ thẻ ATM, Thẻ VISA/Master/JCB sẽ
+            được hoàn tiền trong 3-5 ngày làm việc.
+
+
+            -135 - Hệ thống đang bảo trì, vui lòng quay lại sau.
+
+
+            -301 - Hệ thống đang có lỗi. Vui lòng thử lại sau.
+
+
+            -322 - Payment Code hết hạn, giao dịch thất bại, tài khoản chưa bị
+            trừ tiền. Vui lòng thực hiện lại.
+
+
+            -329 - User huỷ giao dịch thanh toán.
+        sub_return_message:
+          type: string
+    OrderCreateRequest:
+      type: object
+      properties:
+        app_id:
+          type: integer
+          format: int32
+          description: >-
+            The unique ID of the application will be provided after the merchant
+            registered successfully with ZaloPay.
+        app_user:
+          type: string
+          description: The merchant ID.
+        app_trans_id:
+          type: string
+          description: >-
+            Unique transaction ID of application, format: yyMMddxxxxxxxxx. Max
+            length is 40. For example: 180208181007242
+        app_time:
+          type: integer
+          format: int64
+          description: >-
+            The timestamp that order was created at in ms. The different limit
+            is 15 mitnutes.
+        amount:
+          type: integer
+          format: int64
+          description: Amount of money will be charged.
+        title:
+          type: string
+          description: Optional title of order.
+        description:
+          type: string
+          description: >-
+            Users will see this text when they are in the confirm payment
+            screen.
+        callback_url:
+          type: string
+          description: >-
+            ZaloPay will use this URL to notify when the payment success.
+            If not provided, the default app callback URL will be used.
+        redirect_url:
+          type: string
+          description: >-
+            This URL is used for transactions on the payment gateway when a
+            transaction completed; the user will be redirected to this URL. It's
+            the responsibility of merchants to provide the correct link.
+        device_info:
+          type: string
+          description: JSON string describes the device specification.
+        item:
+          type: string
+          description: JSON string describes order items.
+        embed_data:
+          type: string
+          description: JSON string include special information of order.
+        mac:
+          type: string
+          description: >-
+            It is signature of order. It's calculated by following input:
+            hmac_input = app_id + `|` + app_trans_id + `|` + app_user + `|` + amount
+            + `|` + app_time + `|` + embe_data + `|` + item and use SHA256 with
+            app's hmac key as sign key.
+        product_code:
+          type: string
+          enum:
+            - AGREEMENT
+          description: If the order is for Agreement, this field must be AGREEMENT.
+        bank_code:
+          type: string
+        phone:
+          type: string
+          description: User phone
+        email:
+          type: string
+          description: User email
+        address:
+          type: string
+          description: User address
+      required:
+        - app_id
+        - app_user
+        - app_trans_id
+        - app_time
+        - amount
+        - description
+        - item
+        - embed_data
+        - mac
+      xml:
+        name: OrderCreateRequest
+    OrderCreateResponse:
+      type: object
+      properties:
+        return_code:
+          type: integer
+          description: |-
+            Return codes:
+
+            1 - SUCCESS
+
+            2 - FAIL
+        return_message:
+          type: string
+        sub_return_code:
+          type: integer
+          description: |-
+            The detailed reason explains why the operation has failed. Possible codes are:
+
+            -33 - APP_MAINTENANCE - The app is in maintenance
+
+            -68 - ALREADY_EXISTS - The order is already exists
+
+            -401 - INVALID_ARGUMENT - The request is invalid
+
+            -402 - UNAUTHENTICATED - The app is unauthenticated
+
+            -500 - SYSTEM_ERROR - The system is error
+        sub_return_message:
+          type: string
+        zp_trans_token:
+          type: string
+        order_url:
+          type: string
+
+    ### AGREEMENT PAY ###
+    AgreementBindRequest:
+      type: object
+      properties:
+        app_id:
+          type: integer
+          format: int64
+          description: "The unique ID of the application will be provided after the merchant registered successfully with ZaloPay."
+        app_trans_id:
+          type: string
+          description: "Unique transaction ID of application, format: yyMMddxxxxxxxxx. Max length is 40. For example: 180208181007242"
+        req_date:
+          type: integer
+          format: int64
+          description: "The timestamp that order was created at in ms. The different limit is 15 minutes."
+        max_amount:
+          type: integer
+          format: int64
+          description: "Maximum permissible amount. The default is real balance."
+        redirect_url:
+          type: string
+          description: >-
+            "URL of merchant binding page(web), be used
+            in the desktop binding scenario. After the binding
+            process finished, ZaloPay auto-debit binding page will
+            redirect to merchant binding page via redirect URL with
+            the binding result."
+        redirect_deep_link:
+          type: string
+          description: >-
+            "The deep-link of merchant app, be used in the mobile binding
+             scenario. After the binding process finished, ZaloPay app
+             will open the merchant app via redirect deep link with the
+             binding result."
+        binding_data:
+          type: string
+          description: "JSON string contain binding information, describe which information user will agree to allow merchant to do, using confirmation binding."
+        binding_type:
+          type: string
+          enum:
+            - WALLET
+          description: "This field specify which type of binding, currently only WALLET is allowed. Default is WALLET if not provided"
+        callback_url:
+          type: string
+          description: "TBD"
+        identifier:
+          type: string
+          description: "User's identifier on merchant system, it can be merchant user's id, phone number, email..."
+        mac:
+          type: string
+          description: "It is signature of request. It's calculated by following input: hmacinput = app_id + `|` + apps_trans_id + `|` + binding_data + `|` + binding_type + `|` + identifier + `|` + max_amount + `|` + req_date; and use sha256 with app's hmac key as sign key."
+      required:
+        - app_id
+        - app_trans_id
+        - req_date
+        - identifier
+        - mac
+      xml:
+        name: AgreementBindRequest
+    AgreementBindResponse:
+      type: object
+      properties:
+        return_code:
+          type: integer
+          description: "Return codes:\n\n1 - SUCCESS\n\n2 - FAIL\n\n3 - PROCESSING\n\n-500 - SYSTEM_ERROR\n\n-429 - LIMIT_REQUEST_REACH\n\n406 - ILLEGAL_STATUS\n\n-405 - ILLEGAL_CLIENT_REQUEST\n\n-403 - ILLEGAL_SIGNATURE_REQUEST\n\n-402 - ILLEGAL_APP_REQUEST\n\n-401 - ILLEGAL_DATA_REQUEST"
+        return_message:
+          type: string
+        sub_return_code:
+          type: integer
+          description: ""
+        sub_return_message:
+          type: string
+        binding_id:
+          type: string
+        binding_url:
+          type: string
+    AgreementUnbindRequest:
+      type: object
+      properties:
+        app_id:
+          type: integer
+          format: int64
+          description: "The unique ID of the application will be provided after the merchant registered successfully with ZaloPay."
+        identifier:
+          type: string
+          description: "The user's identifier on the merchant system, it can be a merchant user's id, phone number, email..."
+        binding_id:
+          type: string
+          description: "The ID of binding that the user wants to unbind."
+        req_date:
+          type: integer
+          format: int64
+          description: "The timestamp that order was created at in ms. The different limit is 15 minutes."
+        mac:
+          type: string
+          description: "It is signature of request. It's calculated by following input: hmacinput = app_id + `|` + identifier + `|` + binding_id + `|` + req_date; and use sha256 with app's hmac key as sign key."
+      required:
+        - app_id
+        - identifier
+        - binding_id
+        - req_date
+        - mac
+      xml:
+        name: AgreementUnbindRequest
+    AgreementUnbindResponse:
+      type: object
+      properties:
+        return_code:
+          type: integer
+          description: "Return codes: 1: Success, 2: Failed"
+        return_message:
+          type: string
+        sub_return_code:
+          type: integer
+          description: ""
+        sub_return_message:
+          type: string
+    AgreementQueryRequest:
+      type: object
+      properties:
+        app_id:
+          type: integer
+          format: int64
+          description: "The unique ID of the application will be provided after the merchant registered successfully with ZaloPay."
+        app_trans_id:
+          type: string
+          description: "Unique transaction ID of application, format: yyMMddxxxxxxxxx. Max length is 40. For example: 180208181007242"
+        req_date:
+          type: integer
+          format: int64
+          description: "Current timestamp in milliseconds."
+        mac:
+          type: string
+          description: "It is signature of request. It's calculated by following input: hmacinput = app_id + `|` + apps_trans_id + `|` + req_date; and use sha256 with app's hmac key as sign key."
+      required:
+        - app_id
+        - app_trans_id
+        - req_date
+        - mac
+      xml:
+        name: AgreementQueryRequest
+    AgreementQueryResponse:
+      type: object
+      properties:
+        return_code:
+          type: integer
+          description: "Return codes:\n\n1 - SUCCESS\n\n2 - FAILED\n\n3 - PENDING"
+        return_message:
+          type: string
+        sub_return_code:
+          type: integer
+          description: ""
+        sub_return_message:
+          type: string
+        data:
+          type: object
+          properties:
+            app_id:
+              type: integer
+              format: int64
+              description: "The app id of the merchant."
+            app_trans_id:
+              type: string
+              description: "The merchant's unique id for the binding."
+            binding_id:
+              type: string
+              description: "The id of binding has been confirmed in the ZaloPay system."
+            pay_token:
+              type: string
+              description: "The public token is used when doing auto-debit."
+            server_time:
+              type: integer
+              format: int64
+              description: "Server timestamp in seconds."
+            merchant_user_id:
+              type: string
+              description: "The identifier field in bind request."
+            status:
+              type: integer
+              description: "1: Confirmed, 3: Cancelled, 4: Disabled"
+            msg_type:
+              type: integer
+              description: >-
+                Type of message:
+                  1: The user confirms an agreement
+                  2: The user updates the agreement
+            zp_user_id:
+              type: string
+              description: "The identifier of ZaloPay user per merchant app_id."
+            masked_user_phone:
+              type: string
+              description: 'Masked user phone (Ex: masked_user_phone: "****6938")'
+    AgreementBalanceRequest:
+      type: object
+      properties:
+        app_id:
+          type: integer
+          format: int64
+          description: "The unique ID of the application will be provided after the merchant registered successfully with ZaloPay."
+        identifier:
+          type: string
+          description: "The user's identifier on the merchant system,it can be a merchant user's id, phone, number, email..."
+        pay_token:
+          type: string
+          description: "The public token of the payer."
+        req_date:
+          type: integer
+          format: int64
+          description: "Current timestamp in milliseconds."
+        amount:
+          type: integer
+          format: int64
+          description: "Payment amount."
+        mac:
+          type: string
+          description: "It is signature of request. It's calculated by following input: hmacinput = app_id + `|` + pay_token + `|` + identifier + `|` + amount + `|` + req_date; and use sha256 with app's hmac key as sign key."
+      required:
+        - app_id
+        - identifier
+        - pay_token
+        - req_date
+        - amount
+        - mac
+      xml:
+        name: AgreementBalanceRequest
+    AgreementBalanceResponse:
+      type: object
+      properties:
+        return_code:
+          type: integer
+          description: "Return codes: 1: Success, otherwise fail"
+        return_message:
+          type: string
+        sub_return_code:
+          type: integer
+          description: ""
+        sub_return_message:
+          type: string
+        data:
+          type: array
+          items:
+            type: object
+            properties:
+              channel:
+                type: integer
+                format: int64
+                description: "Payment channel."
+              payable:
+                type: boolean
+                description: "If the user can pay on this channel."
+              bank_code:
+                type: string
+                description: "Bank code of the channel."
+        discount_amount:
+          type: integer
+          description: >-
+            "The discount amount of the best user's voucher for merchant's order
+            If discount_amount == 0 that means user has no voucher can apply for current order."
+    AgreementQueryUserRequest:
+      type: object
+      properties:
+        app_id:
+          type: integer
+          format: int64
+          description: "The unique ID of the application will be provided after the merchant registered successfully with ZaloPay."
+        access_token:
+          type: string
+          description: "The access token of the user after binding success.(This is pay_token value)"
+        req_date:
+          type: integer
+          format: int64
+          description: "Current timestamp in milliseconds."
+        mac:
+          type: string
+          description: "It is signature of request. It's calculated by following input: hmacinput = app_id + `|` + access_token + `|` + req_date; and use sha256 with app's hmac key as sign key."
+      required:
+        - app_id
+        - identifier
+        - pay_token
+        - req_date
+        - amount
+        - mac
+      xml:
+        name: AgreementQueryUserRequest
+    AgreementQueryUserResponse:
+      type: object
+      properties:
+        return_code:
+          type: integer
+          description: "Return codes: 1: Success, 2: Failed, 3: Processing"
+        return_message:
+          type: string
+        sub_return_code:
+          type: integer
+          description: ""
+        sub_return_message:
+          type: string
+        phone:
+          type: string
+          description: >-
+            "Masked phone of user. For example: ****1234."
+    AgreementPayRequest:
+      type: object
+      properties:
+        app_id:
+          type: integer
+          format: int64
+          description: "The unique ID of the application will be provided after the merchant registered successfully with ZaloPay."
+        identifier:
+          type: string
+          description: "user's identifier on the merchant system, it can be a merchant user's id, phone number, email..."
+        zp_trans_token:
+          type: string
+          description: "The token is generated by API create_order."
+        pay_token:
+          type: string
+          description: "The public token of the payer."
+        req_date:
+          type: integer
+          format: int64
+          description: "Current timestamp in milliseconds."
+        mac:
+          type: string
+          description: "It is signature of request. It's calculated by following input: hmacinput = app_id + `|` + identifier + `|` + zp_trans_token + `|` + pay_token + `|` + req_date; and use sha256 with app's hmac key as sign key."
+      required:
+        - app_id
+        - identifier
+        - zp_trans_token
+        - pay_token
+        - req_date
+        - mac
+      xml:
+        name: AgreementPayRequest
+    AgreementPayResponse:
+      type: object
+      properties:
+        return_code:
+          type: integer
+          description: "1: Success, 2: Failed, 3: Processing"
+        return_message:
+          type: string
+          description: "Description of return code"
+        sub_return_code:
+          type: integer
+          description: "Detail error code"
+        sub_return_message:
+          type: string
+          description: "Detail error message"
+        app_trans_id:
+          type: string
+          description: "TXID of order transaction"
+        zp_trans_id:
+          type: integer
+          description: "The ZaloPay's transaction code"
+
+    ### DISBURSEMENT ###
+    DisbursementQueryUserRequest:
+      type: object
+      properties:
+        request_id:
+          type: string
+          description: "Client request identity, using for tracing request"
+        app_id:
+          type: integer
+          format: int64
+          description: "The unique ID of the partner will be provided after the partner registered successfully with ZaloPay"
+        phone:
+          type: string
+          description: "The user's phone"
+        time:
+          type: integer
+          format: int64
+          description: "Requests timestamp in ms"
+        mac:
+          type: string
+          description: >-
+            It is signature of order. It’s calculated by following input: hmacInput = (app_id + “|” + phone + “|” + time) and use sha256 with app’s hmac key
+      required:
+        - app_id
+        - phone
+        - time
+        - mac
+      xml:
+        name: DisbursementQueryUserRequest
+    DisbursementQueryUserResponse:
+      type: object
+      properties:
+        return_code:
+          type: integer
+          description: |-
+            1 - SUCCESS
+
+            2 - FAIL
+        return_message:
+          type: string
+          description: "Return code description"
+        sub_return_code:
+          type: integer
+          description: |-
+            -101 - User wallet account not exists
+
+            -401 - Request param illegal
+
+            -402 - Unauthorized
+
+            -500 - ZaloPay system error
+
+            -503 - The system is maintenance   
+
+            -1011 - User wallet account has been locked
+        sub_return_message:
+          type: string
+          description: "Sub return code description"
+        data:
+          type: object
+          properties:
+            reference_id:
+              type: string
+              description: "ZaloPay reference id"
+            m_u_id:
+              type: string
+              description: "User’s identity in ZaloPay system"
+            name:
+              type: string
+              description: "User’s full name"
+            phone:
+              type: string
+              description: "User's phone"
+            onboarding_url:
+              type: string
+              description: >-
+                "ZaloPay middle_page url to onboard new users"  
+                "Displayed when receiving return_code =2 && sub_return_code = -101"
+    DisbursementTopupRequest:
+      type: object
+      properties:
+        app_id:
+          type: integer
+          format: int64
+          description: "The unique ID of the partner will be provided after the partner registered successfully with ZaloPay"
+        payment_id:
+          type: string
+          description: "The unique ID of the partner will be provided after the partner registered successfully with ZaloPay"
+        partner_order_id:
+          type: string
+          description: "The unique id, generate in partner system. Using for reconcile"
+        m_u_id:
+          type: string
+          description: "The user's identity in the response of QueryUser API"
+        amount:
+          type: integer
+          format: int64
+          description: "The amount top-up to receiver’s wallet"
+        description:
+          type: string
+          description: "Extend information"
+        partner_embed_data:
+          type: string
+          description: |-
+            Partner's specify info, a json string. 
+
+            Example: “{\“store_id\”:\“s2\”,\“store_name\”:\ “name\”}
+        reference_id:
+          type: string
+          description: "Zalopay reference id response in query user response"
+        extra_info:
+          type: string
+          description: "Using for extend purpose, a json string"
+        time:
+          type: integer
+          format: int64
+          description: "Requests timestamp in ms"
+        sig:
+          type: string
+          description: >-
+            It’s calculated by following input: hmacinput = (app_id + “|” + payment_id + “|” + partner_order_id + “|” + m_u_id + “|” + amount + “|” + description + “|” + partner_embed_data + “|” + extra_info + “|” + time) 
+            and use sha256 with app’s hmac key 
+            then RSA with app’s private key ZaloPay provide
+      required:
+        - app_id
+        - payment_id
+        - partner_order_id
+        - m_u_id
+        - amount
+        - description
+        - partner_embed_data
+        - extra_info
+        - time
+        - sig
+      xml:
+        name: DisbursementTopupRequest
+    DisbursementTopupResponse:
+      type: object
+      properties:
+        return_code:
+          type: integer
+          description: |-
+            1 - SUCCESS
+
+            2 - FAIL
+        return_message:
+          type: string
+          description: "Return code description"
+        sub_return_code:
+          type: integer
+          description: |-
+            -68 - Duplicate resource
+
+            -101 - User wallet account not exists
+
+            -401 - Request param illegal
+
+            -402 - Unauthorized
+
+            -406 - User wallet reaches a fund-in limitation
+
+            -500 - ZaloPay system error
+
+            -503 - The system is maintenance
+        sub_return_message:
+          type: string
+          description: "Sub return code description"
+        data:
+          type: object
+          properties:
+            order_id:
+              type: string
+              description: "Merchant transaction code"
+            status:
+              type: integer
+              description: |-
+                1 – SUCCESS
+
+                2 – FAIL
+
+                3 – PROCESSING: Has to repeat query order status in a period of time until final status (configured interval and number of query)
+
+                4 – PENDING: Pending transactions, needs to be manually fixed by internal teams
+            m_u_id:
+              type: string
+              description: "User's identity"
+            phone:
+              type: string
+              description: "User’s phone"
+            amount:
+              type: integer
+              format: int64
+              description: "Transaction amount"
+            description:
+              type: string
+              description: "Transaction description"
+            partner_fee:
+              type: integer
+              format: int64
+              description: "Partner fee"
+            zlp_fee:
+              type: integer
+              format: int64
+              description: "ZaloPay fee"
+            extra_info:
+              type: string
+              description: "Order extra info, json string"
+            time:
+              type: integer
+              format: int64
+              description: "Transaction timestamp in millisecond"
+            upgrade_url:
+              type: string
+              description: |-
+                ZaloPay middle_page url to upgrade for users with fund-in limit
+
+                Displayed when receiving return_code =2 && sub_return_code = -406
+    DisbursementQueryOrderRequest:
+      type: object
+      properties:
+        app_id:
+          type: integer
+          format: int64
+          description: "The unique ID of the partner will be provided after the partner registered successfully with ZaloPay"
+        partner_order_id:
+          type: string
+          description: "The unique id in partner system"
+        time:
+          type: integer
+          format: int64
+          description: "Requests timestamp in ms"
+        mac:
+          type: string
+          description: "It is a signature of the order. It’s calculated by following input: hmacInput = (app_id+ “|” + partner_order_id+ “|” + time) and use sha256 with app’s hmac key"
+      required:
+        - app_id
+        - partner_order_id
+        - time
+        - mac
+      xml:
+        name: DisbursementQueryOrderRequest
+    DisbursementQueryOrderResponse:
+      type: object
+      properties:
+        return_code:
+          type: integer
+          description: |-
+            1 - SUCCESS
+
+            2 - FAIL
+        return_message:
+          type: string
+          description: "Return code description"
+        sub_return_code:
+          type: integer
+          description: |-
+            -101 - Order not found
+
+            -401 - Request param illegal
+
+            -402 - Unauthorized
+
+            -500 - ZaloPay system error
+
+            -503 - The system is maintenance
+        sub_return_message:
+          type: string
+          description: "Sub return code description"
+        data:
+          type: object
+          properties:
+            order_id:
+              type: string
+              description: "Merchant transaction code"
+            status:
+              type: integer
+              description: |-
+                1 – SUCCESS
+
+                2 – FAIL
+
+                3 – PROCESSING: Has to repeat query order status in a period of time until final status (configured interval and number of query)
+
+                4 – PENDING: Pending transactions, needs to be manually fixed by internal teams
+            m_u_id:
+              type: string
+              description: "User's identity"
+            phone:
+              type: string
+              description: "User’s phone"
+            amount:
+              type: integer
+              format: int64
+              description: "Transaction amount"
+            description:
+              type: string
+              description: "Transaction description"
+            partner_fee:
+              type: integer
+              format: int64
+              description: "Partner fee"
+            zlp_fee:
+              type: integer
+              format: int64
+              description: "ZaloPay fee"
+            extra_info:
+              type: string
+              description: "Order extra info, json string"
+            time:
+              type: integer
+              format: int64
+              description: "Transaction timestamp in millisecond"
+            zp_trans_id:
+              type: string
+              description: "ZaloPay's transaction code"
+            result_url:
+              type: string
+              description: "ZaloPay middle_page url for notify merchant about success disbursement result"
+    DisbursementQueryMerchantBalanceRequest:
+      type: object
+      properties:
+        request_id:
+          type: string
+          description: "Client request identity, using for tracing request"
+        app_id:
+          type: integer
+          format: int64
+          description: "The unique ID of the partner will be provided after the partner registered successfully with ZaloPay"
+        payment_id:
+          type: string
+          description: "The unique ID of the partner will be provided after the partner registered successfully with ZaloPay"
+        time:
+          type: integer
+          format: int64
+          description: "Requests timestamp in ms"
+        mac:
+          type: string
+          description: "It is a signature of the order. It’s calculated by following input: hmacInput = (app_id+ “|” + payment_id+ “|” + time) and use sha256 with app’s hmac key"
+      required:
+        - app_id
+        - payment_id
+        - time
+        - mac
+      xml:
+        name: DisbursementQueryMerchantBalanceRequest
+    DisbursementQueryMerchantBalanceResponse:
+      type: object
+      properties:
+        return_code:
+          type: integer
+          description: |-
+            1 - SUCCESS
+
+            2 - FAIL
+        return_message:
+          type: string
+          description: "Return code description"
+        sub_return_code:
+          type: integer
+          description: |-
+            -401 - Request param illegal
+
+            -402 - Unauthorized
+
+            -500 - ZaloPay system error
+
+            -503 - The system is maintenance
+        sub_return_message:
+          type: string
+          description: "Sub return code description"
+        data:
+          type: object
+          properties:
+            balance:
+              type: integer
+              format: int64
+              description: "Partner’s account balance"
+    ### PAYMENT GATEWAY ###
+    GatewayGetListBanksRequest:
+      type: object
+      properties:
+        appid:
+          type: string
+          description: "The unique ID of the partner will be provided after the partner registered successfully with ZaloPay"
+        reqtime:
+          type: string
+          description: "The timestamp that API was requested at in ms."
+        mac:
+          type: string
+          description: "It is signature of request. It's calculated by following input: hmacinput = appid + `|` + reqtime; and use sha256 with app's hmac key as sign key."
+      required:
+        - appid
+        - reqtime
+        - mac
+    GatewayGetListBanksResponse:
+      type: object
+      properties:
+        returncode:
+          type: integer
+          description: |-
+            1 - SUCCESS
+
+            2 - FAIL
+        returnmessage:
+          type: string
+          description: "Return code description"
+        banks:
+          type: object
+          description: |-
+            List of supported banks
+
+            Data type: 	Map(pmcid, Array(bankdto))
+
+            Note about pcmid:
+
+              36 - Visa/Master/JCB
+
+              37 - Bank account
+
+              38 - ZaloPay
+
+              39 - ATM
+              
+              41 - VISA/Master Debit
+          properties:
+            "36":
+              type: array
+              items:
+                $ref: "#/components/schemas/GatewayBankItem"
+            "37":
+              type: array
+              items:
+                $ref: "#/components/schemas/GatewayBankItem"
+            "38":
+              type: array
+              items:
+                $ref: "#/components/schemas/GatewayBankItem"
+            "39":
+              type: array
+              items:
+                $ref: "#/components/schemas/GatewayBankItem"
+            "41":
+              type: array
+              items:
+                $ref: "#/components/schemas/GatewayBankItem"
+    GatewayBankItem:
+      type: object
+      properties:
+        bankcode:
+          type: string
+          description: "Bank code"
+        name:
+          type: string
+          description: "Bank name"
+        displayorder:
+          type: integer
+          format: int64
+          description: "Display order"
+        pcmid:
+          type: integer
+          format: int64
+        minamount:
+          type: integer
+          format: int64
+          description: "Minimum payment amount"
+        maxamount:
+          type: integer
+          format: int64
+          description: "Maximum payment amount"
+
+    ### ZOD ###
+    ZodCreateInvoiceRequest:
+      type: object
+      properties:
+        appId:
+          type: string
+          description: "AppID provided by ZaloPay"
+        mcRefId:
+          type: string
+          description: "Merchant's reference ID of the order"
+        hubId:
+          type: string
+          description: "The merchant's hub ID"
+        driverId:
+          type: string
+          description: "The driver ID"
+        amount:
+          type: integer
+          format: int64
+          description: "Requests timestamp in ms"
+        receiver:
+          type: object
+          description: "Receiver information"
+          properties:
+            contact:
+              type: string
+              description: "Receiver name"
+        orderInfo:
+          type: array
+          items:
+            type: object
+            description: "Requests timestamp in ms"
+            properties:
+              trackingNumber:
+                type: string
+                description: "Order's tracking number"
+              description:
+                type: string
+                description: "Order's description"
+              amount:
+                type: integer
+                format: int64
+                description: "Order's amount"
+        mcExtInfo:
+          type: string
+          description: |-
+            JSOn string used for external info: merchandiseSubtotal, shippingSubtotal
+
+            Ex: "{\"merchandiseSubtotal\":100000, \"shippingSubtotal\":10000}"
+        mac:
+          type: string
+          description: >-
+            It is signature of request. It’s calculated by following input: hmacInput = (appId + “|” + mcRefId + “|” + amount + “|” + mcExtInfo) and use sha256 with app’s hmac key
+      required:
+        - appId
+        - mcRefId
+        - amount
+        - receiver
+        - orderInfo
+        - mcExtInfo
+        - mac
+
+      xml:
+        name: ZodCreateInvoiceRequest
+    ZodCreateInvoiceResponse:
+      type: object
+      properties:
+        orderUrl:
+          type: string
+          description: "Url used to generate QR Code"
+      xml:
+        name: ZodCreateInvoiceResponse
+    ZodQueryInvoiceResponse:
+      type: object
+      properties:
+        orderUrl:
+          type: string
+          description: "Url used to generate QR Code"
+      xml:
+        name: ZodQueryInvoiceResponse
+    ZodQueryStatusResponse:
+      type: object
+      properties:
+        status:
+          type: integer
+          format: int64
+          description: "Order's status: 1: SUCCESS - 2: FAILURE - 3: UNPAID"
+        amount:
+          type: string
+          description: "Order's amount"
+        zpTransId:
+          type: string
+          description: "ZaloPay transaction's ID"
+      xml:
+        name: ZodQueryStatusResponse

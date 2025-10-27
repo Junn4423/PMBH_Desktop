@@ -31,6 +31,7 @@ const NhapChi = React.lazy(() => import('./pages/NhapChi/NhapChi'));
 const CanhBaoMaxMin = React.lazy(() => import('./pages/CanhBaoMaxMin/CanhBaoMaxMin'));
 const VNPayReturn = React.lazy(() => import('./pages/Payment/VNPayReturn'));
 const MoMoReturn = React.lazy(() => import('./pages/Payment/MoMoReturn'));
+const ZaloPayReturn = React.lazy(() => import('./pages/Payment/ZaloPayReturn'));
 const DonVi = React.lazy(() => import('./pages/DonVi/DonVi'));
 const VNPaySuccess = React.lazy(() => import('./pages/Payment/VNPaySuccess'));
 const PaymentSuccess = React.lazy(() => import('./pages/Payment/PaymentSuccess'));
@@ -78,7 +79,8 @@ function App() {
   const isVNPaySuccess = location.pathname.startsWith('/payment/vnpay-success');
   const isPaymentSuccess = location.pathname.startsWith('/payment/success');
   const isMoMoReturn = location.pathname.startsWith('/payment/momo-return');
-  const isStandalonePayment = isVNPayReturn || isVNPaySuccess || isPaymentSuccess || isMoMoReturn;
+  const isZaloPayReturn = location.pathname.startsWith('/payment/zalopay-return');
+  const isStandalonePayment = isVNPayReturn || isVNPaySuccess || isPaymentSuccess || isMoMoReturn || isZaloPayReturn;
   // Customer Display without authentication - shown directly without login
   if (isCustomerDisplay) {
     return (
@@ -99,6 +101,7 @@ function App() {
           <Routes>
             <Route path="/payment/vnpay-return" element={<VNPayReturn />} />
             <Route path="/payment/momo-return" element={<MoMoReturn />} />
+            <Route path="/payment/zalopay-return" element={<ZaloPayReturn />} />
             <Route path="/payment/vnpay-success" element={<VNPaySuccess />} />
             <Route path="/payment/success" element={<PaymentSuccess />} />
           </Routes>
