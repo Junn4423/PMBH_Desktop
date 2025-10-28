@@ -64,6 +64,7 @@ const PaymentModal = ({
   const [pendingVNPayTxn, setPendingVNPayTxn] = useState(null);
   const [pendingMoMoTxn, setPendingMoMoTxn] = useState(null);
   const [pendingZaloPayTxn, setPendingZaloPayTxn] = useState(null);
+  const [mixedGatewayPendingPayment, setMixedGatewayPendingPayment] = useState(null);
   const zalopayPopupRef = useRef(null);
   const zalopayPollRef = useRef(null);
   const [showPaymentSuccessModal, setShowPaymentSuccessModal] = useState(false);
@@ -163,6 +164,10 @@ const PaymentModal = ({
     THB: [20, 50, 100, 500, 1000]
   };
 
+  const GATEWAY_METHODS = ['MoMo', 'ZaloPay', 'VNPAY'];
+
+  const isGatewayMethod = (method) => GATEWAY_METHODS.includes(method);
+
   // Reset form when modal opens
   useEffect(() => {
     if (visible) {
@@ -176,6 +181,7 @@ const PaymentModal = ({
       setPendingVNPayTxn(null);
       setPendingMoMoTxn(null);
       setPendingZaloPayTxn(null);
+      setMixedGatewayPendingPayment(null);
       setShowPaymentSuccessModal(false);
       
       // Load partial payment from localStorage
@@ -204,6 +210,7 @@ const PaymentModal = ({
       setPendingVNPayTxn(null);
       setPendingMoMoTxn(null);
       setPendingZaloPayTxn(null);
+      setMixedGatewayPendingPayment(null);
     }
   }, [visible, orderTotal, invoice?.maHd, cleanupZaloPayPayment]);
 
@@ -389,18 +396,153 @@ const PaymentModal = ({
     }
   };
 
-  const handleAddPartialPayment = () => {
+  const persistMixedPaymentState = (payments, totalPaid) => {
+    if (!invoice?.maHd) {
+      return;
+    }
+
+    localStorage.setItem(
+      `partial_payment_${invoice.maHd}`,
+      JSON.stringify({
+        payments,
+        totalPaid,
+        finalTotal,
+        timestamp: new Date().toISOString()
+      })
+    );
+  };
+
+  const clearMixedPaymentState = () => {
+    if (!invoice?.maHd) {
+      return;
+    }
+    localStorage.removeItem(`partial_payment_${invoice.maHd}`);
+  };
+
+  const addMixedPaymentEntry = (entry, { successMessage, notify = true } = {}) => {
+    const normalizedEntry = {
+      ...entry,
+      status: entry.status || 'SUCCESS',
+      timestamp: entry.timestamp || new Date().toISOString()
+    };
+
+    const updatedPayments = [...mixedPayments, normalizedEntry];
+    const newTotalPaid = partialPaidAmount + normalizedEntry.amountVND;
+
+    setMixedPayments(updatedPayments);
+    setPartialPaidAmount(newTotalPaid);
+    setCustomerPaid(0);
+
+    persistMixedPaymentState(updatedPayments, newTotalPaid);
+
+    if (notify) {
+      const remainingAfter = Math.max(0, finalTotal - newTotalPaid);
+      const messageContent =
+        successMessage ||
+        `Đã thêm ${formatWithCurrency(normalizedEntry.amountVND, 'VND')}. Còn lại: ${formatWithCurrency(
+          remainingAfter,
+          'VND'
+        )}`;
+      message.success(messageContent);
+      if (remainingAfter === 0) {
+        message.success('Đã thanh toán đủ! Nhấn "HOÀN TẤT" để hoàn thành');
+      }
+    }
+  };
+
+
+  const completeMixedGatewayPayment = (entry, { provider, transactionData, successMessage } = {}) => {
+    if (!entry) {
+      return;
+    }
+
+    const enrichedEntry = {
+      ...entry,
+      status: 'SUCCESS',
+      gatewayDetails: {
+        ...(entry.gatewayDetails || {}),
+        provider,
+        transactionData,
+      },
+      transactionData,
+    };
+
+    addMixedPaymentEntry(enrichedEntry, { successMessage });
+    setMixedGatewayPendingPayment(null);
+  };
+
+  const resetMixedPaymentSession = (showNotification = true) => {
+    clearMixedPaymentState();
+    setMixedPayments([]);
+    setPartialPaidAmount(0);
+    setCustomerPaid(0);
+    setMixedGatewayPendingPayment(null);
+    setPendingVNPayTxn(null);
+    setPendingMoMoTxn(null);
+    setPendingZaloPayTxn(null);
+    cleanupZaloPayPayment();
+    if (showNotification) {
+      message.info('Đã hủy dữ liệu thanh toán hỗn hợp. Vui lòng thực hiện lại.');
+    }
+  };
+
+  const handleAddPartialPayment = async () => {
     if (customerPaid <= 0) {
       message.warning('Vui lòng nhập số tiền thanh toán');
       return;
     }
 
-    const amountVND = convertToVND(customerPaid, currency);
-    const totalPaid = partialPaidAmount + amountVND;
-    const remaining = finalTotal - totalPaid;
+    const amountVND = Math.round(convertToVND(customerPaid, currency));
+    if (amountVND <= 0) {
+      message.warning('Số tiền không hợp lệ để thanh toán');
+      return;
+    }
+    const remainingBeforeAddition = finalTotal - partialPaidAmount;
 
-    if (remaining < 0) {
+    if (amountVND > remainingBeforeAddition) {
       message.warning('Số tiền vượt quá số còn lại phải thanh toán');
+      return;
+    }
+
+    if (isGatewayMethod(paymentMethod)) {
+      if (pendingVNPayTxn || pendingMoMoTxn || pendingZaloPayTxn || mixedGatewayPendingPayment) {
+        message.warning('Đang có giao dịch trực tuyến đang xử lý. Vui lòng hoàn tất trước khi tạo giao dịch mới.');
+        return;
+      }
+
+      const gatewayEntry = {
+        id: Date.now(),
+        method: paymentMethod,
+        methodLabel: paymentMethod,
+        amount: customerPaid,
+        currency,
+        amountVND,
+        status: 'PENDING',
+        timestamp: new Date().toISOString()
+      };
+
+      setMixedGatewayPendingPayment(gatewayEntry);
+
+      const gatewayOptions = {
+        amount: amountVND,
+        isMixedPayment: true,
+        mixedPaymentEntry: gatewayEntry
+      };
+
+      try {
+        if (paymentMethod === 'MoMo') {
+          await initiateMoMoPayment(gatewayOptions);
+        } else if (paymentMethod === 'ZaloPay') {
+          await initiateZaloPayPayment(gatewayOptions);
+        } else if (paymentMethod === 'VNPAY') {
+          await initiateVNPayPayment(gatewayOptions);
+        }
+        message.info(`Vui lòng hoàn tất thanh toán ${paymentMethod} cho ${formatWithCurrency(amountVND, 'VND')}`);
+      } catch (error) {
+        console.error('Mixed gateway initiation error:', error);
+        setMixedGatewayPendingPayment(null);
+        message.error(error?.message || 'Không thể khởi tạo thanh toán trực tuyến.');
+      }
       return;
     }
 
@@ -409,32 +551,14 @@ const PaymentModal = ({
       method: paymentMethod,
       methodLabel: paymentMethod,
       amount: customerPaid,
-      currency: currency,
-      amountVND: amountVND,
+      currency,
+      amountVND,
+      status: 'SUCCESS',
       timestamp: new Date().toISOString()
     };
 
-    const updatedPayments = [...mixedPayments, newPayment];
-    setMixedPayments(updatedPayments);
-    setPartialPaidAmount(totalPaid);
-    setCustomerPaid(0);
+    addMixedPaymentEntry(newPayment);
 
-    // Save to localStorage
-    if (invoice?.maHd) {
-      localStorage.setItem(`partial_payment_${invoice.maHd}`, JSON.stringify({
-        payments: updatedPayments,
-        totalPaid: totalPaid,
-        finalTotal: finalTotal,
-        timestamp: new Date().toISOString()
-      }));
-    }
-
-    message.success(`Đã thêm ${formatWithCurrency(amountVND, 'VND')}. Còn lại: ${formatWithCurrency(remaining, 'VND')}`);
-
-    // Nếu đã thanh toán đủ, tự động chuyển sang chế độ hoàn tất
-    if (remaining === 0) {
-      message.success('Đã thanh toán đủ! Nhấn "HOÀN TẤT" để hoàn thành');
-    }
   };
 
   const handleRemovePartialPayment = (paymentId) => {
@@ -443,48 +567,34 @@ const PaymentModal = ({
 
     const updatedPayments = mixedPayments.filter(p => p.id !== paymentId);
     const newTotalPaid = partialPaidAmount - payment.amountVND;
-    
+
     setMixedPayments(updatedPayments);
     setPartialPaidAmount(newTotalPaid);
 
-    // Update localStorage
-    if (invoice?.maHd) {
-      if (updatedPayments.length === 0) {
-        localStorage.removeItem(`partial_payment_${invoice.maHd}`);
-      } else {
-        localStorage.setItem(`partial_payment_${invoice.maHd}`, JSON.stringify({
-          payments: updatedPayments,
-          totalPaid: newTotalPaid,
-          finalTotal: finalTotal,
-          timestamp: new Date().toISOString()
-        }));
-      }
+    if (updatedPayments.length === 0) {
+      clearMixedPaymentState();
+    } else {
+      persistMixedPaymentState(updatedPayments, newTotalPaid);
     }
 
-    message.info('Đã xóa phương thức thanh toán');
+    message.info('Đã xoá phương thức thanh toán');
   };
 
   const handleEditPartialPayment = (payment) => {
     setPaymentMethod(payment.method);
     setCurrency(payment.currency);
     setCustomerPaid(payment.amount);
-    setMixedPayments(mixedPayments.filter(p => p.id !== payment.id));
+
+    const updatedPayments = mixedPayments.filter(p => p.id !== payment.id);
     const newTotalPaid = partialPaidAmount - payment.amountVND;
+
+    setMixedPayments(updatedPayments);
     setPartialPaidAmount(newTotalPaid);
 
-    // Update localStorage
-    if (invoice?.maHd) {
-      const updatedPayments = mixedPayments.filter(p => p.id !== payment.id);
-      if (updatedPayments.length === 0) {
-        localStorage.removeItem(`partial_payment_${invoice.maHd}`);
-      } else {
-        localStorage.setItem(`partial_payment_${invoice.maHd}`, JSON.stringify({
-          payments: updatedPayments,
-          totalPaid: newTotalPaid,
-          finalTotal: finalTotal,
-          timestamp: new Date().toISOString()
-        }));
-      }
+    if (updatedPayments.length === 0) {
+      clearMixedPaymentState();
+    } else {
+      persistMixedPaymentState(updatedPayments, newTotalPaid);
     }
 
     message.info('Đã tải dữ liệu để chỉnh sửa');
@@ -492,7 +602,17 @@ const PaymentModal = ({
 
   const handleCompleteMixedPayment = async () => {
     const remaining = finalTotal - partialPaidAmount;
-    
+
+    if (pendingVNPayTxn || pendingMoMoTxn || pendingZaloPayTxn || mixedGatewayPendingPayment) {
+      message.warning('Vẫn còn giao dịch trực tuyến chưa hoàn tất. Vui lòng hoàn tất trước khi hoàn thành.');
+      return;
+    }
+
+    if (mixedPayments.some(payment => payment.status === 'PENDING')) {
+      message.warning('Có phương thức thanh toán chưa được xác nhận.');
+      return;
+    }
+
     if (remaining > 0) {
       message.error(`Còn thiếu ${formatWithCurrency(remaining, 'VND')} chưa thanh toán`);
       return;
@@ -503,45 +623,48 @@ const PaymentModal = ({
       return;
     }
 
+    if (!invoice?.maHd) {
+      message.error('Không có mã hóa đơn để hoàn thành thanh toán.');
+      return;
+    }
+
     try {
       setPaymentLoading(true);
 
-      // Call the original working payment API
       const result = await thanhToanHoaDon(invoice.maHd);
-      
+
       if (result && (result.success !== false)) {
         message.success('Thanh toán hỗn hợp thành công!');
 
-        // Clear localStorage
-        if (invoice?.maHd) {
-          localStorage.removeItem(`partial_payment_${invoice.maHd}`);
-        }
-        
-        // Tạo chuỗi mô tả các phương thức thanh toán
-        const paymentMethodsDescription = mixedPayments.map(p => 
-          `${p.methodLabel} (${formatWithCurrency(p.amount, p.currency)})`
-        ).join(' + ');
+        const currentMixedPayments = mixedPayments.map(payment => ({
+          ...payment,
+          status: payment.status || 'SUCCESS'
+        }));
+
+        const paymentMethodsDescription = currentMixedPayments
+          .map(p => `${p.methodLabel} (${formatWithCurrency(p.amount, p.currency)})`)
+          .join(' + ');
 
         const mixedPaymentData = {
           maHd: invoice?.maHd,
           tongTien: orderTotal,
           discount: discountAmount,
-          finalTotal: finalTotal,
+          finalTotal,
           tienKhachDua: finalTotal,
           tienThua: 0,
           phuongThucThanhToan: `Hỗn hợp: ${paymentMethodsDescription}`,
-          ghiChu: `Thanh toán hỗn hợp: ${mixedPayments.length} phương thức`,
+          ghiChu: `Thanh toán hỗn hợp: ${currentMixedPayments.length} phương thức`,
           ngayThanhToan: new Date().toISOString(),
-          mixedPayments: mixedPayments
+          mixedPayments: currentMixedPayments
         };
-        
-        // Tự động in hóa đơn sau khi thanh toán thành công
+
         setTimeout(() => {
           handlePrintReceiptMixed(mixedPaymentData);
         }, 500);
-        
-        // Call parent onConfirm with mixed payment data
+
         await onConfirm(mixedPaymentData);
+
+        resetMixedPaymentSession(false);
       } else {
         message.error('Thanh toán thất bại: ' + (result?.error || 'Lỗi không xác định'));
       }
@@ -574,12 +697,7 @@ const PaymentModal = ({
             onCancel();
           },
           onCancel: () => {
-            // Xóa localStorage và reset
-            if (invoice?.maHd) {
-              localStorage.removeItem(`partial_payment_${invoice.maHd}`);
-            }
-            setMixedPayments([]);
-            setPartialPaidAmount(0);
+            resetMixedPaymentSession(false);
             setIsMixedPaymentMode(false);
             message.info('Đã hủy thanh toán chưa hoàn tất');
             onCancel();
@@ -997,43 +1115,80 @@ const PaymentModal = ({
     message.success('Đã gửi hóa đơn đến máy in');
   };
 
-  const initiateMoMoPayment = async () => {
+  const initiateMoMoPayment = async (options = {}) => {
+    const {
+      amount: amountOverride,
+      isMixedPayment = false,
+      mixedPaymentEntry = null,
+    } = options;
+
     try {
       if (pendingMoMoTxn) {
-        message.warning('Dang cho ket qua thanh toan MoMo hien tai. Vui long hoan tat giao dich truoc khi tao moi.');
+        message.warning('Đang chờ kết quả thanh toán MoMo hiện tại. Vui lòng hoàn tất giao dịch trước khi tạo mới.');
         return;
       }
 
       if (!invoice?.maHd) {
-        message.error('Khong co ma hoa don de thanh toan MoMo');
+        message.error('Không có mã hóa đơn để thanh toán MoMo');
         return;
       }
 
       setPaymentLoading(true);
 
+      const paymentAmount = Number.isFinite(amountOverride) ? Math.round(amountOverride) : finalTotal;
+
+      const extraData = {
+        invoiceCode: invoice.maHd,
+        amount: paymentAmount,
+        source: 'PMBH_POS',
+      };
+
+      if (isMixedPayment && mixedPaymentEntry) {
+        extraData.partialPayment = paymentAmount;
+        extraData.mixedPayment = true;
+        extraData.mixedMethod = mixedPaymentEntry.method;
+        extraData.partialId = mixedPaymentEntry.id;
+      }
+
       const paymentRequest = await createMoMoPayment({
         invoiceCode: invoice.maHd,
-        amount: finalTotal,
+        amount: paymentAmount,
         orderInfo: `Thanh toan hoa don ${invoice.maHd}`,
-        extraData: {
-          invoiceCode: invoice.maHd,
-          amount: finalTotal,
-          source: 'PMBH_POS',
-        },
+        extraData,
       });
 
       const paymentUrl = paymentRequest.payUrl || paymentRequest.deeplink || paymentRequest.qrCodeUrl;
 
       if (!paymentUrl) {
-        message.error('Khong tim thay duong dan thanh toan MoMo.');
+        message.error('Không tìm thấy đường dẫn thanh toán MoMo.');
         return;
       }
 
       setPendingMoMoTxn({
         orderId: paymentRequest.orderId,
         requestId: paymentRequest.requestId,
-        amount: finalTotal,
+        amount: paymentAmount,
+        isMixedPayment,
+        mixedPartialId: mixedPaymentEntry?.id || null,
       });
+
+      if (isMixedPayment && mixedPaymentEntry) {
+        setMixedGatewayPendingPayment((prev) => {
+          if (!prev || prev.id !== mixedPaymentEntry.id) {
+            return prev;
+          }
+          return {
+            ...prev,
+            status: 'PENDING',
+            amountVND: paymentAmount,
+            gatewayDetails: {
+              provider: 'MoMo',
+              orderId: paymentRequest.orderId,
+              requestId: paymentRequest.requestId,
+            },
+          };
+        });
+      }
 
       logMoMoTransaction({
         action: 'CREATE_PAYMENT',
@@ -1052,71 +1207,117 @@ const PaymentModal = ({
 
         if (!response?.success) {
           setPendingMoMoTxn(null);
-          message.error(response?.error || 'Khong the mo cua so thanh toan MoMo.');
+          if (isMixedPayment) {
+            setMixedGatewayPendingPayment(null);
+          }
+          message.error(response?.error || 'Không thể mở cửa sổ thanh toán MoMo.');
           return;
         }
 
         opened = true;
-        message.info('Da mo cong thanh toan MoMo. Vui long hoan tat giao dich trong cua so moi.');
+        message.info('Đã mở cổng thanh toán MoMo. Vui lòng hoàn tất giao dịch trong cửa sổ mới.');
       } else {
         const popup = window.open(paymentUrl, '_blank');
         opened = !!popup;
         if (!opened) {
-          message.warning('Trinh duyet da chan cua so thanh toan MoMo. Vui long cho phep cua so bat len hoac mo lai lien ket.');
+          message.warning('Trình duyệt đã chặn cửa sổ thanh toán MoMo. Vui lòng cho phép cửa sổ bật lên hoặc mở lại liên kết.');
         } else {
-          message.info('Da mo cong thanh toan MoMo. Vui long hoan tat giao dich trong cua so moi.');
+          message.info('Đã mở cổng thanh toán MoMo. Vui lòng hoàn tất giao dịch trong cửa sổ mới.');
         }
       }
 
       if (!opened) {
         setPendingMoMoTxn(null);
+        if (isMixedPayment) {
+          setMixedGatewayPendingPayment(null);
+        }
       }
     } catch (error) {
       console.error('MoMo initialization error:', error);
-      message.error(error?.message ? `Khong the khoi tao thanh toan MoMo: ${error.message}` : 'Co loi khi khoi tao thanh toan MoMo');
+      message.error(error?.message ? `Không thể khởi tạo thanh toán MoMo: ${error.message}` : 'Có lỗi khi khởi tạo thanh toán MoMo');
       setPendingMoMoTxn(null);
+      if (isMixedPayment) {
+        setMixedGatewayPendingPayment(null);
+      }
     } finally {
       setPaymentLoading(false);
     }
   };
 
-  const initiateZaloPayPayment = async () => {
+  const initiateZaloPayPayment = async (options = {}) => {
+    const {
+      amount: amountOverride,
+      isMixedPayment = false,
+      mixedPaymentEntry = null,
+    } = options;
+
     try {
       if (pendingZaloPayTxn) {
-        message.warning('Dang cho ket qua thanh toan ZaloPay hien tai. Vui long hoan tat giao dich truoc khi tao moi.');
+        message.warning('Đang chờ kết quả thanh toán ZaloPay hiện tại. Vui lòng hoàn tất giao dịch trước khi tạo mới.');
         return;
       }
 
       if (!invoice?.maHd) {
-        message.error('Khong co ma hoa don de thanh toan ZaloPay');
+        message.error('Không có mã hóa đơn để thanh toán ZaloPay');
         return;
       }
 
       setPaymentLoading(true);
 
+      const paymentAmount = Number.isFinite(amountOverride) ? Math.round(amountOverride) : finalTotal;
+
+      const embedData = {
+        invoiceCode: invoice.maHd,
+        amount: paymentAmount,
+        source: 'PMBH_POS',
+      };
+
+      if (isMixedPayment && mixedPaymentEntry) {
+        embedData.mixedPayment = true;
+        embedData.partialAmount = paymentAmount;
+        embedData.partialId = mixedPaymentEntry.id;
+        embedData.mixedMethod = mixedPaymentEntry.method;
+      }
+
       const paymentRequest = await createZaloPayPayment({
         invoiceCode: invoice.maHd,
-        amount: finalTotal,
+        amount: paymentAmount,
         orderInfo: `Thanh toan hoa don ${invoice.maHd}`,
-        embedData: JSON.stringify({
-          invoiceCode: invoice.maHd,
-          amount: finalTotal,
-          source: 'PMBH_POS',
-        }),
+        embedData: JSON.stringify(embedData),
       });
 
       const paymentUrl = paymentRequest.orderUrl;
 
       if (!paymentUrl) {
-        message.error('Khong tim thay duong dan thanh toan ZaloPay.');
+        message.error('Không tìm thấy đường dẫn thanh toán ZaloPay.');
         return;
       }
 
       setPendingZaloPayTxn({
         appTransId: paymentRequest.appTransId,
         zpTransToken: paymentRequest.zpTransToken,
-        amount: finalTotal,
+        amount: paymentAmount,
+        isMixedPayment,
+        mixedPartialId: mixedPaymentEntry?.id || null,
       });
+
+      if (isMixedPayment && mixedPaymentEntry) {
+        setMixedGatewayPendingPayment((prev) => {
+          if (!prev || prev.id !== mixedPaymentEntry.id) {
+            return prev;
+          }
+          return {
+            ...prev,
+            status: 'PENDING',
+            amountVND: paymentAmount,
+            gatewayDetails: {
+              provider: 'ZaloPay',
+              appTransId: paymentRequest.appTransId,
+              zpTransToken: paymentRequest.zpTransToken,
+            },
+          };
+        });
+      }
 
       logZaloPayTransaction({
         action: 'CREATE_PAYMENT',
@@ -1135,30 +1336,34 @@ const PaymentModal = ({
 
         if (!response?.success) {
           setPendingZaloPayTxn(null);
-          message.error(response?.error || 'Khong the mo cua so thanh toan ZaloPay.');
+          if (isMixedPayment) {
+            setMixedGatewayPendingPayment(null);
+          }
+          message.error(response?.error || 'Không thể mở cửa sổ thanh toán ZaloPay.');
           return;
         }
 
         opened = true;
-        message.info('Da mo cong thanh toan ZaloPay. Vui long hoan tat giao dich trong cua so moi.');
+        message.info('Đã mở cổng thanh toán ZaloPay. Vui lòng hoàn tất giao dịch trong cửa sổ mới.');
       } else {
         const popup = window.open(paymentUrl, '_blank');
         zalopayPopupRef.current = popup;
         opened = !!popup;
         if (!opened) {
-          message.warning('Trinh duyet da chan cua so thanh toan ZaloPay. Vui long cho phep cua so bat len hoac mo lai lien ket.');
+          message.warning('Trình duyệt đã chặn cửa sổ thanh toán ZaloPay. Vui lòng cho phép cửa sổ bật lên hoặc mở lại liên kết.');
         } else {
-          message.info('Da mo cong thanh toan ZaloPay. Vui long hoan tat giao dich trong cua so moi.');
+          message.info('Đã mở cổng thanh toán ZaloPay. Vui lòng hoàn tất giao dịch trong cửa sổ mới.');
         }
       }
 
       if (!opened) {
         setPendingZaloPayTxn(null);
+        if (isMixedPayment) {
+          setMixedGatewayPendingPayment(null);
+        }
         return;
       }
 
-      // Start polling ZaloPay order status in background so we can auto-complete the invoice
-      // Poll every 3s. Stop when success or terminal error.
       if (zalopayPollRef.current) {
         clearInterval(zalopayPollRef.current);
         zalopayPollRef.current = null;
@@ -1167,28 +1372,44 @@ const PaymentModal = ({
       zalopayPollRef.current = setInterval(async () => {
         try {
           const appTransId = paymentRequest.appTransId;
-          const q = await queryZaloPayOrder(appTransId);
-          if (!q) return;
+          const queryResult = await queryZaloPayOrder(appTransId);
+          if (!queryResult) return;
 
-          console.log('ZaloPay poll result:', q);
+          console.log('ZaloPay poll result:', queryResult);
 
-          // If API indicates success: return_code = 1 and sub_return_code = 1
-          const returnCode = Number(q.data.return_code);
-          const subReturnCode = Number(q.data.sub_return_code);
+          const returnCode = Number(queryResult.data.return_code);
+          const subReturnCode = Number(queryResult.data.sub_return_code);
           console.log('ZaloPay codes - return_code:', returnCode, 'sub_return_code:', subReturnCode);
 
-          if (q.success && q.data && returnCode === 1 && subReturnCode === 1) {
-            console.log('ZaloPay payment successful, auto-completing invoice');
-
-            // Clear poll
+          if (queryResult.success && queryResult.data && returnCode === 1 && subReturnCode === 1) {
             clearInterval(zalopayPollRef.current);
             zalopayPollRef.current = null;
 
             cleanupZaloPayPayment();
-
             setPendingZaloPayTxn(null);
 
-            // finalize invoice on backend
+            if (isMixedPayment && mixedPaymentEntry) {
+              const successMessage = `Đã ghi nhận ZaloPay ${formatWithCurrency(paymentAmount, 'VND')}`;
+              completeMixedGatewayPayment(
+                {
+                  ...mixedPaymentEntry,
+                  amountVND: paymentAmount,
+                  gatewayDetails: {
+                    ...(mixedPaymentEntry.gatewayDetails || {}),
+                    provider: 'ZaloPay',
+                    appTransId: paymentRequest.appTransId,
+                    zpTransToken: paymentRequest.zpTransToken,
+                  },
+                },
+                {
+                  provider: 'ZaloPay',
+                  transactionData: queryResult.data,
+                  successMessage,
+                }
+              );
+              return;
+            }
+
             setPaymentLoading(true);
             try {
               const result = await thanhToanHoaDon(invoice.maHd);
@@ -1207,7 +1428,7 @@ const PaymentModal = ({
                   phuongThucThanhToan: 'ZaloPay',
                   ghiChu: `Thanh toan ZaloPay - app_trans_id: ${paymentRequest.appTransId}`,
                   ngayThanhToan: new Date().toISOString(),
-                  zalopayData: q.data,
+                  zalopayData: queryResult.data,
                 };
 
                 await onConfirm(paymentData);
@@ -1220,28 +1441,32 @@ const PaymentModal = ({
             } finally {
               setPaymentLoading(false);
             }
-          }
-
-          // If explicitly failed or user cancelled (negative sub_return_code except -101 which is refund)
-          else if (q.data && Number(q.data.sub_return_code) < 0 && Number(q.data.sub_return_code) !== -101) {
-            console.log('ZaloPay payment failed or cancelled:', q.data.sub_return_code);
+          } else if (
+            queryResult.data &&
+            Number(queryResult.data.sub_return_code) < 0 &&
+            Number(queryResult.data.sub_return_code) !== -101
+          ) {
             clearInterval(zalopayPollRef.current);
             zalopayPollRef.current = null;
 
             cleanupZaloPayPayment();
-
             setPendingZaloPayTxn(null);
+            if (isMixedPayment) {
+              setMixedGatewayPendingPayment(null);
+            }
             message.warning('Giao dịch ZaloPay không thành công hoặc đã bị huỷ.');
           }
         } catch (err) {
-          // ignore transient errors
           console.error('Error polling ZaloPay order:', err);
         }
-      }, 3000); // Poll every 3 seconds
+      }, 3000);
     } catch (error) {
       console.error('ZaloPay initialization error:', error);
-      message.error(error?.message ? `Khong the khoi tao thanh toan ZaloPay: ${error.message}` : 'Co loi khi khoi tao thanh toan ZaloPay');
+      message.error(error?.message ? `Không thể khởi tạo thanh toán ZaloPay: ${error.message}` : 'Có lỗi khi khởi tạo thanh toán ZaloPay');
       setPendingZaloPayTxn(null);
+      if (isMixedPayment) {
+        setMixedGatewayPendingPayment(null);
+      }
     } finally {
       setPaymentLoading(false);
     }
@@ -1257,6 +1482,38 @@ const PaymentModal = ({
         paymentResult,
         verification: verificationResult,
       });
+
+      const isMixedMoMoPayment = Boolean(
+        mixedGatewayPendingPayment && mixedGatewayPendingPayment.method === 'MoMo'
+      );
+
+      if (isMixedMoMoPayment) {
+        const amountVND = mixedGatewayPendingPayment.amountVND || Number(paymentResult.amount) || 0;
+        const successMessage = `Đã ghi nhận MoMo ${formatWithCurrency(amountVND, 'VND')}`;
+
+        completeMixedGatewayPayment(
+          {
+            ...mixedGatewayPendingPayment,
+            amountVND,
+            gatewayDetails: {
+              ...(mixedGatewayPendingPayment.gatewayDetails || {}),
+              provider: 'MoMo',
+              orderId: paymentResult.orderId,
+              requestId: paymentResult.requestId,
+            },
+          },
+          {
+            provider: 'MoMo',
+            transactionData: {
+              payment: paymentResult,
+              verification: verificationResult,
+            },
+            successMessage,
+          }
+        );
+
+        return;
+      }
 
       const result = await thanhToanHoaDon(invoice.maHd);
 
@@ -1308,6 +1565,10 @@ const PaymentModal = ({
         ...payload,
       };
 
+      const isMixedMoMoPayment = Boolean(
+        mixedGatewayPendingPayment && mixedGatewayPendingPayment.method === 'MoMo'
+      );
+
       const targetOrderId = mergedPayload.orderId || rawQuery.orderId;
 
       if (
@@ -1325,7 +1586,10 @@ const PaymentModal = ({
           payload,
         });
         setPendingMoMoTxn(null);
-        message.error(`Thanh toan MoMo khong hoan tat: ${payload.error}`);
+        if (isMixedMoMoPayment) {
+          setMixedGatewayPendingPayment(null);
+        }
+        message.error(`Thanh toán MoMo không hoàn tất: ${payload.error}`);
         return;
       }
 
@@ -1348,7 +1612,10 @@ const PaymentModal = ({
       setPendingMoMoTxn(null);
 
       if (!verification.isValid) {
-        message.error('Chu ky MoMo khong hop le. Vui long kiem tra lai giao dich.');
+        if (isMixedMoMoPayment) {
+          setMixedGatewayPendingPayment(null);
+        }
+        message.error('Chữ ký MoMo không hợp lệ. Vui lòng kiểm tra lại giao dịch.');
         return;
       }
 
@@ -1364,10 +1631,13 @@ const PaymentModal = ({
         return;
       }
 
-      const errorMessage = normalizedPayload.message || 'Thanh toan MoMo that bai.';
-      message.error(`Thanh toan MoMo that bai: ${errorMessage}`);
+      const errorMessage = normalizedPayload.message || 'Thanh toán MoMo thất bại.';
+      if (isMixedMoMoPayment) {
+        setMixedGatewayPendingPayment(null);
+      }
+      message.error(`Thanh toán MoMo thất bại: ${errorMessage}`);
     },
-    [pendingMoMoTxn, handleMoMoSuccess]
+    [pendingMoMoTxn, handleMoMoSuccess, mixedGatewayPendingPayment, setMixedGatewayPendingPayment]
   );
 
   useEffect(() => {
@@ -1419,7 +1689,7 @@ const PaymentModal = ({
       window.electronAPI.onceMoMoPaymentClosed(() => {
         setPendingMoMoTxn((prev) => {
           if (prev) {
-            message.warning('Cua so thanh toan MoMo da dong truoc khi hoan tat.');
+            message.warning('Cửa sổ thanh toán MoMo đã đóng trước khi hoàn tất.');
           }
           return null;
         });
@@ -1427,7 +1697,13 @@ const PaymentModal = ({
     }
   }, [pendingMoMoTxn]);
 
-  const initiateVNPayPayment = async () => {
+  const initiateVNPayPayment = async (options = {}) => {
+    const {
+      amount: amountOverride,
+      isMixedPayment = false,
+      mixedPaymentEntry = null,
+    } = options;
+
     try {
       if (pendingVNPayTxn) {
         message.warning('Đang chờ kết quả cho giao dịch VNPay hiện tại. Vui lòng hoàn tất giao dịch trước khi tạo giao dịch mới.');
@@ -1441,9 +1717,11 @@ const PaymentModal = ({
 
       setPaymentLoading(true);
 
+      const paymentAmount = Number.isFinite(amountOverride) ? Math.round(amountOverride) : finalTotal;
+
       const invoiceData = {
         maHd: invoice.maHd,
-        tongTien: finalTotal,
+        tongTien: paymentAmount,
         moTa: `Thanh toan hoa don ${invoice.maHd}`,
       };
 
@@ -1458,7 +1736,26 @@ const PaymentModal = ({
         txnRef: result.txnRef,
         invoiceCode: invoice.maHd,
         amount: result.amount,
+        isMixedPayment,
+        mixedPartialId: mixedPaymentEntry?.id || null,
       });
+
+      if (isMixedPayment && mixedPaymentEntry) {
+        setMixedGatewayPendingPayment((prev) => {
+          if (!prev || prev.id !== mixedPaymentEntry.id) {
+            return prev;
+          }
+          return {
+            ...prev,
+            status: 'PENDING',
+            amountVND: paymentAmount,
+            gatewayDetails: {
+              provider: 'VNPay',
+              txnRef: result.txnRef,
+            },
+          };
+        });
+      }
 
       let opened = false;
 
@@ -1470,6 +1767,9 @@ const PaymentModal = ({
 
         if (!response?.success) {
           setPendingVNPayTxn(null);
+          if (isMixedPayment) {
+            setMixedGatewayPendingPayment(null);
+          }
           message.error(response?.error || 'Không thể mở cửa sổ thanh toán VNPay.');
           return;
         }
@@ -1488,11 +1788,17 @@ const PaymentModal = ({
 
       if (!opened) {
         setPendingVNPayTxn(null);
+        if (isMixedPayment) {
+          setMixedGatewayPendingPayment(null);
+        }
       }
     } catch (error) {
       console.error('VNPay initialization error:', error);
       message.error('Có lỗi xảy ra khi mở cổng thanh toán VNPay');
       setPendingVNPayTxn(null);
+      if (isMixedPayment) {
+        setMixedGatewayPendingPayment(null);
+      }
     } finally {
       setPaymentLoading(false);
     }
@@ -1510,8 +1816,10 @@ const PaymentModal = ({
       const normalizedResponseCode =
         paymentResult?.responseCode === '0' ? '00' : paymentResult?.responseCode || '00';
 
-      // Chỉ kiểm tra vnp_response_code = 00
       if (normalizedResponseCode !== '00') {
+        if (mixedGatewayPendingPayment && mixedGatewayPendingPayment.method === 'VNPAY') {
+          setMixedGatewayPendingPayment(null);
+        }
         message.error(`Thanh toán VNPay không hợp lệ (mã ${normalizedResponseCode})`);
         return;
       }
@@ -1521,18 +1829,43 @@ const PaymentModal = ({
         responseCode: normalizedResponseCode,
       };
 
-      // Gọi API thanh toán hóa đơn
+      const isMixedVNPayPayment = Boolean(
+        mixedGatewayPendingPayment && mixedGatewayPendingPayment.method === 'VNPAY'
+      );
+
+      if (isMixedVNPayPayment) {
+        const amountVND = mixedGatewayPendingPayment.amountVND || Number(paymentResult.amount) || 0;
+        const successMessage = `Đã ghi nhận VNPay ${formatWithCurrency(amountVND, 'VND')}`;
+
+        completeMixedGatewayPayment(
+          {
+            ...mixedGatewayPendingPayment,
+            amountVND,
+            gatewayDetails: {
+              ...(mixedGatewayPendingPayment.gatewayDetails || {}),
+              provider: 'VNPay',
+              txnRef: normalizedResult.txnRef,
+            },
+          },
+          {
+            provider: 'VNPay',
+            transactionData: normalizedResult,
+            successMessage,
+          }
+        );
+
+        return;
+      }
+
       const result = await thanhToanHoaDon(invoice.maHd);
       
       if (result && (result.success !== false)) {
         message.success('Thanh toán VNPay thành công!');
         
-        // In hóa đơn
         setTimeout(() => {
           handlePrintReceipt();
         }, 500);
         
-        // Gọi callback
         const paymentData = {
           maHd: invoice?.maHd,
           tongTien: orderTotal,
@@ -1556,7 +1889,21 @@ const PaymentModal = ({
     } finally {
       setPaymentLoading(false);
     }
-  }, [setPaymentLoading, setPendingVNPayTxn, invoice?.maHd, thanhToanHoaDon, handlePrintReceipt, orderTotal, discountAmount, discountType, finalTotal, onConfirm]);
+  }, [
+    setPaymentLoading,
+    setPendingVNPayTxn,
+    invoice?.maHd,
+    thanhToanHoaDon,
+    handlePrintReceipt,
+    orderTotal,
+    discountAmount,
+    discountType,
+    finalTotal,
+    onConfirm,
+    mixedGatewayPendingPayment,
+    setMixedGatewayPendingPayment,
+    completeMixedGatewayPayment,
+  ]);
 
   const processVNPayPayload = React.useCallback(
     (rawPayload = {}) => {
@@ -1624,40 +1971,69 @@ const PaymentModal = ({
         app_trans_id: payload.app_trans_id || payload.appTransId || '',
       };
 
+      const wasMixedPayment = Boolean(pendingZaloPayTxn?.isMixedPayment);
+      const mixedPartialId = pendingZaloPayTxn?.mixedPartialId;
+      const paymentAmount = pendingZaloPayTxn?.amount || 0;
+
       cleanupZaloPayPayment();
       setPendingZaloPayTxn(null);
 
-      // Handle ZaloPay success inline
+      const matchedMixedEntry =
+        wasMixedPayment &&
+        mixedGatewayPendingPayment &&
+        (mixedGatewayPendingPayment.id === mixedPartialId || mixedPartialId == null)
+          ? mixedGatewayPendingPayment
+          : null;
+
       const handleZaloPaySuccessInline = async (paymentResult) => {
         console.log('ZaloPay payment result:', paymentResult);
+        const normalizedReturnCode = paymentResult?.return_code || '1';
+
+        if (normalizedReturnCode !== '1') {
+          message.error(`Thanh toán ZaloPay không hợp lệ (mã ${normalizedReturnCode})`);
+          if (matchedMixedEntry) {
+            setMixedGatewayPendingPayment(null);
+          }
+          return;
+        }
+
+        if (matchedMixedEntry) {
+          const amountVND = paymentAmount || matchedMixedEntry.amountVND || 0;
+          const successMessage = `Đã ghi nhận ZaloPay ${formatWithCurrency(amountVND, 'VND')}`;
+
+          completeMixedGatewayPayment(
+            {
+              ...matchedMixedEntry,
+              amountVND,
+              gatewayDetails: {
+                ...(matchedMixedEntry.gatewayDetails || {}),
+                provider: 'ZaloPay',
+                appTransId: paymentResult.app_trans_id,
+                zpTransToken: paymentResult.zp_trans_token,
+              },
+            },
+            {
+              provider: 'ZaloPay',
+              transactionData: paymentResult,
+              successMessage,
+            }
+          );
+
+          return;
+        }
+
         try {
           setPaymentLoading(true);
 
-          const normalizedReturnCode = paymentResult?.return_code || '1';
-
-          // Check if payment was successful (return_code = 1)
-          if (normalizedReturnCode !== '1') {
-            message.error(`Thanh toán ZaloPay không hợp lệ (mã ${normalizedReturnCode})`);
-            return;
-          }
-
-          const normalizedResult = {
-            ...paymentResult,
-            return_code: normalizedReturnCode,
-          };
-
-          // Call API to complete invoice payment
           const result = await thanhToanHoaDon(invoice.maHd);
 
           if (result && (result.success !== false)) {
             message.success('Thanh toán ZaloPay thành công!');
 
-            // Print receipt
             setTimeout(() => {
               handlePrintReceipt();
             }, 500);
 
-            // Call callback
             const paymentData = {
               maHd: invoice?.maHd,
               tongTien: orderTotal,
@@ -1667,9 +2043,9 @@ const PaymentModal = ({
               tienKhachDua: finalTotal,
               tienThua: 0,
               phuongThucThanhToan: 'ZaloPay',
-              ghiChu: `Thanh toan ZaloPay - AppTransId: ${normalizedResult.app_trans_id}`,
+              ghiChu: `Thanh toan ZaloPay - AppTransId: ${paymentResult.app_trans_id}`,
               ngayThanhToan: new Date().toISOString(),
-              zalopayData: normalizedResult,
+              zalopayData: paymentResult,
             };
 
             await onConfirm(paymentData);
@@ -1685,7 +2061,23 @@ const PaymentModal = ({
 
       handleZaloPaySuccessInline(normalizedPayload);
     },
-    [pendingZaloPayTxn, setPaymentLoading, setPendingZaloPayTxn, invoice?.maHd, thanhToanHoaDon, handlePrintReceipt, orderTotal, discountAmount, discountType, finalTotal, onConfirm, cleanupZaloPayPayment]
+    [
+      pendingZaloPayTxn,
+      setPaymentLoading,
+      setPendingZaloPayTxn,
+      invoice?.maHd,
+      thanhToanHoaDon,
+      handlePrintReceipt,
+      orderTotal,
+      discountAmount,
+      discountType,
+      finalTotal,
+      onConfirm,
+      cleanupZaloPayPayment,
+      mixedGatewayPendingPayment,
+      completeMixedGatewayPayment,
+      setMixedGatewayPendingPayment,
+    ]
   );
 
   useEffect(() => {
@@ -1807,6 +2199,8 @@ const PaymentModal = ({
   const finalTotalInCurrency = convertFromVND(finalTotal, currency);
   const changeInVND = Math.max(0, customerPaidInVND - finalTotal);
   const remainingMixedPayment = finalTotal - partialPaidAmount;
+  const hasPendingGatewayTransaction =
+    Boolean(pendingVNPayTxn || pendingMoMoTxn || pendingZaloPayTxn || mixedGatewayPendingPayment);
   const enoughPayment =
     paymentMethod === 'VNPAY' || paymentMethod === 'MoMo' || paymentMethod === 'ZaloPay'
       ? true
@@ -1849,7 +2243,7 @@ const PaymentModal = ({
             <div className="payment-column">
               <Text className="column-title">Phương thức thanh toán</Text>
               <div className="method-list">
-                {['Cash', 'Bank Transfer', 'MoMo', 'ZaloPay', 'VNPAY', 'OnAccount', 'Others', 'Credit'].map(method => (
+                {['Tiền mặt', 'MoMo', 'ZaloPay', 'VNPAY'].map(method => (
                   <Button 
                     key={method}
                     className={paymentMethod === method ? 'method-item active' : 'method-item'}
@@ -2107,10 +2501,15 @@ const PaymentModal = ({
             {isMixedPaymentMode ? (
               <div className="mixed-payment-actions">
                 <Button 
-                  onClick={() => setCustomerPaid(0)}
+                  onClick={() => resetMixedPaymentSession()}
                   className="cancel-partial-btn"
                   size="large"
-                  disabled={customerPaid <= 0}
+                  disabled={
+                    mixedPayments.length === 0 &&
+                    partialPaidAmount === 0 &&
+                    !mixedGatewayPendingPayment &&
+                    !hasPendingGatewayTransaction
+                  }
                 >
                   Hủy
                 </Button>
@@ -2119,7 +2518,11 @@ const PaymentModal = ({
                   onClick={handleAddPartialPayment}
                   className="add-partial-btn"
                   size="large"
-                  disabled={customerPaid <= 0 || remainingMixedPayment <= 0}
+                  disabled={
+                    customerPaid <= 0 ||
+                    remainingMixedPayment <= 0 ||
+                    (isGatewayMethod(paymentMethod) && hasPendingGatewayTransaction)
+                  }
                   type="primary"
                 >
                   Thêm thanh toán
@@ -2144,7 +2547,11 @@ const PaymentModal = ({
                 loading={paymentLoading}
                 size="large"
                 type="primary"
-                disabled={!enoughPayment || mixedPayments.length < 2}
+                disabled={
+                  !enoughPayment ||
+                  mixedPayments.length < 2 ||
+                  hasPendingGatewayTransaction
+                }
               >
                 <span>HOÀN TẤT</span>
                 <span className="payment-amount">
