@@ -3,6 +3,75 @@
 // ini_set('display_errors', 1);
 $_SESSION['ERPSOFV2RRight']='admin';
 $_SESSION['ERPSOFV2RUserID']='admin';
+
+if (!function_exists('esc_str')) {
+    function esc_str($s)
+    {
+        if (function_exists('db_escape_string')) {
+            return db_escape_string($s);
+        }
+        if (isset($GLOBALS['db_link']) && function_exists('mysqli_real_escape_string')) {
+            return mysqli_real_escape_string($GLOBALS['db_link'], $s);
+        }
+        return addslashes($s);
+    }
+}
+
+if (!function_exists('request_value')) {
+    function request_value($key, $default = null)
+    {
+        global $input;
+        if (is_array($input) && array_key_exists($key, $input)) {
+            return $input[$key];
+        }
+        if (isset($_POST[$key])) {
+            return $_POST[$key];
+        }
+        return $default;
+    }
+}
+
+if (!function_exists('normalize_datetime_input')) {
+    function normalize_datetime_input($value, $fallback = null)
+    {
+        if ($value instanceof DateTimeInterface) {
+            return $value->format('Y-m-d H:i:s');
+        }
+        if ($value === null) {
+            return $fallback ?: '1900-01-01 00:00:00';
+        }
+        $stringValue = trim((string)$value);
+        if ($stringValue === '') {
+            return $fallback ?: '1900-01-01 00:00:00';
+        }
+        if (is_numeric($stringValue)) {
+            $timestamp = (int)$stringValue;
+        } else {
+            $timestamp = strtotime($stringValue);
+        }
+        if ($timestamp === false) {
+            return $fallback ?: '1900-01-01 00:00:00';
+        }
+        return date('Y-m-d H:i:s', $timestamp);
+    }
+}
+
+if (!function_exists('normalize_to_array')) {
+    function normalize_to_array($value)
+    {
+        if (is_array($value)) {
+            return $value;
+        }
+        if (is_string($value)) {
+            $decoded = json_decode($value, true);
+            if (json_last_error() === JSON_ERROR_NONE && is_array($decoded)) {
+                return $decoded;
+            }
+        }
+        return [];
+    }
+}
+
 switch ($vtable) {
 
 
@@ -576,6 +645,534 @@ case 'DonBan':
 
             default:
                 $vOutput = ['success' => false, 'message' => 'Chức năng không tồn tại'];
+                break;
+        }
+        break;
+
+    case 'Mb_SalesPrograms':
+        $currentUserIdEsc = esc_str($_SESSION['ERPSOFV2RUserID']);
+        switch ($vfun) {
+            case 'list':
+                $statusRaw = request_value('status', null);
+                $statusFilter = null;
+                if ($statusRaw !== null && $statusRaw !== '') {
+                    $statusFilter = (int)$statusRaw;
+                }
+                $sql = "SELECT A.lv001, A.lv002, A.lv003, A.lv004, A.lv005, A.lv006, A.lv007, A.lv008, A.lv009, A.lv099, (SELECT COUNT(*) FROM sl_lv0060 D WHERE D.lv002=A.lv001) AS itemCount FROM sl_lv0059 A";
+                if ($statusFilter !== null) {
+                    $sql .= " WHERE A.lv008 = " . $statusFilter;
+                }
+                $sql .= " ORDER BY COALESCE(A.lv006, A.lv003) DESC";
+                $result = db_query($sql);
+                if (!$result) {
+                    $vOutput = ['success' => false, 'message' => 'Khong truy van duoc danh sach chuong trinh'];
+                    break;
+                }
+                $programs = [];
+                while ($row = db_fetch_array($result, MYSQLI_ASSOC)) {
+                    $groupsRaw = isset($row['lv099']) ? $row['lv099'] : '';
+                    $groups = array_values(array_filter(array_map('trim', explode(',', (string)$groupsRaw))));
+                    $programs[] = [
+                        'programId' => $row['lv001'],
+                        'name' => $row['lv002'],
+                        'startDate' => $row['lv003'],
+                        'endDate' => $row['lv004'],
+                        'createdBy' => $row['lv005'],
+                        'updatedAt' => $row['lv006'],
+                        'approvedBy' => $row['lv007'],
+                        'status' => (int)$row['lv008'],
+                        'value' => $row['lv009'],
+                        'customerGroups' => $groups,
+                        'itemCount' => (int)$row['itemCount']
+                    ];
+                }
+                $vOutput = ['success' => true, 'data' => $programs];
+                break;
+
+            case 'get':
+                $programId = trim((string)request_value('programId', ''));
+                if ($programId === '') {
+                    $vOutput = ['success' => false, 'message' => 'Thieu ma chuong trinh'];
+                    break;
+                }
+                $programIdEsc = esc_str($programId);
+                $programSql = "SELECT lv001, lv002, lv003, lv004, lv005, lv006, lv007, lv008, lv009, lv099 FROM sl_lv0059 WHERE lv001='$programIdEsc' LIMIT 1";
+                $programRes = db_query($programSql);
+                if (!$programRes || !($programRow = db_fetch_array($programRes, MYSQLI_ASSOC))) {
+                    $vOutput = ['success' => false, 'message' => 'Khong tim thay chuong trinh'];
+                    break;
+                }
+                $detailSql = "SELECT D.lv001, D.lv003 AS itemId, P.lv002 AS itemName, D.lv004 AS discount, D.lv005 AS quantityThreshold, D.lv006 AS pointValue, D.lv007 AS statusFlag, D.lv008 AS note FROM sl_lv0060 D LEFT JOIN sl_lv0007 P ON P.lv001 = D.lv003 WHERE D.lv002 = '$programIdEsc' ORDER BY D.lv001";
+                $detailResult = db_query($detailSql);
+                $details = [];
+                if ($detailResult) {
+                    while ($detailRow = db_fetch_array($detailResult, MYSQLI_ASSOC)) {
+                        $details[] = [
+                            'detailId' => (int)$detailRow['lv001'],
+                            'itemId' => $detailRow['itemId'],
+                            'itemName' => $detailRow['itemName'],
+                            'discount' => (float)$detailRow['discount'],
+                            'threshold' => (float)$detailRow['quantityThreshold'],
+                            'points' => (float)$detailRow['pointValue'],
+                            'status' => (int)$detailRow['statusFlag'],
+                            'note' => $detailRow['note']
+                        ];
+                    }
+                }
+                $groupsRaw = isset($programRow['lv099']) ? $programRow['lv099'] : '';
+                $groups = array_values(array_filter(array_map('trim', explode(',', (string)$groupsRaw))));
+                $vOutput = [
+                    'success' => true,
+                    'data' => [
+                        'programId' => $programRow['lv001'],
+                        'name' => $programRow['lv002'],
+                        'startDate' => $programRow['lv003'],
+                        'endDate' => $programRow['lv004'],
+                        'createdBy' => $programRow['lv005'],
+                        'updatedAt' => $programRow['lv006'],
+                        'approvedBy' => $programRow['lv007'],
+                        'status' => (int)$programRow['lv008'],
+                        'value' => $programRow['lv009'],
+                        'customerGroups' => $groups,
+                        'details' => $details
+                    ]
+                ];
+                break;
+
+            case 'create':
+                $programId = trim((string)request_value('programId', ''));
+                if ($programId === '') {
+                    $programId = strtoupper('PRG' . dechex(time()) . substr(md5(uniqid('', true)), 0, 4));
+                }
+                $programIdEsc = esc_str($programId);
+                $name = trim((string)request_value('name', ''));
+                if ($name === '') {
+                    $vOutput = ['success' => false, 'message' => 'Thieu ten chuong trinh'];
+                    break;
+                }
+                $nameEsc = esc_str($name);
+                $startDate = normalize_datetime_input(request_value('startDate', null), date('Y-m-d 00:00:00'));
+                $endDate = normalize_datetime_input(request_value('endDate', null), date('Y-m-d 23:59:59'));
+                $startDateSql = "'" . esc_str($startDate) . "'";
+                $endDateSql = "'" . esc_str($endDate) . "'";
+                $value = trim((string)request_value('value', '0'));
+                $valueEsc = esc_str($value);
+                $groups = normalize_to_array(request_value('customerGroups', []));
+                $groups = array_values(array_filter(array_map(function ($item) {
+                    return trim((string)$item);
+                }, $groups)));
+                $groupStringEsc = esc_str(implode(',', array_unique($groups)));
+                $details = normalize_to_array(request_value('details', []));
+                db_query("START TRANSACTION");
+                $insertSql = "INSERT INTO sl_lv0059 (lv001, lv002, lv003, lv004, lv005, lv006, lv008, lv009, lv099) VALUES ('$programIdEsc', '$nameEsc', $startDateSql, $endDateSql, '$currentUserIdEsc', NOW(), 0, '$valueEsc', '$groupStringEsc')";
+                if (!db_query($insertSql)) {
+                    db_query("ROLLBACK");
+                    $vOutput = ['success' => false, 'message' => 'Khong the tao chuong trinh'];
+                    break;
+                }
+                $detailError = null;
+                if (is_array($details) && count($details) > 0) {
+                    foreach ($details as $detail) {
+                        if (!is_array($detail)) {
+                            continue;
+                        }
+                        $itemId = isset($detail['itemId']) ? trim((string)$detail['itemId']) : '';
+                        if ($itemId === '') {
+                            continue;
+                        }
+                        $itemIdEsc = esc_str($itemId);
+                        $discount = isset($detail['discount']) ? (float)$detail['discount'] : 0;
+                        $threshold = isset($detail['threshold']) ? (float)$detail['threshold'] : 0;
+                        $points = isset($detail['points']) ? (float)$detail['points'] : 0;
+                        $statusFlag = isset($detail['status']) ? (int)$detail['status'] : 0;
+                        $note = isset($detail['note']) ? trim((string)$detail['note']) : '';
+                        $noteEsc = esc_str($note);
+                        $detailSql = "INSERT INTO sl_lv0060 (lv002, lv003, lv004, lv005, lv006, lv007, lv008) VALUES ('$programIdEsc', '$itemIdEsc', " . number_format($discount, 2, '.', '') . ", " . number_format($threshold, 2, '.', '') . ", " . number_format($points, 2, '.', '') . ", $statusFlag, '$noteEsc')";
+                        if (!db_query($detailSql)) {
+                            $detailError = 'Khong the luu chi tiet chuong trinh';
+                            break;
+                        }
+                    }
+                }
+                if ($detailError !== null) {
+                    db_query("ROLLBACK");
+                    $vOutput = ['success' => false, 'message' => $detailError];
+                    break;
+                }
+                db_query("COMMIT");
+                $vOutput = ['success' => true, 'message' => 'Da tao chuong trinh', 'programId' => $programId];
+                break;
+
+            case 'update':
+                $programId = trim((string)request_value('programId', ''));
+                if ($programId === '') {
+                    $vOutput = ['success' => false, 'message' => 'Thieu ma chuong trinh'];
+                    break;
+                }
+                $programIdEsc = esc_str($programId);
+                $checkSql = "SELECT lv008 FROM sl_lv0059 WHERE lv001='$programIdEsc' LIMIT 1";
+                $checkResult = db_query($checkSql);
+                if (!$checkResult || !($programRow = db_fetch_array($checkResult, MYSQLI_ASSOC))) {
+                    $vOutput = ['success' => false, 'message' => 'Khong tim thay chuong trinh'];
+                    break;
+                }
+                if ((int)$programRow['lv008'] > 0) {
+                    $vOutput = ['success' => false, 'message' => 'Chuong trinh da duyet, khong the cap nhat'];
+                    break;
+                }
+                $name = trim((string)request_value('name', ''));
+                if ($name === '') {
+                    $vOutput = ['success' => false, 'message' => 'Thieu ten chuong trinh'];
+                    break;
+                }
+                $nameEsc = esc_str($name);
+                $startDate = normalize_datetime_input(request_value('startDate', null), date('Y-m-d 00:00:00'));
+                $endDate = normalize_datetime_input(request_value('endDate', null), date('Y-m-d 23:59:59'));
+                $startDateSql = "'" . esc_str($startDate) . "'";
+                $endDateSql = "'" . esc_str($endDate) . "'";
+                $value = trim((string)request_value('value', '0'));
+                $valueEsc = esc_str($value);
+                $groups = normalize_to_array(request_value('customerGroups', []));
+                $groups = array_values(array_filter(array_map(function ($item) {
+                    return trim((string)$item);
+                }, $groups)));
+                $groupStringEsc = esc_str(implode(',', array_unique($groups)));
+                $details = normalize_to_array(request_value('details', []));
+                db_query("START TRANSACTION");
+                $updateSql = "UPDATE sl_lv0059 SET lv002='$nameEsc', lv003=$startDateSql, lv004=$endDateSql, lv006=NOW(), lv009='$valueEsc', lv099='$groupStringEsc' WHERE lv001='$programIdEsc'";
+                if (!db_query($updateSql)) {
+                    db_query("ROLLBACK");
+                    $vOutput = ['success' => false, 'message' => 'Khong the cap nhat chuong trinh'];
+                    break;
+                }
+                if (!db_query("DELETE FROM sl_lv0060 WHERE lv002='$programIdEsc'")) {
+                    db_query("ROLLBACK");
+                    $vOutput = ['success' => false, 'message' => 'Khong the xoa chi tiet cu'];
+                    break;
+                }
+                $detailError = null;
+                if (is_array($details) && count($details) > 0) {
+                    foreach ($details as $detail) {
+                        if (!is_array($detail)) {
+                            continue;
+                        }
+                        $itemId = isset($detail['itemId']) ? trim((string)$detail['itemId']) : '';
+                        if ($itemId === '') {
+                            continue;
+                        }
+                        $itemIdEsc = esc_str($itemId);
+                        $discount = isset($detail['discount']) ? (float)$detail['discount'] : 0;
+                        $threshold = isset($detail['threshold']) ? (float)$detail['threshold'] : 0;
+                        $points = isset($detail['points']) ? (float)$detail['points'] : 0;
+                        $statusFlag = isset($detail['status']) ? (int)$detail['status'] : 0;
+                        $note = isset($detail['note']) ? trim((string)$detail['note']) : '';
+                        $noteEsc = esc_str($note);
+                        $detailSql = "INSERT INTO sl_lv0060 (lv002, lv003, lv004, lv005, lv006, lv007, lv008) VALUES ('$programIdEsc', '$itemIdEsc', " . number_format($discount, 2, '.', '') . ", " . number_format($threshold, 2, '.', '') . ", " . number_format($points, 2, '.', '') . ", $statusFlag, '$noteEsc')";
+                        if (!db_query($detailSql)) {
+                            $detailError = 'Khong the luu chi tiet chuong trinh';
+                            break;
+                        }
+                    }
+                }
+                if ($detailError !== null) {
+                    db_query("ROLLBACK");
+                    $vOutput = ['success' => false, 'message' => $detailError];
+                    break;
+                }
+                db_query("COMMIT");
+                $vOutput = ['success' => true, 'message' => 'Da cap nhat chuong trinh'];
+                break;
+
+            case 'delete':
+                $programId = trim((string)request_value('programId', ''));
+                if ($programId === '') {
+                    $vOutput = ['success' => false, 'message' => 'Thieu ma chuong trinh'];
+                    break;
+                }
+                $programIdEsc = esc_str($programId);
+                $checkSql = "SELECT lv008 FROM sl_lv0059 WHERE lv001='$programIdEsc' LIMIT 1";
+                $checkResult = db_query($checkSql);
+                if (!$checkResult || !($programRow = db_fetch_array($checkResult, MYSQLI_ASSOC))) {
+                    $vOutput = ['success' => false, 'message' => 'Khong tim thay chuong trinh'];
+                    break;
+                }
+                if ((int)$programRow['lv008'] > 0) {
+                    $vOutput = ['success' => false, 'message' => 'Chuong trinh da duyet, khong the xoa'];
+                    break;
+                }
+                if (db_query("DELETE FROM sl_lv0059 WHERE lv001='$programIdEsc'")) {
+                    $vOutput = ['success' => true, 'message' => 'Da xoa chuong trinh'];
+                } else {
+                    $vOutput = ['success' => false, 'message' => 'Khong the xoa chuong trinh'];
+                }
+                break;
+
+            case 'toggleStatus':
+                $programId = trim((string)request_value('programId', ''));
+                if ($programId === '') {
+                    $vOutput = ['success' => false, 'message' => 'Thieu ma chuong trinh'];
+                    break;
+                }
+                $programIdEsc = esc_str($programId);
+                $statusRaw = request_value('active', null);
+                if ($statusRaw === null || $statusRaw === '') {
+                    $statusRaw = request_value('status', null);
+                }
+                $targetStatus = (int)((bool)$statusRaw ? 1 : 0);
+                $checkSql = "SELECT lv008 FROM sl_lv0059 WHERE lv001='$programIdEsc' LIMIT 1";
+                $checkResult = db_query($checkSql);
+                if (!$checkResult || !($programRow = db_fetch_array($checkResult, MYSQLI_ASSOC))) {
+                    $vOutput = ['success' => false, 'message' => 'Khong tim thay chuong trinh'];
+                    break;
+                }
+                if ($targetStatus === (int)$programRow['lv008']) {
+                    $vOutput = ['success' => true, 'message' => 'Trang thai khong thay doi', 'status' => $targetStatus];
+                    break;
+                }
+                if ($targetStatus === 1) {
+                    $toggleSql = "UPDATE sl_lv0059 SET lv008=1, lv007='$currentUserIdEsc', lv006=NOW() WHERE lv001='$programIdEsc'";
+                } else {
+                    $toggleSql = "UPDATE sl_lv0059 SET lv008=0, lv007=NULL, lv006=NOW() WHERE lv001='$programIdEsc'";
+                }
+                if (db_query($toggleSql)) {
+                    $vOutput = ['success' => true, 'message' => 'Da cap nhat trang thai', 'status' => $targetStatus];
+                } else {
+                    $vOutput = ['success' => false, 'message' => 'Khong the cap nhat trang thai'];
+                }
+                break;
+
+            default:
+                $vOutput = ['success' => false, 'message' => 'Chuc nang khong hop le'];
+                break;
+        }
+        break;
+
+    case 'Mb_Loyalty':
+        $currentUserIdEsc = esc_str($_SESSION['ERPSOFV2RUserID']);
+        $fetchSummary = function ($customerIdEsc) {
+            $summarySql = "SELECT C.lv001, C.lv002, C.lv010, C.lv022,
+                                  COALESCE(SUM(CASE WHEN T.lv004 > 0 THEN T.lv004 ELSE 0 END),0) AS totalEarned,
+                                  COALESCE(SUM(CASE WHEN T.lv004 < 0 THEN -T.lv004 ELSE 0 END),0) AS totalRedeemed,
+                                  COALESCE(SUM(T.lv004),0) AS balance
+                           FROM sl_lv0001 C
+                           LEFT JOIN sl_lv0115 T ON T.lv002 = C.lv001 AND T.lv015 >= 0
+                           WHERE C.lv001 = '$customerIdEsc'
+                           GROUP BY C.lv001";
+            $summaryResult = db_query($summarySql);
+            if ($summaryResult && ($row = db_fetch_array($summaryResult, MYSQLI_ASSOC))) {
+                return [
+                    'customerId' => $row['lv001'],
+                    'name' => $row['lv002'],
+                    'phone' => $row['lv010'],
+                    'group' => $row['lv022'],
+                    'accumulated' => (float)$row['totalEarned'],
+                    'redeemed' => (float)$row['totalRedeemed'],
+                    'balance' => (float)$row['balance']
+                ];
+            }
+            return null;
+        };
+        switch ($vfun) {
+            case 'searchCustomers':
+                $keyword = trim((string)request_value('keyword', ''));
+                $limit = (int)request_value('limit', 20);
+                if ($limit <= 0) {
+                    $limit = 20;
+                }
+                if ($limit > 100) {
+                    $limit = 100;
+                }
+                if ($keyword === '') {
+                    $vOutput = ['success' => true, 'data' => []];
+                    break;
+                }
+                $keywordLikeEsc = esc_str('%' . $keyword . '%');
+                $sql = "SELECT lv001, lv002, lv010, lv022, COALESCE(lv100,0) AS totalPoints, COALESCE(lv101,0) AS usedPoints, COALESCE(lv102,0) AS remainingPoints FROM sl_lv0001 WHERE lv001 LIKE '$keywordLikeEsc' OR lv002 LIKE '$keywordLikeEsc' OR lv010 LIKE '$keywordLikeEsc' ORDER BY lv002 LIMIT $limit";
+                $result = db_query($sql);
+                if (!$result) {
+                    $vOutput = ['success' => false, 'message' => 'Khong tim duoc khach hang'];
+                    break;
+                }
+                $data = [];
+                while ($row = db_fetch_array($result, MYSQLI_ASSOC)) {
+                    $data[] = [
+                        'customerId' => $row['lv001'],
+                        'name' => $row['lv002'],
+                        'phone' => $row['lv010'],
+                        'group' => $row['lv022'],
+                        'totalPoints' => (float)$row['totalPoints'],
+                        'usedPoints' => (float)$row['usedPoints'],
+                        'remainingPoints' => (float)$row['remainingPoints']
+                    ];
+                }
+                $vOutput = ['success' => true, 'data' => $data];
+                break;
+
+            case 'registerCustomer':
+                $customerId = trim((string)request_value('customerId', ''));
+                $name = trim((string)request_value('name', ''));
+                if ($customerId === '' || $name === '') {
+                    $vOutput = ['success' => false, 'message' => 'Thieu thong tin khach hang'];
+                    break;
+                }
+                $phone = trim((string)request_value('phone', ''));
+                $group = trim((string)request_value('group', ''));
+                $note = trim((string)request_value('note', ''));
+                $customerIdEsc = esc_str($customerId);
+                $nameEsc = esc_str($name);
+                $phoneEsc = esc_str($phone);
+                $groupEsc = esc_str($group);
+                $noteEsc = esc_str($note);
+                $sql = "INSERT INTO sl_lv0001 (lv001, lv002, lv010, lv022, lv019, lv099, lv100, lv101, lv102, lv024) VALUES ('$customerIdEsc', '$nameEsc', '$phoneEsc', '$groupEsc', '$noteEsc', 0, 0, 0, 0, NOW())
+                        ON DUPLICATE KEY UPDATE lv002=VALUES(lv002), lv010=VALUES(lv010), lv022=VALUES(lv022), lv019=VALUES(lv019), lv024=NOW()";
+                if (db_query($sql)) {
+                    $summary = $fetchSummary($customerIdEsc);
+                    $vOutput = ['success' => true, 'message' => 'Da cap nhat khach hang', 'data' => $summary];
+                } else {
+                    $vOutput = ['success' => false, 'message' => 'Khong the cap nhat khach hang'];
+                }
+                break;
+
+            case 'getCustomerSummary':
+                $customerId = trim((string)request_value('customerId', ''));
+                if ($customerId === '') {
+                    $vOutput = ['success' => false, 'message' => 'Thieu ma khach hang'];
+                    break;
+                }
+                $customerIdEsc = esc_str($customerId);
+                $summary = $fetchSummary($customerIdEsc);
+                if ($summary) {
+                    $vOutput = ['success' => true, 'data' => $summary];
+                } else {
+                    $vOutput = ['success' => false, 'message' => 'Khong tim thay khach hang'];
+                }
+                break;
+
+            case 'addPoints':
+                $customerId = trim((string)request_value('customerId', ''));
+                $points = (float)request_value('points', 0);
+                if ($customerId === '' || $points <= 0) {
+                    $vOutput = ['success' => false, 'message' => 'Thong tin diem khong hop le'];
+                    break;
+                }
+                $customerIdEsc = esc_str($customerId);
+                $checkResult = db_query("SELECT lv001 FROM sl_lv0001 WHERE lv001='$customerIdEsc' LIMIT 1");
+                if (!$checkResult || !db_fetch_array($checkResult, MYSQLI_ASSOC)) {
+                    $vOutput = ['success' => false, 'message' => 'Khong tim thay khach hang'];
+                    break;
+                }
+                $programId = trim((string)request_value('programId', ''));
+                $programValue = $programId !== '' ? "'" . esc_str($programId) . "'" : "NULL";
+                $orderCode = trim((string)request_value('orderCode', ''));
+                $orderValue = $orderCode !== '' ? "'" . esc_str($orderCode) . "'" : "NULL";
+                $note = trim((string)request_value('note', ''));
+                $noteValue = $note !== '' ? "'" . esc_str($note) . "'" : "NULL";
+                $effectiveDate = normalize_datetime_input(request_value('effectiveDate', null), date('Y-m-d 00:00:00'));
+                $startDateSql = "'" . esc_str(substr($effectiveDate, 0, 10)) . "'";
+                $expiryRaw = request_value('expiryDate', null);
+                $expiryValue = "NULL";
+                if ($expiryRaw !== null && $expiryRaw !== '') {
+                    $expiryDate = normalize_datetime_input($expiryRaw, null);
+                    if ($expiryDate !== null) {
+                        $expiryValue = "'" . esc_str(substr($expiryDate, 0, 10)) . "'";
+                    }
+                }
+                $pointsValue = number_format($points, 2, '.', '');
+                $insertSql = "INSERT INTO sl_lv0115 (lv002, lv003, lv004, lv005, lv006, lv007, lv008, lv009, lv010, lv011, lv012, lv013, lv014, lv015)
+                              VALUES ('$customerIdEsc', $programValue, $pointsValue, $startDateSql, $expiryValue, NOW(), '$currentUserIdEsc', $orderValue, NOW(), 'earn', $noteValue, '0', 'POS', 1)";
+                if (db_query($insertSql)) {
+                    $summary = $fetchSummary($customerIdEsc);
+                    $vOutput = ['success' => true, 'message' => 'Da cong diem', 'data' => $summary];
+                } else {
+                    $vOutput = ['success' => false, 'message' => 'Khong the cong diem'];
+                }
+                break;
+
+            case 'redeemPoints':
+                $customerId = trim((string)request_value('customerId', ''));
+                $points = (float)request_value('points', 0);
+                if ($customerId === '' || $points <= 0) {
+                    $vOutput = ['success' => false, 'message' => 'Thong tin diem khong hop le'];
+                    break;
+                }
+                $customerIdEsc = esc_str($customerId);
+                $summary = $fetchSummary($customerIdEsc);
+                if (!$summary) {
+                    $vOutput = ['success' => false, 'message' => 'Khong tim thay khach hang'];
+                    break;
+                }
+                if ($summary['balance'] < $points) {
+                    $vOutput = ['success' => false, 'message' => 'Khong du diem de tru'];
+                    break;
+                }
+                $orderCode = trim((string)request_value('orderCode', ''));
+                $orderValue = $orderCode !== '' ? "'" . esc_str($orderCode) . "'" : "NULL";
+                $note = trim((string)request_value('note', ''));
+                $noteValue = $note !== '' ? "'" . esc_str($note) . "'" : "NULL";
+                $pointsValue = '-' . number_format(abs($points), 2, '.', '');
+                $insertSql = "INSERT INTO sl_lv0115 (lv002, lv003, lv004, lv005, lv006, lv007, lv008, lv009, lv010, lv011, lv012, lv013, lv014, lv015)
+                              VALUES ('$customerIdEsc', NULL, $pointsValue, CURDATE(), NULL, NOW(), '$currentUserIdEsc', $orderValue, NOW(), 'redeem', $noteValue, '0', 'POS', 1)";
+                if (db_query($insertSql)) {
+                    $summary = $fetchSummary($customerIdEsc);
+                    $vOutput = ['success' => true, 'message' => 'Da tru diem', 'data' => $summary];
+                } else {
+                    $vOutput = ['success' => false, 'message' => 'Khong the tru diem'];
+                }
+                break;
+
+            case 'history':
+                $customerId = trim((string)request_value('customerId', ''));
+                if ($customerId === '') {
+                    $vOutput = ['success' => false, 'message' => 'Thieu ma khach hang'];
+                    break;
+                }
+                $customerIdEsc = esc_str($customerId);
+                $limit = (int)request_value('limit', 50);
+                if ($limit <= 0) {
+                    $limit = 50;
+                }
+                if ($limit > 200) {
+                    $limit = 200;
+                }
+                $offset = (int)request_value('offset', 0);
+                if ($offset < 0) {
+                    $offset = 0;
+                }
+                $historySql = "SELECT lv001, lv003, lv004, lv005, lv006, lv007, lv008, lv009, lv010, lv011, lv012, lv015 FROM sl_lv0115 WHERE lv002='$customerIdEsc' ORDER BY lv007 DESC LIMIT $offset, $limit";
+                $result = db_query($historySql);
+                if (!$result) {
+                    $vOutput = ['success' => false, 'message' => 'Khong lay duoc lich su'];
+                    break;
+                }
+                $records = [];
+                while ($row = db_fetch_array($result, MYSQLI_ASSOC)) {
+                    $records[] = [
+                        'id' => (int)$row['lv001'],
+                        'programId' => $row['lv003'],
+                        'points' => (float)$row['lv004'],
+                        'startDate' => $row['lv005'],
+                        'expiryDate' => $row['lv006'],
+                        'createdAt' => $row['lv007'],
+                        'createdBy' => $row['lv008'],
+                        'orderCode' => $row['lv009'],
+                        'updatedAt' => $row['lv010'],
+                        'type' => $row['lv011'],
+                        'note' => $row['lv012'],
+                        'status' => (int)$row['lv015']
+                    ];
+                }
+                $vOutput = [
+                    'success' => true,
+                    'data' => $records,
+                    'pagination' => [
+                        'limit' => $limit,
+                        'offset' => $offset
+                    ]
+                ];
+                break;
+
+            default:
+                $vOutput = ['success' => false, 'message' => 'Chuc nang khong hop le'];
                 break;
         }
         break;
