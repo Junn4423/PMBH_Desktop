@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import {
   Breadcrumb,
   Card,
@@ -35,7 +35,8 @@ import {
   createSalesProgram,
   updateSalesProgram,
   deleteSalesProgram,
-  toggleSalesProgramStatus
+  toggleSalesProgramStatus,
+  getAllSanPham
 } from '../../services/apiServices';
 
 const { Title, Text } = Typography;
@@ -50,6 +51,8 @@ const ChuongTrinhKinhDoanh = () => {
   const [modalBusy, setModalBusy] = useState(false);
   const [selectedProgramId, setSelectedProgramId] = useState(null);
   const [form] = Form.useForm();
+  const [productOptions, setProductOptions] = useState([]);
+  const [productLoading, setProductLoading] = useState(false);
 
   const fetchPrograms = async () => {
     setLoading(true);
@@ -75,9 +78,66 @@ const ChuongTrinhKinhDoanh = () => {
     }
   };
 
+  const loadProductOptions = useCallback(async () => {
+    try {
+      setProductLoading(true);
+      const response = await getAllSanPham();
+      let productsData = [];
+
+      if (response?.success && Array.isArray(response.data)) {
+        productsData = response.data;
+      } else if (Array.isArray(response)) {
+        productsData = response;
+      } else if (response?.data && typeof response.data === 'object') {
+        productsData = Object.values(response.data);
+      }
+
+      const formattedOptions = productsData
+        .map((product) => {
+          const productId =
+            product?.maSp ?? product?.id ?? product?.maSP ?? product?.lv001 ?? product?.lv002;
+          if (!productId) {
+            return null;
+          }
+          const name = product?.tenSp ?? product?.ten ?? product?.tensp ?? `San pham ${productId}`;
+          const priceValue =
+            product?.giaBan ?? product?.gia ?? product?.donGia ?? product?.lv007 ?? null;
+          const price =
+            typeof priceValue === 'number'
+              ? priceValue
+              : parseInt(String(priceValue || '').replace(/[^\d]/g, ''), 10);
+          const label =
+            Number.isFinite(price) && price > 0
+              ? `${name} (${price.toLocaleString('vi-VN')} ₫)`
+              : name;
+          return {
+            value: String(productId),
+            label,
+            data: {
+              id: String(productId),
+              name,
+              price: Number.isFinite(price) ? price : undefined
+            }
+          };
+        })
+        .filter(Boolean);
+
+      setProductOptions(formattedOptions);
+    } catch (error) {
+      console.error('Failed to load product options:', error);
+      message.warning('Khong the tai danh sach san pham');
+    } finally {
+      setProductLoading(false);
+    }
+  }, []);
+
   useEffect(() => {
     fetchPrograms();
   }, [statusFilter]);
+
+  useEffect(() => {
+    loadProductOptions();
+  }, [loadProductOptions]);
 
   const resetFormForCreate = () => {
     form.resetFields();
@@ -141,6 +201,42 @@ const ChuongTrinhKinhDoanh = () => {
             }))
           : []
       });
+      if (Array.isArray(program.details)) {
+        setProductOptions((prev) => {
+          const existingKeys = new Set(prev.map((item) => item.value));
+          const merged = [...prev];
+          program.details.forEach((detail) => {
+            const rawId =
+              detail.itemId ??
+              detail.maSp ??
+              detail.masp ??
+              detail.ma ??
+              detail.productId;
+            if (!rawId) {
+              return;
+            }
+            const key = String(rawId);
+            if (!existingKeys.has(key)) {
+              const displayName =
+                detail.productName ??
+                detail.tenSp ??
+                detail.ten ??
+                `San pham ${key}`;
+              merged.push({
+                value: key,
+                label: displayName,
+                data: {
+                  id: key,
+                  name: displayName
+                }
+              });
+              existingKeys.add(key);
+            }
+          });
+          return merged;
+        });
+      }
+
     } catch (error) {
       console.error('Error loading program detail:', error);
       message.error('Không thể tải chi tiết chương trình');

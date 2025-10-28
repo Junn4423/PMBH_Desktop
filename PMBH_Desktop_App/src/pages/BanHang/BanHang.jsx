@@ -94,8 +94,14 @@ import {
   getFullImageUrl,
   layDsMonCho,
   layDsMonDaXong,
-  capNhatTrangThaiMon
+  capNhatTrangThaiMon,
+  listSalesPrograms,
+  getSalesProgram,
+  searchLoyaltyCustomers,
+  getLoyaltySummary,
+  addLoyaltyPoints
 } from '../../services/apiServices';
+import dayjs from 'dayjs';
 
 // Import components
 import ChonSanPham from './ChonSanPham';
@@ -174,8 +180,19 @@ const BanHang = () => {
     subtotal: 0,
     tax: 0,
     discount: 0,
-    total: 0
+    total: 0,
+    loyaltyPoints: 0
   });
+  const [activeSalesProgram, setActiveSalesProgram] = useState(null);
+  const [programDiscountMap, setProgramDiscountMap] = useState({});
+  const [programDiscountBreakdown, setProgramDiscountBreakdown] = useState([]);
+  const [loyaltyPointsEarned, setLoyaltyPointsEarned] = useState(0);
+  const [loyaltyCustomer, setLoyaltyCustomer] = useState(null);
+  const [loyaltyCustomerSummary, setLoyaltyCustomerSummary] = useState(null);
+  const [loyaltyOptions, setLoyaltyOptions] = useState([]);
+  const [loyaltySearchLoading, setLoyaltySearchLoading] = useState(false);
+  const [loyaltySearchValue, setLoyaltySearchValue] = useState('');
+  const loyaltySearchTimeoutRef = useRef(null);
 
   // State cho Enhanced Payment System
   const [showPaymentModal, setShowPaymentModal] = useState(false);
@@ -186,6 +203,14 @@ const BanHang = () => {
   useEffect(() => {
     awaitingPaymentSuccessCloseRef.current = awaitingPaymentSuccessClose;
   }, [awaitingPaymentSuccessClose]);
+
+  useEffect(() => {
+    return () => {
+      if (loyaltySearchTimeoutRef.current) {
+        clearTimeout(loyaltySearchTimeoutRef.current);
+      }
+    };
+  }, [loyaltyCustomer]);
 
   
   // State cho Order Status Tracking
@@ -289,7 +314,7 @@ const BanHang = () => {
     invoiceDetails,
     selectedTable,
     orderTotal,
-    0, // discount placeholder
+    invoiceSummary.discount ?? 0,
     orderTotal
   );
   const quickRefreshTimeoutRef = useRef(null);
@@ -432,6 +457,7 @@ const BanHang = () => {
   const handleManualRefresh = async () => {
     setLastRefresh(new Date());
     await loadTables();
+    await fetchActiveSalesProgram();
     message.success(__('Đã cập nhật trạng thái bàn'));
   };
 
@@ -472,19 +498,11 @@ const BanHang = () => {
   }, [currentView, tables]);
   
   // Tính toán tổng tiền khi invoice details thay đổi
+  // Recalculate invoice summary when invoice details or VAT flag change
   useEffect(() => {
-    if (invoiceDetails.length > 0) {
-      const total = invoiceDetails.reduce((sum, item) => {
-        // API trả về field 'gia' hoặc 'giaBan' tùy endpoint, không phải 'donGia'
-        const price = parseFloat(item.gia || item.giaBan || item.donGia || 0);
-        const quantity = parseInt(item.sl || item.soLuong || 0); // API trả về 'sl' cho quantity
-        return sum + (price * quantity);
-      }, 0);
-      setOrderTotal(total);
-    } else {
-      setOrderTotal(0);
-    }
-  }, [invoiceDetails]);
+    calculateInvoiceSummary();
+  }, [invoiceDetails, includeVAT, programDiscountMap]);
+
 
   // Load dữ liệu ban đầu - chỉ tables và areas, không load products để tránh lag
   const loadInitialData = async () => {
@@ -501,6 +519,296 @@ const BanHang = () => {
       // Remove loadProducts() from initial load to improve startup performance
     ]);
   };
+  const fetchActiveSalesProgram = useCallback(async () => {
+    try {
+      const response = await listSalesPrograms({ status: 1 });
+      let programs = [];
+
+      if (response?.success && Array.isArray(response.data)) {
+        programs = response.data;
+      } else if (Array.isArray(response)) {
+        programs = response;
+      } else if (response?.data) {
+        if (Array.isArray(response.data)) {
+          programs = response.data;
+        } else if (typeof response.data === 'object') {
+          programs = Object.values(response.data);
+        }
+      }
+
+      const now = dayjs();
+      const activeCandidates = programs
+        .filter((program) => {
+          if (!program) return false;
+          const statusValue = Number(program.status ?? program.active ?? program.isActive ?? 0);
+          if (statusValue !== 1) return false;
+
+          const start = program.startDate ? dayjs(program.startDate) : null;
+          const end = program.endDate ? dayjs(program.endDate) : null;
+          const withinStart =
+            !start || !start.isValid() || start.isBefore(now) || start.isSame(now, 'day');
+          const withinEnd =
+            !end || !end.isValid() || end.isAfter(now) || end.isSame(now, 'day');
+          return withinStart && withinEnd;
+        })
+        .sort((a, b) => {
+          const aStart = a?.startDate ? dayjs(a.startDate) : null;
+          const bStart = b?.startDate ? dayjs(b.startDate) : null;
+          if (!aStart || !aStart.isValid()) return 1;
+          if (!bStart || !bStart.isValid()) return -1;
+          return bStart.valueOf() - aStart.valueOf();
+        });
+
+      let activeProgram = activeCandidates.length > 0 ? activeCandidates[0] : null;
+
+      if (!activeProgram && programs.length > 0) {
+        activeProgram =
+          programs.find(
+            (program) =>
+              Number(program.status ?? program.active ?? program.isActive ?? 0) === 1
+          ) || null;
+      }
+
+      if (activeProgram?.programId) {
+        const detailResponse = await getSalesProgram(activeProgram.programId);
+        const detailData =
+          detailResponse?.success && detailResponse.data ? detailResponse.data : detailResponse || {};
+
+        let programDetailsRaw = Array.isArray(detailData?.details) ? detailData.details : [];
+        if (
+          !Array.isArray(programDetailsRaw) &&
+          detailData?.details &&
+          typeof detailData.details === 'object'
+        ) {
+          programDetailsRaw = Object.values(detailData.details);
+        }
+
+        const discountMap = {};
+        const normalizedDetails = [];
+
+        programDetailsRaw.forEach((detail) => {
+          if (!detail) return;
+
+          const detailStatus =
+            detail.status ?? detail.active ?? detail.isActive ?? detail.statusFlag;
+          const isDetailActive =
+            detailStatus === undefined ||
+            detailStatus === null ||
+            detailStatus === true ||
+            detailStatus === 1 ||
+            detailStatus === '1';
+
+          if (!isDetailActive) {
+            return;
+          }
+
+          const possibleIds = [
+            detail.itemId,
+            detail.maSp,
+            detail.masp,
+            detail.maSP,
+            detail.ma,
+            detail.id
+          ];
+          const rawId = possibleIds.find((value) => value !== undefined && value !== null);
+          if (!rawId) {
+            return;
+          }
+
+          const key = String(rawId);
+          const normalizedDetail = { ...detail, itemId: key };
+          discountMap[key] = normalizedDetail;
+          normalizedDetails.push(normalizedDetail);
+        });
+
+        setActiveSalesProgram({
+          ...activeProgram,
+          ...detailData,
+          details: normalizedDetails
+        });
+        setProgramDiscountMap(discountMap);
+      } else {
+        setActiveSalesProgram(null);
+        setProgramDiscountMap({});
+      }
+    } catch (error) {
+      console.error('Khong the load chuong trinh kinh doanh dang hoat dong:', error);
+      setActiveSalesProgram(null);
+      setProgramDiscountMap({});
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchActiveSalesProgram();
+  }, [fetchActiveSalesProgram]);
+
+
+  const normalizeLoyaltyCustomer = (customer) => {
+    if (!customer || typeof customer !== 'object') {
+      return null;
+    }
+
+    const id =
+      customer.customerId ??
+      customer.id ??
+      customer.maKh ??
+      customer.maKhach ??
+      customer.ma_kh ??
+      customer.lv001;
+
+    if (!id) {
+      return null;
+    }
+
+    const name =
+      customer.name ??
+      customer.fullName ??
+      customer.tenKhach ??
+      customer.ten_khach ??
+      customer.ten ??
+      'Khach hang';
+
+    const phone =
+      customer.phone ??
+      customer.soDienThoai ??
+      customer.sdt ??
+      customer.dienThoai ??
+      customer.tel ??
+      '';
+
+    const pointsValue = Number(customer.points ?? customer.loyaltyPoints ?? customer.totalPoints ?? 0) || 0;
+
+    return {
+      id: String(id),
+      name,
+      phone,
+      points: pointsValue,
+      raw: customer
+    };
+  };
+
+  const loadLoyaltyCustomers = useCallback(async (keyword) => {
+    try {
+      setLoyaltySearchLoading(true);
+      const response = await searchLoyaltyCustomers(keyword, 20);
+      let customersData = [];
+
+      if (response?.success && Array.isArray(response.data)) {
+        customersData = response.data;
+      } else if (Array.isArray(response)) {
+        customersData = response;
+      } else if (response?.data) {
+        if (Array.isArray(response.data)) {
+          customersData = response.data;
+        } else if (typeof response.data === 'object') {
+          customersData = Object.values(response.data);
+        }
+      }
+
+      const mappedOptions = customersData
+        .map((customer) => {
+          const normalized = normalizeLoyaltyCustomer(customer);
+          if (!normalized) {
+            return null;
+          }
+          const label = normalized.phone
+            ? `${normalized.name} (${normalized.phone})`
+            : normalized.name;
+          return {
+            value: normalized.id,
+            label,
+            data: normalized
+          };
+        })
+        .filter(Boolean);
+
+      if (loyaltyCustomer && !mappedOptions.some((item) => item.value === loyaltyCustomer.id)) {
+        const selectedLabel = loyaltyCustomer.phone
+          ? `${loyaltyCustomer.name} (${loyaltyCustomer.phone})`
+          : loyaltyCustomer.name;
+        mappedOptions.unshift({ value: loyaltyCustomer.id, label: selectedLabel, data: loyaltyCustomer });
+      }
+
+      setLoyaltyOptions(mappedOptions);
+    } catch (error) {
+      console.error('Failed to search loyalty customers:', error);
+      message.warning('Khong the tim khach hang than thiet');
+      setLoyaltyOptions([]);
+    } finally {
+      setLoyaltySearchLoading(false);
+    }
+  }, [loyaltyCustomer]);
+
+  const handleLoyaltySearch = useCallback((value) => {
+    setLoyaltySearchValue(value);
+    if (loyaltySearchTimeoutRef.current) {
+      clearTimeout(loyaltySearchTimeoutRef.current);
+    }
+
+    if (!value) {
+      setLoyaltyOptions([]);
+      return;
+    }
+
+    loyaltySearchTimeoutRef.current = setTimeout(() => {
+      loadLoyaltyCustomers(value);
+    }, 300);
+  }, [loadLoyaltyCustomers]);
+
+  const fetchLoyaltySummary = useCallback(async (customerId) => {
+    if (!customerId) {
+      setLoyaltyCustomerSummary(null);
+      return;
+    }
+
+    try {
+      const response = await getLoyaltySummary(customerId);
+      const summaryData =
+        response?.success && response.data ? response.data : response || {};
+
+      const summary = {
+        points: Number(summaryData.points ?? summaryData.totalPoints ?? summaryData.balance ?? 0) || 0,
+        tier: summaryData.tier ?? summaryData.level ?? summaryData.rank ?? null
+      };
+      setLoyaltyCustomerSummary(summary);
+    } catch (error) {
+      console.error('Failed to load loyalty summary:', error);
+      setLoyaltyCustomerSummary(null);
+    }
+  }, []);
+
+  const clearLoyaltyCustomer = useCallback(() => {
+    setLoyaltyCustomer(null);
+    setLoyaltyCustomerSummary(null);
+    setLoyaltySearchValue('');
+  }, []);
+
+  const handleLoyaltyChange = useCallback((value, option) => {
+    if (!value) {
+      clearLoyaltyCustomer();
+      return;
+    }
+
+    const selectedData = option?.data || loyaltyOptions.find((item) => item.value === value)?.data;
+    if (!selectedData) {
+      return;
+    }
+
+    setLoyaltyCustomer(selectedData);
+    setLoyaltySearchValue('');
+    setLoyaltyOptions((prev) => {
+      if (prev.some((item) => item.value === selectedData.id)) {
+        return prev;
+      }
+      const label = selectedData.phone
+        ? `${selectedData.name} (${selectedData.phone})`
+        : selectedData.name;
+      return [{ value: selectedData.id, label, data: selectedData }, ...prev];
+    });
+    fetchLoyaltySummary(selectedData.id);
+  }, [clearLoyaltyCustomer, fetchLoyaltySummary, loyaltyOptions]);
+
+
 
   // Load danh sách bàn với trạng thái
   const loadTables = async () => {
@@ -1424,6 +1732,43 @@ const BanHang = () => {
           message.warning('Thanh toán hoàn tất');
         }
       }
+
+      if (loyaltyCustomer && loyaltyPointsEarned > 0) {
+        try {
+          const payload = {
+            customerId: loyaltyCustomer.id,
+            points: loyaltyPointsEarned,
+            invoiceId: currentInvoice?.maHd || undefined,
+            note: currentInvoice?.maHd ? `Ban hang HD ${currentInvoice.maHd}` : 'Ban hang thanh toan'
+          };
+
+          if (activeSalesProgram?.programId) {
+            payload.programId = activeSalesProgram.programId;
+          }
+
+          if (programDiscountBreakdown.length > 0) {
+            payload.details = programDiscountBreakdown.map((item) => ({
+              productId: item.productId,
+              quantity: item.quantity,
+              discountPercent: item.discountPercent,
+              discountAmount: Math.round(item.discountAmount || 0),
+              points: item.points
+            }));
+          }
+
+          if (payload.invoiceId === undefined) {
+            delete payload.invoiceId;
+          }
+
+          await addLoyaltyPoints(payload);
+          message.success(`Cong ${loyaltyPointsEarned.toLocaleString('vi-VN')} diem cho ${loyaltyCustomer.name || 'khach hang'}`);
+        } catch (error) {
+          console.error('Failed to add loyalty points:', error);
+          message.warning('Khong the cong diem khach hang');
+        }
+      }
+
+      clearLoyaltyCustomer();
 
       // Trigger refresh to update table status
       triggerQuickRefresh('PAYMENT_COMPLETE');
@@ -2523,34 +2868,127 @@ const BanHang = () => {
   // Tính toán invoice summary với thuế, giảm giá
   const calculateInvoiceSummary = () => {
     if (!invoiceDetails || invoiceDetails.length === 0) {
-      setInvoiceSummary({ subtotal: 0, tax: 0, discount: 0, total: 0 });
-      return;
+      const emptySummary = {
+        subtotal: 0,
+        tax: 0,
+        discount: 0,
+        total: 0,
+        loyaltyPoints: 0
+      };
+      setInvoiceSummary(emptySummary);
+      setProgramDiscountBreakdown([]);
+      setLoyaltyPointsEarned(0);
+      setOrderTotal(0);
+      return emptySummary;
     }
 
-    const subtotal = invoiceDetails.reduce((sum, item) => {
-      // API trả về field 'gia' hoặc 'giaBan' tùy endpoint, không phải 'donGia'
+    let subtotal = 0;
+    let programDiscount = 0;
+    let earnedPoints = 0;
+    const breakdown = [];
+
+    invoiceDetails.forEach((item) => {
       const price = parseFloat(item.gia || item.giaBan || item.donGia || 0);
       const quantity = parseInt(item.sl || item.soLuong || 0);
-      return sum + (price * quantity);
-    }, 0);
+      const lineTotal = price * quantity;
+      subtotal += lineTotal;
 
-    // Tính thuế VAT 10% chỉ khi checkbox được check
-    const tax = includeVAT ? subtotal * 0.1 : 0;
-    
-    // Giảm giá mặc định 0% (có thể config sau)
-    const discount = 0;
-    
-    const total = subtotal + tax - discount;
+      if (!quantity || !price || !programDiscountMap || Object.keys(programDiscountMap).length === 0) {
+        return;
+      }
 
-    setInvoiceSummary({
+      const candidateIds = [
+        item.maSp,
+        item.maSP,
+        item.masp,
+        item.ma_sp,
+        item.ma,
+        item.idSp,
+        item.idsp,
+        item.idSanPham,
+        item.maHang,
+        item.maHangHoa,
+        item.maSanPham,
+        item.productId,
+        item.id
+      ].map(value => (value !== undefined && value !== null ? String(value) : null));
+
+      const matchedId = candidateIds.find(candidate => candidate && programDiscountMap[candidate]);
+      if (!matchedId) {
+        return;
+      }
+
+      const programDetail = programDiscountMap[matchedId];
+      if (!programDetail) {
+        return;
+      }
+
+      const isDetailActive =
+        programDetail.status === undefined ||
+        programDetail.status === null ||
+        programDetail.status === true ||
+        programDetail.status === '1' ||
+        programDetail.status === 1;
+
+      if (!isDetailActive) {
+        return;
+      }
+
+      const threshold = parseInt(programDetail.threshold ?? 0, 10) || 0;
+      const qualifies = threshold > 0 ? quantity >= threshold : quantity > 0;
+      if (!qualifies) {
+        return;
+      }
+
+      const discountPercent = parseFloat(programDetail.discount ?? 0) || 0;
+      let discountAmount = 0;
+      if (discountPercent > 0) {
+        discountAmount = lineTotal * (discountPercent / 100);
+        programDiscount += discountAmount;
+      }
+
+      const basePoints = parseInt(programDetail.points ?? 0, 10) || 0;
+      let points = 0;
+      if (basePoints > 0) {
+        const multiplier = threshold > 0 ? Math.floor(quantity / threshold) : quantity;
+        if (multiplier > 0) {
+          points = basePoints * multiplier;
+          earnedPoints += points;
+        }
+      }
+
+      breakdown.push({
+        productId: matchedId,
+        productName: item.tenSp || item.ten || item.tensp || item.name || '',
+        quantity,
+        discountPercent,
+        discountAmount,
+        points
+      });
+    });
+
+    if (programDiscount > subtotal) {
+      programDiscount = subtotal;
+    }
+
+    const taxableBase = Math.max(subtotal - programDiscount, 0);
+    const tax = includeVAT ? taxableBase * 0.1 : 0;
+    const total = taxableBase + tax;
+
+    const summary = {
       subtotal,
       tax,
-      discount,
-      total
-    });
-    
-    // Update orderTotal for PaymentModal synchronization
+      discount: programDiscount,
+      total,
+      loyaltyPoints: earnedPoints
+    };
+
+    setInvoiceSummary(summary);
+    setProgramDiscountBreakdown(breakdown);
+    setLoyaltyPointsEarned(earnedPoints);
     setOrderTotal(total);
+
+    return summary;
   };
 
   // In hóa đơn
@@ -2602,11 +3040,6 @@ const BanHang = () => {
     
     message.success('Đã gửi hóa đơn đến máy in');
   };
-
-  // Effect để tính toán invoice summary khi invoiceDetails thay đổi
-  useEffect(() => {
-    calculateInvoiceSummary();
-  }, [invoiceDetails, includeVAT]);
 
   // Quay lại view trước
   const handleGoBack = () => {
@@ -3008,6 +3441,56 @@ const BanHang = () => {
               {/* Fixed footer with total and actions */}
               <div className="invoice-footer-fixed">
                 <div className="invoice-total-compact">
+                  <div style={{ marginBottom: '12px' }}>
+                    <Text strong style={{ display: 'block', marginBottom: 4 }}>Khach hang tich diem</Text>
+                    <Select
+                      showSearch
+                      placeholder="Chon khach hang"
+                      value={loyaltyCustomer ? loyaltyCustomer.id : undefined}
+                      onSearch={handleLoyaltySearch}
+                      onChange={handleLoyaltyChange}
+                      searchValue={loyaltySearchValue}
+                      options={loyaltyOptions}
+                      allowClear
+                      filterOption={false}
+                      loading={loyaltySearchLoading}
+                      style={{ width: '100%' }}
+                      notFoundContent={loyaltySearchLoading ? 'Dang tim...' : 'Khong tim thay'}
+                    />
+                    {loyaltyCustomerSummary && (
+                      <div style={{ marginTop: 6 }}>
+                        <Text type="secondary">
+                          Diem hien co: {loyaltyCustomerSummary.points.toLocaleString('vi-VN')}
+                        </Text>
+                        {loyaltyCustomerSummary.tier && (
+                          <Text type="secondary" style={{ display: 'block' }}>
+                            Hang: {loyaltyCustomerSummary.tier}
+                          </Text>
+                        )}
+                      </div>
+                    )}
+                    {loyaltyPointsEarned > 0 && (
+                      <div style={{ marginTop: 4 }}>
+                        <Text type="success">
+                          Diem se cong: {loyaltyPointsEarned.toLocaleString('vi-VN')}
+                        </Text>
+                      </div>
+                    )}
+                  </div>
+                  {activeSalesProgram && (
+                    <div style={{ marginBottom: '12px' }}>
+                      <Text type="secondary">
+                        CTKM: {activeSalesProgram.name || activeSalesProgram.programId}
+                      </Text>
+                      {invoiceSummary.discount > 0 && (
+                        <div>
+                          <Text type="danger">
+                            Ưu đãi: -{invoiceSummary.discount.toLocaleString('vi-VN')} đ`
+                          </Text>
+                        </div>
+                      )}
+                    </div>
+                  )}
                   <div style={{ marginBottom: '8px' }}>
                     <Checkbox
                       checked={includeVAT}
