@@ -1766,3 +1766,57 @@ export async function getAvailableRights() {
   return await callApi('Mb_UserFormData', 'getAvailableRights');
 }
 
+// -------------------- Sales Program Management --------------------
+
+export async function listSalesPrograms(params = {}) {
+  return await callApi('Mb_SalesPrograms', 'list', params);
+}
+
+export async function getSalesProgram(programId) {
+  return await callApi('Mb_SalesPrograms', 'get', { programId });
+}
+
+export async function createSalesProgram(programData) {
+  return await callApi('Mb_SalesPrograms', 'create', programData);
+}
+
+export async function updateSalesProgram(programData) {
+  return await callApi('Mb_SalesPrograms', 'update', programData);
+}
+
+export async function deleteSalesProgram(programId) {
+  return await callApi('Mb_SalesPrograms', 'delete', { programId });
+}
+
+export async function toggleSalesProgramStatus(programId, active) {
+  return await callApi('Mb_SalesPrograms', 'toggleStatus', {
+    programId,
+    active: active ? 1 : 0
+  });
+}
+
+// -------------------- Loyalty / Customer Points --------------------
+
+export async function searchLoyaltyCustomers(keyword, limit = 20) {
+  return await callApi('Mb_Loyalty', 'searchCustomers', { keyword, limit });
+}
+
+export async function registerLoyaltyCustomer(customerData) {
+  return await callApi('Mb_Loyalty', 'registerCustomer', customerData);
+}
+
+export async function getLoyaltySummary(customerId) {
+  return await callApi('Mb_Loyalty', 'getCustomerSummary', { customerId });
+}
+
+export async function addLoyaltyPoints(payload) {
+  return await callApi('Mb_Loyalty', 'addPoints', payload);
+}
+
+export async function redeemLoyaltyPoints(payload) {
+  return await callApi('Mb_Loyalty', 'redeemPoints', payload);
+}
+
+export async function getLoyaltyHistory(customerId, params = {}) {
+  return await callApi('Mb_Loyalty', 'history', { customerId, ...params });
+}
