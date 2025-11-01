@@ -1130,12 +1130,18 @@ const BanHang = () => {
           
           // Try to get image from product data first
           if (product.hinhAnh && product.hinhAnh !== DEFAULT_IMAGES.PRODUCT) {
-            imageUrl = getFullImageUrl(product.hinhAnh);
+            if (typeof product.hinhAnh === 'string' && product.hinhAnh.startsWith('data:image/')) {
+              imageUrl = product.hinhAnh;
+            } else {
+              imageUrl = getFullImageUrl(product.hinhAnh);
+            }
           } else {
             // Try to load from database if no direct image URL
             try {
               const imageData = await loadProductImage(product.maSp || product.id);
-              if (imageData && imageData.imagePath) {
+              if (imageData?.success && imageData.imageUrl) {
+                imageUrl = imageData.imageUrl;
+              } else if (imageData?.imagePath) {
                 imageUrl = getFullImageUrl(imageData.imagePath);
               }
             } catch (error) {

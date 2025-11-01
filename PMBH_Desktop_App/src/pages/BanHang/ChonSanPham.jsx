@@ -139,7 +139,11 @@ const ChonSanPham = ({ onAddToCart }) => {
           let imageUrl = null;
           const imageValue = product.lv014 || product.hinhAnh;
           if (imageValue && imageValue !== DEFAULT_IMAGES.PRODUCT) {
-            imageUrl = getFullImageUrl(imageValue);
+            if (typeof imageValue === 'string' && imageValue.startsWith('data:image/')) {
+              imageUrl = imageValue;
+            } else {
+              imageUrl = getFullImageUrl(imageValue);
+            }
           }
 
           const rawGiaBan =

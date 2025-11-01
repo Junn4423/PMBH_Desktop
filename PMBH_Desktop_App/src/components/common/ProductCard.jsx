@@ -39,14 +39,21 @@ const ProductCard = ({
 
   // Lazy load product image only when needed
   useEffect(() => {
-    // Skip loading database image initially - load only on hover or when visible
-    if (product?.hinhAnh && isValidImage(product.hinhAnh)) {
-      const fullUrl = getFullImageUrl(product.hinhAnh);
-      setProductImageUrl(fullUrl);
+    if (!product?.hinhAnh) {
+      setProductImageUrl(null);
       setImageLoading(false);
-    } else {
-      setImageLoading(false);
+      return;
     }
+
+    if (isDataUrl(product.hinhAnh)) {
+      setProductImageUrl(product.hinhAnh);
+    } else if (isValidImage(product.hinhAnh)) {
+      setProductImageUrl(getFullImageUrl(product.hinhAnh));
+    } else {
+      setProductImageUrl(null);
+    }
+
+    setImageLoading(false);
   }, [product?.id, product?.hinhAnh]);
 
   const loadProductImageFromDB = async () => {
@@ -57,9 +64,12 @@ const ProductCard = ({
     try {
       setImageLoading(true);
       const imageData = await loadProductImage(product.id);
-      if (imageData && imageData.imagePath) {
-        const fullUrl = getFullImageUrl(imageData.imagePath);
-        setProductImageUrl(fullUrl);
+      if (imageData?.success && imageData.imageUrl) {
+        setProductImageUrl(imageData.imageUrl);
+      } else if (imageData?.imagePath) {
+        setProductImageUrl(getFullImageUrl(imageData.imagePath));
+      } else {
+        setProductImageUrl(null);
       }
     } catch (error) {
       console.error('Error loading product image:', error);
@@ -88,22 +98,19 @@ const ProductCard = ({
     }
   };
 
-  // Kiểm tra ảnh có hợp lệ không
+  const isDataUrl = (value) => typeof value === 'string' && value.startsWith('data:image/');
+
   const isValidImage = (url) => {
-    if (!url) return false;
-    if (typeof url !== 'string') return false;
+    if (!url || typeof url !== 'string') return false;
+    if (isDataUrl(url)) return true;
     if (url.includes('default-product')) return false;
     if (url.includes('cafe.png')) return false;
     if (url === '../assets/Img/cafe.png') return false;
     if (url.trim() === '') return false;
-    
-    // Chỉ accept URL có extension hợp lệ
+
     const validExtensions = ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.bmp'];
-    const hasValidExtension = validExtensions.some(ext => 
-      url.toLowerCase().includes(ext)
-    );
-    
-    return hasValidExtension;
+    const normalizedUrl = url.toLowerCase();
+    return validExtensions.some(ext => normalizedUrl.includes(ext));
   };
 
   // Determine category class for styling
@@ -239,3 +246,4 @@ export default memo(ProductCard, (prevProps, nextProps) => {
     prevProps.extraActions === nextProps.extraActions
   );
 });
+

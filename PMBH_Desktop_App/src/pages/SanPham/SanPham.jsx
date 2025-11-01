@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Card, Breadcrumb, Button, Typography, Input, message, Spin, Modal, Upload, Form, Select, InputNumber, Popconfirm } from 'antd';
-import { Package2, Search, Grid, Filter, Edit, Plus, Trash2 } from 'lucide-react';
-import { getLoaiSanPham, getSanPhamTheoIdLoai, getAllSanPham, getFullImageUrl, updateProductImageUrl, uploadProductImage, themSanPham, capNhatSanPham, xoaSanPham, loadDonVi } from '../../services/apiServices';
+import { Package2, Search, Grid, Filter, Edit, Plus, Trash2, UploadCloud } from 'lucide-react';
+import { getLoaiSanPham, getSanPhamTheoIdLoai, getAllSanPham, getFullImageUrl, uploadImageBlob, loadProductImageBlob, themSanPham, capNhatSanPham, xoaSanPham, loadDonVi } from '../../services/apiServices';
 import ProductCard from '../../components/common/ProductCard';
 import './SanPham.css';
 
@@ -84,7 +84,7 @@ const mapSanPhamFromApi = (product, productsByCategory = {}) => {
   const giaBanNumber = parseGiaBanToNumber(rawGiaBan);
   const donVi = extractDonViFromProduct(product);
   const imageValue = extractImageValueFromProduct(product);
-  const fullImageUrl = imageValue ? getFullImageUrl(imageValue) : null;
+  // Không dùng imageValue từ database cũ nữa, sẽ load từ all_gmac_documents_v3_0
   const moTa = product.moTa || product.ghiChu || product.lv006 || '';
 
   const normalizedOriginalProduct = {
@@ -101,9 +101,10 @@ const mapSanPhamFromApi = (product, productsByCategory = {}) => {
     donVi,
     danhMuc: categoryId,
     moTa,
-    hinhAnh: fullImageUrl,
+    hinhAnh: null, // Sẽ được load sau từ database
     imageValue,
-    originalProduct: normalizedOriginalProduct
+    originalProduct: normalizedOriginalProduct,
+    needLoadImage: true // Flag để biết cần load ảnh
   };
 };
 
@@ -115,14 +116,8 @@ const SanPham = () => {
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [loading, setLoading] = useState(false);
   const [searchText, setSearchText] = useState('');
+  const [imageReloadTrigger, setImageReloadTrigger] = useState(0); // Trigger để reload images
   
-  // Image edit modal states
-  const [editModalVisible, setEditModalVisible] = useState(false);
-  const [selectedProduct, setSelectedProduct] = useState(null);
-  const [imageUpdateType, setImageUpdateType] = useState('url'); // 'url' or 'file'
-  const [imageUrl, setImageUrl] = useState('');
-  const [fileList, setFileList] = useState([]);
-  const [updatingImage, setUpdatingImage] = useState(false);
   const [renderKey, setRenderKey] = useState(0);
   const [form] = Form.useForm();
   
@@ -130,6 +125,7 @@ const SanPham = () => {
   const [isProductModalVisible, setIsProductModalVisible] = useState(false);
   const [editingProduct, setEditingProduct] = useState(null);
   const [productForm] = Form.useForm();
+  const [productImageFileList, setProductImageFileList] = useState([]);
 
   // Load categories and don vi immediately, products with delay (lazy load)
   useEffect(() => {
@@ -156,6 +152,44 @@ const SanPham = () => {
     
     setFilteredProducts(filtered);
   }, [selectedCategory, products]);
+
+  // Load images from database after products are loaded or when trigger changes
+  useEffect(() => {
+    const loadImages = async () => {
+      if (products.length === 0) return;
+      
+      const productsSnapshot = [...products]; // Snapshot để tránh dependency issues
+      
+      // Load images cho tất cả products
+      const updatedProducts = await Promise.all(
+        productsSnapshot.map(async (product) => {
+          try {
+            const imageResult = await loadProductImageBlob(product.id);
+            if (imageResult.success && imageResult.imageUrl) {
+              return { ...product, hinhAnh: imageResult.imageUrl, needLoadImage: false };
+            }
+          } catch (error) {
+            console.warn(`Failed to load image for product ${product.id}:`, error);
+          }
+          return { ...product, hinhAnh: null, needLoadImage: false };
+        })
+      );
+      
+      setProducts(updatedProducts);
+      setFilteredProducts(updatedProducts);
+    };
+    
+    if (imageReloadTrigger > 0) {
+      loadImages();
+    }
+  }, [imageReloadTrigger]); // Chỉ chạy khi trigger thay đổi
+  
+  // Load images lần đầu khi products được load
+  useEffect(() => {
+    if (products.length > 0 && products.some(p => p.needLoadImage)) {
+      setImageReloadTrigger(prev => prev + 1);
+    }
+  }, [products.length]);
 
   const loadDonViData = async () => {
     try {
@@ -300,57 +334,12 @@ const SanPham = () => {
     await loadCategoriesOnly();
     await loadProductsOnly();
   };
-  // Image editing functions
-  const handleEditImage = (product) => {
-    setSelectedProduct(product);
-    setEditModalVisible(true);
-    setImageUrl('');
-    setFileList([]);
-    setImageUpdateType('url');
-  };
-
-  const handleImageUpdate = async () => {
-    if (!selectedProduct) return;
-
-    try {
-      setUpdatingImage(true);
-      let success = false;
-
-      if (imageUpdateType === 'url' && imageUrl.trim()) {
-        // Update with URL
-        const result = await updateProductImageUrl(selectedProduct.id, imageUrl.trim());
-        success = result.success;
-      } else if (imageUpdateType === 'upload' && fileList.length > 0) {
-        // Upload file
-        const file = fileList[0].originFileObj || fileList[0];
-        const result = await uploadProductImage(selectedProduct.id, file);
-        success = result.success;
-      }
-
-      if (success) {
-        message.success('Cập nhật ảnh sản phẩm thành công');
-        setEditModalVisible(false);
-        // Reload products to show updated image
-        loadCategoriesAndProducts();
-      } else {
-        message.error('Không thể cập nhật ảnh sản phẩm');
-      }
-    } catch (error) {
-      console.error('Error updating product image:', error);
-      message.error('Lỗi khi cập nhật ảnh: ' + error.message);
-    } finally {
-      setUpdatingImage(false);
-    }
-  };
-
-  const handleFileChange = ({ fileList: newFileList }) => {
-    setFileList(newFileList);
-  };
 
   // Product CRUD handlers
   const handleAddProduct = () => {
     setEditingProduct(null);
     productForm.resetFields();
+    setProductImageFileList([]);
     setIsProductModalVisible(true);
   };
 
@@ -360,6 +349,7 @@ const SanPham = () => {
     console.log('Original product:', product.originalProduct);
 
     setEditingProduct(product);
+    setProductImageFileList([]);
 
     const original = product.originalProduct || {};
 
@@ -370,19 +360,13 @@ const SanPham = () => {
       return parseGiaBanToNumber(product.gia || original.giaBan || original.gia || original.donGia);
     })();
 
-    const currentImageValue = extractImageValueFromProduct({
-      ...original,
-      imageValue: product.imageValue
-    });
-
     const formValues = {
       maSanPham: product.id || original.maSp || original.lv001 || '',
       tenSanPham: product.ten || original.tenSp || original.lv002 || '',
       maLoai: product.danhMuc || original.maLoai || original.lv003 || '',
       giaBan: giaBanNumber,
       donViTinh: product.donVi || original.donVi || original.lv004 || original.lv005 || '',
-      moTa: product.moTa || original.moTa || original.ghiChu || original.lv006 || '',
-      imageUrl: currentImageValue || product.hinhAnh || ''
+      moTa: product.moTa || original.moTa || original.ghiChu || original.lv006 || ''
     };
 
     console.log('Form values to set:', formValues);
@@ -428,8 +412,7 @@ const SanPham = () => {
         maLoai,
         giaBan,
         donViTinh,
-        moTa,
-        imageUrl
+        moTa
       } = values;
 
       const originalData = editingProduct?.originalProduct || editingProduct || {};
@@ -449,15 +432,6 @@ const SanPham = () => {
       const normalizedMaLoai = (maLoai || '').toString().trim();
       const normalizedDonVi = (donViTinh || originalData.donVi || originalData.lv004 || originalData.lv005 || '').toString().trim();
 
-      const originalImageValue = extractImageValueFromProduct(originalData);
-      const editingImageValue = editingProduct?.imageValue || '';
-      const fallbackImage = typeof editingProduct?.hinhAnh === 'string' ? editingProduct.hinhAnh : '';
-      const currentImageValue = originalImageValue || editingImageValue || fallbackImage || '';
-      const currentImageFull = currentImageValue ? getFullImageUrl(currentImageValue) : '';
-      const submittedImageUrl = typeof imageUrl === 'string' ? imageUrl.trim() : '';
-      const finalImageValue = submittedImageUrl || currentImageValue;
-      const imageUrlChanged = !!submittedImageUrl && submittedImageUrl !== currentImageValue && submittedImageUrl !== currentImageFull;
-
       const payload = {
         maSanPham: normalizedMaSp,
         tenSanPham: normalizedTenSp,
@@ -470,7 +444,7 @@ const SanPham = () => {
         trangThai: originalData.trangThai ?? originalData.trangThai_HienThiSP ?? originalData.lv009 ?? 0,
         soLuongTonToiThieu: originalData.soLuongTonToiThieu ?? originalData.lv010 ?? 0,
         ghiChu: moTa ? moTa.toString().trim() : '',
-        imageUrl: finalImageValue
+        imageUrl: '' // Không dùng URL nữa
       };
 
       console.log('Payload to send:', payload);
@@ -483,15 +457,22 @@ const SanPham = () => {
           console.log('Update result details:', JSON.stringify(result, null, 2));
         }
 
-        if (imageUrlChanged) {
-          console.log('Image URL changed via form:', submittedImageUrl);
-          const imageResult = await updateProductImageUrl(normalizedMaSp, submittedImageUrl);
-          console.log('Image update result:', imageResult);
+        // Xử lý upload ảnh BLOB nếu có file được chọn
+        if (productImageFileList.length > 0) {
+          const imageFile = productImageFileList[0].originFileObj || productImageFileList[0];
+          console.log('Uploading image blob for product:', normalizedMaSp);
+          const imageResult = await uploadImageBlob(normalizedMaSp, imageFile);
+          console.log('Image blob upload result:', imageResult);
           if (!imageResult.success) {
-            message.warning('Cập nhật sản phẩm thành công nhưng không thể đồng bộ URL hình ảnh mới. Vui lòng kiểm tra lại sau.');
+            message.warning('Cập nhật sản phẩm thành công nhưng không thể lưu ảnh vào database.');
+          } else {
+            message.success('Cập nhật sản phẩm và ảnh thành công');
+            // Trigger reload images
+            setImageReloadTrigger(prev => prev + 1);
           }
+        } else {
+          message.success('Cập nhật sản phẩm thành công');
         }
-        message.success('Cập nhật sản phẩm thành công');
       } else {
         result = await themSanPham(payload);
         console.log('Add result:', result);
@@ -503,15 +484,22 @@ const SanPham = () => {
           (typeof result === 'object' && result !== null && result.success === true);
 
         if (addSuccess) {
-          if (submittedImageUrl) {
-            const imageResult = await updateProductImageUrl(normalizedMaSp, submittedImageUrl);
-            console.log('Image sync after add result:', imageResult);
+          // Xử lý upload ảnh BLOB nếu có file được chọn
+          if (productImageFileList.length > 0) {
+            const imageFile = productImageFileList[0].originFileObj || productImageFileList[0];
+            console.log('Uploading image blob for new product:', normalizedMaSp);
+            const imageResult = await uploadImageBlob(normalizedMaSp, imageFile);
+            console.log('Image blob upload result:', imageResult);
             if (!imageResult || !imageResult.success) {
-              message.warning('Thêm sản phẩm thành công nhưng không thể lưu URL hình ảnh. Vui lòng thử lại trong mục chỉnh sửa ảnh.');
+              message.warning('Thêm sản phẩm thành công nhưng không thể lưu ảnh vào database.');
+            } else {
+              message.success('Thêm sản phẩm và ảnh thành công');
+              // Trigger reload images
+              setImageReloadTrigger(prev => prev + 1);
             }
+          } else {
+            message.success('Thêm sản phẩm thành công');
           }
-
-          message.success('Thêm sản phẩm thành công');
         } else if (result && result.Message) {
           message.warning(result.Message);
         } else {
@@ -521,6 +509,7 @@ const SanPham = () => {
 
       setIsProductModalVisible(false);
       productForm.resetFields();
+      setProductImageFileList([]);
       setEditingProduct(null);
       await loadCategoriesAndProducts();
     } catch (error) {
@@ -642,7 +631,6 @@ const SanPham = () => {
                   <ProductCard
                     key={product.id}
                     product={product}
-                    onClick={() => handleEditImage(product)}
                     loading={loading}
                     showBadge={false}
                     extraActions={[
@@ -688,89 +676,6 @@ const SanPham = () => {
         </div>
       </div>
 
-      {/* Image Edit Modal */}
-      <Modal
-        title="Chỉnh sửa ảnh sản phẩm"
-        open={editModalVisible}
-        onCancel={() => setEditModalVisible(false)}
-        onOk={handleImageUpdate}
-        confirmLoading={updatingImage}
-        width={600}
-      >
-        {selectedProduct && (
-          <div>
-            <div style={{ marginBottom: 16 }}>
-              <strong>Sản phẩm:</strong> {selectedProduct.ten}
-            </div>
-            
-            <div style={{ marginBottom: 16 }}>
-              <strong>Ảnh hiện tại:</strong>
-              <div style={{ marginTop: 8 }}>
-                {selectedProduct.hinhAnh ? (
-                  <img 
-                    src={selectedProduct.hinhAnh} 
-                    alt="Current"
-                    style={{ maxWidth: 200, maxHeight: 200, objectFit: 'cover' }}
-                  />
-                ) : (
-                  <div style={{ 
-                    width: 200, 
-                    height: 200, 
-                    border: '1px dashed #d9d9d9',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    color: '#999'
-                  }}>
-                    Chưa có ảnh
-                  </div>
-                )}
-              </div>
-            </div>
-
-            <Form layout="vertical">
-              <Form.Item label="Phương thức cập nhật">
-                <Select 
-                  value={imageUpdateType}
-                  onChange={setImageUpdateType}
-                  style={{ width: '100%' }}
-                >
-                  <Select.Option value="url">Nhập URL ảnh</Select.Option>
-                  <Select.Option value="upload">Tải ảnh lên</Select.Option>
-                </Select>
-              </Form.Item>
-
-              {imageUpdateType === 'url' ? (
-                <Form.Item label="URL ảnh">
-                  <Input
-                    value={imageUrl}
-                    onChange={(e) => setImageUrl(e.target.value)}
-                    placeholder="Nhập URL ảnh..."
-                  />
-                </Form.Item>
-              ) : (
-                <Form.Item label="Chọn ảnh">
-                  <Upload
-                    listType="picture-card"
-                    fileList={fileList}
-                    onChange={handleFileChange}
-                    beforeUpload={() => false} // Prevent auto upload
-                    accept="image/*"
-                    maxCount={1}
-                  >
-                    {fileList.length < 1 && (
-                      <div>
-                        <div style={{ marginTop: 8 }}>Chọn ảnh</div>
-                      </div>
-                    )}
-                  </Upload>
-                </Form.Item>
-              )}
-            </Form>
-          </div>
-        )}
-      </Modal>
-
       {/* Product CRUD Modal */}
       <Modal
         title={editingProduct ? 'Sửa sản phẩm' : 'Thêm sản phẩm'}
@@ -778,6 +683,7 @@ const SanPham = () => {
         onCancel={() => {
           setIsProductModalVisible(false);
           productForm.resetFields();
+          setProductImageFileList([]);
         }}
         onOk={() => productForm.submit()}
         okText={editingProduct ? 'Cập nhật' : 'Thêm'}
@@ -870,10 +776,24 @@ const SanPham = () => {
           </Form.Item>
           
           <Form.Item
-            name="imageUrl"
-            label="URL hình ảnh"
+            label="Hình ảnh sản phẩm"
+            tooltip="Tải ảnh từ máy lên database"
           >
-            <Input placeholder="Nhập URL hình ảnh" />
+            <Upload
+              listType="picture-card"
+              fileList={productImageFileList}
+              onChange={({ fileList: newFileList }) => setProductImageFileList(newFileList)}
+              beforeUpload={() => false}
+              accept="image/*"
+              maxCount={1}
+            >
+              {productImageFileList.length < 1 && (
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                  <UploadCloud size={24} />
+                  <div style={{ marginTop: 8 }}>Chọn ảnh</div>
+                </div>
+              )}
+            </Upload>
           </Form.Item>
         </Form>
       </Modal>

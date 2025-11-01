@@ -76,11 +76,27 @@ export async function getAllSanPham() {
 // Load hình ảnh sản phẩm từ database
 export async function loadProductImage(productId) {
   try {
-    const result = await callApi('Mb_sanPham', 'loadImage', { maSp: productId });
-    return result;
+    if (!productId) {
+      return { success: false };
+    }
+
+    const baseUrl = url_api_services.split('/services.sof.vn/')[0];
+    const getImageUrl = `${baseUrl}/services.sof.vn/get-image.php?id=${encodeURIComponent(productId)}`;
+
+    const headers = await getAuthHeaders();
+    const res = await axios.get(getImageUrl, { headers });
+
+    if (res.data && res.data.status === 2002 && res.data.image) {
+      return {
+        success: true,
+        imageUrl: `data:image/jpeg;base64,${res.data.image}`
+      };
+    }
+
+    return { success: false, data: res.data };
   } catch (error) {
     console.error('Error loading product image:', error);
-    return null;
+    return { success: false, error: error.message };
   }
 }
 
@@ -159,6 +175,39 @@ export async function updateProductImageUrl(productId, imageUrl) {
     return { success: false, error: error.message };
   }
 }
+
+// Upload ảnh sản phẩm dạng BLOB vào database (cơ chế mới)
+export async function uploadImageBlob(productId, imageFile) {
+  try {
+    const formData = new FormData();
+    formData.append('id', productId);
+    formData.append('image', imageFile);
+
+    const headers = await getAuthHeaders();
+
+    const baseUrl = url_api_services.split('/services.sof.vn/')[0];
+    const uploadUrl = baseUrl + '/services.sof.vn/insert-image.php';
+
+    const res = await axios.post(uploadUrl, formData, {
+      headers: {
+        ...headers,
+        'Content-Type': 'multipart/form-data'
+      }
+    });
+
+    const success = res.data && res.data.status === 2002;
+    return { success, data: res.data };
+  } catch (error) {
+    console.error('Error uploading image blob:', error);
+    return { success: false, error: error.message };
+  }
+}
+
+// Load ảnh sản phẩm từ database (BLOB)
+export async function loadProductImageBlob(productId) {
+  return loadProductImage(productId);
+}
+
 
 // -------------------- Functions from index_Cong.php --------------------
 
@@ -1820,3 +1869,6 @@ export async function redeemLoyaltyPoints(payload) {
 export async function getLoyaltyHistory(customerId, params = {}) {
   return await callApi('Mb_Loyalty', 'history', { customerId, ...params });
 }
+
+
+
