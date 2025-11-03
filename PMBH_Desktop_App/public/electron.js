@@ -533,6 +533,15 @@ const openPaymentSuccessWindow = ({ key }) => {
       if (!successWindow.__skipNotifyOnClose && mainWindow && !mainWindow.isDestroyed()) {
         mainWindow.webContents.send('payment-success-window-closed');
       }
+
+      if (mainWindow && !mainWindow.isDestroyed()) {
+        if (mainWindow.isMinimized()) {
+          mainWindow.restore();
+        }
+        mainWindow.show();
+        mainWindow.focus();
+      }
+
       if (paymentSuccessWindow === successWindow) {
         paymentSuccessWindow = null;
       }
@@ -851,4 +860,15 @@ ipcMain.handle('zalopay:close-payment-window', (_event, options = {}) => {
 
 ipcMain.handle('open-payment-success-window', (event, payload) => {
   return openPaymentSuccessWindow(payload);
+});
+
+ipcMain.handle('focus-main-window', () => {
+  if (mainWindow && !mainWindow.isDestroyed()) {
+    if (mainWindow.isMinimized()) {
+      mainWindow.restore();
+    }
+    mainWindow.show();
+    mainWindow.focus();
+  }
+  return { success: true };
 });

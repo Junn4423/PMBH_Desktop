@@ -83,4 +83,6 @@ contextBridge.exposeInMainWorld('electronAPI', {
     ipcRenderer.on('payment-success-window-closed', listener);
     return () => ipcRenderer.removeListener('payment-success-window-closed', listener);
   },
+  focusMainWindow: () => ipcRenderer.invoke('focus-main-window'),
 });
+

@@ -1792,14 +1792,19 @@ const BanHang = () => {
         let successWindowOpened = false;
 
         if (window.electronAPI?.openPaymentSuccessWindow) {
-          const response = await window.electronAPI.openPaymentSuccessWindow(key);
-          if (response?.success) {
-            successWindowOpened = true;
-          } else {
-            message.warning(response?.error || 'Kh?ng th? m? c?a s? thanh to?n th?nh c?ng.');
+          try {
+            const response = await window.electronAPI.openPaymentSuccessWindow(key);
+            if (!response || response.success !== false) {
+              successWindowOpened = true;
+            } else {
+              message.warning(response?.error || 'Khong the mo cua so thanh toan thanh cong.');
+            }
+          } catch (error) {
+            message.warning(error?.message || 'Khong the mo cua so thanh toan thanh cong.');
           }
-        } else {
-          // Fallback for web version
+        }
+
+        if (!successWindowOpened) {
           const popupUrl = `${window.location.origin}/#/payment/success?key=${key}`;
           const popup = window.open(
             popupUrl,
@@ -1810,7 +1815,7 @@ const BanHang = () => {
           if (popup) {
             successWindowOpened = true;
           } else {
-            message.warning('Kh?ng th? m? c?a s? thanh to?n th?nh c?ng. Vui l?ng cho ph?p c?a s? b?t l?n.');
+            message.warning('Khong the mo cua so thanh toan thanh cong. Vui long cho phep cua so bat len.');
           }
         }
 
@@ -1844,8 +1849,17 @@ const BanHang = () => {
       return;
     }
 
+    setAwaitingPaymentSuccessClose(false);
+    awaitingPaymentSuccessCloseRef.current = false;
+
+    if (window.electronAPI?.focusMainWindow) {
+      window.electronAPI.focusMainWindow();
+    } else if (typeof window.focus === 'function') {
+      window.focus();
+    }
+
     resetViewAfterPayment();
-    message.success('Đã quay lại trang chọn bàn');
+    message.success('Da quay lai trang chon ban');
   }, [resetViewAfterPayment]);
     
   // Open payment modal
@@ -3919,6 +3933,11 @@ const BanHang = () => {
 };
 
 export default BanHang;
+
+
+
+
+
 
 
 

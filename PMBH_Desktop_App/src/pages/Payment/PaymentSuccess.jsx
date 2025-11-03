@@ -110,14 +110,31 @@ const PaymentSuccess = () => {
   }, [result, searchParams]);
 
   const notifyParentAboutClose = useCallback(() => {
-    // Notify opener to navigate back to tables view
-    if (window.opener && !window.opener.closed) {
-      window.opener.postMessage(
-        {
-          type: 'PAYMENT_SUCCESS_CLOSED',
-        },
-        window.location.origin
-      );
+    const hasOpener = window.opener && !window.opener.closed;
+
+    if (hasOpener) {
+      try {
+        window.opener.postMessage(
+          {
+            type: 'PAYMENT_SUCCESS_CLOSED',
+          },
+          window.location.origin
+        );
+      } catch (error) {
+        console.error('Unable to notify opener about payment success close:', error);
+      }
+    }
+
+    if (window.electronAPI?.focusMainWindow) {
+      window.electronAPI.focusMainWindow();
+    } else if (hasOpener) {
+      try {
+        window.opener.focus();
+      } catch (error) {
+        console.warn('Unable to focus opener window:', error);
+      }
+    } else if (typeof window.focus === 'function') {
+      window.focus();
     }
   }, []);
 
@@ -253,3 +270,5 @@ const PaymentSuccess = () => {
 };
 
 export default PaymentSuccess;
+
+
