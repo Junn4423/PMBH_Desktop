@@ -49,7 +49,9 @@ const PaymentModal = ({
   includeVAT = false,
   promotionDiscountAmount = 0,
   subtotalBeforeDiscount = orderTotal,
-  onPaymentSuccessClose
+  onPaymentSuccessClose,
+  activeSalesProgram = null,
+  programDiscountBreakdown = []
 }) => {
   const [paymentMethod, setPaymentMethod] = useState('Tiền mặt');
   const [currency, setCurrency] = useState('VND');
@@ -2452,7 +2454,67 @@ const PaymentModal = ({
                   style={{ flex: 1 }}
                 />
               </div>
-              {promotionDiscountAmount > 0 && (
+              
+              {/* Chi tiết chiết khấu từ chương trình */}
+              {promotionDiscountAmount > 0 && activeSalesProgram && (
+                <div style={{ 
+                  marginTop: '12px', 
+                  padding: '8px', 
+                  background: '#f6ffed', 
+                  border: '1px solid #b7eb8f',
+                  borderRadius: '4px',
+                  fontSize: '11px'
+                }}>
+                  <div style={{ fontWeight: 'bold', color: '#52c41a', marginBottom: '6px' }}>
+                    📋 {activeSalesProgram.name || 'Chương trình khuyến mãi'}
+                  </div>
+                  
+                  {/* Chiết khấu chung trên tổng đơn */}
+                  {activeSalesProgram.value && parseFloat(activeSalesProgram.value) > 0 && (
+                    <div style={{ 
+                      padding: '4px 0', 
+                      color: '#389e0d',
+                      borderBottom: programDiscountBreakdown.length > 0 ? '1px dashed #d9f7be' : 'none',
+                      marginBottom: programDiscountBreakdown.length > 0 ? '4px' : '0'
+                    }}>
+                      <span>• Chiết khấu chung: </span>
+                      <strong>{activeSalesProgram.value}%</strong>
+                    </div>
+                  )}
+                  
+                  {/* Chiết khấu theo sản phẩm */}
+                  {programDiscountBreakdown && programDiscountBreakdown.length > 0 && (
+                    <div>
+                      {programDiscountBreakdown.map((item, index) => (
+                        <div key={index} style={{ 
+                          padding: '4px 0', 
+                          color: '#389e0d',
+                          display: 'flex',
+                          justifyContent: 'space-between'
+                        }}>
+                          <span>• {item.productName} (x{item.quantity}): {item.discountPercent}%</span>
+                          <strong>-{item.discountAmount.toLocaleString()}đ</strong>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  
+                  <div style={{ 
+                    marginTop: '6px', 
+                    paddingTop: '6px', 
+                    borderTop: '1px solid #b7eb8f',
+                    fontWeight: 'bold',
+                    color: '#237804',
+                    display: 'flex',
+                    justifyContent: 'space-between'
+                  }}>
+                    <span>Tổng giảm giá:</span>
+                    <span>-{promotionDiscountAmount.toLocaleString()} VND</span>
+                  </div>
+                </div>
+              )}
+              
+              {promotionDiscountAmount > 0 && !activeSalesProgram && (
                 <Text style={{ fontSize: '11px', color: '#888', marginTop: '4px', display: 'block' }}>
                   Giảm giá từ chương trình: {promotionDiscountAmount.toLocaleString()} VND
                 </Text>

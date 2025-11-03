@@ -1852,7 +1852,7 @@ const BanHang = () => {
     }
 
     resetViewAfterPayment();
-    message.success('Da quay lai trang chon ban');
+    message.success('Đã quay lại trang chọn bàn');
   }, [resetViewAfterPayment]);
     
   // Open payment modal
@@ -2912,6 +2912,7 @@ const BanHang = () => {
 
     let subtotal = 0;
     let programDiscount = 0;
+    let generalDiscount = 0; // Chiết khấu chung từ chương trình
     let earnedPoints = 0;
     const breakdown = [];
 
@@ -2919,6 +2920,7 @@ const BanHang = () => {
     console.log('programDiscountMap keys:', Object.keys(programDiscountMap));
     console.log('programDiscountMap:', programDiscountMap);
     console.log('products count:', products.length);
+    console.log('activeSalesProgram:', activeSalesProgram);
     
     // Tạo product map theo tên để tra cứu nhanh mã sản phẩm
     const productNameToIdMap = {};
@@ -3042,21 +3044,41 @@ const BanHang = () => {
       programDiscount = subtotal;
     }
 
-    const taxableBase = Math.max(subtotal - programDiscount, 0);
+    // Tính chiết khấu chung trên tổng đơn từ activeSalesProgram
+    if (activeSalesProgram && activeSalesProgram.value) {
+      const generalDiscountValue = parseFloat(activeSalesProgram.value);
+      if (!isNaN(generalDiscountValue) && generalDiscountValue > 0) {
+        // Kiểm tra xem value là phần trăm hay số tiền cố định
+        // Giả sử value < 100 là phần trăm, >= 100 là số tiền
+        if (generalDiscountValue <= 100) {
+          generalDiscount = subtotal * (generalDiscountValue / 100);
+        } else {
+          generalDiscount = generalDiscountValue;
+        }
+        console.log('General discount from program:', generalDiscount);
+      }
+    }
+
+    // Tổng chiết khấu = chiết khấu theo sản phẩm + chiết khấu chung
+    const totalProgramDiscount = programDiscount + generalDiscount;
+    
+    const taxableBase = Math.max(subtotal - totalProgramDiscount, 0);
     const tax = includeVAT ? taxableBase * 0.1 : 0;
     const total = taxableBase + tax;
 
     const summary = {
       subtotal,
       tax,
-      discount: programDiscount,
+      discount: totalProgramDiscount, // Tổng chiết khấu từ chương trình
       total,
       loyaltyPoints: earnedPoints
     };
 
     console.log('=== CALCULATE INVOICE SUMMARY ===');
     console.log('subtotal:', subtotal);
-    console.log('programDiscount:', programDiscount);
+    console.log('programDiscount (by product):', programDiscount);
+    console.log('generalDiscount:', generalDiscount);
+    console.log('totalProgramDiscount:', totalProgramDiscount);
     console.log('breakdown:', breakdown);
     console.log('summary:', summary);
 
@@ -3985,6 +4007,8 @@ const BanHang = () => {
         includeVAT={includeVAT}
         promotionDiscountAmount={invoiceSummary.discount}
         subtotalBeforeDiscount={invoiceSummary.subtotal}
+        activeSalesProgram={activeSalesProgram}
+        programDiscountBreakdown={programDiscountBreakdown}
       />
     </div>
   );
