@@ -8,7 +8,7 @@ const ReceiptPrinter = ({
   invoiceDetails, 
   orderTotal, 
   paymentDetails,
-  paymentMethod = 'Cash',
+  paymentMethod = 'Tiền mặt',
   currency = 'VND',
   customerPaid = 0,
   discountAmount = 0,
@@ -150,8 +150,8 @@ const ReceiptPrinter = ({
             ${receiptData.totals.vatVND > 0 ? renderAmountLine('Thuế VAT (10%)', receiptData.totals.vatVND, receiptData.totals.vatCurrency) : ''}
             ${receiptData.totals.discountVND > 0 ? renderAmountLine('Giảm giá', -receiptData.totals.discountVND, -receiptData.totals.discountCurrency) : ''}
             ${renderAmountLine('Tổng cộng', receiptData.totals.totalVND, receiptData.totals.totalCurrency, { highlight: true })}
-            ${paymentMethod === 'Cash' ? renderAmountLine('Tiền khách đưa', receiptData.totals.paidVND, receiptData.totals.paidCurrency) : ''}
-            ${paymentMethod === 'Cash' ? renderAmountLine('Tiền thừa', receiptData.totals.changeVND, receiptData.totals.changeCurrency) : ''}
+            ${paymentMethod === 'Tiền mặt' ? renderAmountLine('Tiền khách đưa', receiptData.totals.paidVND, receiptData.totals.paidCurrency) : ''}
+            ${paymentMethod === 'Tiền mặt' ? renderAmountLine('Tiền thừa', receiptData.totals.changeVND, receiptData.totals.changeCurrency) : ''}
             <div class="amount-line">
               <span class="label">Phương thức:</span>
               <div class="value">

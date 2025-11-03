@@ -1779,57 +1779,50 @@ const BanHang = () => {
       // Trigger refresh to update table status
       triggerQuickRefresh('PAYMENT_COMPLETE');
       
-      const isOnlinePayment =
-        paymentData.phuongThucThanhToan && paymentData.phuongThucThanhToan !== 'Cash';
-      
-      if (isOnlinePayment) {
-        setAwaitingPaymentSuccessClose(true);
-        awaitingPaymentSuccessCloseRef.current = true;
+      // Tất cả các phương thức thanh toán đều hiển thị PaymentSuccess window
+      setAwaitingPaymentSuccessClose(true);
+      awaitingPaymentSuccessCloseRef.current = true;
 
-        const key = `payment_success_${Date.now()}`;
-        localStorage.setItem(key, JSON.stringify(paymentData));
+      const key = `payment_success_${Date.now()}`;
+      localStorage.setItem(key, JSON.stringify(paymentData));
 
-        let successWindowOpened = false;
+      let successWindowOpened = false;
 
-        if (window.electronAPI?.openPaymentSuccessWindow) {
-          try {
-            const response = await window.electronAPI.openPaymentSuccessWindow(key);
-            if (!response || response.success !== false) {
-              successWindowOpened = true;
-            } else {
-              message.warning(response?.error || 'Khong the mo cua so thanh toan thanh cong.');
-            }
-          } catch (error) {
-            message.warning(error?.message || 'Khong the mo cua so thanh toan thanh cong.');
-          }
-        }
-
-        if (!successWindowOpened) {
-          const popupUrl = `${window.location.origin}/#/payment/success?key=${key}`;
-          const popup = window.open(
-            popupUrl,
-            '_blank',
-            // eslint-disable-next-line no-restricted-globals
-            `width=${Math.floor(screen.width * 0.7)},height=${screen.height},left=0,top=0,scrollbars=yes,resizable=yes`
-          );
-          if (popup) {
+      if (window.electronAPI?.openPaymentSuccessWindow) {
+        try {
+          const response = await window.electronAPI.openPaymentSuccessWindow(key);
+          if (!response || response.success !== false) {
             successWindowOpened = true;
           } else {
-            message.warning('Khong the mo cua so thanh toan thanh cong. Vui long cho phep cua so bat len.');
+            message.warning(response?.error || 'Khong the mo cua so thanh toan thanh cong.');
           }
+        } catch (error) {
+          message.warning(error?.message || 'Khong the mo cua so thanh toan thanh cong.');
         }
+      }
 
-        if (successWindowOpened) {
-          return;
+      if (!successWindowOpened) {
+        const popupUrl = `${window.location.origin}/#/payment/success?key=${key}`;
+        const popup = window.open(
+          popupUrl,
+          '_blank',
+          // eslint-disable-next-line no-restricted-globals
+          `width=${Math.floor(screen.width * 0.7)},height=${screen.height},left=0,top=0,scrollbars=yes,resizable=yes`
+        );
+        if (popup) {
+          successWindowOpened = true;
+        } else {
+          message.warning('Khong the mo cua so thanh toan thanh cong. Vui long cho phep cua so bat len.');
         }
+      }
 
-        localStorage.removeItem(key);
-        setAwaitingPaymentSuccessClose(false);
-        awaitingPaymentSuccessCloseRef.current = false;
-        handlePaymentSuccessClose();
+      if (successWindowOpened) {
         return;
       }
 
+      localStorage.removeItem(key);
+      setAwaitingPaymentSuccessClose(false);
+      awaitingPaymentSuccessCloseRef.current = false;
       handlePaymentSuccessClose();
       return;
 

@@ -49,7 +49,7 @@ const PaymentModal = ({
   includeVAT = false,
   onPaymentSuccessClose
 }) => {
-  const [paymentMethod, setPaymentMethod] = useState('Cash');
+  const [paymentMethod, setPaymentMethod] = useState('Tiền mặt');
   const [currency, setCurrency] = useState('VND');
   const [customerPaid, setCustomerPaid] = useState(0);
   const [changeAmount, setChangeAmount] = useState(0);
@@ -67,7 +67,6 @@ const PaymentModal = ({
   const [mixedGatewayPendingPayment, setMixedGatewayPendingPayment] = useState(null);
   const zalopayPopupRef = useRef(null);
   const zalopayPollRef = useRef(null);
-  const [showPaymentSuccessModal, setShowPaymentSuccessModal] = useState(false);
 
   const cleanupZaloPayPayment = useCallback(() => {
     try {
@@ -176,13 +175,12 @@ const PaymentModal = ({
       setDiscount(0);
       setDiscountAmount(0);
       setFinalTotal(orderTotal);
-      setPaymentMethod('Cash');
+      setPaymentMethod('Tiền mặt');
       setCurrency('VND');
       setPendingVNPayTxn(null);
       setPendingMoMoTxn(null);
       setPendingZaloPayTxn(null);
       setMixedGatewayPendingPayment(null);
-      setShowPaymentSuccessModal(false);
       
       // Load partial payment from localStorage
       if (invoice?.maHd) {
@@ -274,7 +272,7 @@ const PaymentModal = ({
       return;
     }
 
-    if (value !== 'Cash') {
+    if (value !== 'Tiền mặt') {
       const exactAmount = convertFromVND(finalTotal, currency);
       setCustomerPaid(Number.isFinite(exactAmount) ? parseFloat(exactAmount.toFixed(2)) : 0);
     } else {
@@ -284,7 +282,7 @@ const PaymentModal = ({
 
   const handleCurrencyChange = (value) => {
     setCurrency(value);
-    if (paymentMethod !== 'Cash') {
+    if (paymentMethod !== 'Tiền mặt') {
       const exactAmount = convertFromVND(finalTotal, value);
       setCustomerPaid(Number.isFinite(exactAmount) ? parseFloat(exactAmount.toFixed(2)) : 0);
     } else {
@@ -355,9 +353,6 @@ const PaymentModal = ({
         setTimeout(() => {
           handlePrintReceipt();
         }, 500);
-        
-        // Hiển thị modal payment success
-        setShowPaymentSuccessModal(true);
         
         // Call parent onConfirm with payment data for additional processing
         const paymentData = {
@@ -997,8 +992,8 @@ const PaymentModal = ({
             ${receiptData.totals.vatVND > 0 ? renderAmountLine('Thuế VAT (10%)', receiptData.totals.vatVND, receiptData.totals.vatCurrency) : ''}
             ${receiptData.totals.discountVND > 0 ? renderAmountLine('Giảm giá', -receiptData.totals.discountVND, -receiptData.totals.discountCurrency) : ''}
             ${renderAmountLine('Tổng cộng', receiptData.totals.totalVND, receiptData.totals.totalCurrency, { highlight: true })}
-            ${paymentMethod === 'Cash' ? renderAmountLine('Tiền khách đưa', receiptData.totals.paidVND, receiptData.totals.paidCurrency) : ''}
-            ${paymentMethod === 'Cash' ? renderAmountLine('Tiền thừa', receiptData.totals.changeVND, receiptData.totals.changeCurrency) : ''}
+            ${paymentMethod === 'Tiền mặt' ? renderAmountLine('Tiền khách đưa', receiptData.totals.paidVND, receiptData.totals.paidCurrency) : ''}
+            ${paymentMethod === 'Tiền mặt' ? renderAmountLine('Tiền thừa', receiptData.totals.changeVND, receiptData.totals.changeCurrency) : ''}
             <div class="amount-line">
               <span class="label">Phương thức:</span>
               <div class="value">
@@ -2441,7 +2436,7 @@ const PaymentModal = ({
               )}
 
               {/* Normal Payment Mode */}
-              {!isMixedPaymentMode && paymentMethod === 'Cash' && (
+              {!isMixedPaymentMode && paymentMethod === 'Tiền mặt' && (
                 <>
                   <div className="summary-line">
                     <span>Tiền khách đưa:</span>
@@ -2578,67 +2573,6 @@ const PaymentModal = ({
           </div>
         </div>
       </div>
-
-      {/* Payment Success Modal */}
-      <Modal
-        title="Thanh toán thành công"
-        visible={showPaymentSuccessModal}
-        onCancel={() => {
-          setShowPaymentSuccessModal(false);
-          // Call custom close handler for payment success
-          if (onPaymentSuccessClose) {
-            onPaymentSuccessClose();
-          } else {
-            onCancel();
-          }
-        }}
-        footer={[
-          <Button
-            key="close"
-            type="primary"
-            onClick={() => {
-              setShowPaymentSuccessModal(false);
-              // Call custom close handler for payment success
-              if (onPaymentSuccessClose) {
-                onPaymentSuccessClose();
-              } else {
-                onCancel();
-              }
-            }}
-          >
-            Đóng
-          </Button>
-        ]}
-        width={500}
-        centered
-      >
-        <div style={{ textAlign: 'center', padding: '20px' }}>
-          <CheckCircle size={64} color="#52c41a" style={{ marginBottom: 16 }} />
-          <h3 style={{ color: '#52c41a', marginBottom: 8 }}>Thanh toán thành công!</h3>
-          <p style={{ marginBottom: 16 }}>
-            Hóa đơn #{invoice?.maHd} đã được thanh toán thành công.
-          </p>
-          <div style={{ background: '#f6ffed', padding: '12px', borderRadius: '6px', marginBottom: 16 }}>
-            <Text strong>Tổng tiền: {formatWithCurrency(finalTotal, 'VND')}</Text>
-            {discountAmount > 0 && (
-              <div>
-                <Text>Giảm giá: {formatWithCurrency(discountAmount, 'VND')}</Text>
-              </div>
-            )}
-            <div>
-              <Text>Tiền khách đưa: {formatWithCurrency(customerPaidInVND, 'VND')}</Text>
-            </div>
-            {changeAmount > 0 && (
-              <div>
-                <Text>Tiền thừa: {formatWithCurrency(Math.max(0, customerPaidInVND - finalTotal), 'VND')}</Text>
-              </div>
-            )}
-          </div>
-          <Text type="secondary">
-            Hệ thống sẽ tự động quay lại trang chọn bàn.
-          </Text>
-        </div>
-      </Modal>
 
     </Modal>
   );
