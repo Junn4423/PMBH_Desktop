@@ -116,6 +116,11 @@ const DanhMucKhachHang = () => {
 
   const [addPointsVisible, setAddPointsVisible] = useState(false);
   const [createModalVisible, setCreateModalVisible] = useState(false);
+  
+  // Real-time search suggestion states
+  const [searchSuggestions, setSearchSuggestions] = useState([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const searchTimeoutRef = useRef(null);
 
   const [registerForm] = Form.useForm();
   const [addPointsForm] = Form.useForm();
@@ -287,9 +292,66 @@ const DanhMucKhachHang = () => {
     (value) => {
       const trimmed = (value || '').trim();
       setSearchValue(trimmed);
+      setShowSuggestions(false); // Hide suggestions when searching
       fetchCustomers({ page: 1, limit: pageSize, keyword: trimmed });
     },
     [fetchCustomers, pageSize]
+  );
+  
+  // Real-time search with suggestions
+  const handleSearchInputChange = useCallback(
+    async (e) => {
+      const value = e.target.value;
+      setSearchValue(value);
+      
+      // Clear previous timeout
+      if (searchTimeoutRef.current) {
+        clearTimeout(searchTimeoutRef.current);
+      }
+      
+      if (value.trim().length < 2) {
+        setSearchSuggestions([]);
+        setShowSuggestions(false);
+        return;
+      }
+      
+      // Debounce search
+      searchTimeoutRef.current = setTimeout(async () => {
+        try {
+          const response = await listLoyaltyCustomers({
+            keyword: value.trim(),
+            limit: 5
+          });
+          
+          let rawList = [];
+          if (Array.isArray(response)) {
+            rawList = response;
+          } else if (response?.data) {
+            rawList = response.data;
+          }
+          
+          const normalized = rawList
+            .map((item) => normalizeLoyaltyCustomer(item))
+            .filter(Boolean);
+          
+          setSearchSuggestions(normalized);
+          setShowSuggestions(normalized.length > 0);
+        } catch (error) {
+          console.error('Real-time search error:', error);
+        }
+      }, 400); // 400ms debounce
+    },
+    []
+  );
+  
+  const handleSelectSuggestion = useCallback(
+    (customer) => {
+      setSearchValue(customer.phone || customer.customerId);
+      setShowSuggestions(false);
+      handleSelectCustomer(customer);
+      fetchCustomers({ page: 1, limit: pageSize, keyword: customer.phone || customer.customerId });
+    },
+    [handleSelectCustomer, fetchCustomers, pageSize]
   );
 
   const handleRefresh = useCallback(() => {
@@ -624,15 +686,64 @@ const DanhMucKhachHang = () => {
               }
             >
               <Space style={{ marginBottom: 16 }} wrap>
-                <Input.Search
-                  placeholder="Tìm mã khách hàng, tên hoặc số điện thoại"
-                  allowClear
-                  enterButton="Tìm"
-                  value={searchValue}
-                  onChange={(event) => setSearchValue(event.target.value)}
-                  onSearch={handleSearch}
-                  style={{ minWidth: 280 }}
-                />
+                <div style={{ position: 'relative', minWidth: 280 }}>
+                  <Input.Search
+                    placeholder="Tìm mã khách hàng, tên hoặc số điện thoại"
+                    allowClear
+                    enterButton="Tìm"
+                    value={searchValue}
+                    onChange={handleSearchInputChange}
+                    onSearch={handleSearch}
+                    onFocus={() => {
+                      if (searchSuggestions.length > 0) {
+                        setShowSuggestions(true);
+                      }
+                    }}
+                    style={{ width: '100%' }}
+                  />
+                  {/* Real-time suggestions dropdown */}
+                  {showSuggestions && searchSuggestions.length > 0 && (
+                    <div style={{
+                      position: 'absolute',
+                      top: '100%',
+                      left: 0,
+                      right: 0,
+                      maxHeight: '250px',
+                      overflowY: 'auto',
+                      background: 'white',
+                      border: '1px solid #d9d9d9',
+                      borderRadius: '4px',
+                      boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+                      zIndex: 1000,
+                      marginTop: '4px'
+                    }}>
+                      {searchSuggestions.map((customer) => (
+                        <div
+                          key={customer.customerId}
+                          onClick={() => handleSelectSuggestion(customer)}
+                          style={{
+                            padding: '10px 12px',
+                            cursor: 'pointer',
+                            borderBottom: '1px solid #f0f0f0',
+                            transition: 'background 0.2s'
+                          }}
+                          onMouseEnter={(e) => e.currentTarget.style.background = '#f5f5f5'}
+                          onMouseLeave={(e) => e.currentTarget.style.background = 'white'}
+                        >
+                          <div style={{ fontWeight: 'bold', color: '#1890ff', marginBottom: '2px' }}>
+                            {customer.name || 'Khách hàng'}
+                          </div>
+                          <div style={{ fontSize: '12px', color: '#666' }}>
+                            Mã: {customer.customerId} | SĐT: {customer.phone}
+                          </div>
+                          <div style={{ fontSize: '12px', color: '#52c41a' }}>
+                            Điểm: {formatPoints(customer.remainingPoints)}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
                 <Button icon={<RefreshCw size={16} />} onClick={handleRefresh}>
                   Làm mới
                 </Button>
@@ -711,8 +822,8 @@ const DanhMucKhachHang = () => {
           }
         }}
         onOk={() => registerForm.submit()}
-        okText="Luu"
-        cancelText="Huy"
+        okText="Lưu"
+        cancelText="Hủy"
         confirmLoading={registering}
         destroyOnClose
       >

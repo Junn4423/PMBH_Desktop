@@ -725,6 +725,40 @@ const BanHang = () => {
         setLoyaltyCustomerSummary(null);
       }
     }
+    
+    // Real-time search suggestion
+    if (value.trim().length >= 3) {
+      const searchTimeout = setTimeout(async () => {
+        try {
+          const response = await searchLoyaltyCustomers(value.trim(), 5);
+          let customersData = [];
+
+          if (response?.success && Array.isArray(response.data)) {
+            customersData = response.data;
+          } else if (Array.isArray(response)) {
+            customersData = response;
+          } else if (Array.isArray(response?.data?.items)) {
+            customersData = response.data.items;
+          }
+
+          const normalizedResults = customersData
+            .map((customer) => normalizeLoyaltyCustomer(customer))
+            .filter(Boolean);
+
+          if (normalizedResults.length > 0) {
+            setLoyaltySearchResults(normalizedResults);
+            setLoyaltyPickerVisible(true);
+          } else {
+            setLoyaltySearchResults([]);
+            setLoyaltyPickerVisible(false);
+          }
+        } catch (error) {
+          console.error('Real-time search error:', error);
+        }
+      }, 500); // Debounce 500ms
+
+      return () => clearTimeout(searchTimeout);
+    }
   }, [loyaltyCustomer]);
 
   const handleSelectLoyaltyResult = useCallback((normalizedCustomer) => {
@@ -776,6 +810,7 @@ const BanHang = () => {
         return;
       }
 
+      // Hiển thị dropdown thay vì modal
       setLoyaltySearchResults(normalizedResults);
       setLoyaltyPickerVisible(true);
     } catch (error) {
@@ -3538,7 +3573,7 @@ const BanHang = () => {
               {/* Fixed footer with total and actions */}
               <div className="invoice-footer-fixed">
                 <div className="invoice-total-compact">
-                  <div style={{ marginBottom: '12px' }}>
+                  <div style={{ marginBottom: '12px', position: 'relative' }}>
                     <Text strong style={{ display: 'block', marginBottom: 4 }}>Khách hàng tích điểm</Text>
                     <Input.Search
                       placeholder="Nhập số điện thoại khách hàng"
@@ -3549,6 +3584,50 @@ const BanHang = () => {
                       loading={loyaltySearchLoading}
                       allowClear
                     />
+                    
+                    {/* Real-time search suggestions dropdown */}
+                    {loyaltyPickerVisible && loyaltySearchResults.length > 0 && (
+                      <div style={{
+                        position: 'absolute',
+                        top: '100%',
+                        left: 0,
+                        right: 0,
+                        maxHeight: '200px',
+                        overflowY: 'auto',
+                        background: 'white',
+                        border: '1px solid #d9d9d9',
+                        borderRadius: '4px',
+                        boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
+                        zIndex: 1000,
+                        marginTop: '4px'
+                      }}>
+                        {loyaltySearchResults.map((customer) => (
+                          <div
+                            key={customer.id}
+                            onClick={() => handleSelectLoyaltyResult(customer)}
+                            style={{
+                              padding: '8px 12px',
+                              cursor: 'pointer',
+                              borderBottom: '1px solid #f0f0f0',
+                              transition: 'background 0.2s'
+                            }}
+                            onMouseEnter={(e) => e.currentTarget.style.background = '#f5f5f5'}
+                            onMouseLeave={(e) => e.currentTarget.style.background = 'white'}
+                          >
+                            <div style={{ fontWeight: 'bold', color: '#1890ff' }}>
+                              {customer.name || 'Khách hàng'}
+                            </div>
+                            <div style={{ fontSize: '12px', color: '#666' }}>
+                              SĐT: {customer.phone || customer.id}
+                            </div>
+                            <div style={{ fontSize: '12px', color: '#52c41a' }}>
+                              Điểm: {customer.points?.toLocaleString('vi-VN') || 0}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                    
                     <Button
                       style={{ marginTop: 6 }}
                       size="small"
@@ -4032,42 +4111,6 @@ const BanHang = () => {
         activeSalesProgram={activeSalesProgram}
         programDiscountBreakdown={programDiscountBreakdown}
       />
-
-      <Modal
-        title="Chon khach hang"
-        open={loyaltyPickerVisible}
-        onCancel={() => setLoyaltyPickerVisible(false)}
-        footer={null}
-        destroyOnClose
-      >
-        <List
-          dataSource={loyaltySearchResults}
-          renderItem={(item) => (
-            <List.Item
-              key={item.id}
-              actions={[
-                <Button
-                  type="link"
-                  onClick={() => handleSelectLoyaltyResult(item)}
-                  key="select"
-                >
-                  Chon
-                </Button>
-              ]}
-            >
-              <List.Item.Meta
-                title={item.phone ? `SDT: ${item.phone}` : 'Khong co so dien thoai'}
-                description={
-                  <div>
-                    <Text strong>Tên: {item.name}</Text>
-                    <div>Điểm hiện có: {item.points.toLocaleString('vi-VN')}</div>
-                  </div>
-                }
-              />
-            </List.Item>
-          )}
-        />
-      </Modal>
     </div>
   );
 

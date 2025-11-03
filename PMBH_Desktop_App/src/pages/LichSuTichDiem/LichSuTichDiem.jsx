@@ -97,6 +97,11 @@ const LichSuTichDiem = () => {
   const [history, setHistory] = useState([]);
   const [pickerVisible, setPickerVisible] = useState(false);
   const [searchResults, setSearchResults] = useState([]);
+  
+  // Real-time search suggestion states
+  const [searchSuggestions, setSearchSuggestions] = useState([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const searchTimeoutRef = React.useRef(null);
 
   const loadHistory = useCallback(async (customerId) => {
     setHistoryLoading(true);
@@ -143,6 +148,7 @@ const LichSuTichDiem = () => {
       return;
     }
     setSearching(true);
+    setShowSuggestions(false); // Hide suggestions when searching
     try {
       const response = await searchLoyaltyCustomers(keyword, 10);
       let customers = [];
@@ -180,6 +186,59 @@ const LichSuTichDiem = () => {
       setSearching(false);
     }
   }, [handleSelectCustomer, searchValue]);
+  
+  // Real-time search with suggestions
+  const handleSearchInputChange = useCallback(
+    async (e) => {
+      const value = e.target.value;
+      setSearchValue(value);
+      
+      // Clear previous timeout
+      if (searchTimeoutRef.current) {
+        clearTimeout(searchTimeoutRef.current);
+      }
+      
+      if (value.trim().length < 3) {
+        setSearchSuggestions([]);
+        setShowSuggestions(false);
+        return;
+      }
+      
+      // Debounce search
+      searchTimeoutRef.current = setTimeout(async () => {
+        try {
+          const response = await searchLoyaltyCustomers(value.trim(), 5);
+          let customers = [];
+          if (response?.success && Array.isArray(response.data)) {
+            customers = response.data;
+          } else if (Array.isArray(response)) {
+            customers = response;
+          } else if (Array.isArray(response?.data?.items)) {
+            customers = response.data.items;
+          }
+          
+          const normalized = customers
+            .map((item) => normalizeCustomer(item))
+            .filter(Boolean);
+          
+          setSearchSuggestions(normalized);
+          setShowSuggestions(normalized.length > 0);
+        } catch (error) {
+          console.error('Real-time search error:', error);
+        }
+      }, 400); // 400ms debounce
+    },
+    []
+  );
+  
+  const handleSelectSuggestion = useCallback(
+    (customer) => {
+      setSearchValue(customer.phone || customer.id);
+      setShowSuggestions(false);
+      handleSelectCustomer(customer);
+    },
+    [handleSelectCustomer]
+  );
 
   const handleClearSelection = useCallback(() => {
     setSelectedCustomer(null);
@@ -237,13 +296,60 @@ const LichSuTichDiem = () => {
 
       <Card>
         <Space style={{ marginBottom: 16 }} wrap>
-          <Input
-            prefix={<SearchIcon size={14} />}
-            placeholder="Nhập số điện thoại khách hàng"
-            value={searchValue}
-            onChange={(event) => setSearchValue(event.target.value)}
-            style={{ minWidth: 260 }}
-          />
+          <div style={{ position: 'relative', minWidth: 260 }}>
+            <Input
+              prefix={<SearchIcon size={14} />}
+              placeholder="Nhập số điện thoại khách hàng"
+              value={searchValue}
+              onChange={handleSearchInputChange}
+              onPressEnter={handleSearchCustomers}
+              onFocus={() => {
+                if (searchSuggestions.length > 0) {
+                  setShowSuggestions(true);
+                }
+              }}
+              style={{ width: '100%' }}
+            />
+            {/* Real-time suggestions dropdown */}
+            {showSuggestions && searchSuggestions.length > 0 && (
+              <div style={{
+                position: 'absolute',
+                top: '100%',
+                left: 0,
+                right: 0,
+                maxHeight: '250px',
+                overflowY: 'auto',
+                background: 'white',
+                border: '1px solid #d9d9d9',
+                borderRadius: '4px',
+                boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+                zIndex: 1000,
+                marginTop: '4px'
+              }}>
+                {searchSuggestions.map((customer) => (
+                  <div
+                    key={customer.id}
+                    onClick={() => handleSelectSuggestion(customer)}
+                    style={{
+                      padding: '10px 12px',
+                      cursor: 'pointer',
+                      borderBottom: '1px solid #f0f0f0',
+                      transition: 'background 0.2s'
+                    }}
+                    onMouseEnter={(e) => e.currentTarget.style.background = '#f5f5f5'}
+                    onMouseLeave={(e) => e.currentTarget.style.background = 'white'}
+                  >
+                    <div style={{ fontWeight: 'bold', color: '#1890ff', marginBottom: '2px' }}>
+                      {customer.name}
+                    </div>
+                    <div style={{ fontSize: '12px', color: '#666' }}>
+                      Mã: {customer.id} | SĐT: {customer.phone || 'N/A'}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
           <Button type="primary" loading={searching} onClick={handleSearchCustomers}>
             Tìm khách hàng
           </Button>
