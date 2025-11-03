@@ -81,10 +81,6 @@ function build_image_insert_payload(
         $data['lv008'] = $imageContent;
     }
 
-    if (should_fill_column($columnsMeta, 'lv009')) {
-        $data['lv009'] = $timestamp;
-    }
-
     if (should_fill_column($columnsMeta, 'created_at')) {
         $data['created_at'] = $timestamp;
     }

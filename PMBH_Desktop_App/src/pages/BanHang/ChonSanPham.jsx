@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { Input, Typography, Spin, message } from 'antd';
 import { Search } from 'lucide-react';
-import { getAllSanPham, getLoaiSanPham, getSanPhamTheoIdLoai, loadProductImage, getFullImageUrl } from '../../services/apiServices';
+import { getAllSanPham, getLoaiSanPham, getSanPhamTheoIdLoai, loadProductImageBlob, getFullImageUrl } from '../../services/apiServices';
 import ProductCard from '../../components/common/ProductCard';
 import { DEFAULT_IMAGES } from '../../constants';
 import { useText } from '../../components/common/Text';
@@ -15,6 +15,7 @@ const ChonSanPham = ({ onAddToCart }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [loading, setLoading] = useState(false);
+  const [imageReloadTrigger, setImageReloadTrigger] = useState(0);
   const { translate } = useText();
   const __ = (key, values, fallback) => translate(key, { values, defaultText: fallback ?? key });
 
@@ -42,6 +43,54 @@ const ChonSanPham = ({ onAddToCart }) => {
   useEffect(() => {
     loadCategoriesAndProducts();
   }, []);
+
+  useEffect(() => {
+    if (products.length > 0 && products.some(product => product.needLoadImage)) {
+      setImageReloadTrigger(prev => prev + 1);
+    }
+  }, [products]);
+
+  useEffect(() => {
+    const loadImages = async () => {
+      const productsSnapshot = [...products];
+
+      const updatedProducts = await Promise.all(
+        productsSnapshot.map(async (product) => {
+          if (!product.needLoadImage) {
+            return product;
+          }
+
+          try {
+            const imageResult = await loadProductImageBlob(product.id);
+            if (imageResult.success && imageResult.imageUrl) {
+              return { ...product, hinhAnh: imageResult.imageUrl, needLoadImage: false };
+            }
+          } catch (error) {
+            console.warn(`Failed to load image for product ${product.id}:`, error);
+          }
+
+          const hasImageValue = product.imageValue && product.imageValue !== DEFAULT_IMAGES.PRODUCT;
+          const fallbackImage = hasImageValue
+            ? (typeof product.imageValue === 'string' && product.imageValue.startsWith('data:image/')
+                ? product.imageValue
+                : getFullImageUrl(product.imageValue))
+            : null;
+
+          return {
+            ...product,
+            hinhAnh: fallbackImage,
+            needLoadImage: false
+          };
+        })
+      );
+
+      setProducts(updatedProducts);
+    };
+
+    if (imageReloadTrigger > 0) {
+      loadImages();
+    }
+  }, [imageReloadTrigger]);
 
   const loadCategoriesAndProducts = useCallback(async () => {
     try {
@@ -138,12 +187,8 @@ const ChonSanPham = ({ onAddToCart }) => {
           // Use existing image URL if available, otherwise null (lazy load in ProductCard)
           let imageUrl = null;
           const imageValue = product.lv014 || product.hinhAnh;
-          if (imageValue && imageValue !== DEFAULT_IMAGES.PRODUCT) {
-            if (typeof imageValue === 'string' && imageValue.startsWith('data:image/')) {
-              imageUrl = imageValue;
-            } else {
-              imageUrl = getFullImageUrl(imageValue);
-            }
+          if (typeof imageValue === 'string' && imageValue.startsWith('data:image/')) {
+            imageUrl = imageValue;
           }
 
           const rawGiaBan =
@@ -169,7 +214,9 @@ const ChonSanPham = ({ onAddToCart }) => {
             originalProduct: {
               ...product,
               imageValue
-            }
+            },
+            imageValue,
+            needLoadImage: !imageUrl
           };
         });
 
@@ -273,3 +320,6 @@ const ChonSanPham = ({ onAddToCart }) => {
 };
 
 export default ChonSanPham;
+
+
+
