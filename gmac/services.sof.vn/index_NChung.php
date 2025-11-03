@@ -1169,6 +1169,8 @@ case 'DonBan':
                     $vOutput = ['success' => false, 'message' => 'Khong tim thay khach hang'];
                     break;
                 }
+                $amount = (float)request_value('amount', 0);
+                $amountValue = number_format($amount, 2, '.', '');
                 $programId = trim((string)request_value('programId', ''));
                 $programValue = $programId !== '' ? "'" . esc_str($programId) . "'" : "NULL";
                 $orderCode = trim((string)request_value('orderCode', ''));
@@ -1187,7 +1189,7 @@ case 'DonBan':
                 }
                 $pointsValue = number_format($points, 2, '.', '');
                 $insertSql = "INSERT INTO sl_lv0115 (lv002, lv003, lv004, lv005, lv006, lv007, lv008, lv009, lv010, lv011, lv012, lv013, lv014, lv015)
-                              VALUES ('$customerIdEsc', $programValue, $pointsValue, $startDateSql, $expiryValue, NOW(), '$currentUserIdEsc', $orderValue, NOW(), 'earn', $noteValue, '0', 'POS', 1)";
+                              VALUES ('$customerIdEsc', $programValue, $pointsValue, $startDateSql, $expiryValue, NOW(), '$currentUserIdEsc', $orderValue, NOW(), 'earn', $noteValue, '$amountValue', 'POS', 1)";
                 if (db_query($insertSql)) {
                     $summary = $updateAggregates($customerIdEsc);
                     if (!$summary) {
@@ -1252,7 +1254,7 @@ case 'DonBan':
                 if ($offset < 0) {
                     $offset = 0;
                 }
-                $historySql = "SELECT lv001, lv003, lv004, lv005, lv006, lv007, lv008, lv009, lv010, lv011, lv012, lv015 FROM sl_lv0115 WHERE lv002='$customerIdEsc' ORDER BY lv007 DESC LIMIT $offset, $limit";
+                $historySql = "SELECT lv001, lv003, lv004, lv005, lv006, lv007, lv008, lv009, lv010, lv011, lv012, lv013, lv015 FROM sl_lv0115 WHERE lv002='$customerIdEsc' ORDER BY lv007 DESC LIMIT $offset, $limit";
                 $result = db_query($historySql);
                 if (!$result) {
                     $vOutput = ['success' => false, 'message' => 'Khong lay duoc lich su'];
@@ -1272,6 +1274,7 @@ case 'DonBan':
                         'updatedAt' => $row['lv010'],
                         'type' => $row['lv011'],
                         'note' => $row['lv012'],
+                        'amount' => isset($row['lv013']) ? (float)$row['lv013'] : 0.0,
                         'status' => (int)$row['lv015']
                     ];
                 }

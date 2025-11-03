@@ -14,6 +14,7 @@ import {
   Divider,
   InputNumber,
   Input,
+  List,
   Popconfirm,
   Modal,
   Table,
@@ -30,7 +31,6 @@ import {
   Trash2, 
   Plus, 
   Minus,
-  Search,
   ArrowLeft,
   CheckCircle,
   Edit3,
@@ -189,10 +189,10 @@ const BanHang = () => {
   const [loyaltyPointsEarned, setLoyaltyPointsEarned] = useState(0);
   const [loyaltyCustomer, setLoyaltyCustomer] = useState(null);
   const [loyaltyCustomerSummary, setLoyaltyCustomerSummary] = useState(null);
-  const [loyaltyOptions, setLoyaltyOptions] = useState([]);
   const [loyaltySearchLoading, setLoyaltySearchLoading] = useState(false);
-  const [loyaltySearchValue, setLoyaltySearchValue] = useState('');
-  const loyaltySearchTimeoutRef = useRef(null);
+  const [loyaltyPhoneInput, setLoyaltyPhoneInput] = useState('');
+  const [loyaltySearchResults, setLoyaltySearchResults] = useState([]);
+  const [loyaltyPickerVisible, setLoyaltyPickerVisible] = useState(false);
 
   // State cho Enhanced Payment System
   const [showPaymentModal, setShowPaymentModal] = useState(false);
@@ -204,15 +204,6 @@ const BanHang = () => {
     awaitingPaymentSuccessCloseRef.current = awaitingPaymentSuccessClose;
   }, [awaitingPaymentSuccessClose]);
 
-  useEffect(() => {
-    return () => {
-      if (loyaltySearchTimeoutRef.current) {
-        clearTimeout(loyaltySearchTimeoutRef.current);
-      }
-    };
-  }, [loyaltyCustomer]);
-
-  
   // State cho Order Status Tracking
   const [orderStatus, setOrderStatus] = useState(null);
   
@@ -291,7 +282,7 @@ const BanHang = () => {
     try {
       localStorage.removeItem('mergedTableGroups');
     } catch (error) {
-      console.warn('Kh?ng th? x?a mergedTableGroups kh?i localStorage:', error);
+      console.warn('Không thể xóa mergedTableGroups khỏi localStorage:', error);
     }
 
     setAwaitingPaymentSuccessClose(false);
@@ -632,7 +623,7 @@ const BanHang = () => {
         setProgramDiscountMap({});
       }
     } catch (error) {
-      console.error('Khong the load chuong trinh kinh doanh dang hoat dong:', error);
+      console.error('Không thể load chương trình kinh doanh đang hoạt động:', error);
       setActiveSalesProgram(null);
       setProgramDiscountMap({});
     }
@@ -687,74 +678,6 @@ const BanHang = () => {
     };
   };
 
-  const loadLoyaltyCustomers = useCallback(async (keyword) => {
-    try {
-      setLoyaltySearchLoading(true);
-      const response = await searchLoyaltyCustomers(keyword, 20);
-      let customersData = [];
-
-      if (response?.success && Array.isArray(response.data)) {
-        customersData = response.data;
-      } else if (Array.isArray(response)) {
-        customersData = response;
-      } else if (response?.data) {
-        if (Array.isArray(response.data)) {
-          customersData = response.data;
-        } else if (typeof response.data === 'object') {
-          customersData = Object.values(response.data);
-        }
-      }
-
-      const mappedOptions = customersData
-        .map((customer) => {
-          const normalized = normalizeLoyaltyCustomer(customer);
-          if (!normalized) {
-            return null;
-          }
-          const label = normalized.phone
-            ? `${normalized.name} (${normalized.phone})`
-            : normalized.name;
-          return {
-            value: normalized.id,
-            label,
-            data: normalized
-          };
-        })
-        .filter(Boolean);
-
-      if (loyaltyCustomer && !mappedOptions.some((item) => item.value === loyaltyCustomer.id)) {
-        const selectedLabel = loyaltyCustomer.phone
-          ? `${loyaltyCustomer.name} (${loyaltyCustomer.phone})`
-          : loyaltyCustomer.name;
-        mappedOptions.unshift({ value: loyaltyCustomer.id, label: selectedLabel, data: loyaltyCustomer });
-      }
-
-      setLoyaltyOptions(mappedOptions);
-    } catch (error) {
-      console.error('Failed to search loyalty customers:', error);
-      message.warning('Khong the tim khach hang than thiet');
-      setLoyaltyOptions([]);
-    } finally {
-      setLoyaltySearchLoading(false);
-    }
-  }, [loyaltyCustomer]);
-
-  const handleLoyaltySearch = useCallback((value) => {
-    setLoyaltySearchValue(value);
-    if (loyaltySearchTimeoutRef.current) {
-      clearTimeout(loyaltySearchTimeoutRef.current);
-    }
-
-    if (!value) {
-      setLoyaltyOptions([]);
-      return;
-    }
-
-    loyaltySearchTimeoutRef.current = setTimeout(() => {
-      loadLoyaltyCustomers(value);
-    }, 300);
-  }, [loadLoyaltyCustomers]);
-
   const fetchLoyaltySummary = useCallback(async (customerId) => {
     if (!customerId) {
       setLoyaltyCustomerSummary(null);
@@ -780,33 +703,90 @@ const BanHang = () => {
   const clearLoyaltyCustomer = useCallback(() => {
     setLoyaltyCustomer(null);
     setLoyaltyCustomerSummary(null);
-    setLoyaltySearchValue('');
+    setLoyaltyPhoneInput('');
+    setLoyaltySearchResults([]);
+    setLoyaltyPickerVisible(false);
   }, []);
 
-  const handleLoyaltyChange = useCallback((value, option) => {
-    if (!value) {
+  const handleLoyaltyPhoneInputChange = useCallback((event) => {
+    const { value } = event.target;
+    setLoyaltyPhoneInput(value);
+    if (value === '') {
+      setLoyaltySearchResults([]);
+      setLoyaltyPickerVisible(false);
+      setLoyaltyCustomer(null);
+      setLoyaltyCustomerSummary(null);
+      return;
+    }
+    if (loyaltyCustomer) {
+      const currentIdentifier = loyaltyCustomer.phone || loyaltyCustomer.id;
+      if (currentIdentifier && currentIdentifier !== value) {
+        setLoyaltyCustomer(null);
+        setLoyaltyCustomerSummary(null);
+      }
+    }
+  }, [loyaltyCustomer]);
+
+  const handleSelectLoyaltyResult = useCallback((normalizedCustomer) => {
+    if (!normalizedCustomer) {
       clearLoyaltyCustomer();
       return;
     }
 
-    const selectedData = option?.data || loyaltyOptions.find((item) => item.value === value)?.data;
-    if (!selectedData) {
+    setLoyaltyCustomer(normalizedCustomer);
+    setLoyaltyPhoneInput(normalizedCustomer.phone || normalizedCustomer.id);
+    setLoyaltyPickerVisible(false);
+    setLoyaltySearchResults([]);
+    fetchLoyaltySummary(normalizedCustomer.id);
+  }, [clearLoyaltyCustomer, fetchLoyaltySummary]);
+
+  const handleLoyaltySearchByPhone = useCallback(async () => {
+    const keyword = loyaltyPhoneInput.trim();
+    if (keyword === '') {
+      message.warning('Vui lòng nhập số điện thoại khách hàng');
       return;
     }
 
-    setLoyaltyCustomer(selectedData);
-    setLoyaltySearchValue('');
-    setLoyaltyOptions((prev) => {
-      if (prev.some((item) => item.value === selectedData.id)) {
-        return prev;
+    setLoyaltySearchLoading(true);
+    try {
+      const response = await searchLoyaltyCustomers(keyword, 10);
+      let customersData = [];
+
+      if (response?.success && Array.isArray(response.data)) {
+        customersData = response.data;
+      } else if (Array.isArray(response)) {
+        customersData = response;
+      } else if (Array.isArray(response?.data?.items)) {
+        customersData = response.data.items;
       }
-      const label = selectedData.phone
-        ? `${selectedData.name} (${selectedData.phone})`
-        : selectedData.name;
-      return [{ value: selectedData.id, label, data: selectedData }, ...prev];
-    });
-    fetchLoyaltySummary(selectedData.id);
-  }, [clearLoyaltyCustomer, fetchLoyaltySummary, loyaltyOptions]);
+
+      const normalizedResults = customersData
+        .map((customer) => normalizeLoyaltyCustomer(customer))
+        .filter(Boolean);
+
+      if (normalizedResults.length === 0) {
+        message.info('Không tìm thấy khách hàng phù hợp');
+        setLoyaltySearchResults([]);
+        setLoyaltyPickerVisible(false);
+        return;
+      }
+
+      if (normalizedResults.length === 1) {
+        handleSelectLoyaltyResult(normalizedResults[0]);
+        return;
+      }
+
+      setLoyaltySearchResults(normalizedResults);
+      setLoyaltyPickerVisible(true);
+    } catch (error) {
+      console.error('Failed to search loyalty customers:', error);
+      message.error('Không thể tìm khách hàng thân thiết');
+      setLoyaltySearchResults([]);
+      setLoyaltyPickerVisible(false);
+    } finally {
+      setLoyaltySearchLoading(false);
+    }
+  }, [handleSelectLoyaltyResult, loyaltyPhoneInput]);
 
 
 
@@ -1697,6 +1677,10 @@ const BanHang = () => {
   const processPaymentEnhanced = async (paymentData) => {
     try {
       setPaymentLoading(true);
+      const paymentTotal = Number(paymentData.finalTotal ?? paymentData.tongTien ?? 0) || 0;
+      const pointsFromPayment = Math.max(Math.floor(paymentTotal / 1000), 0);
+      paymentData.loyaltyPoints = pointsFromPayment;
+
       if (loyaltyCustomer) {
         const loyaltySnapshot = {
           customerId: loyaltyCustomer.id,
@@ -1704,9 +1688,6 @@ const BanHang = () => {
           phone: loyaltyCustomer.phone || loyaltyCustomer.id
         };
         paymentData.loyaltyCustomer = loyaltySnapshot;
-        if (loyaltyPointsEarned > 0) {
-          paymentData.loyaltyPoints = loyaltyPointsEarned;
-        }
       }
 
       // Quy trình thanh toán theo backend:
@@ -1750,13 +1731,15 @@ const BanHang = () => {
         }
       }
 
-      if (loyaltyCustomer && loyaltyPointsEarned > 0) {
+      if (loyaltyCustomer && pointsFromPayment > 0) {
         try {
           const payload = {
             customerId: loyaltyCustomer.id,
-            points: loyaltyPointsEarned,
+            points: pointsFromPayment,
             invoiceId: currentInvoice?.maHd || undefined,
-            note: currentInvoice?.maHd ? `Ban hang HD ${currentInvoice.maHd}` : 'Ban hang thanh toan'
+            orderCode: currentInvoice?.maHd || paymentData.maHd || undefined,
+            note: currentInvoice?.maHd ? `Ban hang HD ${currentInvoice.maHd}` : 'Ban hang thanh toan',
+            amount: paymentTotal
           };
 
           if (activeSalesProgram?.programId) {
@@ -1776,12 +1759,15 @@ const BanHang = () => {
           if (payload.invoiceId === undefined) {
             delete payload.invoiceId;
           }
+          if (payload.orderCode === undefined) {
+            delete payload.orderCode;
+          }
 
           await addLoyaltyPoints(payload);
-          message.success(`Cong ${loyaltyPointsEarned.toLocaleString('vi-VN')} diem cho ${loyaltyCustomer.name || 'khach hang'}`);
+          message.success(`Cong ${pointsFromPayment.toLocaleString('vi-VN')} diem cho ${loyaltyCustomer.name || 'khach hang'}`);
         } catch (error) {
           console.error('Failed to add loyalty points:', error);
-          message.warning('Khong the cong diem khach hang');
+          message.warning('Không thể cộng điểm khách hàng');
         }
       }
 
@@ -1805,10 +1791,10 @@ const BanHang = () => {
           if (!response || response.success !== false) {
             successWindowOpened = true;
           } else {
-            message.warning(response?.error || 'Khong the mo cua so thanh toan thanh cong.');
+            message.warning(response?.error || 'Không thể mở cửa sổ thanh toán thành công.');
           }
         } catch (error) {
-          message.warning(error?.message || 'Khong the mo cua so thanh toan thanh cong.');
+          message.warning(error?.message || 'Không thể mở cửa sổ thanh toán thành công.');
         }
       }
 
@@ -1823,7 +1809,7 @@ const BanHang = () => {
         if (popup) {
           successWindowOpened = true;
         } else {
-          message.warning('Khong the mo cua so thanh toan thanh cong. Vui long cho phep cua so bat len.');
+          message.warning('Không thể mở cửa sổ thanh toán thành công. Vui lòng cho phép cửa sổ bật lên.');
         }
       }
 
@@ -1841,7 +1827,7 @@ const BanHang = () => {
   // Silent console
       setAwaitingPaymentSuccessClose(false);
       awaitingPaymentSuccessCloseRef.current = false;
-      message.error('Kh?ng th? x? l? thanh to?n: ' + (error.message || 'L?i kh?ng x?c ??nh'));
+      message.error('Không thể xử lý thanh toán: ' + (error.message || 'Lỗi không xác định'));
     } finally {
       setPaymentLoading(false);
     }
@@ -3076,6 +3062,7 @@ const BanHang = () => {
     const taxableBase = Math.max(subtotal - totalProgramDiscount, 0);
     const tax = includeVAT ? taxableBase * 0.1 : 0;
     const total = taxableBase + tax;
+    earnedPoints = Math.max(Math.floor(total / 1000), 0);
 
     const summary = {
       subtotal,
@@ -3552,29 +3539,42 @@ const BanHang = () => {
               <div className="invoice-footer-fixed">
                 <div className="invoice-total-compact">
                   <div style={{ marginBottom: '12px' }}>
-                    <Text strong style={{ display: 'block', marginBottom: 4 }}>Khach hang tich diem</Text>
-                    <Select
-                      showSearch
-                      placeholder="Chon khach hang"
-                      value={loyaltyCustomer ? loyaltyCustomer.id : undefined}
-                      onSearch={handleLoyaltySearch}
-                      onChange={handleLoyaltyChange}
-                      searchValue={loyaltySearchValue}
-                      options={loyaltyOptions}
-                      allowClear
-                      filterOption={false}
+                    <Text strong style={{ display: 'block', marginBottom: 4 }}>Khách hàng tích điểm</Text>
+                    <Input.Search
+                      placeholder="Nhập số điện thoại khách hàng"
+                      value={loyaltyPhoneInput}
+                      onChange={handleLoyaltyPhoneInputChange}
+                      onSearch={handleLoyaltySearchByPhone}
+                      enterButton="Tìm"
                       loading={loyaltySearchLoading}
-                      style={{ width: '100%' }}
-                      notFoundContent={loyaltySearchLoading ? 'Dang tim...' : 'Khong tim thay'}
+                      allowClear
                     />
+                    <Button
+                      style={{ marginTop: 6 }}
+                      size="small"
+                      onClick={clearLoyaltyCustomer}
+                      disabled={!loyaltyCustomer && loyaltyPhoneInput === ''}
+                    >
+                      Xóa khách hàng
+                    </Button>
+                    {loyaltyCustomer && (
+                      <div style={{ marginTop: 6, padding: '8px', background: '#f0f5ff', borderRadius: '4px' }}>
+                        <Text strong style={{ display: 'block', color: '#1890ff' }}>
+                          {loyaltyCustomer.name || 'Khách hàng'}
+                        </Text>
+                        <Text type="secondary" style={{ fontSize: '12px' }}>
+                          SĐT: {loyaltyCustomer.phone || loyaltyCustomer.id}
+                        </Text>
+                      </div>
+                    )}
                     {loyaltyCustomerSummary && (
                       <div style={{ marginTop: 6 }}>
                         <Text type="secondary">
-                          Diem hien co: {loyaltyCustomerSummary.points.toLocaleString('vi-VN')}
+                          Điểm hiện có: {loyaltyCustomerSummary.points.toLocaleString('vi-VN')}
                         </Text>
                         {loyaltyCustomerSummary.tier && (
                           <Text type="secondary" style={{ display: 'block' }}>
-                            Hang: {loyaltyCustomerSummary.tier}
+                            Hạng: {loyaltyCustomerSummary.tier}
                           </Text>
                         )}
                       </div>
@@ -3582,7 +3582,7 @@ const BanHang = () => {
                     {loyaltyPointsEarned > 0 && (
                       <div style={{ marginTop: 4 }}>
                         <Text type="success">
-                          Diem se cong: {loyaltyPointsEarned.toLocaleString('vi-VN')}
+                          Điểm sẽ cộng: {loyaltyPointsEarned.toLocaleString('vi-VN')}
                         </Text>
                       </div>
                     )}
@@ -4032,18 +4032,45 @@ const BanHang = () => {
         activeSalesProgram={activeSalesProgram}
         programDiscountBreakdown={programDiscountBreakdown}
       />
+
+      <Modal
+        title="Chon khach hang"
+        open={loyaltyPickerVisible}
+        onCancel={() => setLoyaltyPickerVisible(false)}
+        footer={null}
+        destroyOnClose
+      >
+        <List
+          dataSource={loyaltySearchResults}
+          renderItem={(item) => (
+            <List.Item
+              key={item.id}
+              actions={[
+                <Button
+                  type="link"
+                  onClick={() => handleSelectLoyaltyResult(item)}
+                  key="select"
+                >
+                  Chon
+                </Button>
+              ]}
+            >
+              <List.Item.Meta
+                title={item.phone ? `SDT: ${item.phone}` : 'Khong co so dien thoai'}
+                description={
+                  <div>
+                    <Text strong>Tên: {item.name}</Text>
+                    <div>Điểm hiện có: {item.points.toLocaleString('vi-VN')}</div>
+                  </div>
+                }
+              />
+            </List.Item>
+          )}
+        />
+      </Modal>
     </div>
   );
 
 };
 
 export default BanHang;
-
-
-
-
-
-
-
-
-

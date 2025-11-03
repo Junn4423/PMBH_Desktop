@@ -52,6 +52,7 @@ const NhapKhoMb = React.lazy(() => import('./pages/NhapKhoMb/NhapKhoMb'));
 const KiemKhoMb = React.lazy(() => import('./pages/KiemKhoMb/KiemKhoMb'));
 const LoaiSanPham = React.lazy(() => import('./pages/LoaiSanPham/LoaiSanPham'));
 const SanPham = React.lazy(() => import('./pages/SanPham/SanPham'));
+const LichSuTichDiem = React.lazy(() => import('./pages/LichSuTichDiem/LichSuTichDiem'));
 const CustomerDisplay = React.lazy(() => import('./components/CustomerDisplay/CustomerDisplay'));
 const TangNhaHang = React.lazy(() => import('./pages/TangNhaHang/TangNhaHang'));
 const BanNhaHang = React.lazy(() => import('./pages/BanNhaHang/BanNhaHang'));
@@ -201,6 +202,7 @@ function App() {
               
               {/* Routes cho kinh doanh */}
               <Route path="/danh-muc-khach-hang" element={<DanhMucKhachHang />} />
+              <Route path="/lich-su-tich-diem" element={<LichSuTichDiem />} />
               <Route path="/quan-ly-ban-nha-hang" element={<QuanLyBanNhaHang />} />
               <Route path="/bao-cao-doanh-thu-khach-hang" element={<BaoCaoDoanhThuKhachHang />} />
               

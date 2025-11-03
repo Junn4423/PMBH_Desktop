@@ -221,6 +221,10 @@ const SidebarMenu = () => {
           label: 'Danh mục khách hàng',
         },
         {
+          key: '/lich-su-tich-diem',
+          label: 'Lịch sử tích điểm',
+        },
+        {
           key: 'quan-ly-ban-nha-hang',
           label: (
             <span 

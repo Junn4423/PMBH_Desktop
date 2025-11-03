@@ -80,13 +80,13 @@ const buildPrefillNotice = (invoiceCode, pointsEarned) => {
     return null;
   }
   if (invoiceCode && pointsEarned) {
-    return `Hoa don ${invoiceCode} can cong ${Number(pointsEarned).toLocaleString('vi-VN')} diem.`;
+    return `Hoá đơn ${invoiceCode} cần cộng ${Number(pointsEarned).toLocaleString('vi-VN')} điểm.`;
   }
   if (invoiceCode) {
-    return `Hoa don ${invoiceCode} can gan voi khach hang.`;
+    return `Hoá đơn ${invoiceCode} cần gán với khách hàng.`;
   }
   if (pointsEarned) {
-    return `Can cong ${Number(pointsEarned).toLocaleString('vi-VN')} diem cho khach hang.`;
+    return `Hoá đơn ${invoiceCode} cần cộng ${Number(pointsEarned).toLocaleString('vi-VN')} điểm cho khách hàng.`;
   }
   return null;
 };
@@ -154,7 +154,7 @@ const DanhMucKhachHang = () => {
           balance: Number(data.balance ?? data.remainingPoints ?? 0)
         });
       } else if (response?.success === false) {
-        message.warning(response?.message || 'Khong tim thay thong tin khach hang');
+        message.warning(response?.message || 'Không tìm thấy thông tin khách hàng');
         setSummary(null);
       }
     } catch (error) {
@@ -177,7 +177,7 @@ const DanhMucKhachHang = () => {
       } else if (response?.data) {
         records = response.data;
       } else if (response?.success === false) {
-        message.warning(response?.message || 'Khong lay duoc lich su tich diem');
+        message.warning(response?.message || 'Không lấy được lịch sử tích điểm');
       }
       const mapped = records.map((item, idx) => {
         const pointsValue = Number(item.points ?? item.lv004 ?? 0);
@@ -188,6 +188,7 @@ const DanhMucKhachHang = () => {
             item.lv001 ??
             `${customerId}-${item.orderCode || item.lv009 || 'txn'}-${createdAt || idx}`,
           points: pointsValue,
+          amount: Number(item.amount ?? item.lv013 ?? 0),
           type: item.type || item.lv011 || (pointsValue >= 0 ? 'earn' : 'redeem'),
           orderCode: item.orderCode || item.lv009 || '',
           note: item.note || item.lv012 || '',
@@ -204,7 +205,7 @@ const DanhMucKhachHang = () => {
   }, []);
 
   const handleSelectCustomer = useCallback(
-    (customer, options = {}) => {
+    (customer) => {
       const normalized = normalizeLoyaltyCustomer(customer);
       if (!normalized) {
         setSelectedCustomer(null);
@@ -217,17 +218,8 @@ const DanhMucKhachHang = () => {
       setSelectedRowKeys([normalized.customerId]);
       loadSummary(normalized.customerId);
       loadHistory(normalized.customerId);
-      if (options.openAddPoints) {
-        addPointsForm.setFieldsValue({
-          points: options.points ? Number(options.points) : null,
-          invoiceCode: options.invoiceCode || '',
-          note: options.note || ''
-        });
-        setAddPointsVisible(true);
-        setPrefillContext(null);
-      }
     },
-    [addPointsForm, loadHistory, loadSummary, setPrefillContext]
+    [loadHistory, loadSummary]
   );
 
   const fetchCustomers = useCallback(
@@ -254,7 +246,7 @@ const DanhMucKhachHang = () => {
           rawList = response;
           total = response.length;
         } else if (response?.success === false) {
-          message.warning(response?.message || 'Khong the tai danh sach khach hang');
+          message.warning(response?.message || 'Không thể tải danh sách khách hàng');
         } else if (response?.data) {
           rawList = response.data;
           total = response.pagination?.total ?? rawList.length;
@@ -282,7 +274,7 @@ const DanhMucKhachHang = () => {
         return normalizedList;
       } catch (error) {
         console.error('Failed to load customers:', error);
-        message.error('Khong the tai danh sach khach hang');
+        message.error('Không thể tải danh sách khách hàng');
         return [];
       } finally {
         setLoading(false);
@@ -317,7 +309,7 @@ const DanhMucKhachHang = () => {
       const name = (values.name || '').trim();
       const phone = (values.phone || customerId || '').trim();
       if (!customerId || !name) {
-        message.warning('Vui long nhap ma khach hang va ho ten');
+        message.warning('Vui lòng nhập mã khách hàng và họ tên');
         return;
       }
       setRegistering(true);
@@ -325,10 +317,10 @@ const DanhMucKhachHang = () => {
         const payload = { customerId, name, phone };
         const response = await registerLoyaltyCustomer(payload);
         if (response?.success === false) {
-          message.error(response?.message || 'Khong the luu thong tin khach hang');
+          message.error(response?.message || 'Không thể lưu thông tin khách hàng');
           return;
         }
-        message.success('Da luu thong tin khach hang');
+        message.success('Đã lưu thông tin khách hàng');
         const list = await fetchCustomers({
           page: 1,
           limit: pageSize,
@@ -338,13 +330,7 @@ const DanhMucKhachHang = () => {
           list.find((item) => item.customerId === customerId) ||
           normalizeLoyaltyCustomer({ customerId, name, phone });
         handleSelectCustomer(target);
-        if (prefillContext && Number(prefillContext.pointsEarned) > 0) {
-          addPointsForm.setFieldsValue({
-            points: Number(prefillContext.pointsEarned),
-            invoiceCode: prefillContext.invoiceCode || '',
-            note: ''
-          });
-          setAddPointsVisible(true);
+        if (prefillContext) {
           setPrefillContext(null);
         }
         if (response?.data) {
@@ -362,7 +348,7 @@ const DanhMucKhachHang = () => {
         setCreateModalVisible(false);
       } catch (error) {
         console.error('Failed to register loyalty customer:', error);
-        message.error('Khong the luu thong tin khach hang');
+        message.error('Không thể lưu thông tin khách hàng');
       } finally {
         setRegistering(false);
       }
@@ -378,7 +364,7 @@ const DanhMucKhachHang = () => {
       const values = await addPointsForm.validateFields();
       const points = Number(values.points);
       if (!points || points <= 0) {
-        message.warning('Vui long nhap so diem hop le (> 0)');
+        message.warning('Vui lòng nhập số điểm hợp lệ (> 0)');
         return;
       }
       const payload = {
@@ -390,9 +376,9 @@ const DanhMucKhachHang = () => {
       setAddPointsLoading(true);
       const response = await addLoyaltyPoints(payload);
       if (response?.success === false) {
-        message.error(response?.message || 'Khong the cong diem cho khach hang');
+        message.error(response?.message || 'Không thể cộng điểm cho khách hàng');
       } else {
-        message.success('Da cong diem cho khach hang');
+        message.success('Đã cộng điểm cho khách hàng');
         setAddPointsVisible(false);
         addPointsForm.resetFields();
         loadSummary(selectedCustomer.customerId);
@@ -404,7 +390,7 @@ const DanhMucKhachHang = () => {
         return;
       }
       console.error('Failed to add loyalty points:', error);
-      message.error('Khong the cong diem cho khach hang');
+      message.error('Không thể cộng điểm cho khách hàng');
     } finally {
       setAddPointsLoading(false);
     }
@@ -463,12 +449,9 @@ const DanhMucKhachHang = () => {
           (item) => item.customerId === targetId || item.phone === targetId
         );
         if (match) {
-          handleSelectCustomer(match, {
-            openAddPoints: pointsEarned && Number(pointsEarned) > 0,
-            points: pointsEarned,
-            invoiceCode
-          });
+          handleSelectCustomer(match);
           setCreateModalVisible(false);
+          setPrefillContext(null);
         } else {
           setCreateModalVisible(true);
           if (pointsEarned && Number(pointsEarned) > 0) {
@@ -497,39 +480,39 @@ const DanhMucKhachHang = () => {
   const columns = useMemo(
     () => [
       {
-        title: 'Ma KH',
+        title: 'Mã KH',
         dataIndex: 'customerId',
         key: 'customerId',
         width: 120
       },
       {
-        title: 'Ho ten',
+        title: 'Họ tên',
         dataIndex: 'name',
         key: 'name',
         width: 200
       },
       {
-        title: 'So dien thoai',
+        title: 'Số điện thoại',
         dataIndex: 'phone',
         key: 'phone',
         width: 160
       },
       {
-        title: 'Tong diem',
+        title: 'Tổng điểm',
         dataIndex: 'totalPoints',
         key: 'totalPoints',
         width: 120,
         render: (value) => formatPoints(value)
       },
       {
-        title: 'Da su dung',
+        title: 'Đã sử dụng',
         dataIndex: 'usedPoints',
         key: 'usedPoints',
         width: 120,
         render: (value) => formatPoints(value)
       },
       {
-        title: 'Con lai',
+        title: 'Còn lại',
         dataIndex: 'remainingPoints',
         key: 'remainingPoints',
         width: 120,
@@ -559,17 +542,17 @@ const DanhMucKhachHang = () => {
       total: totalRecords,
       showSizeChanger: true,
       pageSizeOptions: ['10', '20', '50', '100'],
-      showTotal: (total) => `Tong ${total} khach hang`
+      showTotal: (total) => `Tổng ${total} khách hàng`
     }),
     [currentPage, pageSize, totalRecords]
   );
 
   const historyContent = useMemo(() => {
     if (!selectedCustomer) {
-      return <Empty description="Chon khach hang de xem lich su" />;
+      return <Empty description="Chọn khách hàng để xem lịch sử" />;
     }
     if (!history.length) {
-      return <Empty description="Chua co lich su tich diem" />;
+      return <Empty description="Chưa có lịch sử tích điểm" />;
     }
     return (
       <List
@@ -580,7 +563,7 @@ const DanhMucKhachHang = () => {
           return (
             <List.Item
               key={item.id}
-              extra={<Tag color={positive ? 'green' : 'red'}>{positive ? 'Cong' : 'Tru'}</Tag>}
+              extra={<Tag color={positive ? 'green' : 'red'}>{positive ? 'Cộng' : 'Trừ'}</Tag>}
             >
               <Space direction="vertical" size={0}>
                 <Text strong style={{ color: positive ? '#389e0d' : '#d4380d' }}>
@@ -588,8 +571,13 @@ const DanhMucKhachHang = () => {
                 </Text>
                 <Text type="secondary">{formatDateTime(item.createdAt)}</Text>
                 {item.orderCode ? (
-                  <Text type="secondary">Hoa don: {item.orderCode}</Text>
+                  <Text type="secondary">Hóa đơn: {item.orderCode}</Text>
                 ) : null}
+                {item.amount !== undefined && !Number.isNaN(item.amount) && item.amount > 0 && (
+                  <Text type="secondary">
+                    Thanh toán: {Number(item.amount).toLocaleString('vi-VN')}`
+                  </Text>
+                )}
                 {item.note ? <Text>{item.note}</Text> : null}
               </Space>
             </List.Item>
@@ -604,7 +592,7 @@ const DanhMucKhachHang = () => {
       <Row justify="space-between" align="middle" style={{ marginBottom: 24 }}>
         <Col>
           <Title level={3} style={{ marginBottom: 0 }}>
-            Quan ly khach hang tich diem
+            Quản lý khách hàng tích điểm
           </Title>
         </Col>
       </Row>
@@ -624,29 +612,29 @@ const DanhMucKhachHang = () => {
         <Col xl={14} lg={14} md={24}>
           <Space direction="vertical" size="large" style={{ width: '100%' }}>
             <Card
-              title="Danh sach khach hang"
+              title="Danh sách khách hàng"
               extra={
                 <Button
                   type="primary"
                   icon={<UserPlus size={16} />}
                   onClick={handleOpenCreateModal}
                 >
-                  Them khach hang
+                  Thêm khách hàng
                 </Button>
               }
             >
               <Space style={{ marginBottom: 16 }} wrap>
                 <Input.Search
-                  placeholder="Tim ma khach hang, ten hoac so dien thoai"
+                  placeholder="Tìm mã khách hàng, tên hoặc số điện thoại"
                   allowClear
-                  enterButton="Tim"
+                  enterButton="Tìm"
                   value={searchValue}
                   onChange={(event) => setSearchValue(event.target.value)}
                   onSearch={handleSearch}
                   style={{ minWidth: 280 }}
                 />
                 <Button icon={<RefreshCw size={16} />} onClick={handleRefresh}>
-                  Lam moi
+                  Làm mới
                 </Button>
               </Space>
               <Table
@@ -670,33 +658,33 @@ const DanhMucKhachHang = () => {
 
         <Col xl={10} lg={10} md={24}>
           <Space direction="vertical" size="large" style={{ width: '100%' }}>
-            <Card title="Thong tin khach hang">
+            <Card title="Thông tin khách hàng">
               {selectedCustomer ? (
                 <>
                   <Space direction="vertical" size={4}>
-                    <Text strong>{selectedCustomer.name || 'Khach hang'}</Text>
-                    <Text type="secondary">Ma: {selectedCustomer.customerId}</Text>
+                    <Text strong>{selectedCustomer.name || 'Khách hàng'}</Text>
+                    <Text type="secondary">Mã: {selectedCustomer.customerId}</Text>
                     <Text type="secondary">SDT: {selectedCustomer.phone}</Text>
                   </Space>
                   <Divider />
                   <Row gutter={16}>
                     <Col span={8}>
                       <Statistic
-                        title="Tong diem"
+                        title="Tổng điểm"
                         value={summary?.accumulated ?? selectedCustomer.totalPoints}
                         precision={0}
                       />
                     </Col>
                     <Col span={8}>
                       <Statistic
-                        title="Da su dung"
+                        title="Đã sử dụng"
                         value={summary?.redeemed ?? selectedCustomer.usedPoints}
                         precision={0}
                       />
                     </Col>
                     <Col span={8}>
                       <Statistic
-                        title="Con lai"
+                        title="Còn lại"
                         value={summary?.balance ?? selectedCustomer.remainingPoints}
                         precision={0}
                       />
@@ -704,17 +692,17 @@ const DanhMucKhachHang = () => {
                   </Row>
                 </>
               ) : (
-                <Empty description="Chon khach hang de xem chi tiet" />
+                <Empty description="Chọn khách hàng để xem chi tiết" />
               )}
             </Card>
 
-            <Card title="Lich su tich diem">{historyContent}</Card>
+            <Card title="Lịch sử tích điểm">{historyContent}</Card>
           </Space>
         </Col>
       </Row>
 
       <Modal
-        title="Them khach hang"
+        title="Thêm khách hàng"
         open={createModalVisible}
         onCancel={() => {
           setCreateModalVisible(false);
@@ -739,38 +727,38 @@ const DanhMucKhachHang = () => {
           }}
         >
           <Form.Item
-            label="Ma khach hang (so dien thoai)"
+            label="Mã khách hàng (số điện thoại)"
             name="customerId"
             rules={[
-              { required: true, message: 'Vui long nhap ma khach hang' },
-              { min: 3, message: 'Ma khach hang toi thieu 3 ky tu' }
+              { required: true, message: 'Vui lòng nhập mã khách hàng' },
+              { min: 3, message: 'Mã khách hàng tối thiểu 3 ký tự' }
             ]}
           >
             <Input placeholder="VD: 0987123456" maxLength={30} />
           </Form.Item>
           <Form.Item
-            label="Ho ten"
+            label="Họ tên"
             name="name"
-            rules={[{ required: true, message: 'Vui long nhap ho ten' }]}
+            rules={[{ required: true, message: 'Vui lòng nhập họ tên' }]}
           >
-            <Input placeholder="Ho ten khach hang" maxLength={120} />
+            <Input placeholder="Họ tên khách hàng" maxLength={120} />
           </Form.Item>
-          <Form.Item label="So dien thoai" name="phone">
-            <Input placeholder="Nhap so dien thoai neu khac ma khach hang" maxLength={30} />
+          <Form.Item label="Số điện thoại" name="phone">
+            <Input placeholder="Nhập số điện thoại nếu khác mã khách hàng" maxLength={30} />
           </Form.Item>
         </Form>
       </Modal>
 
       <Modal
-        title="Cong diem cho khach hang"
+        title="Cộng điểm cho khách hàng"
         open={addPointsVisible}
         onCancel={() => {
           setAddPointsVisible(false);
           addPointsForm.resetFields();
         }}
         onOk={handleSubmitAddPoints}
-        okText="Cong diem"
-        cancelText="Huy"
+        okText="Cộng điểm"
+        cancelText="Hủy"
         confirmLoading={addPointsLoading}
         destroyOnClose
       >
@@ -779,19 +767,19 @@ const DanhMucKhachHang = () => {
             <div>
               <Text strong>{selectedCustomer.name}</Text>
               <div>
-                <Text type="secondary">Ma: {selectedCustomer.customerId}</Text>
+                <Text type="secondary">Mã: {selectedCustomer.customerId}</Text>
               </div>
             </div>
             <Form layout="vertical" form={addPointsForm}>
               <Form.Item
-                label="So diem cong"
+                label="Số điểm cộng"
                 name="points"
                 rules={[
-                  { required: true, message: 'Vui long nhap so diem' },
+                  { required: true, message: 'Vui lòng nhập số điểm' },
                   {
                     validator: (_, value) => {
                       if (!value || Number(value) <= 0) {
-                        return Promise.reject(new Error('So diem phai lon hon 0'));
+                        return Promise.reject(new Error('Số điểm phải lớn hơn 0'));
                       }
                       return Promise.resolve();
                     }
@@ -803,19 +791,19 @@ const DanhMucKhachHang = () => {
                   step={1}
                   precision={0}
                   style={{ width: '100%' }}
-                  placeholder="Nhap so diem can cong"
+                  placeholder="Nhập số điểm cần cộng"
                 />
               </Form.Item>
-              <Form.Item label="Ma hoa don" name="invoiceCode">
-                <Input placeholder="Lien ket voi hoa don (neu co)" />
+              <Form.Item label="Mã hóa đơn" name="invoiceCode">
+                <Input placeholder="Liên kết với hóa đơn (nếu có)" />
               </Form.Item>
-              <Form.Item label="Ghi chu" name="note">
-                <Input.TextArea rows={3} placeholder="Ghi chu bo sung (neu co)" />
+              <Form.Item label="Ghi chú" name="note">
+                <Input.TextArea rows={3} placeholder="Ghi chú bổ sung (nếu có)" />
               </Form.Item>
             </Form>
           </Space>
         ) : (
-          <Empty description="Chon khach hang truoc khi cong diem" />
+          <Empty description="Chọn khách hàng trước khi cộng điểm" />
         )}
       </Modal>
     </div>
