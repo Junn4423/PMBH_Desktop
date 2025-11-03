@@ -559,8 +559,8 @@ const fetchPrograms = async () => {
             <Col span={12}>
               <Form.Item
                 name="value"
-                label="Giá trị chung"
-                tooltip="Thông tin tùy chọn, ví dụ mức giảm giá mặc định"
+                label="Chiết khấu trên tổng đơn (%)"
+                tooltip="Mức chiết khấu trên toàn hóa đơn. Nhập 0 nếu không áp dụng chiết khấu chung, nếu thiết lập cả chiết khấu chung và chiết khấu theo sản phẩm, hệ thống sẽ cộng dồn cả 2 mức chiết khấu."
               >
                 <Input placeholder="VD: 10% hoặc ghi chú nội bộ" />
               </Form.Item>

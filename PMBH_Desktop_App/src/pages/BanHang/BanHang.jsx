@@ -501,7 +501,7 @@ const BanHang = () => {
   // Recalculate invoice summary when invoice details or VAT flag change
   useEffect(() => {
     calculateInvoiceSummary();
-  }, [invoiceDetails, includeVAT, programDiscountMap]);
+  }, [invoiceDetails, includeVAT, programDiscountMap, products]);
 
 
   // Load dữ liệu ban đầu - chỉ tables và areas, không load products để tránh lag
@@ -1856,11 +1856,26 @@ const BanHang = () => {
   }, [resetViewAfterPayment]);
     
   // Open payment modal
-  const openPaymentModal = () => {
+  const openPaymentModal = async () => {
     if (!currentInvoice || invoiceDetails.length === 0) {
       message.error('Không có đơn hàng để thanh toán');
       return;
     }
+
+    // Load products nếu chưa có (cần để tính giảm giá từ chương trình)
+    if (!products || products.length === 0) {
+      console.log('Products not loaded, loading now...');
+      await loadProducts();
+    }
+
+    // Debug: Log promotion discount info
+    console.log('=== OPENING PAYMENT MODAL ===');
+    console.log('invoiceSummary:', invoiceSummary);
+    console.log('promotionDiscountAmount:', invoiceSummary.discount);
+    console.log('subtotalBeforeDiscount:', invoiceSummary.subtotal);
+    console.log('activeSalesProgram:', activeSalesProgram);
+    console.log('programDiscountMap:', programDiscountMap);
+    console.log('programDiscountBreakdown:', programDiscountBreakdown);
 
     // Check if current table has pending kitchen items
     const currentTable = selectedTable;
@@ -2900,17 +2915,45 @@ const BanHang = () => {
     let earnedPoints = 0;
     const breakdown = [];
 
-    invoiceDetails.forEach((item) => {
+    console.log('=== PROCESSING INVOICE DETAILS ===');
+    console.log('programDiscountMap keys:', Object.keys(programDiscountMap));
+    console.log('programDiscountMap:', programDiscountMap);
+    console.log('products count:', products.length);
+    
+    // Tạo product map theo tên để tra cứu nhanh mã sản phẩm
+    const productNameToIdMap = {};
+    if (products && products.length > 0) {
+      products.forEach(product => {
+        if (product.ten && product.id) {
+          productNameToIdMap[product.ten] = product.id;
+        }
+      });
+    }
+    console.log('productNameToIdMap:', productNameToIdMap);
+
+    invoiceDetails.forEach((item, index) => {
+      console.log(`\n--- Processing item ${index + 1} ---`);
+      console.log('Full item:', item);
+      
       const price = parseFloat(item.gia || item.giaBan || item.donGia || 0);
       const quantity = parseInt(item.sl || item.soLuong || 0);
       const lineTotal = price * quantity;
       subtotal += lineTotal;
 
       if (!quantity || !price || !programDiscountMap || Object.keys(programDiscountMap).length === 0) {
+        console.log('Skipping: no quantity/price or no programDiscountMap');
         return;
       }
 
+      // Lấy mã sản phẩm từ tên sản phẩm
+      const productName = item.tenSp || item.ten || item.tensp || item.name;
+      const productIdFromName = productName ? productNameToIdMap[productName] : null;
+      
+      console.log('Product name:', productName);
+      console.log('Product ID from name:', productIdFromName);
+
       const candidateIds = [
+        productIdFromName,  // Ưu tiên ID từ tên sản phẩm
         item.maSp,
         item.maSP,
         item.masp,
@@ -2923,16 +2966,31 @@ const BanHang = () => {
         item.maHangHoa,
         item.maSanPham,
         item.productId,
-        item.id
+        item.id,
+        item.lv001,  // Backend field
+        item.lv002,  // Possible alternate field
+        item.mact,   // Possible product code
+        item.maCt,
+        item.masp_hd, // Invoice product code
+        item.maSpHd,
+        item.code,   // Generic code field
+        item.productCode
       ].map(value => (value !== undefined && value !== null ? String(value) : null));
 
+      console.log('Candidate IDs:', candidateIds.filter(id => id !== null));
+
       const matchedId = candidateIds.find(candidate => candidate && programDiscountMap[candidate]);
+      
       if (!matchedId) {
+        console.log('No matched ID found in programDiscountMap');
         return;
       }
 
+      console.log('✓ Matched ID:', matchedId);
+
       const programDetail = programDiscountMap[matchedId];
       if (!programDetail) {
+        console.log('No program detail found');
         return;
       }
 
@@ -2995,6 +3053,12 @@ const BanHang = () => {
       total,
       loyaltyPoints: earnedPoints
     };
+
+    console.log('=== CALCULATE INVOICE SUMMARY ===');
+    console.log('subtotal:', subtotal);
+    console.log('programDiscount:', programDiscount);
+    console.log('breakdown:', breakdown);
+    console.log('summary:', summary);
 
     setInvoiceSummary(summary);
     setProgramDiscountBreakdown(breakdown);
@@ -3919,6 +3983,8 @@ const BanHang = () => {
         invoiceDetails={invoiceDetails}
         loading={paymentLoading}
         includeVAT={includeVAT}
+        promotionDiscountAmount={invoiceSummary.discount}
+        subtotalBeforeDiscount={invoiceSummary.subtotal}
       />
     </div>
   );

@@ -47,6 +47,8 @@ const PaymentModal = ({
   invoiceDetails = [],
   loading = false,
   includeVAT = false,
+  promotionDiscountAmount = 0,
+  subtotalBeforeDiscount = orderTotal,
   onPaymentSuccessClose
 }) => {
   const [paymentMethod, setPaymentMethod] = useState('Tiền mặt');
@@ -56,6 +58,7 @@ const PaymentModal = ({
   const [discount, setDiscount] = useState(0);
   const [discountType, setDiscountType] = useState('percent'); // 'amount' or 'percent'
   const [discountAmount, setDiscountAmount] = useState(0);
+  const [hasManualDiscountChange, setHasManualDiscountChange] = useState(false);
   const [finalTotal, setFinalTotal] = useState(orderTotal);
   const [paymentLoading, setPaymentLoading] = useState(false);
   const [isMixedPaymentMode, setIsMixedPaymentMode] = useState(false);
@@ -166,14 +169,34 @@ const PaymentModal = ({
   const GATEWAY_METHODS = ['MoMo', 'ZaloPay', 'VNPAY'];
 
   const isGatewayMethod = (method) => GATEWAY_METHODS.includes(method);
+  const normalizedSubtotal = Number(subtotalBeforeDiscount);
+  const fallbackSubtotal = includeVAT ? orderTotal / 1.1 : orderTotal;
+  const baseSubtotal = Math.max(
+    Number.isFinite(normalizedSubtotal) && normalizedSubtotal > 0
+      ? normalizedSubtotal
+      : Number.isFinite(fallbackSubtotal)
+        ? fallbackSubtotal
+        : 0,
+    0
+  );
 
   // Reset form when modal opens
   useEffect(() => {
     if (visible) {
+      console.log('=== PAYMENT MODAL OPENED ===');
+      console.log('Received promotionDiscountAmount:', promotionDiscountAmount);
+      console.log('Received subtotalBeforeDiscount:', subtotalBeforeDiscount);
+      console.log('Received orderTotal:', orderTotal);
+      
       setCustomerPaid(0);
       setChangeAmount(0);
-      setDiscount(0);
-      setDiscountAmount(0);
+      // Không reset discount về 0 nếu có promotionDiscountAmount, để useEffect tiếp theo tự động áp dụng
+      if (!promotionDiscountAmount || promotionDiscountAmount <= 0) {
+        setDiscount(0);
+        setDiscountAmount(0);
+      } else {
+        console.log('Has promotion discount, will auto-apply in next useEffect');
+      }
       setFinalTotal(orderTotal);
       setPaymentMethod('Tiền mặt');
       setCurrency('VND');
@@ -181,7 +204,8 @@ const PaymentModal = ({
       setPendingMoMoTxn(null);
       setPendingZaloPayTxn(null);
       setMixedGatewayPendingPayment(null);
-      
+      setHasManualDiscountChange(false);
+
       // Load partial payment from localStorage
       if (invoice?.maHd) {
         const savedPayment = localStorage.getItem(`partial_payment_${invoice.maHd}`);
@@ -209,27 +233,84 @@ const PaymentModal = ({
       setPendingMoMoTxn(null);
       setPendingZaloPayTxn(null);
       setMixedGatewayPendingPayment(null);
+      setHasManualDiscountChange(false);
     }
-  }, [visible, orderTotal, invoice?.maHd, cleanupZaloPayPayment]);
+  }, [visible, orderTotal, invoice?.maHd, cleanupZaloPayPayment, promotionDiscountAmount]);
+
+  // Tự động áp dụng giảm giá từ chương trình khuyến mãi
+  useEffect(() => {
+    // Đợi một chút để đảm bảo modal đã render xong
+    if (!visible) {
+      return;
+    }
+
+    const timer = setTimeout(() => {
+      if (hasManualDiscountChange) {
+        console.log('User has manually changed discount, skipping auto-apply');
+        return;
+      }
+
+      console.log('=== AUTO DISCOUNT DEBUG ===');
+      console.log('promotionDiscountAmount:', promotionDiscountAmount);
+      console.log('baseSubtotal:', baseSubtotal);
+      console.log('hasManualDiscountChange:', hasManualDiscountChange);
+      console.log('visible:', visible);
+
+      const parsedDiscount = Number(promotionDiscountAmount);
+      const normalizedProgramDiscount = Number.isFinite(parsedDiscount)
+        ? Math.min(Math.max(parsedDiscount, 0), baseSubtotal)
+        : 0;
+
+      console.log('normalizedProgramDiscount:', normalizedProgramDiscount);
+
+      if (normalizedProgramDiscount > 0) {
+        const derivedPercent =
+          baseSubtotal > 0
+            ? (normalizedProgramDiscount / baseSubtotal) * 100
+            : 0;
+
+        console.log('derivedPercent:', derivedPercent);
+
+        if (derivedPercent > 0 && derivedPercent <= 100) {
+          console.log('Setting discount type: percent, value:', derivedPercent);
+          setDiscountType('percent');
+          setDiscount(parseFloat(derivedPercent.toFixed(2)));
+          message.success(`Đã áp dụng giảm giá ${derivedPercent.toFixed(2)}% từ chương trình khuyến mãi`);
+        } else {
+          console.log('Setting discount type: amount, value:', normalizedProgramDiscount);
+          setDiscountType('amount');
+          setDiscount(normalizedProgramDiscount);
+          message.success(`Đã áp dụng giảm giá ${normalizedProgramDiscount.toLocaleString()} VND từ chương trình khuyến mãi`);
+        }
+      } else {
+        console.log('No promotion discount, resetting to 0');
+        setDiscountType('percent');
+        setDiscount(0);
+      }
+    }, 100); // Delay 100ms
+
+    return () => clearTimeout(timer);
+  }, [visible, promotionDiscountAmount, invoice?.maHd, hasManualDiscountChange, baseSubtotal]);
 
   // Calculate discount amount and final total
   useEffect(() => {
+    const normalizedDiscount = Number.isFinite(Number(discount)) ? Number(discount) : 0;
+
     let discountValue = 0;
     if (discountType === 'percent') {
-      discountValue = (orderTotal * discount) / 100;
+      discountValue = (baseSubtotal * normalizedDiscount) / 100;
     } else {
-      discountValue = discount;
+      discountValue = Math.min(Math.max(normalizedDiscount, 0), baseSubtotal);
     }
-    setDiscountAmount(discountValue);
+    const taxableBase = Math.max(baseSubtotal - discountValue, 0);
+    const vatAmount = includeVAT ? taxableBase * 0.1 : 0;
+    const total = taxableBase + vatAmount;
 
-    // Calculate VAT if included
-    const vatAmount = includeVAT ? orderTotal * 0.1 : 0;
-    const subtotalWithVAT = orderTotal + vatAmount;
-    const total = Math.max(0, subtotalWithVAT - discountValue);
+    setDiscountAmount(discountValue);
     setFinalTotal(total);
 
     // Do not auto-update customerPaid, keep user's input
-  }, [discount, discountType, orderTotal, includeVAT]);
+  }, [discount, discountType, includeVAT, baseSubtotal]);
 
   // Calculate change amount with currency conversion
   useEffect(() => {
@@ -291,7 +372,13 @@ const PaymentModal = ({
   };
 
   const handleDiscountChange = (value) => {
+    setHasManualDiscountChange(true);
     setDiscount(value || 0);
+  };
+
+  const handleDiscountTypeChange = (value) => {
+    setHasManualDiscountChange(true);
+    setDiscountType(value);
   };
 
   const handleNumberClick = (num) => {
@@ -357,7 +444,7 @@ const PaymentModal = ({
         // Call parent onConfirm with payment data for additional processing
         const paymentData = {
           maHd: invoice?.maHd,
-          tongTien: orderTotal,
+          tongTien: finalTotal,
           discount: discountAmount,
           discountType,
           finalTotal,
@@ -642,7 +729,7 @@ const PaymentModal = ({
 
         const mixedPaymentData = {
           maHd: invoice?.maHd,
-          tongTien: orderTotal,
+          tongTien: finalTotal,
           discount: discountAmount,
           finalTotal,
           tienKhachDua: finalTotal,
@@ -1414,7 +1501,7 @@ const PaymentModal = ({
 
                 const paymentData = {
                   maHd: invoice?.maHd,
-                  tongTien: orderTotal,
+                  tongTien: finalTotal,
                   discount: discountAmount,
                   discountType,
                   finalTotal,
@@ -1521,7 +1608,7 @@ const PaymentModal = ({
 
         const paymentData = {
           maHd: invoice?.maHd,
-          tongTien: orderTotal,
+          tongTien: finalTotal,
           discount: discountAmount,
           discountType,
           finalTotal,
@@ -1863,7 +1950,7 @@ const PaymentModal = ({
         
         const paymentData = {
           maHd: invoice?.maHd,
-          tongTien: orderTotal,
+          tongTien: finalTotal,
           discount: discountAmount,
           discountType,
           finalTotal,
@@ -2031,7 +2118,7 @@ const PaymentModal = ({
 
             const paymentData = {
               maHd: invoice?.maHd,
-              tongTien: orderTotal,
+              tongTien: finalTotal,
               discount: discountAmount,
               discountType,
               finalTotal,
@@ -2334,11 +2421,18 @@ const PaymentModal = ({
 
             {/* Discount Section */}
             <div className="discount-section">
-              <Text className="section-label">Chiết khấu</Text>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                <Text className="section-label">Chiết khấu</Text>
+                {promotionDiscountAmount > 0 && !hasManualDiscountChange && (
+                  <Text style={{ fontSize: '11px', color: '#52c41a', fontStyle: 'italic' }}>
+                    ✓ Khuyến mãi tự động
+                  </Text>
+                )}
+              </div>
               <div className="discount-controls">
                 <Select 
                   value={discountType}
-                  onChange={setDiscountType}
+                  onChange={handleDiscountTypeChange}
                   className="discount-type"
                   style={{ width: 80 }}
                 >
@@ -2349,18 +2443,27 @@ const PaymentModal = ({
                   value={discount}
                   onChange={handleDiscountChange}
                   min={0}
-                  max={discountType === 'percent' ? 100 : orderTotal}
+                  max={
+                    discountType === 'percent'
+                      ? 100
+                      : baseSubtotal
+                  }
                   className="discount-input"
                   style={{ flex: 1 }}
                 />
               </div>
+              {promotionDiscountAmount > 0 && (
+                <Text style={{ fontSize: '11px', color: '#888', marginTop: '4px', display: 'block' }}>
+                  Giảm giá từ chương trình: {promotionDiscountAmount.toLocaleString()} VND
+                </Text>
+              )}
             </div>
 
             {/* Payment Summary */}
             <div className="payment-summary">
               <div className="summary-line">
                 <span>Tổng hóa đơn:</span>
-                <span>{orderTotal.toLocaleString()} VND</span>
+                <span>{baseSubtotal.toLocaleString()} VND</span>
               </div>
               <div className="summary-line">
                 <span>Giảm giá:</span>
