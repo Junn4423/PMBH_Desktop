@@ -54,7 +54,16 @@ const ChuongTrinhKinhDoanh = () => {
   const [productOptions, setProductOptions] = useState([]);
   const [productLoading, setProductLoading] = useState(false);
 
-  const fetchPrograms = async () => {
+    const normalizeDiscountValue = (value) => {
+    const numeric = Number(value);
+    if (!Number.isFinite(numeric)) {
+      return 1;
+    }
+    const clamped = Math.min(100, Math.max(1, numeric));
+    return Math.round(clamped);
+  };
+
+const fetchPrograms = async () => {
     setLoading(true);
     try {
       const params =
@@ -99,7 +108,14 @@ const ChuongTrinhKinhDoanh = () => {
           if (!productId) {
             return null;
           }
-          const name = product?.tenSp ?? product?.ten ?? product?.tensp ?? `San pham ${productId}`;
+
+          const normalizedId = String(productId).trim();
+          if (!normalizedId || normalizedId.toUpperCase().startsWith('NVL')) {
+            return null;
+          }
+
+          const name =
+            product?.tenSp ?? product?.ten ?? product?.tensp ?? `Sản phẩm ${normalizedId}`;
           const priceValue =
             product?.giaBan ?? product?.gia ?? product?.donGia ?? product?.lv007 ?? null;
           const price =
@@ -111,10 +127,10 @@ const ChuongTrinhKinhDoanh = () => {
               ? `${name} (${price.toLocaleString('vi-VN')} ₫)`
               : name;
           return {
-            value: String(productId),
+            value: normalizedId,
             label,
             data: {
-              id: String(productId),
+              id: normalizedId,
               name,
               price: Number.isFinite(price) ? price : undefined
             }
@@ -193,7 +209,7 @@ const ChuongTrinhKinhDoanh = () => {
         details: Array.isArray(program.details)
           ? program.details.map((detail) => ({
               itemId: detail.itemId || '',
-              discount: detail.discount ?? 0,
+              discount: normalizeDiscountValue(detail.discount ?? detail.tyLe ?? 0),
               threshold: detail.threshold ?? 0,
               points: detail.points ?? 0,
               status: detail.status ? detail.status === 1 : true,
@@ -215,13 +231,16 @@ const ChuongTrinhKinhDoanh = () => {
             if (!rawId) {
               return;
             }
-            const key = String(rawId);
+            const key = String(rawId).trim();
+            if (!key || key.toUpperCase().startsWith('NVL')) {
+              return;
+            }
             if (!existingKeys.has(key)) {
               const displayName =
                 detail.productName ??
                 detail.tenSp ??
                 detail.ten ??
-                `San pham ${key}`;
+                `Sản phẩm ${key}`;
               merged.push({
                 value: key,
                 label: displayName,
@@ -615,15 +634,28 @@ const ChuongTrinhKinhDoanh = () => {
                           {...field}
                           name={[field.name, 'itemId']}
                           fieldKey={[field.fieldKey, 'itemId']}
-                          label="Mã sản phẩm"
+                          label="Món khuyến mãi"
                           rules={[
                             {
                               required: true,
-                              message: 'Nhập mã sản phẩm'
+                              message: 'Chọn món khuyến mãi'
                             }
                           ]}
                         >
-                          <Input placeholder="Ví dụ: SP001" />
+                          <Select
+                            showSearch
+                            allowClear
+                            options={productOptions}
+                            loading={productLoading}
+                            placeholder="Chọn món áp dụng"
+                            optionFilterProp="label"
+                            filterOption={(input, option) =>
+                              (option?.label ?? '')
+                                .toString()
+                                .toLowerCase()
+                                .includes(input.toLowerCase())
+                            }
+                          />
                         </Form.Item>
                       </Col>
                       <Col span={12}>
@@ -633,10 +665,11 @@ const ChuongTrinhKinhDoanh = () => {
                           label="Giảm giá (%)"
                         >
                           <InputNumber
-                            min={0}
+                            min={1}
                             max={100}
-                            step={0.1}
+                            step={1}
                             style={{ width: '100%' }}
+                            placeholder="1 - 100"
                           />
                         </Form.Item>
                       </Col>
@@ -706,3 +739,6 @@ const ChuongTrinhKinhDoanh = () => {
 };
 
 export default ChuongTrinhKinhDoanh;
+
+
+
