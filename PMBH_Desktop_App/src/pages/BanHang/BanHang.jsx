@@ -1697,6 +1697,17 @@ const BanHang = () => {
   const processPaymentEnhanced = async (paymentData) => {
     try {
       setPaymentLoading(true);
+      if (loyaltyCustomer) {
+        const loyaltySnapshot = {
+          customerId: loyaltyCustomer.id,
+          name: loyaltyCustomer.name,
+          phone: loyaltyCustomer.phone || loyaltyCustomer.id
+        };
+        paymentData.loyaltyCustomer = loyaltySnapshot;
+        if (loyaltyPointsEarned > 0) {
+          paymentData.loyaltyPoints = loyaltyPointsEarned;
+        }
+      }
 
       // Quy trình thanh toán theo backend:
       // Bước 1: PaymentModal đã gọi thanhToanHoaDonChiTiet (tương ứng với việc tính tiền)
@@ -3707,12 +3718,23 @@ const BanHang = () => {
     const handleMessage = (event) => {
       if (event.data?.type === 'PAYMENT_SUCCESS_CLOSED') {
         handlePaymentSuccessClose({ fromExternalEvent: true });
+      } else if (event.data?.type === 'PAYMENT_SUCCESS_OPEN_LOYALTY') {
+        const payload = event.data?.payload || {};
+        handlePaymentSuccessClose({ fromExternalEvent: true });
+        navigate('/danh-muc-khach-hang', {
+          state: {
+            fromPaymentSuccess: true,
+            loyaltyPrefill: payload.loyaltyCustomer || null,
+            invoiceCode: payload.invoiceCode || null,
+            pointsEarned: payload.pointsEarned || null
+          }
+        });
       }
     };
 
     window.addEventListener('message', handleMessage);
     return () => window.removeEventListener('message', handleMessage);
-  }, [handlePaymentSuccessClose]);
+  }, [handlePaymentSuccessClose, navigate]);
 
   useEffect(() => {
     if (typeof window === 'undefined' || !window.electronAPI?.onPaymentSuccessWindowClosed) {

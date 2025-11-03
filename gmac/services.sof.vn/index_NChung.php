@@ -957,7 +957,7 @@ case 'DonBan':
                            FROM sl_lv0001 C
                            LEFT JOIN sl_lv0115 T ON T.lv002 = C.lv001 AND T.lv015 >= 0
                            WHERE C.lv001 = '$customerIdEsc'
-                           GROUP BY C.lv001";
+                           GROUP BY C.lv001, C.lv002, C.lv010, C.lv022";
             $summaryResult = db_query($summarySql);
             if ($summaryResult && ($row = db_fetch_array($summaryResult, MYSQLI_ASSOC))) {
                 return [
@@ -972,7 +972,92 @@ case 'DonBan':
             }
             return null;
         };
+        $updateAggregates = function ($customerIdEsc) use ($fetchSummary) {
+            $summary = $fetchSummary($customerIdEsc);
+            if (!$summary) {
+                return null;
+            }
+            $totalEarned = number_format((float)$summary['accumulated'], 2, '.', '');
+            $totalRedeemed = number_format((float)$summary['redeemed'], 2, '.', '');
+            $balance = number_format((float)$summary['balance'], 2, '.', '');
+            $updateSql = "UPDATE sl_lv0001 
+                          SET lv100=$totalEarned, lv101=$totalRedeemed, lv102=$balance, lv024=NOW() 
+                          WHERE lv001='$customerIdEsc'";
+            db_query($updateSql);
+            return $summary;
+        };
         switch ($vfun) {
+            case 'listCustomers':
+                $limit = (int)request_value('limit', 50);
+                if ($limit <= 0) {
+                    $limit = 50;
+                }
+                if ($limit > 200) {
+                    $limit = 200;
+                }
+                $offset = (int)request_value('offset', 0);
+                if ($offset < 0) {
+                    $offset = 0;
+                }
+                $keyword = trim((string)request_value('keyword', ''));
+                $group = trim((string)request_value('group', ''));
+                $conditions = [];
+                if ($keyword !== '') {
+                    $keywordLikeEsc = esc_str('%' . $keyword . '%');
+                    $conditions[] = "(C.lv001 LIKE '$keywordLikeEsc' OR C.lv002 LIKE '$keywordLikeEsc' OR C.lv010 LIKE '$keywordLikeEsc')";
+                }
+                if ($group !== '') {
+                    $groupEsc = esc_str($group);
+                    $conditions[] = "C.lv022 = '$groupEsc'";
+                }
+                $whereClause = '';
+                if (count($conditions) > 0) {
+                    $whereClause = 'WHERE ' . implode(' AND ', $conditions);
+                }
+                $countSql = "SELECT COUNT(*) AS total FROM sl_lv0001 C $whereClause";
+                $countResult = db_query($countSql);
+                $totalRecords = 0;
+                if ($countResult && ($countRow = db_fetch_array($countResult, MYSQLI_ASSOC))) {
+                    $totalRecords = (int)$countRow['total'];
+                }
+                $sql = "SELECT C.lv001, C.lv002, C.lv010, C.lv022,
+                               COALESCE(SUM(CASE WHEN T.lv004 > 0 THEN T.lv004 ELSE 0 END),0) AS totalPoints,
+                               COALESCE(SUM(CASE WHEN T.lv004 < 0 THEN -T.lv004 ELSE 0 END),0) AS usedPoints,
+                               COALESCE(SUM(T.lv004),0) AS remainingPoints
+                        FROM sl_lv0001 C
+                        LEFT JOIN sl_lv0115 T ON T.lv002 = C.lv001 AND T.lv015 >= 0
+                        $whereClause
+                        GROUP BY C.lv001, C.lv002, C.lv010, C.lv022
+                        ORDER BY COALESCE(C.lv024, '1900-01-01 00:00:00') DESC, C.lv002, C.lv001
+                        LIMIT $offset, $limit";
+                $result = db_query($sql);
+                if (!$result) {
+                    $vOutput = ['success' => false, 'message' => 'Khong lay duoc danh sach khach hang'];
+                    break;
+                }
+                $data = [];
+                while ($row = db_fetch_array($result, MYSQLI_ASSOC)) {
+                    $data[] = [
+                        'customerId' => $row['lv001'],
+                        'name' => $row['lv002'],
+                        'phone' => $row['lv010'],
+                        'group' => $row['lv022'],
+                        'totalPoints' => (float)$row['totalPoints'],
+                        'usedPoints' => (float)$row['usedPoints'],
+                        'remainingPoints' => (float)$row['remainingPoints']
+                    ];
+                }
+                $vOutput = [
+                    'success' => true,
+                    'data' => $data,
+                    'pagination' => [
+                        'limit' => $limit,
+                        'offset' => $offset,
+                        'total' => $totalRecords
+                    ]
+                ];
+                break;
+
             case 'searchCustomers':
                 $keyword = trim((string)request_value('keyword', ''));
                 $limit = (int)request_value('limit', 20);
@@ -987,7 +1072,16 @@ case 'DonBan':
                     break;
                 }
                 $keywordLikeEsc = esc_str('%' . $keyword . '%');
-                $sql = "SELECT lv001, lv002, lv010, lv022, COALESCE(lv100,0) AS totalPoints, COALESCE(lv101,0) AS usedPoints, COALESCE(lv102,0) AS remainingPoints FROM sl_lv0001 WHERE lv001 LIKE '$keywordLikeEsc' OR lv002 LIKE '$keywordLikeEsc' OR lv010 LIKE '$keywordLikeEsc' ORDER BY lv002 LIMIT $limit";
+                $sql = "SELECT C.lv001, C.lv002, C.lv010, C.lv022,
+                               COALESCE(SUM(CASE WHEN T.lv004 > 0 THEN T.lv004 ELSE 0 END),0) AS totalPoints,
+                               COALESCE(SUM(CASE WHEN T.lv004 < 0 THEN -T.lv004 ELSE 0 END),0) AS usedPoints,
+                               COALESCE(SUM(T.lv004),0) AS remainingPoints
+                        FROM sl_lv0001 C
+                        LEFT JOIN sl_lv0115 T ON T.lv002 = C.lv001 AND T.lv015 >= 0
+                        WHERE C.lv001 LIKE '$keywordLikeEsc' OR C.lv002 LIKE '$keywordLikeEsc' OR C.lv010 LIKE '$keywordLikeEsc'
+                        GROUP BY C.lv001, C.lv002, C.lv010, C.lv022
+                        ORDER BY C.lv002
+                        LIMIT $limit";
                 $result = db_query($sql);
                 if (!$result) {
                     $vOutput = ['success' => false, 'message' => 'Khong tim duoc khach hang'];
@@ -1016,6 +1110,9 @@ case 'DonBan':
                     break;
                 }
                 $phone = trim((string)request_value('phone', ''));
+                if ($phone === '') {
+                    $phone = $customerId;
+                }
                 $group = trim((string)request_value('group', ''));
                 $note = trim((string)request_value('note', ''));
                 $customerIdEsc = esc_str($customerId);
@@ -1026,7 +1123,18 @@ case 'DonBan':
                 $sql = "INSERT INTO sl_lv0001 (lv001, lv002, lv010, lv022, lv019, lv099, lv100, lv101, lv102, lv024) VALUES ('$customerIdEsc', '$nameEsc', '$phoneEsc', '$groupEsc', '$noteEsc', 0, 0, 0, 0, NOW())
                         ON DUPLICATE KEY UPDATE lv002=VALUES(lv002), lv010=VALUES(lv010), lv022=VALUES(lv022), lv019=VALUES(lv019), lv024=NOW()";
                 if (db_query($sql)) {
-                    $summary = $fetchSummary($customerIdEsc);
+                    $summary = $updateAggregates($customerIdEsc);
+                    if (!$summary) {
+                        $summary = [
+                            'customerId' => $customerId,
+                            'name' => $name,
+                            'phone' => $phone,
+                            'group' => $group,
+                            'accumulated' => 0.0,
+                            'redeemed' => 0.0,
+                            'balance' => 0.0
+                        ];
+                    }
                     $vOutput = ['success' => true, 'message' => 'Da cap nhat khach hang', 'data' => $summary];
                 } else {
                     $vOutput = ['success' => false, 'message' => 'Khong the cap nhat khach hang'];
@@ -1081,7 +1189,10 @@ case 'DonBan':
                 $insertSql = "INSERT INTO sl_lv0115 (lv002, lv003, lv004, lv005, lv006, lv007, lv008, lv009, lv010, lv011, lv012, lv013, lv014, lv015)
                               VALUES ('$customerIdEsc', $programValue, $pointsValue, $startDateSql, $expiryValue, NOW(), '$currentUserIdEsc', $orderValue, NOW(), 'earn', $noteValue, '0', 'POS', 1)";
                 if (db_query($insertSql)) {
-                    $summary = $fetchSummary($customerIdEsc);
+                    $summary = $updateAggregates($customerIdEsc);
+                    if (!$summary) {
+                        $summary = $fetchSummary($customerIdEsc);
+                    }
                     $vOutput = ['success' => true, 'message' => 'Da cong diem', 'data' => $summary];
                 } else {
                     $vOutput = ['success' => false, 'message' => 'Khong the cong diem'];
@@ -1113,7 +1224,10 @@ case 'DonBan':
                 $insertSql = "INSERT INTO sl_lv0115 (lv002, lv003, lv004, lv005, lv006, lv007, lv008, lv009, lv010, lv011, lv012, lv013, lv014, lv015)
                               VALUES ('$customerIdEsc', NULL, $pointsValue, CURDATE(), NULL, NOW(), '$currentUserIdEsc', $orderValue, NOW(), 'redeem', $noteValue, '0', 'POS', 1)";
                 if (db_query($insertSql)) {
-                    $summary = $fetchSummary($customerIdEsc);
+                    $summary = $updateAggregates($customerIdEsc);
+                    if (!$summary) {
+                        $summary = $fetchSummary($customerIdEsc);
+                    }
                     $vOutput = ['success' => true, 'message' => 'Da tru diem', 'data' => $summary];
                 } else {
                     $vOutput = ['success' => false, 'message' => 'Khong the tru diem'];

@@ -73,6 +73,8 @@ const PaymentSuccess = () => {
         tienThua: paymentData.tienThua || 0,
         ghiChu: paymentData.ghiChu || '',
         vnpayData: paymentData.vnpayData,
+        loyaltyCustomer: paymentData.loyaltyCustomer || null,
+        loyaltyPoints: paymentData.loyaltyPoints ?? null,
       };
     }
     return {
@@ -84,6 +86,8 @@ const PaymentSuccess = () => {
       orderInfo: '',
       paymentMethod: 'online',
       payDate: new Date().toISOString(),
+      loyaltyCustomer: null,
+      loyaltyPoints: null,
     };
   }, [location.state, searchParams]);
 
@@ -137,6 +141,46 @@ const PaymentSuccess = () => {
       window.focus();
     }
   }, []);
+
+  const handleLoyaltyClick = useCallback(() => {
+    const payload = {
+      invoiceCode: result.txnRef || result.orderInfo || '',
+      loyaltyCustomer: result.loyaltyCustomer || null,
+      pointsEarned: result.loyaltyPoints ?? null
+    };
+
+    let forwardToParent = false;
+
+    if (window.opener && !window.opener.closed) {
+      try {
+        window.opener.postMessage(
+          {
+            type: 'PAYMENT_SUCCESS_OPEN_LOYALTY',
+            payload
+          },
+          window.location.origin
+        );
+        forwardToParent = true;
+      } catch (error) {
+        console.error('Unable to notify opener about loyalty action:', error);
+      }
+    }
+
+    if (forwardToParent) {
+      notifyParentAboutClose();
+      window.close();
+      return;
+    }
+
+    navigate('/danh-muc-khach-hang', {
+      state: {
+        fromPaymentSuccess: true,
+        loyaltyPrefill: payload.loyaltyCustomer,
+        invoiceCode: payload.invoiceCode,
+        pointsEarned: payload.pointsEarned
+      }
+    });
+  }, [navigate, notifyParentAboutClose, result]);
 
   useEffect(() => {
     const handleBeforeUnload = () => {
@@ -192,6 +236,9 @@ const PaymentSuccess = () => {
               : 'Giao dịch đã được xác nhận.'
           }
           extra={[
+            <Button key="loyalty" onClick={handleLoyaltyClick}>
+              Tich diem
+            </Button>,
             <Button type="primary" key="close" onClick={handleCloseWindow}>
               Đóng cửa sổ
             </Button>,

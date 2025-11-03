@@ -13,7 +13,6 @@ const BanHang = React.lazy(() => import('./pages/BanHang/BanHang'));
 const KitchenSystem = React.lazy(() => import('./pages/BepBar/BepBar'));
 const QuanLyBanNhaHang = React.lazy(() => import('./pages/QuanLyBanNhaHang/QuanLyBanNhaHang'));
 const ThucDon = React.lazy(() => import('./pages/ThucDon/ThucDon'));
-const KhachHang = React.lazy(() => import('./pages/KhachHang/KhachHang'));
 const NhanVien = React.lazy(() => import('./pages/NhanVien/NhanVien'));
 const BaoCao = React.lazy(() => import('./pages/BaoCao/BaoCao'));
 const CaiDat = React.lazy(() => import('./pages/CaiDat/CaiDat'));
@@ -144,7 +143,7 @@ function App() {
               <Route path="/chi-khac" element={<ChiKhac />} />
               <Route path="/quan-ly-ban" element={<QuanLyBanNhaHang />} />
               <Route path="/thuc-don" element={<ThucDon />} />
-              <Route path="/khach-hang" element={<KhachHang />} />
+              <Route path="/khach-hang" element={<DanhMucKhachHang />} />
               <Route path="/nhan-vien" element={<NhanVien />} />
               <Route path="/bao-cao" element={<BaoCao />} />
               <Route path="/cai-dat" element={<CaiDat />} />

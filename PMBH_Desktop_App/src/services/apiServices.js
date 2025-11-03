@@ -1846,6 +1846,10 @@ export async function toggleSalesProgramStatus(programId, active) {
 
 // -------------------- Loyalty / Customer Points --------------------
 
+export async function listLoyaltyCustomers(params = {}) {
+  return await callApi('Mb_Loyalty', 'listCustomers', params);
+}
+
 export async function searchLoyaltyCustomers(keyword, limit = 20) {
   return await callApi('Mb_Loyalty', 'searchCustomers', { keyword, limit });
 }
