@@ -30,7 +30,7 @@ import {
 } from '../../services/apiServices';
 
 const { Title, Text } = Typography;
-const DEFAULT_PAGE_SIZE = 20;
+const DEFAULT_PAGE_SIZE = 10;
 
 const normalizeLoyaltyCustomer = (raw) => {
   if (!raw) {
