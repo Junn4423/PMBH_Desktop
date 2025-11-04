@@ -16,6 +16,7 @@ const ThucDon = React.lazy(() => import('./pages/ThucDon/ThucDon'));
 const NhanVien = React.lazy(() => import('./pages/NhanVien/NhanVien'));
 const BaoCao = React.lazy(() => import('./pages/BaoCao/BaoCao'));
 const CaiDat = React.lazy(() => import('./pages/CaiDat/CaiDat'));
+const TaxIntegration = React.lazy(() => import('./pages/TaxIntegration/TaxIntegration'));
 const BepBar = React.lazy(() => import('./pages/BepBar/BepBar'));
 const ChiKhac = React.lazy(() => import('./pages/ChiKhac/ChiKhac'));
 const CongTy = React.lazy(() => import('./pages/CongTy/CongTy'));
@@ -148,6 +149,7 @@ function App() {
               <Route path="/nhan-vien" element={<NhanVien />} />
               <Route path="/bao-cao" element={<BaoCao />} />
               <Route path="/cai-dat" element={<CaiDat />} />
+              <Route path="/ket-noi-thue" element={<TaxIntegration />} />
               
               {/* Routes cho mục chung */}
               <Route path="/cong-ty" element={<CongTy />} />

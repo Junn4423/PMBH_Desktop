@@ -102,6 +102,13 @@ import {
   addLoyaltyPoints
 } from '../../services/apiServices';
 import dayjs from 'dayjs';
+import {
+  loadTaxConfig,
+  normalizeTaxConfig,
+  shouldSendInvoice,
+  submitInvoiceToTaxPortal,
+  prepareInvoicePayload
+} from '../../services/taxIntegrationService';
 
 // Import components
 import ChonSanPham from './ChonSanPham';
@@ -1804,6 +1811,34 @@ const BanHang = () => {
           console.error('Failed to add loyalty points:', error);
           message.warning('Không thể cộng điểm khách hàng');
         }
+      }
+
+      try {
+        const taxConfig = normalizeTaxConfig(loadTaxConfig());
+        if (shouldSendInvoice(taxConfig) && Array.isArray(invoiceDetails) && invoiceDetails.length > 0) {
+          const invoicePayload = prepareInvoicePayload(
+            {
+              invoice: currentInvoice,
+              invoiceDetails,
+              invoiceSummary,
+              paymentData,
+              loyaltyCustomer
+            },
+            taxConfig
+          );
+
+          if (invoicePayload && Array.isArray(invoicePayload.detail) && invoicePayload.detail.length > 0) {
+            const taxResponse = await submitInvoiceToTaxPortal(invoicePayload, taxConfig, 'create');
+            if (taxResponse?.success) {
+              message.success('Đã gửi hóa đơn điện tử.');
+            } else if (!taxResponse?.skipped) {
+              message.warning('Không thể xác nhận trạng thái hóa đơn điện tử.');
+            }
+          }
+        }
+      } catch (taxError) {
+        console.error('Tax invoice submission failed:', taxError);
+        message.warning(taxError?.response?.data?.message || taxError.message || 'Không thể gửi hóa đơn điện tử');
       }
 
       clearLoyaltyCustomer();

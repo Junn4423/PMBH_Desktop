@@ -32,6 +32,10 @@ const SidebarMenu = () => {
           label: 'Trang chủ',
         },
         {
+          key: '/ket-noi-thue',
+          label: 'Kết nối thuế',
+        },
+        {
           key: 'cong-ty',
           label: (
             <span 
