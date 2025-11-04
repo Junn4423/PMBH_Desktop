@@ -1,4 +1,4 @@
-.bc-chi-tien-nhap-kho-container {
+.tai-khoan-mb-container {
   padding: 24px;
 }
 
@@ -6,13 +6,20 @@
   margin-bottom: 24px;
 }
 
-.main-card {
+.profile-card,
+.warehouses-card {
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
   border-radius: 12px;
+  margin-bottom: 16px;
+}
+
+.section-card {
+  border-radius: 10px;
+  background: #f6f9ff;
 }
 
 @media (max-width: 768px) {
-  .bc-chi-tien-nhap-kho-container {
+  .tai-khoan-mb-container {
     padding: 16px;
   }
 }

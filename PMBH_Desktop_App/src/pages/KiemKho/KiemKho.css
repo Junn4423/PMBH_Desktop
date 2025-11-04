@@ -1,4 +1,4 @@
-﻿.bao-cao-theo-dieu-kien-container {
+﻿.kiem-kho-container {
   padding: 24px;
   display: flex;
   flex-direction: column;
@@ -9,7 +9,7 @@
   margin-bottom: 8px;
 }
 
-.bao-cao-header {
+.kiem-kho-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -17,50 +17,55 @@
   gap: 16px;
 }
 
-.bao-cao-title {
+.kiem-kho-title {
   display: flex;
   align-items: center;
   gap: 12px;
 }
 
-.bao-cao-title-text {
+.kiem-kho-title-text {
   margin: 0;
 }
 
-.bao-cao-actions {
+.kiem-kho-actions {
   display: flex;
   align-items: center;
   gap: 8px;
 }
 
-.bao-cao-select,
-.bao-cao-range {
-  min-width: 220px;
+.kiem-kho-search {
+  min-width: 240px;
 }
 
-.bao-cao-summary {
-  margin-bottom: 16px;
+.kiem-kho-select {
+  min-width: 180px;
 }
 
-.bao-cao-stat-card {
+.kiem-kho-stats {
+  margin-bottom: 8px;
+}
+
+.kiem-kho-stat-card {
   height: 100%;
   border-radius: 12px;
 }
 
-.bao-cao-card {
-  border-radius: 12px;
-  margin-bottom: 16px;
+.kiem-kho-diff-summary {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 16px;
 }
 
 @media (max-width: 768px) {
-  .bao-cao-actions {
+  .kiem-kho-actions {
     width: 100%;
     justify-content: flex-start;
     flex-wrap: wrap;
   }
 
-  .bao-cao-select,
-  .bao-cao-range {
+  .kiem-kho-search,
+  .kiem-kho-select {
     flex: 1;
     min-width: 160px;
   }

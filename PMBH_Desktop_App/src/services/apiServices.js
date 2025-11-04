@@ -268,6 +268,186 @@ export async function getSoLuongTonKhoNhieuSP(maSP, maKho) {
   return await callApi('Mb_Kho', 'LaySoLuongTonKhoNhieuSP', { maSP, maKho });
 }
 
+// Phiếu nhập kho
+export async function listPhieuNhap(params = {}) {
+  return await callApi('Mb_PhieuNhap', 'data', params);
+}
+
+export async function createPhieuNhap(phieuNhapData = {}) {
+  const {
+    maKho,
+    maNguoiDung,
+    ghiChu,
+    loaiPhieu,
+    maThamChieu,
+    trangThai,
+    tongTien,
+    ngayNhap,
+    details = []
+  } = phieuNhapData;
+
+  return await callApi('Mb_PhieuNhap', 'add', {
+    lv002: maKho ?? phieuNhapData.lv002 ?? '',
+    lv003: maNguoiDung ?? phieuNhapData.lv003 ?? '',
+    lv004: ghiChu ?? phieuNhapData.lv004 ?? '',
+    lv005: loaiPhieu ?? phieuNhapData.lv005 ?? '',
+    lv006: maThamChieu ?? phieuNhapData.lv006 ?? '',
+    lv007: trangThai ?? phieuNhapData.lv007 ?? '',
+    lv008: tongTien ?? phieuNhapData.lv008 ?? 0,
+    lv009: ngayNhap ?? phieuNhapData.lv009 ?? '',
+    details
+  });
+}
+
+export async function deletePhieuNhap(maPhieu) {
+  return await callApi('Mb_PhieuNhap', 'delete', { maPhieu });
+}
+
+export async function getPhieuNhapById(maPhieu) {
+  return await callApi('Mb_PhieuNhap', 'LoadPhieuNhap_ByID', { maPhieu });
+}
+
+export async function listChiTietPhieuNhap(maPhieu) {
+  return await callApi('Mb_ChiTietPhieuNhap', 'data', { maPhieu });
+}
+
+// Phiếu xuất kho
+export async function listPhieuXuat(params = {}) {
+  return await callApi('Mb_PhieuXuat', 'data', params);
+}
+
+export async function createPhieuXuat(phieuXuatData = {}) {
+  const {
+    maKho,
+    maNguoiDung,
+    chuDe,
+    nguonXuat,
+    maThamChieu,
+    trangThai,
+    ghiChu,
+    ngayXuat,
+    hinhThucXuat,
+    nguoiNhanKho,
+    details = []
+  } = phieuXuatData;
+
+  return await callApi('Mb_PhieuXuat', 'add', {
+    lv002: maKho ?? phieuXuatData.lv002 ?? '',
+    lv003: maNguoiDung ?? phieuXuatData.lv003 ?? '',
+    lv004: chuDe ?? phieuXuatData.lv004 ?? '',
+    lv005: nguonXuat ?? phieuXuatData.lv005 ?? '',
+    lv006: maThamChieu ?? phieuXuatData.lv006 ?? '',
+    lv007: trangThai ?? phieuXuatData.lv007 ?? '',
+    lv008: ghiChu ?? phieuXuatData.lv008 ?? '',
+    lv009: ngayXuat ?? phieuXuatData.lv009 ?? '',
+    lv010: hinhThucXuat ?? phieuXuatData.lv010 ?? '',
+    lv011: nguoiNhanKho ?? phieuXuatData.lv011 ?? '',
+    details
+  });
+}
+
+export async function deletePhieuXuat(maPhieu) {
+  return await callApi('Mb_PhieuXuat', 'delete', { maPhieu });
+}
+
+export async function getPhieuXuatById(maPhieu) {
+  return await callApi('Mb_PhieuXuat', 'LoadPhieuXuat_ByID', { maPhieu });
+}
+
+export async function listChiTietPhieuXuat(maPhieu) {
+  return await callApi('Mb_ChiTietPhieuXuat', 'data', { maPhieu });
+}
+
+// Kiểm kho
+export async function listPhieuKiemKho(params = {}) {
+  return await callApi('Mb_KiemKho', 'data', params);
+}
+
+export async function createPhieuKiemKho(payload = {}) {
+  const {
+    maKho,
+    maNguoiDung,
+    chuDe,
+    ghiNhan,
+    trangThai,
+    ngayKiem
+  } = payload;
+
+  return await callApi('Mb_KiemKho', 'add', {
+    lv002: maKho ?? payload.lv002 ?? '',
+    lv003: maNguoiDung ?? payload.lv003 ?? '',
+    lv004: chuDe ?? payload.lv004 ?? '',
+    lv005: ngayKiem ?? payload.lv005 ?? '',
+    lv006: ghiNhan ?? payload.lv006 ?? '',
+    lv007: trangThai ?? payload.lv007 ?? ''
+  });
+}
+
+export async function deletePhieuKiemKho(maPhieuKiem) {
+  return await callApi('Mb_KiemKho', 'delete', { maPhieuKiem });
+}
+
+export async function getPhieuKiemKhoByKho(maKho) {
+  return await callApi('Mb_KiemKho', 'layDanhSachPhieuKiemTheoKho', { lv002: maKho });
+}
+
+export async function updateTrangThaiPhieuKiem(dsMaPK = []) {
+  return await callApi('Mb_KiemKho', 'chinhSuaTrangThai_PK', { dsMaPK });
+}
+
+export async function getPhieuKiemKhoById(maPK) {
+  return await callApi('Mb_KiemKho', 'layThongTinPhieuKiemByID', { maPK });
+}
+
+export async function listChiTietPhieuKiem(maPK) {
+  return await callApi('Mb_ChiTietPK', 'data', { maPK });
+}
+
+export async function addChiTietPhieuKiem(chiTiet = {}) {
+  const {
+    maKiemKho,
+    maSanPham,
+    slPM,
+    donViKiem,
+    soLuongThucTe,
+    donViTT
+  } = chiTiet;
+
+  return await callApi('Mb_ChiTietPK', 'add', {
+    maKiemKho,
+    maSanPham,
+    slPM,
+    donViKiem,
+    soLuongThucTe,
+    donViTT
+  });
+}
+
+export async function updateChiTietPhieuKiem(chiTiet = {}) {
+  const {
+    maKiemKho,
+    maSanPham,
+    soLuongThucTe,
+    donViTT
+  } = chiTiet;
+
+  return await callApi('Mb_ChiTietPK', 'edit', {
+    maKiemKho,
+    maSanPham,
+    soLuongThucTe,
+    donViTT
+  });
+}
+
+export async function deleteChiTietPhieuKiem(maKiemKho, maSanPham) {
+  return await callApi('Mb_ChiTietPK', 'delete', { maKiemKho, maSanPham });
+}
+
+// Nguyên liệu
+export async function listTatCaNguyenLieu() {
+  return await callApi('Mb_NguyenLieu', 'layAllNguyenLieu');
+}
+
 // -------------------- Functions from index_long.php --------------------
 
 // Lấy danh sách bàn

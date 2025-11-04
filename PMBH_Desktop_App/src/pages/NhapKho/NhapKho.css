@@ -1,29 +1,90 @@
 .nhap-kho-container {
   padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
 }
 
 .page-breadcrumb {
-  margin-bottom: 24px;
+  margin-bottom: 8px;
 }
 
-.main-card {
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+.nhap-kho-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 16px;
 }
 
-.page-title {
+.nhap-kho-title {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.nhap-kho-title-text {
+  margin: 0;
+}
+
+.nhap-kho-actions {
   display: flex;
   align-items: center;
   gap: 8px;
-  color: #197dd3;
 }
 
-.development-notice {
-  text-align: center;
-  padding: 40px 20px;
-  color: #4b4344;
+.nhap-kho-search {
+  min-width: 240px;
 }
 
-.development-notice h3 {
-  color: #197dd3;
-  margin-bottom: 12px;
+.nhap-kho-select,
+.nhap-kho-range-picker {
+  min-width: 200px;
 }
+
+.nhap-kho-stats {
+  margin-bottom: 8px;
+}
+
+.nhap-kho-stat-card {
+  height: 100%;
+  border-radius: 12px;
+}
+
+.nhap-kho-detail-card {
+  margin-bottom: 16px;
+  border-radius: 12px;
+}
+
+.nhap-kho-summary-card {
+  margin-top: 16px;
+  border-radius: 12px;
+  background: #f5f8ff;
+}
+
+.nhap-kho-date-picker {
+  width: 100%;
+}
+
+.nhap-kho-detail-total {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 16px;
+}
+
+@media (max-width: 768px) {
+  .nhap-kho-actions {
+    width: 100%;
+    justify-content: flex-start;
+    flex-wrap: wrap;
+  }
+
+  .nhap-kho-search,
+  .nhap-kho-select,
+  .nhap-kho-range-picker {
+    flex: 1;
+    min-width: 160px;
+  }
+}
+
