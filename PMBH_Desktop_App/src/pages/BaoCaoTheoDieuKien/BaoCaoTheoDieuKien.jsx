@@ -17,14 +17,7 @@ import {
 } from 'antd';
 import { FileBarChart2, ArrowDownCircle, ArrowUpCircle, TrendingUp } from 'lucide-react';
 import dayjs from 'dayjs';
-import {
-  listPhieuNhap,
-  listPhieuXuat,
-  listChiTietPhieuNhap,
-  listChiTietPhieuXuat,
-  getDanhSachKho,
-  listTatCaNguyenLieu
-} from '../../services/apiServices';
+import { getDanhSachKho, baoCaoKhoTheoDieuKien } from '../../services/apiServices';
 import './BaoCaoTheoDieuKien.css';
 
 const { RangePicker } = DatePicker;
@@ -78,30 +71,16 @@ const normalizeXuat = (item) => ({
   ngay: item?.ngayXuat ?? item?.lv009 ?? ''
 });
 
-const normalizeDetail = (item) => ({
-  maSanPham: item?.maSanPham ?? item?.maSp ?? item?.lv003 ?? '',
-  soLuong: Number(item?.soLuong ?? item?.lv004 ?? 0),
-  gia: Number(item?.gia ?? item?.lv008 ?? 0)
+const normalizeTopSanPham = (item) => ({
+  maSanPham: item?.maSanPham ?? '',
+  tenSanPham: item?.tenSanPham ?? '-',
+  soLuong: Number(item?.soLuong ?? 0),
+  giaTri: Number(item?.giaTri ?? 0)
 });
-
-const buildTopList = (map, productMap) => {
-  return Object.entries(map)
-    .map(([maSanPham, value]) => ({
-      maSanPham,
-      tenSanPham: productMap[maSanPham]?.tenSp || productMap[maSanPham]?.lv002 || '—',
-      soLuong: value.soLuong,
-      giaTri: value.giaTri
-    }))
-    .sort((a, b) => b.soLuong - a.soLuong)
-    .slice(0, 5);
-};
 
 const BaoCaoTheoDieuKien = () => {
   const [loading, setLoading] = useState(false);
   const [warehouses, setWarehouses] = useState([]);
-  const [products, setProducts] = useState([]);
-  const [receiptsNhap, setReceiptsNhap] = useState([]);
-  const [receiptsXuat, setReceiptsXuat] = useState([]);
   const [filters, setFilters] = useState({
     maKho: undefined,
     dateRange: [dayjs().subtract(7, 'day'), dayjs()]
@@ -109,26 +88,16 @@ const BaoCaoTheoDieuKien = () => {
   const [report, setReport] = useState({
     nhap: [],
     xuat: [],
-    tongNhap: 0,
-    tongXuat: 0,
-    soPhieuNhap: 0,
-    soPhieuXuat: 0
+    summary: {
+      tongNhap: 0,
+      tongXuat: 0,
+      soPhieuNhap: 0,
+      soPhieuXuat: 0
+    },
+    topNhap: [],
+    topXuat: []
   });
-  const [productReport, setProductReport] = useState({ nhap: [], xuat: [] });
-
-  const detailNhapCache = useRef({});
-  const detailXuatCache = useRef({});
-
-  const productMap = useMemo(() => {
-    const map = {};
-    products.forEach((item) => {
-      const code = item?.maSp || item?.maSP || item?.lv001;
-      if (code) {
-        map[code] = item;
-      }
-    });
-    return map;
-  }, [products]);
+  const initialReportRef = useRef(false);
 
   const warehouseOptions = useMemo(
     () =>
@@ -139,177 +108,108 @@ const BaoCaoTheoDieuKien = () => {
     [warehouses]
   );
 
-  const fetchBaseData = useCallback(async () => {
+  const fetchWarehouses = useCallback(async () => {
     try {
-      const [warehouseData, productData, nhapData, xuatData] = await Promise.all([
-        getDanhSachKho(),
-        listTatCaNguyenLieu(),
-        listPhieuNhap(),
-        listPhieuXuat()
-      ]);
-
-      setWarehouses(Array.isArray(warehouseData) ? warehouseData : []);
-      setProducts(Array.isArray(productData) ? productData : []);
-      setReceiptsNhap(Array.isArray(nhapData) ? nhapData.map(normalizeNhap) : []);
-      setReceiptsXuat(Array.isArray(xuatData) ? xuatData.map(normalizeXuat) : []);
+      const data = await getDanhSachKho();
+      setWarehouses(Array.isArray(data) ? data : []);
     } catch (error) {
       console.error(error);
-      message.error('Không thể tải dữ liệu báo cáo.');
+      message.error('Khong the tai danh sach kho.');
     }
   }, []);
 
   useEffect(() => {
-    fetchBaseData();
-  }, [fetchBaseData]);
+    fetchWarehouses();
+  }, [fetchWarehouses]);
 
   const buildReport = useCallback(async () => {
-    if (!receiptsNhap.length && !receiptsXuat.length) {
-      return;
-    }
-
     setLoading(true);
     try {
       const [start, end] = filters.dateRange || [];
-      const startDate = start ? start.startOf('day') : null;
-      const endDate = end ? end.endOf('day') : null;
+      const dateFrom = start ? start.startOf('day').format('YYYY-MM-DD HH:mm:ss') : null;
+      const dateTo = end ? end.endOf('day').format('YYYY-MM-DD HH:mm:ss') : null;
 
-      const filterByRange = (item) => {
-        const date = parseDate(item.ngay);
-        if (!date) {
-          return false;
-        }
-        if (startDate && date.isBefore(startDate)) {
-          return false;
-        }
-        if (endDate && date.isAfter(endDate)) {
-          return false;
-        }
-        return true;
+      const payload = {
+        maKho: filters.maKho || '',
+        dateFrom,
+        dateTo,
+        topLimit: 5
       };
 
-      const filteredNhap = receiptsNhap
-        .filter((item) => (filters.maKho ? item.maKho === filters.maKho : true))
-        .filter(filterByRange);
-      const filteredXuat = receiptsXuat
-        .filter((item) => (filters.maKho ? item.maKho === filters.maKho : true))
-        .filter(filterByRange);
-
-      const tongNhap = filteredNhap.reduce((sum, item) => sum + Number(item.tongTien || 0), 0);
-
-      const nhapDetails = await Promise.all(
-        filteredNhap.map(async (item) => {
-          if (!detailNhapCache.current[item.maPhieu]) {
-            const detail = await listChiTietPhieuNhap(item.maPhieu);
-            detailNhapCache.current[item.maPhieu] = Array.isArray(detail)
-              ? detail.map(normalizeDetail)
-              : [];
-          }
-          return detailNhapCache.current[item.maPhieu];
-        })
-      );
-
-      const nhapProductMap = {};
-      nhapDetails.forEach((list) => {
-        list.forEach((detail) => {
-          if (!nhapProductMap[detail.maSanPham]) {
-            nhapProductMap[detail.maSanPham] = { soLuong: 0, giaTri: 0 };
-          }
-          nhapProductMap[detail.maSanPham].soLuong += detail.soLuong;
-          nhapProductMap[detail.maSanPham].giaTri += detail.soLuong * detail.gia;
-        });
-      });
-
-      let tongXuat = 0;
-      const xuatDetails = await Promise.all(
-        filteredXuat.map(async (item) => {
-          if (!detailXuatCache.current[item.maPhieu]) {
-            const detail = await listChiTietPhieuXuat(item.maPhieu);
-            detailXuatCache.current[item.maPhieu] = Array.isArray(detail)
-              ? detail.map(normalizeDetail)
-              : [];
-          }
-          return detailXuatCache.current[item.maPhieu];
-        })
-      );
-
-      const xuatProductMap = {};
-      xuatDetails.forEach((list) => {
-        list.forEach((detail) => {
-          if (!xuatProductMap[detail.maSanPham]) {
-            xuatProductMap[detail.maSanPham] = { soLuong: 0, giaTri: 0 };
-          }
-          xuatProductMap[detail.maSanPham].soLuong += detail.soLuong;
-          xuatProductMap[detail.maSanPham].giaTri += detail.soLuong * detail.gia;
-        });
-        const total = list.reduce((sum, detail) => sum + detail.soLuong * detail.gia, 0);
-        tongXuat += total;
-      });
+      const data = await baoCaoKhoTheoDieuKien(payload);
+      const nhap = Array.isArray(data?.nhap) ? data.nhap.map(normalizeNhap) : [];
+      const xuatSource = Array.isArray(data?.xuat) ? data.xuat : [];
+      const xuat = xuatSource.map((item) => ({
+        ...normalizeXuat(item),
+        tongTien: Number(item?.tongTien ?? 0)
+      }));
+      const summary = data?.summary || {};
+      const topNhap = Array.isArray(data?.topNhap) ? data.topNhap.map(normalizeTopSanPham) : [];
+      const topXuat = Array.isArray(data?.topXuat) ? data.topXuat.map(normalizeTopSanPham) : [];
 
       setReport({
-        nhap: filteredNhap,
-        xuat: filteredXuat.map((item, index) => ({
-          ...item,
-          tongTien: xuatDetails[index].reduce(
-            (sum, detail) => sum + detail.soLuong * detail.gia,
-            0
-          )
-        })),
-        tongNhap,
-        tongXuat,
-        soPhieuNhap: filteredNhap.length,
-        soPhieuXuat: filteredXuat.length
-      });
-
-      setProductReport({
-        nhap: buildTopList(nhapProductMap, productMap),
-        xuat: buildTopList(xuatProductMap, productMap)
+        nhap,
+        xuat,
+        summary: {
+          tongNhap: Number(summary.tongNhap ?? 0),
+          tongXuat: Number(summary.tongXuat ?? 0),
+          soPhieuNhap: Number(summary.soPhieuNhap ?? nhap.length),
+          soPhieuXuat: Number(summary.soPhieuXuat ?? xuat.length)
+        },
+        topNhap,
+        topXuat
       });
     } catch (error) {
       console.error(error);
-      message.error('Không thể tổng hợp báo cáo.');
+      message.error('Khong the tong hop bao cao kho.');
     } finally {
       setLoading(false);
     }
-  }, [filters, productMap, receiptsNhap, receiptsXuat]);
+  }, [filters]);
 
   useEffect(() => {
-    buildReport();
+    if (!initialReportRef.current) {
+      initialReportRef.current = true;
+      buildReport();
+    }
   }, [buildReport]);
 
   const summaryData = useMemo(() => {
-    const chenhlech = report.tongNhap - report.tongXuat;
+    const summary = report.summary || {};
+    const tongNhap = Number(summary.tongNhap || 0);
+    const tongXuat = Number(summary.tongXuat || 0);
+    const chenhlech = tongNhap - tongXuat;
     return [
       {
-        title: 'Phiếu nhập',
-        value: report.soPhieuNhap,
+        title: 'Phieu nhap',
+        value: Number(summary.soPhieuNhap || 0),
         prefix: <ArrowDownCircle size={18} color="#52c41a" />
       },
       {
-        title: 'Giá trị nhập',
-        value: report.tongNhap,
+        title: 'Gia tri nhap',
+        value: tongNhap,
         prefix: <ArrowDownCircle size={18} color="#389e0d" />,
         currency: true
       },
       {
-        title: 'Phiếu xuất',
-        value: report.soPhieuXuat,
+        title: 'Phieu xuat',
+        value: Number(summary.soPhieuXuat || 0),
         prefix: <ArrowUpCircle size={18} color="#fa541c" />
       },
       {
-        title: 'Giá trị xuất',
-        value: report.tongXuat,
+        title: 'Gia tri xuat',
+        value: tongXuat,
         prefix: <ArrowUpCircle size={18} color="#d4380d" />,
         currency: true
       },
       {
-        title: 'Chênh lệch tồn',
+        title: 'Chenh lech ton',
         value: chenhlech,
         prefix: <TrendingUp size={18} color={chenhlech >= 0 ? '#237804' : '#cf1322'} />,
         currency: true
       }
     ];
   }, [report]);
-
   const nhapColumns = [
     {
       title: 'Mã phiếu',
@@ -496,7 +396,7 @@ const BaoCaoTheoDieuKien = () => {
               <Table
                 rowKey={(record) => record.maSanPham}
                 columns={productColumns}
-                dataSource={productReport.nhap}
+                dataSource={report.topNhap}
                 pagination={false}
                 size="small"
               />
@@ -521,7 +421,7 @@ const BaoCaoTheoDieuKien = () => {
               <Table
                 rowKey={(record) => record.maSanPham}
                 columns={productColumns}
-                dataSource={productReport.xuat}
+                dataSource={report.topXuat}
                 pagination={false}
                 size="small"
               />

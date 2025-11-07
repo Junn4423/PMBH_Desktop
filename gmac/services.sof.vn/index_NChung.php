@@ -1664,6 +1664,227 @@ case 'DonBan':
         }
         break;
         
+    case 'Mb_BaoCaoKho':
+        switch ($vfun) {
+            case 'baoCaoDieuKien':
+        $maKhoInput = request_value('maKho', '');
+        if (is_array($maKhoInput)) {
+            $maKhoInput = reset($maKhoInput);
+        }
+        $maKhoInput = trim((string)$maKhoInput);
+
+        $rawDateFrom = request_value('dateFrom');
+        $rawDateTo = request_value('dateTo');
+
+        $dateFrom = null;
+        if (!empty($rawDateFrom)) {
+            $timestamp = strtotime($rawDateFrom);
+            if ($timestamp !== false) {
+                $dateFrom = date('Y-m-d H:i:s', $timestamp);
+            }
+        }
+
+        $dateTo = null;
+        if (!empty($rawDateTo)) {
+            $timestamp = strtotime($rawDateTo);
+            if ($timestamp !== false) {
+                $dateTo = date('Y-m-d H:i:s', $timestamp);
+            }
+        }
+
+        $recordLimit = (int) (request_value('limit', 500));
+        if ($recordLimit <= 0) {
+            $recordLimit = 500;
+        }
+        if ($recordLimit > 1000) {
+            $recordLimit = 1000;
+        }
+
+        $topLimit = (int) (request_value('topLimit', 5));
+        if ($topLimit <= 0) {
+            $topLimit = 5;
+        }
+        if ($topLimit > 20) {
+            $topLimit = 20;
+        }
+
+        $maKhoEsc = $maKhoInput !== '' ? esc_str($maKhoInput) : '';
+        $dateFromEsc = $dateFrom ? esc_str($dateFrom) : '';
+        $dateToEsc = $dateTo ? esc_str($dateTo) : '';
+
+        $headerConditions = [];
+        $detailNhapConditions = [];
+        $detailXuatConditions = [];
+
+        if ($maKhoEsc !== '') {
+            $headerConditions[] = "lv002 = '$maKhoEsc'";
+            $detailNhapConditions[] = "h.lv002 = '$maKhoEsc'";
+            $detailXuatConditions[] = "hx.lv002 = '$maKhoEsc'";
+        }
+
+        if ($dateFromEsc !== '') {
+            $headerConditions[] = "lv009 >= '$dateFromEsc'";
+            $detailNhapConditions[] = "h.lv009 >= '$dateFromEsc'";
+            $detailXuatConditions[] = "hx.lv009 >= '$dateFromEsc'";
+        }
+
+        if ($dateToEsc !== '') {
+            $headerConditions[] = "lv009 <= '$dateToEsc'";
+            $detailNhapConditions[] = "h.lv009 <= '$dateToEsc'";
+            $detailXuatConditions[] = "hx.lv009 <= '$dateToEsc'";
+        }
+
+        $headerWhere = $headerConditions ? implode(' AND ', $headerConditions) : '1=1';
+        $detailNhapWhere = $detailNhapConditions ? implode(' AND ', $detailNhapConditions) : '1=1';
+        $detailXuatWhere = $detailXuatConditions ? implode(' AND ', $detailXuatConditions) : '1=1';
+
+        $nhapRecords = [];
+        $tongNhap = 0;
+        $sqlNhap = "SELECT lv001,lv002,lv003,lv004,lv005,lv006,lv007,lv008,lv009 FROM wh_lv0008 WHERE $headerWhere ORDER BY lv009 DESC LIMIT $recordLimit";
+        $resNhap = db_query($sqlNhap);
+        if ($resNhap) {
+            while ($row = db_fetch_array($resNhap, MYSQLI_ASSOC)) {
+                $tongTien = isset($row['lv008']) ? (float) $row['lv008'] : 0;
+                $tongNhap += $tongTien;
+                $nhapRecords[] = [
+                    'maPhieuNhap' => $row['lv001'] ?? '',
+                    'maPhieu' => $row['lv001'] ?? '',
+                    'maKho' => $row['lv002'] ?? '',
+                    'maNguoiDung' => $row['lv003'] ?? '',
+                    'ghiChu' => $row['lv004'] ?? '',
+                    'loaiPhieu' => $row['lv005'] ?? '',
+                    'maThamChieu' => $row['lv006'] ?? '',
+                    'trangThai' => $row['lv007'] ?? '',
+                    'tongTien' => $tongTien,
+                    'ngayNhap' => $row['lv009'] ?? ''
+                ];
+            }
+        }
+
+        $xuatRecords = [];
+        $sqlXuat = "SELECT 
+                        lv001,
+                        lv002,
+                        lv003,
+                        lv004,
+                        lv005,
+                        lv006,
+                        lv007,
+                        lv008,
+                        lv009,
+                        lv010,
+                        lv011,
+                        (SELECT SUM(IFNULL(d.lv004,0) * IFNULL(d.lv008,0)) FROM wh_lv0011 d WHERE d.lv002 = wh_lv0010.lv001) AS tongTien
+                    FROM wh_lv0010
+                    WHERE $headerWhere
+                    ORDER BY lv009 DESC
+                    LIMIT $recordLimit";
+        $resXuat = db_query($sqlXuat);
+        if ($resXuat) {
+            while ($row = db_fetch_array($resXuat, MYSQLI_ASSOC)) {
+                $xuatRecords[] = [
+                    'maPhieuXuat' => $row['lv001'] ?? '',
+                    'maPhieu' => $row['lv001'] ?? '',
+                    'maKho' => $row['lv002'] ?? '',
+                    'maNguoiDung' => $row['lv003'] ?? '',
+                    'chuDe' => $row['lv004'] ?? '',
+                    'nguonXuat' => $row['lv005'] ?? '',
+                    'maThamChieu' => $row['lv006'] ?? '',
+                    'trangThai' => $row['lv007'] ?? '',
+                    'ghiChu' => $row['lv008'] ?? '',
+                    'ngayXuat' => $row['lv009'] ?? '',
+                    'HinhThucXuat' => $row['lv010'] ?? '',
+                    'NguoiNhanKho' => $row['lv011'] ?? '',
+                    'tongTien' => isset($row['tongTien']) ? (float) $row['tongTien'] : 0
+                ];
+            }
+        }
+
+        $tongXuat = 0;
+        $sqlTongXuat = "SELECT SUM(IFNULL(d.lv004,0) * IFNULL(d.lv008,0)) AS totalGiaTri
+                        FROM wh_lv0011 d
+                        INNER JOIN wh_lv0010 hx ON d.lv002 = hx.lv001
+                        WHERE $detailXuatWhere";
+        $resTongXuat = db_query($sqlTongXuat);
+        if ($resTongXuat) {
+            $sumRow = db_fetch_array($resTongXuat, MYSQLI_ASSOC);
+            if ($sumRow && isset($sumRow['totalGiaTri'])) {
+                $tongXuat = (float) $sumRow['totalGiaTri'];
+            }
+        }
+
+        $topNhap = [];
+        $sqlTopNhap = "SELECT 
+                            d.lv003 AS maSanPham,
+                            IFNULL(sp.lv002, '') AS tenSanPham,
+                            SUM(IFNULL(d.lv004,0)) AS soLuong,
+                            SUM(IFNULL(d.lv004,0) * IFNULL(d.lv008,0)) AS giaTri
+                        FROM wh_lv0009 d
+                        INNER JOIN wh_lv0008 h ON d.lv002 = h.lv001
+                        LEFT JOIN sl_lv0007 sp ON sp.lv001 = d.lv003
+                        WHERE $detailNhapWhere
+                        GROUP BY d.lv003, sp.lv002
+                        ORDER BY soLuong DESC, giaTri DESC
+                        LIMIT $topLimit";
+        $resTopNhap = db_query($sqlTopNhap);
+        if ($resTopNhap) {
+            while ($row = db_fetch_array($resTopNhap, MYSQLI_ASSOC)) {
+                $topNhap[] = [
+                    'maSanPham' => $row['maSanPham'] ?? '',
+                    'tenSanPham' => $row['tenSanPham'] ?? '',
+                    'soLuong' => (float) ($row['soLuong'] ?? 0),
+                    'giaTri' => (float) ($row['giaTri'] ?? 0)
+                ];
+            }
+        }
+
+        $topXuat = [];
+        $sqlTopXuat = "SELECT 
+                            d.lv003 AS maSanPham,
+                            IFNULL(sp.lv002, '') AS tenSanPham,
+                            SUM(IFNULL(d.lv004,0)) AS soLuong,
+                            SUM(IFNULL(d.lv004,0) * IFNULL(d.lv008,0)) AS giaTri
+                        FROM wh_lv0011 d
+                        INNER JOIN wh_lv0010 hx ON d.lv002 = hx.lv001
+                        LEFT JOIN sl_lv0007 sp ON sp.lv001 = d.lv003
+                        WHERE $detailXuatWhere
+                        GROUP BY d.lv003, sp.lv002
+                        ORDER BY soLuong DESC, giaTri DESC
+                        LIMIT $topLimit";
+        $resTopXuat = db_query($sqlTopXuat);
+        if ($resTopXuat) {
+            while ($row = db_fetch_array($resTopXuat, MYSQLI_ASSOC)) {
+                $topXuat[] = [
+                    'maSanPham' => $row['maSanPham'] ?? '',
+                    'tenSanPham' => $row['tenSanPham'] ?? '',
+                    'soLuong' => (float) ($row['soLuong'] ?? 0),
+                    'giaTri' => (float) ($row['giaTri'] ?? 0)
+                ];
+            }
+        }
+
+        $vOutput = [
+            'summary' => [
+                'tongNhap' => $tongNhap,
+                'tongXuat' => $tongXuat,
+                'soPhieuNhap' => count($nhapRecords),
+                'soPhieuXuat' => count($xuatRecords)
+            ],
+            'nhap' => $nhapRecords,
+            'xuat' => $xuatRecords,
+            'topNhap' => $topNhap,
+            'topXuat' => $topXuat
+        ];
+                break;
+            default:
+                $vOutput = [
+                    'success' => false,
+                    'message' => 'Chuc nang khong ton tai'
+                ];
+                break;
+        }
+        break;
+        
     case 'Mb_Permissions':
         switch ($vfun) {
             case 'getAll':

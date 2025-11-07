@@ -1,4 +1,4 @@
-import axios from 'axios';
+﻿import axios from 'axios';
 import {url_api_services, url_chart_api, url_image_base} from "./url";
 import { getAuthHeaders } from './apiLogin';
 
@@ -266,6 +266,12 @@ export async function getSoLuongTonKho(maSP, maKho) {
 // Lấy số lượng tồn kho nhiều sản phẩm
 export async function getSoLuongTonKhoNhieuSP(maSP, maKho) {
   return await callApi('Mb_Kho', 'LaySoLuongTonKhoNhieuSP', { maSP, maKho });
+}
+
+
+// Bao cao kho theo dieu kien
+export async function baoCaoKhoTheoDieuKien(params = {}) {
+  return await callApi('Mb_BaoCaoKho', 'baoCaoDieuKien', params);
 }
 
 // Phiếu nhập kho
