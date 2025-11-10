@@ -1,12 +1,30 @@
 ﻿import axios from 'axios';
 import {url_api_services, url_chart_api, url_image_base} from "./url";
-import { getAuthHeaders } from './apiLogin';
+import { getAuthHeaders, refreshAuthToken } from './apiLogin';
 
 const urlApi = url_api_services;
 
 // -------------------- API Functions --------------------
 
 // Hàm gọi API chung với auto authentication
+const isInvalidAuthResponse = (data) => {
+  if (data === null || data === undefined) {
+    return false;
+  }
+
+  if (typeof data === 'string') {
+    return data.toLowerCase() === 'invalid' || data.toLowerCase().includes('invalid token');
+  }
+
+  const message = data.message || data.error || data.statusMessage;
+  if (!message) {
+    return false;
+  }
+
+  const normalized = String(message).toLowerCase();
+  return normalized === 'invalid' || normalized.includes('invalid token');
+};
+
 export async function callApi(table, func, additionalData = {}, retryCount = 0) {
   try {
     const headers = await getAuthHeaders(retryCount > 0); // Force refresh on retry
@@ -17,16 +35,31 @@ export async function callApi(table, func, additionalData = {}, retryCount = 0) 
     };
 
     const res = await axios.post(urlApi, payload, { headers });
+    const data = res.data;
+
+    if (isInvalidAuthResponse(data)) {
+      if (retryCount === 0) {
+        try {
+          await refreshAuthToken();
+        } catch (refreshError) {
+          console.error('Failed to refresh token after invalid response:', refreshError);
+          throw refreshError;
+        }
+        return callApi(table, func, additionalData, 1);
+      }
+      console.warn(`API returned invalid auth response after retry for ${table}.${func}`);
+      return [];
+    }
     
     // Log response để debug
     
     // Đảm bảo trả về array nếu dữ liệu là null hoặc undefined
-    if (res.data === null || res.data === undefined) {
+    if (data === null || data === undefined) {
       console.warn(`API returned null/undefined for ${table}.${func}`);
       return [];
     }
     
-    return res.data;
+    return data;
   } catch (error) {
     // If we get 401 or auth error and haven't retried yet, retry with fresh token
     if ((error.response?.status === 401 || error.message.includes('token')) && retryCount === 0) {
@@ -902,7 +935,7 @@ export async function themLoaiNguyenLieuCorrected(loaiData) {
 export async function themNguyenLieuCorrected(nguyenLieuData) {
   const { 
     maSanPham, tenSanPham, maLoai, maDonVi, donViTinhQuyDoi, 
-    giaTriQuyDoi, gia, donViGia, trangThai_HienThiSP, maKho 
+    giaTriQuyDoi, gia, donViGia, maKho 
   } = nguyenLieuData;
   return await callApi('Mb_NguyenLieu', 'add', {
     maSanPham, tenSanPham, maLoai, 
@@ -918,7 +951,7 @@ export async function themNguyenLieuCorrected(nguyenLieuData) {
 export async function themSanPhamCorrected(sanPhamData) {
   const { 
     maSanPham, tenSanPham, maLoai, maDonVi, donViTinhQuyDoi, 
-    giaTriQuyDoi, gia, donViGia, trangThai_HienThiSP, maKho 
+    giaTriQuyDoi, gia, donViGia, maKho 
   } = sanPhamData;
   return await callApi('Mb_NguyenLieu', 'add_SP', {
     maSanPham, tenSanPham, maLoai, 

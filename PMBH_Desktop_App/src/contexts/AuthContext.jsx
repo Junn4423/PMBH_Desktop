@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { login as apiLogin } from '../services/apiLogin';
+import { login as apiLogin, clearAuthCache, startTokenAutoRefresh } from '../services/apiLogin';
 
 const AuthContext = createContext();
 
@@ -81,6 +81,8 @@ export const AuthProvider = ({ children }) => {
         
         localStorage.setItem('pmbh_user', JSON.stringify(userData));
         localStorage.setItem('pmbh_token', result.token);
+
+        startTokenAutoRefresh();
         
         return { success: true };
       } else {
@@ -100,6 +102,7 @@ export const AuthProvider = ({ children }) => {
   const logout = () => {
     setUser(null);
     setIsAuthenticated(false);
+    clearAuthCache();
     localStorage.removeItem('pmbh_user');
     localStorage.removeItem('pmbh_token');
   };
