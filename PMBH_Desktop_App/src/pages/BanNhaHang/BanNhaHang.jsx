@@ -48,7 +48,7 @@ const BanNhaHang = () => {
           ten: (table.tenBan || table.ten || 'undefined').trim(), // Trim whitespace
           khuVuc: khuVucMap[table.idKhuVuc] || table.idKhuVuc || 'Không xác định', // Get tên from map
           maKhuVuc: table.idKhuVuc, // idKhuVuc chính là mã khu vực
-          soGhe: table.soGhe || 4,
+          soGhe: table.soGhe,
           trangThai: table.trangThai || 'available',
           // Keep original data for reference
           _raw: table

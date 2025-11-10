@@ -20,7 +20,8 @@ import {
   Table,
   Checkbox,
   Form,
-  Radio
+  Radio,
+  Tag
 } from 'antd';
 import { 
   Coffee, 
@@ -141,46 +142,53 @@ const VIEW_STATES = {
   PRODUCTS: 'products',    // Show product grid after clicking "select items" 
   COMBINED: 'combined'     // Combined view - invoice (25%) + products (75%)
 };
-
 const BanHang = () => {
   const { translate } = useText();
   const __ = (key, values, fallback) => translate(key, { values, defaultText: fallback ?? key });
 
+  const navigate = useNavigate();
+
   // View state management
   const [currentView, setCurrentView] = useState(VIEW_STATES.TABLES);
-  
+
   // State quản lý bàn
   const [tables, setTables] = useState([]);
   const [areas, setAreas] = useState([]);
   const [selectedTable, setSelectedTable] = useState(null);
   const [selectedArea, setSelectedArea] = useState('all');
-  
+
   // State quản lý sản phẩm
   const [categories, setCategories] = useState([]);
   const [products, setProducts] = useState([]);
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
-  
+
   // State quản lý đơn hàng
   const [currentInvoice, setCurrentInvoice] = useState(null);
   const [invoiceDetails, setInvoiceDetails] = useState([]);
   const [orderTotal, setOrderTotal] = useState(0);
-  
+
   // State cho modal chọn số lượng
   const [showQuantityModal, setShowQuantityModal] = useState(false);
   const [selectedProductForAdd, setSelectedProductForAdd] = useState(null);
   const [quantityToAdd, setQuantityToAdd] = useState(1);
-  
+
   // State cho modal update số lượng
   const [showUpdateQuantityModal, setShowUpdateQuantityModal] = useState(false);
   const [selectedItemForUpdate, setSelectedItemForUpdate] = useState(null);
   const [newQuantityForUpdate, setNewQuantityForUpdate] = useState(1);
-  
+
   // State cho Enhanced Invoice Management
   const [invoiceHistory, setInvoiceHistory] = useState([]);
   const [showInvoiceHistory, setShowInvoiceHistory] = useState(false);
   const [editingInvoice, setEditingInvoice] = useState(false);
-  const navigate = useNavigate();
+  const [takeAwayInvoiceModalVisible, setTakeAwayInvoiceModalVisible] = useState(false);
+  const [takeAwayInvoiceCandidates, setTakeAwayInvoiceCandidates] = useState([]);
+  const [pendingTakeAwaySelection, setPendingTakeAwaySelection] = useState(null);
+  const [isCreatingTakeAwayInvoice, setIsCreatingTakeAwayInvoice] = useState(false);
+
+  const [isTouchDevice, setIsTouchDevice] = useState(false);
+
   const [draftInvoices, setDraftInvoices] = useState([]);
   const [includeVAT, setIncludeVAT] = useState(false); // Checkbox for VAT tax
   const [invoiceSummary, setInvoiceSummary] = useState({
@@ -329,6 +337,16 @@ const BanHang = () => {
     return idSet;
   }, [pendingKitchenOrders]);
 
+  const takeAwayInvoiceAggregatedAmount = useMemo(() => {
+    if (!Array.isArray(takeAwayInvoiceCandidates) || takeAwayInvoiceCandidates.length === 0) {
+      return 0;
+    }
+    return takeAwayInvoiceCandidates.reduce((sum, invoice) => {
+      const value = Number(invoice?.totalAmount || 0);
+      return sum + (Number.isFinite(value) ? value : 0);
+    }, 0);
+  }, [takeAwayInvoiceCandidates]);
+
   // Helper functions cho table status
   const getTableBadgeStatus = (status) => {
     switch (status) {
@@ -394,13 +412,30 @@ const BanHang = () => {
         prevTable.totalAmount !== nextTable.totalAmount ||
         prevTable.itemCount !== nextTable.itemCount ||
         prevTable.hasPendingKitchenItems !== nextTable.hasPendingKitchenItems ||
-        prevTable.sittingTime !== nextTable.sittingTime
+        prevTable.sittingTime !== nextTable.sittingTime ||
+        (prevTable.takeAwayAggregatedTotal || 0) !== (nextTable.takeAwayAggregatedTotal || 0)
       ) {
         return false;
       }
       const prevPending = (prevTable.pendingKitchenOrderIds || []).join(',');
       const nextPending = (nextTable.pendingKitchenOrderIds || []).join(',');
       if (prevPending !== nextPending) {
+        return false;
+      }
+      const prevActiveInvoices = Array.isArray(prevTable.activeInvoices) ? prevTable.activeInvoices : [];
+      const nextActiveInvoices = Array.isArray(nextTable.activeInvoices) ? nextTable.activeInvoices : [];
+      if (prevActiveInvoices.length !== nextActiveInvoices.length) {
+        return false;
+      }
+      const prevInvoiceKey = prevActiveInvoices
+        .map(invoice => invoice?.invoiceId || invoice?.idDonHang || '')
+        .sort()
+        .join(',');
+      const nextInvoiceKey = nextActiveInvoices
+        .map(invoice => invoice?.invoiceId || invoice?.idDonHang || '')
+        .sort()
+        .join(',');
+      if (prevInvoiceKey !== nextInvoiceKey) {
         return false;
       }
     }
@@ -640,6 +675,47 @@ const BanHang = () => {
     fetchActiveSalesProgram();
   }, [fetchActiveSalesProgram]);
 
+  useEffect(() => {
+    if (typeof window === 'undefined') {
+      return undefined;
+    }
+
+    const computeIsTouch = () => {
+      const hasWindowTouch = 'ontouchstart' in window;
+      const hasNavigatorTouch = typeof navigator !== 'undefined' && (
+        navigator.maxTouchPoints > 0 ||
+        navigator.msMaxTouchPoints > 0
+      );
+      const coarsePointer = typeof window.matchMedia === 'function' && window.matchMedia('(pointer: coarse)').matches;
+      return Boolean(hasWindowTouch || hasNavigatorTouch || coarsePointer);
+    };
+
+    setIsTouchDevice(computeIsTouch());
+
+    if (typeof window.matchMedia === 'function') {
+      const mediaQuery = window.matchMedia('(pointer: coarse)');
+      const handleChange = (event) => {
+        if (event && typeof event.matches === 'boolean') {
+          setIsTouchDevice(event.matches || computeIsTouch());
+        } else {
+          setIsTouchDevice(computeIsTouch());
+        }
+      };
+
+      if (typeof mediaQuery.addEventListener === 'function') {
+        mediaQuery.addEventListener('change', handleChange);
+        return () => mediaQuery.removeEventListener('change', handleChange);
+      }
+
+      if (typeof mediaQuery.addListener === 'function') {
+        mediaQuery.addListener(handleChange);
+        return () => mediaQuery.removeListener(handleChange);
+      }
+    }
+
+    return undefined;
+  }, []);
+
 
   const normalizeLoyaltyCustomer = (customer) => {
     if (!customer || typeof customer !== 'object') {
@@ -840,20 +916,83 @@ const BanHang = () => {
       
       let tablesData = [];
       if (Array.isArray(tablesResponse)) {
-        tablesData = tablesResponse.map(table => ({
-          id: table.idBan,
-          maBan: table.idBan,  // Thêm maBan để phù hợp với modal
-          name: table.tenBan,
-          tenBan: table.tenBan,  // Thêm tenBan để phù hợp với modal
-          areaId: table.idKhuVuc,
-          status: 'available' // Sẽ được cập nhật từ loadTableStatuses
-        }));
+        tablesData = tablesResponse.map((table) => {
+          const rawId = table?.idBan ?? table?.id ?? table?.maBan;
+          const normalizedId = rawId ?? '';
+          const tableName = table?.tenBan ?? table?.name ?? (normalizedId !== '' ? `Bàn ${normalizedId}` : 'Bàn mới');
+          const rawAreaId = table?.idKhuVuc ?? table?.areaId;
+
+          const derivedIsTakeAway = Boolean(
+            table?.isTakeAway === true ||
+            table?.isTakeAway === 1 ||
+            table?.isTakeAway === '1' ||
+            table?.tableType === 'TAKEAWAY' ||
+            table?.banTakeAway === '1' ||
+            table?.loaiBan === 'TAKEAWAY' ||
+            `${rawId}` === '0'
+          );
+
+          const derivedIsAutoTakeAway = Boolean(
+            table?.isAutoTakeAway === true ||
+            table?.isAutoTakeAway === 1 ||
+            table?.isAutoTakeAway === '1' ||
+            table?.takeAwaySource === 'AUTO_ZERO' ||
+            `${rawId}` === '0'
+          );
+
+          const normalizedAreaId =
+            rawAreaId !== undefined && rawAreaId !== null
+              ? rawAreaId
+              : derivedIsTakeAway
+                ? '__TAKEAWAY__'
+                : rawAreaId;
+
+          return {
+            id: normalizedId,
+            maBan: normalizedId, // Sử dụng normalizedId cho modal
+            name: tableName,
+            tenBan: tableName,
+            areaId: normalizedAreaId,
+            areaName: table?.tenKhuVuc ?? table?.areaName ?? (derivedIsTakeAway ? 'Take Away' : undefined),
+            status: 'available', // Sẽ được cập nhật từ loadTableStatuses
+            tableType: table?.tableType ?? (derivedIsTakeAway ? 'TAKEAWAY' : 'DINE_IN'),
+            isTakeAway: derivedIsTakeAway,
+            isAutoTakeAway: derivedIsAutoTakeAway,
+            takeAwaySource: table?.takeAwaySource ?? (derivedIsAutoTakeAway ? 'AUTO_ZERO' : undefined),
+            activeInvoices: [],
+            takeAwayAggregatedTotal: 0
+          };
+        });
       } else {
   // Silent console
         tablesData = [];
       }
 
       setTables(tablesData);
+
+      // Đảm bảo danh sách khu vực luôn có mục Take Away nếu tồn tại bàn take away
+      setAreas(prevAreas => {
+        const needsTakeAwayArea = tablesData.some(item => item.isTakeAway);
+        if (!needsTakeAwayArea) {
+          return prevAreas;
+        }
+
+        const existingAreas = Array.isArray(prevAreas) ? prevAreas : [];
+        const hasTakeAwayArea = existingAreas.some(area => area?.idKhuVuc === '__TAKEAWAY__');
+
+        if (hasTakeAwayArea) {
+          return existingAreas;
+        }
+
+        return [
+          ...existingAreas,
+          {
+            idKhuVuc: '__TAKEAWAY__',
+            ten: 'Take Away',
+            isTakeAwayArea: true
+          }
+        ];
+      });
 
       // Load trạng thái bàn riêng biệt
   await loadTableStatuses(tablesData, { silent: true });
@@ -911,107 +1050,141 @@ const BanHang = () => {
         ));
         
         if (Array.isArray(statusResponse)) {
+          const invoicesByTable = statusResponse.reduce((acc, rawInvoice) => {
+            const tableKey = rawInvoice?.idBan !== undefined && rawInvoice?.idBan !== null
+              ? rawInvoice.idBan.toString()
+              : rawInvoice?.maBan !== undefined && rawInvoice?.maBan !== null
+                ? rawInvoice.maBan.toString()
+                : null;
+
+            const rawInvoiceId = rawInvoice?.idDonHang ?? rawInvoice?.maHd ?? rawInvoice?.maHoaDon ?? rawInvoice?.id;
+            if (!tableKey || !rawInvoiceId) {
+              return acc;
+            }
+
+            const normalizedInvoice = {
+              invoiceId: rawInvoiceId.toString(),
+              totalAmount: Number(rawInvoice?.tongTien ?? rawInvoice?.tong_tien ?? 0) || 0,
+              createdAt: rawInvoice?.thoiGian ?? rawInvoice?.createdAt ?? rawInvoice?.ngayTao ?? null,
+              itemCount: Number(rawInvoice?.tongSoLuong ?? rawInvoice?.soLuong ?? rawInvoice?.tongMon ?? 0) || 0,
+              raw: rawInvoice
+            };
+
+            if (!acc[tableKey]) {
+              acc[tableKey] = [];
+            }
+            acc[tableKey].push(normalizedInvoice);
+            return acc;
+          }, {});
+
           const updatedTables = await Promise.all(
             currentTables.map(async (table) => {
-              
-              // Tìm hóa đơn theo idBan
-              const tableInvoice = statusResponse.find(invoice => {
-                const matches = invoice.idBan === table.id || 
-                               parseInt(invoice.idBan) === parseInt(table.id);
-                if (matches) {
-                }
-                return matches;
-              });
               const tableIdStr = table.id?.toString() || '';
               const tablePendingOrders = pendingByTableMap[tableIdStr] || [];
-              
-              if (tableInvoice) {
-                
-                // Bàn có hóa đơn (kể cả hóa đơn rỗng với tongTien = 0)
-                const invoiceId = tableInvoice.idDonHang;
-                const totalAmount = parseFloat(tableInvoice.tongTien) || 0;
-                
+              const tableInvoices = Array.isArray(invoicesByTable[tableIdStr]) ? invoicesByTable[tableIdStr].slice() : [];
+
+              tableInvoices.sort((a, b) => {
+                const dateA = a.createdAt ? dayjs(a.createdAt) : null;
+                const dateB = b.createdAt ? dayjs(b.createdAt) : null;
+                if (dateA && dateB && dateA.isValid() && dateB.isValid()) {
+                  return dateB.valueOf() - dateA.valueOf();
+                }
+                if (dateA && dateA.isValid()) {
+                  return -1;
+                }
+                if (dateB && dateB.isValid()) {
+                  return 1;
+                }
+                return 0;
+              });
+
+              const primaryInvoiceSummary = tableInvoices[0] ?? null;
+              const primaryInvoiceRaw = primaryInvoiceSummary?.raw;
+              const resolvedInvoiceId = primaryInvoiceSummary?.invoiceId ?? null;
+              const totalForPrimary = primaryInvoiceSummary?.totalAmount ?? 0;
+              const aggregatedTakeAwayTotal = tableInvoices.reduce((sum, invoice) => sum + (invoice.totalAmount || 0), 0);
+
+              if (resolvedInvoiceId && primaryInvoiceRaw) {
                 try {
-                  // Load chi tiết hóa đơn để lấy danh sách món
-                  const invoiceDetails = await getChiTietHoaDonTheoMaHD(invoiceId);
-                  
-                  // Tính thời gian ngồi
+                  const invoiceDetails = await getChiTietHoaDonTheoMaHD(resolvedInvoiceId);
+
                   let sittingTime = '';
-                  if (tableInvoice.thoiGian) {
+                  const startTimestamp = primaryInvoiceRaw?.thoiGian ?? primaryInvoiceRaw?.createdAt ?? null;
+                  if (startTimestamp) {
                     try {
-                      const startTime = new Date(tableInvoice.thoiGian);
+                      const startTime = new Date(startTimestamp);
                       const now = new Date();
-                      const diffMinutes = Math.floor((now - startTime) / 60000);
+                      const diffMinutes = Math.floor((now.getTime() - startTime.getTime()) / 60000);
                       const hours = Math.floor(diffMinutes / 60);
                       const minutes = diffMinutes % 60;
                       sittingTime = hours > 0 ? `${hours}h ${minutes}m` : `${minutes}m`;
                     } catch (timeError) {
-                      // Silent console
                       sittingTime = '';
                     }
                   }
 
-                  // Tính số món (những món có sl > 0)
-                  const itemsWithQuantity = Array.isArray(invoiceDetails) 
-                    ? invoiceDetails.filter(item => parseInt(item.sl) > 0) 
+                  const itemsWithQuantity = Array.isArray(invoiceDetails)
+                    ? invoiceDetails.filter(item => parseInt(item.sl, 10) > 0)
                     : [];
 
-                  const result = {
-                    ...table,
-                    status: 'occupied', // Bàn có hóa đơn luôn là occupied
-                    invoiceId,
-                    customerCount: 0, // API không trả về soKhach
-                    orderTime: tableInvoice.thoiGian || null,
-                    sittingTime,
-                    totalAmount,
-                    itemCount: itemsWithQuantity.length,
-                    orderItems: itemsWithQuantity.slice(0, 3),
-                    isEmptyInvoice: totalAmount === 0,
-                    hasPendingKitchenItems: tablePendingOrders.length > 0,
-                    pendingKitchenOrders: tablePendingOrders,
-                    pendingKitchenOrderIds: tablePendingOrders.map(order => order.idCthd)
-                  };
-                  
-                  return result;
-                } catch (error) {
-                  // Silent console
                   return {
                     ...table,
                     status: 'occupied',
-                    invoiceId,
+                    invoiceId: resolvedInvoiceId,
                     customerCount: 0,
-                    orderTime: tableInvoice.thoiGian || null,
-                    sittingTime: '',
-                    totalAmount,
-                    itemCount: 0,
-                    orderItems: [],
-                    isEmptyInvoice: totalAmount === 0,
+                    orderTime: primaryInvoiceRaw?.thoiGian || null,
+                    sittingTime,
+                    totalAmount: table.isTakeAway ? aggregatedTakeAwayTotal : totalForPrimary,
+                    itemCount: itemsWithQuantity.length,
+                    orderItems: itemsWithQuantity.slice(0, 3),
+                    isEmptyInvoice: totalForPrimary === 0,
                     hasPendingKitchenItems: tablePendingOrders.length > 0,
                     pendingKitchenOrders: tablePendingOrders,
-                    pendingKitchenOrderIds: tablePendingOrders.map(order => order.idCthd)
+                    pendingKitchenOrderIds: tablePendingOrders.map(order => order.idCthd),
+                    activeInvoices: tableInvoices,
+                    takeAwayAggregatedTotal: aggregatedTakeAwayTotal
+                  };
+                } catch (error) {
+                  return {
+                    ...table,
+                    status: 'occupied',
+                    invoiceId: resolvedInvoiceId,
+                    customerCount: 0,
+                    orderTime: primaryInvoiceRaw?.thoiGian || null,
+                    sittingTime: '',
+                    totalAmount: table.isTakeAway ? aggregatedTakeAwayTotal : totalForPrimary,
+                    itemCount: primaryInvoiceSummary?.itemCount || 0,
+                    orderItems: [],
+                    isEmptyInvoice: totalForPrimary === 0,
+                    hasPendingKitchenItems: tablePendingOrders.length > 0,
+                    pendingKitchenOrders: tablePendingOrders,
+                    pendingKitchenOrderIds: tablePendingOrders.map(order => order.idCthd),
+                    activeInvoices: tableInvoices,
+                    takeAwayAggregatedTotal: aggregatedTakeAwayTotal
                   };
                 }
-              } else {
-                // Bàn không có hóa đơn = bàn trống
-                return {
-                  ...table,
-                  status: 'available',
-                  invoiceId: null,
-                  customerCount: 0,
-                  orderTime: null,
-                  sittingTime: '',
-                  totalAmount: 0,
-                  itemCount: 0,
-                  orderItems: [],
-                  isEmptyInvoice: false,
-                  hasPendingKitchenItems: false,
-                  pendingKitchenOrders: [],
-                  pendingKitchenOrderIds: []
-                };
               }
+
+              return {
+                ...table,
+                status: 'available',
+                invoiceId: null,
+                customerCount: 0,
+                orderTime: null,
+                sittingTime: '',
+                totalAmount: 0,
+                itemCount: 0,
+                orderItems: [],
+                isEmptyInvoice: false,
+                hasPendingKitchenItems: false,
+                pendingKitchenOrders: [],
+                pendingKitchenOrderIds: [],
+                activeInvoices: [],
+                takeAwayAggregatedTotal: 0
+              };
             })
           );
-          
+
           setTables(prevTables => (
             areTablesEqual(prevTables, updatedTables) ? prevTables : updatedTables
           ));
@@ -1052,7 +1225,12 @@ const BanHang = () => {
         areasData = Object.values(areasResponse);
       }
 
-      setAreas(areasData);
+      const hasTakeAwayArea = areasData.some(area => area?.idKhuVuc === '__TAKEAWAY__');
+      const normalizedAreas = hasTakeAwayArea
+        ? areasData
+        : [...areasData, { idKhuVuc: '__TAKEAWAY__', ten: 'Take Away', isTakeAwayArea: true }];
+
+      setAreas(normalizedAreas);
     } catch (error) {
   // console.error('Error loading areas:', error);
     message.error(__('Không thể tải danh sách khu vực'));
@@ -1190,7 +1368,11 @@ const BanHang = () => {
   };
 
   // FLOW 1: Chọn bàn và xử lý tự động tạo/load hóa đơn
-  const handleTableSelect = async (table) => {
+  const handleTableSelect = async (table, options = {}) => {
+    const {
+      targetInvoiceId = null,
+      skipInvoicePicker = false
+    } = options || {};
     try {
   // Silent console
       
@@ -1213,7 +1395,8 @@ const BanHang = () => {
       if (mergedGroup) {
         // Nếu bàn này thuộc nhóm gộp, chuyển đến bàn chính
         const [mainTableId, groupTables] = mergedGroup;
-        const mainTable = groupTables.find(t => t.id === mainTableId);
+        const mainTableFromState = tables.find(t => t.id === mainTableId);
+        const mainTable = mainTableFromState || groupTables.find(t => t.id === mainTableId);
         if (mainTable) {
           actualTable = mainTable;
           message.info(__('pages.banhang.table_merged_info', { table: table.tenBan, mainTable: mainTable.tenBan }, `Bàn ${table.tenBan} đã được gộp vào bàn ${mainTable.tenBan}`));
@@ -1221,22 +1404,34 @@ const BanHang = () => {
       }
       
       setSelectedTable(actualTable);
+
+      const tableInvoices = Array.isArray(actualTable.activeInvoices) ? actualTable.activeInvoices : [];
+      if (!skipInvoicePicker && actualTable.isTakeAway && tableInvoices.length > 1 && !targetInvoiceId) {
+        setPendingTakeAwaySelection(actualTable);
+        setTakeAwayInvoiceCandidates(tableInvoices);
+        setTakeAwayInvoiceModalVisible(true);
+        return;
+      }
+
       setLoading(true);
       
       // Kiểm tra bàn có hóa đơn hay không
-      if (table.invoiceId && table.status === 'occupied') {
+      const invoiceIdToLoad = targetInvoiceId || (actualTable.status === 'occupied' ? actualTable.invoiceId : null);
+      const chosenInvoiceMeta = tableInvoices.find(invoice => invoice.invoiceId === invoiceIdToLoad) || null;
+
+      if (invoiceIdToLoad) {
         // Bàn có hóa đơn - load hóa đơn đó lên (kể cả hóa đơn rỗng)
         
         // Tạo invoice object từ dữ liệu có sẵn
         const invoice = {
-          maHd: table.invoiceId,
-          maBan: table.id,
-          tenBan: table.name
+          maHd: invoiceIdToLoad,
+          maBan: actualTable.id,
+          tenBan: actualTable.name
         };
         setCurrentInvoice(invoice);
         
         // Load chi tiết hóa đơn
-        const detailsResponse = await getChiTietHoaDonTheoMaHD(table.invoiceId);
+        const detailsResponse = await getChiTietHoaDonTheoMaHD(invoiceIdToLoad);
         console.log('[INVOICE_DETAILS] Raw details response:', detailsResponse);
         
         if (Array.isArray(detailsResponse)) {
@@ -1250,26 +1445,31 @@ const BanHang = () => {
           setInvoiceDetails([]);
         }
         
-        if (table.isEmptyInvoice) {
-          message.success(__('pages.banhang.empty_invoice_loaded', { table: table.name }, `Đã load hóa đơn rỗng cho bàn ${table.name} - Sẵn sàng chọn món`));
+        const invoiceLabel = chosenInvoiceMeta?.invoiceId || invoiceIdToLoad;
+        const isInvoiceEmpty = chosenInvoiceMeta
+          ? (chosenInvoiceMeta.totalAmount || 0) === 0
+          : Boolean(actualTable.isEmptyInvoice);
+
+        if (isInvoiceEmpty) {
+          message.success(__('pages.banhang.empty_invoice_loaded', { table: actualTable.name }, `Đã load hóa đơn rỗng cho bàn ${actualTable.name} - Sẵn sàng chọn món`));
         } else {
-          message.success(__('pages.banhang.invoice_loaded', { table: table.name, invoice: table.invoiceId }, `Đã load hóa đơn cho bàn ${table.name} - #${table.invoiceId}`));
+          message.success(__('pages.banhang.invoice_loaded', { table: actualTable.name, invoice: invoiceLabel }, `Đã load hóa đơn cho bàn ${actualTable.name} - #${invoiceLabel}`));
         }
       } else {
         // Bàn trống - tự động tạo hóa đơn mới và chuyển sang combined layout
         
-        const response = await taoHoaDon(table.id);
+        const response = await taoHoaDon(actualTable.id);
         
         if (response && response.success && response.message) {
           const newInvoice = {
             maHd: response.message, // API trả về mã hóa đơn trong field message
-            maBan: table.id,
-            tenBan: table.name
+            maBan: actualTable.id,
+            tenBan: actualTable.name
           };
           setCurrentInvoice(newInvoice);
           setInvoiceDetails([]);
           
-          message.success(__('pages.banhang.invoice_created_for_table', { table: table.name, code: response.message }, `Đã tạo hóa đơn mới cho bàn ${table.name} - #${response.message}`));
+          message.success(__('pages.banhang.invoice_created_for_table', { table: actualTable.name, code: response.message }, `Đã tạo hóa đơn mới cho bàn ${actualTable.name} - #${response.message}`));
           
           // Trigger refresh để cập nhật trạng thái bàn
           triggerQuickRefresh('INVOICE_CREATE');
@@ -1297,6 +1497,87 @@ const BanHang = () => {
   };
 
   // FLOW 2: Chuyển sang view chọn sản phẩm (dữ liệu do ChonSanPham tự tải)
+  const resetTakeAwayModalState = () => {
+    setTakeAwayInvoiceModalVisible(false);
+    setTakeAwayInvoiceCandidates([]);
+    setPendingTakeAwaySelection(null);
+    setIsCreatingTakeAwayInvoice(false);
+  };
+
+  const openTakeAwayInvoiceModal = (table) => {
+    if (!table) {
+      message.error('Không xác định được bàn để quản lý hóa đơn.');
+      return;
+    }
+
+    const latestTable = tables.find(t => t.id === table.id) || table;
+    const invoices = Array.isArray(latestTable.activeInvoices) ? latestTable.activeInvoices : [];
+
+    if (invoices.length === 0) {
+      message.info('Bàn take away chưa có hóa đơn nào đang mở.');
+      return;
+    }
+
+    setPendingTakeAwaySelection(latestTable);
+    setTakeAwayInvoiceCandidates(invoices);
+    setTakeAwayInvoiceModalVisible(true);
+  };
+
+  const handleTakeAwayInvoicePick = async (invoiceId) => {
+    if (!invoiceId) {
+      message.error('Không xác định được hóa đơn cần mở.');
+      return;
+    }
+
+    if (!pendingTakeAwaySelection) {
+      message.error('Không xác định được bàn take away.');
+      return;
+    }
+
+    const tableRecord = tables.find(t => t.id === pendingTakeAwaySelection.id) || pendingTakeAwaySelection;
+
+    resetTakeAwayModalState();
+
+    await handleTableSelect(tableRecord, {
+      targetInvoiceId: invoiceId,
+      skipInvoicePicker: true
+    });
+  };
+
+  const handleCreateTakeAwayInvoice = async () => {
+    if (!pendingTakeAwaySelection) {
+      message.error('Không xác định được bàn take away.');
+      return;
+    }
+
+    try {
+      setIsCreatingTakeAwayInvoice(true);
+      const response = await taoHoaDon(pendingTakeAwaySelection.id);
+
+      if (response && response.success && response.message) {
+        const newInvoiceId = response.message;
+        message.success(`Đã tạo hóa đơn take away mới #${newInvoiceId}`);
+
+        const tableRecord = tables.find(t => t.id === pendingTakeAwaySelection.id) || pendingTakeAwaySelection;
+        resetTakeAwayModalState();
+
+        triggerQuickRefresh('TAKEAWAY_CREATE_INVOICE');
+
+        await handleTableSelect(tableRecord, {
+          targetInvoiceId: newInvoiceId,
+          skipInvoicePicker: true
+        });
+      } else {
+        throw new Error('Không thể tạo hóa đơn mới.');
+      }
+    } catch (error) {
+      console.error('handleCreateTakeAwayInvoice error:', error);
+      message.error(error?.message || 'Không thể tạo hóa đơn mới cho bàn take away.');
+    } finally {
+      setIsCreatingTakeAwayInvoice(false);
+    }
+  };
+
   const handleSelectItems = async () => {
     setCurrentView(VIEW_STATES.COMBINED); // Chuyển sang combined view thay vì products
   };
@@ -3240,38 +3521,51 @@ const BanHang = () => {
   });
 
   // RENDER VIEWS BASED ON FLOW
-  const renderTablesView = () => (
+  const renderTablesView = () => {
+    const controlSize = isTouchDevice ? 'large' : 'middle';
+    const infoFontSize = isTouchDevice ? '14px' : '12px';
+    const statusFontSize = isTouchDevice ? '16px' : '14px';
+  const tableTitleFontSize = isTouchDevice ? '18px' : '16px';
+  const detailFontSize = isTouchDevice ? '13px' : '12px';
+    const headerSpacing = isTouchDevice ? 12 : 8;
+    const selectWidth = isTouchDevice ? 240 : 200;
+
+    return (
     <div className="tables-view">
       <div className="view-header">
         <div className="header-left">
-          <Title level={3}>Chọn bàn để bán hàng</Title>
-          <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+          <Title level={3} style={{ marginBottom: 0, fontSize: isTouchDevice ? 30 : undefined }}>
+            Chọn bàn để bán hàng
+          </Title>
+          <div style={{ display: 'flex', gap: `${headerSpacing}px`, alignItems: 'center', flexWrap: 'wrap' }}>
             {lastRefresh && (
-              <Text type="secondary" style={{ fontSize: '12px' }}>
+              <Text type="secondary" style={{ fontSize: infoFontSize }}>
                 Cập nhật lần cuối: {lastRefresh.toLocaleTimeString()}
               </Text>
             )}
             {quickRefreshEnabled && (
               <Text
                 type="primary"
-                icon={<refresh-ccw size={8} />}
+                icon={<refresh-ccw size={isTouchDevice ? 12 : 8} />}
                 onClick={processPayment}
                 disabled={invoiceDetails.length === 0}
-                style={{ fontSize: '11px', fontWeight: 'bold' }}>
+                style={{ fontSize: isTouchDevice ? '13px' : '11px', fontWeight: 'bold' }}>
                 Đang cập nhật real-time...
               </Text>
             )}
             {lastAction && (
-              <Text type="info" style={{ fontSize: '10px' }}>
+              <Text type="info" style={{ fontSize: isTouchDevice ? '12px' : '10px' }}>
                 Hành động: {lastAction.type}
               </Text>
             )}
           </div>
         </div>
-        <div className="header-right">
+  <div className="header-right" style={{ gap: `${headerSpacing}px`, flexWrap: isTouchDevice ? 'wrap' : 'nowrap' }}>
           <Button 
             onClick={handleManualRefresh}
             loading={loading}
+            size={controlSize}
+            className="touch-action-button"
             style={{ marginRight: 8 }}
           >
             Làm mới
@@ -3279,7 +3573,8 @@ const BanHang = () => {
           <Select
             value={selectedArea}
             onChange={setSelectedArea}
-            style={{ width: 200 }}
+            size={controlSize}
+            style={{ width: selectWidth }}
             placeholder="Chọn khu vực"
           >
             <Option value="all">Tất cả khu vực</Option>
@@ -3304,11 +3599,28 @@ const BanHang = () => {
           
           // Lấy thông tin nhóm gộp nếu có
           const mergedGroup = isMainTable ? mergedTableGroups[table.id] : null;
+
+          const isTakeAway = Boolean(table.isTakeAway);
+          const isAutoTakeAway = Boolean(table.isAutoTakeAway);
+          const cardClassName = [
+            'table-card',
+            table.status,
+            table.hasPendingKitchenItems && !isTakeAway ? 'table-pending-blink' : '',
+            isMerged ? 'table-merged' : '',
+            isMainTable ? 'table-main-merged' : '',
+            isTakeAway ? 'table-takeaway' : ''
+          ].filter(Boolean).join(' ');
+
+          const computedBorderColor = isTakeAway
+            ? (table.status === 'occupied' ? '#fa8c16' : '#ffb84d')
+            : (isMainTable ? '#ff6b35' : (isMerged ? '#ff9500' : getTableStatusColor(table.status)));
+
+          const computedBorderStyle = isTakeAway ? 'dashed' : 'solid';
           
           return (
             <Card
               key={table.id}
-              className={`table-card ${table.status} ${table.hasPendingKitchenItems ? 'table-pending-blink' : ''} ${isMerged ? 'table-merged' : ''} ${isMainTable ? 'table-main-merged' : ''}`}
+              className={cardClassName}
               onClick={() => handleTableSelect(table)}
               hoverable={false}
               bodyStyle={{ 
@@ -3319,10 +3631,13 @@ const BanHang = () => {
               }}
               style={{
                 backgroundColor: getTableStatusColor(table.status),
-                borderColor: isMainTable ? '#ff6b35' : (isMerged ? '#ff9500' : getTableStatusColor(table.status)),
+                borderColor: computedBorderColor,
                 borderWidth: isMerged ? '2px' : '1px',
+                borderStyle: computedBorderStyle,
                 cursor: 'pointer',
-                position: 'relative'
+                position: 'relative',
+                touchAction: 'manipulation',
+                WebkitTapHighlightColor: 'rgba(0,0,0,0)'
               }}
             >
               {/* Badge cho bàn đã gộp */}
@@ -3339,7 +3654,7 @@ const BanHang = () => {
               <div className="table-header">
                 <div className="table-icon">
                   <Coffee 
-                    size={24} 
+                    size={isTouchDevice ? 28 : 24} 
                     color={getTableStatusTextColor(table.status)}
                   />
                 </div>
@@ -3349,17 +3664,25 @@ const BanHang = () => {
                     style={{ 
                       margin: 0, 
                       color: getTableStatusTextColor(table.status),
-                      fontSize: '16px',
+                      fontSize: tableTitleFontSize,
                       fontWeight: 600
                     }}
                   >
                     {table.name}
                   </Title>
+                  {isTakeAway && (
+                    <Tag
+                      color={table.status === 'occupied' ? '#fa8c16' : '#ffd666'}
+                      className={`table-takeaway-tag${isAutoTakeAway ? ' table-takeaway-tag-auto' : ''}`}
+                    >
+                      {isAutoTakeAway ? 'Take Away • Bàn 0' : 'Take Away'}
+                    </Tag>
+                  )}
                   <div className="table-status">
                     <Text style={{ 
                       color: getTableStatusTextColor(table.status),
                       fontWeight: '500',
-                      fontSize: '14px'
+                      fontSize: statusFontSize
                     }}>
                       {getTableStatusText(table.status)}
                     </Text>
@@ -3385,7 +3708,7 @@ const BanHang = () => {
             {/* Hiển thị thông tin chi tiết nếu bàn có khách */}
             {table.status !== 'available' && (
               <div className="table-details" style={{ 
-                fontSize: '12px',
+                fontSize: detailFontSize,
                 color: getTableStatusTextColor(table.status),
                 background: 'rgba(255,255,255,0.1)',
                 padding: '8px',
@@ -3410,7 +3733,11 @@ const BanHang = () => {
                     justifyContent: 'space-between',
                     marginBottom: '4px'
                   }}>
-                    <span>Tổng tiền:</span>
+                    <span>
+                      {isTakeAway && Array.isArray(table.activeInvoices) && table.activeInvoices.length > 1
+                        ? 'Tổng tiền (tất cả HĐ):'
+                        : 'Tổng tiền:'}
+                    </span>
                     <span style={{ fontWeight: 'bold' }}>
                       {table.totalAmount.toLocaleString()}đ
                     </span>
@@ -3450,6 +3777,49 @@ const BanHang = () => {
                     )}
                   </div>
                 )}
+                {isTakeAway && Array.isArray(table.activeInvoices) && table.activeInvoices.length > 0 && (
+                  <div className="table-takeaway-invoices">
+                    <div className="table-takeaway-invoices-header">
+                      <span>Hóa đơn đang mở</span>
+                      <span className="table-takeaway-invoice-count">
+                        {table.activeInvoices.length}
+                      </span>
+                    </div>
+                    <div className="table-takeaway-invoices-list">
+                      {table.activeInvoices.slice(0, 3).map((invoice) => {
+                        const amount = Number(invoice.totalAmount || 0);
+                        const formattedAmount = amount > 0 ? `${amount.toLocaleString()}đ` : '0đ';
+                        return (
+                          <div
+                            key={invoice.invoiceId}
+                            className="table-takeaway-invoice-chip"
+                          >
+                            #{invoice.invoiceId} • {formattedAmount}
+                          </div>
+                        );
+                      })}
+                      {table.activeInvoices.length > 3 && (
+                        <div className="table-takeaway-invoice-more">
+                          + {table.activeInvoices.length - 3} hóa đơn khác
+                        </div>
+                      )}
+                    </div>
+                    <div className="table-takeaway-invoices-actions">
+                      <Button
+                        size={isTouchDevice ? 'large' : 'small'}
+                        type={isTakeAway ? 'primary' : 'link'}
+                        block={isTouchDevice}
+                        className="table-takeaway-manage-button"
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          openTakeAwayInvoiceModal(table);
+                        }}
+                      >
+                        Quản lý hóa đơn
+                      </Button>
+                    </div>
+                  </div>
+                )}
                 {table.orderItems && table.orderItems.length > 0 && (
                   <div style={{ 
                     marginTop: '8px',
@@ -3479,6 +3849,7 @@ const BanHang = () => {
       </div>
     </div>
   );
+  };
 
   const renderProductsView = () => (
     <Content className="products-content">
@@ -3868,12 +4239,91 @@ const BanHang = () => {
 
   // Main render
   return (
-    <div className="banhang-container">
+    <div className={`banhang-container${isTouchDevice ? ' touch-mode' : ''}`}>
       {currentView === VIEW_STATES.TABLES && renderTablesView()}
       {currentView === VIEW_STATES.PRODUCTS && renderProductsView()}
       {currentView === VIEW_STATES.COMBINED && renderCombinedView()}
       
       {/* Enhanced Invoice Management Modals */}
+
+      <Modal
+        title={`Quản lý hóa đơn Take Away${pendingTakeAwaySelection ? ` - ${pendingTakeAwaySelection?.name || pendingTakeAwaySelection?.tenBan || ''}` : ''}`}
+        open={takeAwayInvoiceModalVisible}
+        onCancel={resetTakeAwayModalState}
+        footer={null}
+        width={520}
+      >
+        <Space direction="vertical" size={16} style={{ width: '100%' }}>
+          <div>
+            <Text strong>Danh sách hóa đơn đang mở</Text>
+            <div style={{ fontSize: 12, color: 'rgba(0,0,0,0.55)', marginTop: 4 }}>
+              Tổng cộng {takeAwayInvoiceCandidates.length} hóa đơn • Tổng tiền: {takeAwayInvoiceAggregatedAmount.toLocaleString('vi-VN')} đ
+            </div>
+          </div>
+
+          <List
+            locale={{ emptyText: 'Chưa có hóa đơn nào đang mở' }}
+            dataSource={takeAwayInvoiceCandidates}
+            bordered
+            size={isTouchDevice ? 'large' : 'default'}
+            renderItem={(invoice) => {
+              const amount = Number(invoice?.totalAmount || 0);
+              const formattedAmount = amount > 0 ? `${amount.toLocaleString('vi-VN')} đ` : '0 đ';
+              const createdDisplay = invoice?.createdAt
+                ? dayjs(invoice.createdAt).isValid()
+                  ? dayjs(invoice.createdAt).format('HH:mm DD/MM/YYYY')
+                  : invoice.createdAt
+                : 'Chưa xác định';
+
+              return (
+                <List.Item
+                  key={invoice.invoiceId}
+                  actions={[
+                    <Button
+                      key="open"
+                      type="primary"
+                      size={isTouchDevice ? 'middle' : 'small'}
+                      onClick={() => handleTakeAwayInvoicePick(invoice.invoiceId)}
+                    >
+                      Mở
+                    </Button>
+                  ]}
+                >
+                  <List.Item.Meta
+                    title={
+                      <span style={{ fontSize: isTouchDevice ? 16 : 14, fontWeight: 600 }}>
+                        Hóa đơn #{invoice.invoiceId}
+                      </span>
+                    }
+                    description={
+                      <Space direction="vertical" size={2} style={{ fontSize: isTouchDevice ? 14 : 12 }}>
+                        <span>Thời gian tạo: {createdDisplay}</span>
+                        <span>Tổng tiền: {formattedAmount}</span>
+                      </Space>
+                    }
+                  />
+                </List.Item>
+              );
+            }}
+          />
+
+          <Space style={{ width: '100%', justifyContent: 'space-between', alignItems: 'center', gap: isTouchDevice ? 12 : 8, flexWrap: isTouchDevice ? 'wrap' : 'nowrap' }}>
+            <Text type="secondary" style={{ fontSize: isTouchDevice ? 13 : 12 }}>
+              Chọn "Mở" để tiếp tục phục vụ từng hóa đơn.
+            </Text>
+            <Button
+              type="dashed"
+              icon={<Plus size={14} />}
+              size={isTouchDevice ? 'large' : 'middle'}
+              block={isTouchDevice}
+              onClick={handleCreateTakeAwayInvoice}
+              loading={isCreatingTakeAwayInvoice}
+            >
+              Tạo hóa đơn mới
+            </Button>
+          </Space>
+        </Space>
+      </Modal>
       
       {/* Invoice History Modal */}
       <Modal

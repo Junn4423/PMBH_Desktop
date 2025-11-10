@@ -141,6 +141,8 @@
   position: relative;
   overflow: hidden;
   box-shadow: 0 8px 32px rgba(25, 125, 211, 0.1);
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
 }
 
 .table-card::after {
@@ -162,6 +164,43 @@
 
 .table-card:hover::after {
   opacity: 1;
+}
+
+.table-card.table-takeaway {
+  border-color: rgba(250, 140, 22, 0.75);
+  box-shadow: 0 10px 28px rgba(250, 140, 22, 0.25);
+}
+
+.table-card.table-takeaway.available {
+  background: rgba(255, 214, 102, 0.25);
+}
+
+.table-card.table-takeaway.occupied {
+  background: linear-gradient(135deg, rgba(250, 140, 22, 0.92), rgba(255, 206, 86, 0.92));
+  color: #2f1e09;
+}
+
+.table-card.table-takeaway::after {
+  background: linear-gradient(90deg, #faad14, #ffd666);
+  opacity: 1;
+}
+
+.touch-action-button.ant-btn {
+  border-radius: 12px;
+  padding-inline: 18px;
+}
+
+.table-takeaway-tag {
+  font-weight: 700;
+  letter-spacing: 0.4px;
+  margin-top: -2px;
+  border-radius: 999px;
+  padding: 0 12px;
+  color: #4b2504 !important;
+}
+
+.table-takeaway-tag-auto {
+  box-shadow: 0 0 6px rgba(250, 140, 22, 0.45);
 }
 
 /* Table status colors - ENHANCED WITH GREEN THEME */
@@ -290,6 +329,143 @@
 .pending-item-row.more {
   font-style: italic;
   opacity: 0.85;
+}
+
+.table-takeaway-invoices {
+  margin-top: 8px;
+  padding: 8px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.18);
+  border: 1px dashed rgba(250, 173, 20, 0.4);
+}
+
+.table-takeaway-invoices-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 12px;
+  font-weight: 600;
+  color: #4b2504;
+}
+
+.table-takeaway-invoice-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 22px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: rgba(250, 173, 20, 0.2);
+  border: 1px solid rgba(250, 173, 20, 0.35);
+  font-size: 11px;
+}
+
+.table-takeaway-invoices-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 6px;
+}
+
+.table-takeaway-invoice-chip {
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: rgba(250, 173, 20, 0.22);
+  color: #4b2504;
+  font-size: 11px;
+  font-weight: 600;
+  border: 1px solid rgba(250, 173, 20, 0.35);
+}
+
+.table-takeaway-invoice-more {
+  font-size: 11px;
+  font-style: italic;
+  color: rgba(75, 37, 4, 0.75);
+  padding: 4px 0;
+}
+
+.table-takeaway-invoices-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 8px;
+}
+
+.table-takeaway-manage-button.ant-btn {
+  border-radius: 999px;
+  font-weight: 600;
+}
+
+.table-takeaway-manage-button.ant-btn:not(.ant-btn-link) {
+  background: linear-gradient(135deg, #fa8c16, #ffb84d);
+  border: none;
+  color: #4b2504;
+}
+
+.table-takeaway-manage-button.ant-btn:not(.ant-btn-link):hover {
+  background: linear-gradient(135deg, #ffa940, #ffd666);
+  color: #4b2504;
+}
+
+.banhang-container.touch-mode .view-header {
+  padding: 28px;
+  gap: 16px;
+}
+
+.banhang-container.touch-mode .view-header h3 {
+  font-size: 30px;
+}
+
+.banhang-container.touch-mode .tables-grid {
+  gap: 28px;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+}
+
+.banhang-container.touch-mode .table-card {
+  padding: 28px;
+  min-height: 240px;
+  border-radius: 26px;
+  box-shadow: 0 12px 36px rgba(25, 125, 211, 0.18);
+}
+
+.banhang-container.touch-mode .table-card .table-info {
+  gap: 10px;
+}
+
+.banhang-container.touch-mode .table-card .table-takeaway-invoice-chip {
+  font-size: 12px;
+  padding: 6px 14px;
+}
+
+.banhang-container.touch-mode .table-details {
+  padding: 12px;
+  font-size: 13px;
+}
+
+.banhang-container.touch-mode .table-takeaway-invoices {
+  padding: 10px 12px;
+}
+
+.banhang-container.touch-mode .table-takeaway-invoices-header {
+  font-size: 14px;
+}
+
+.banhang-container.touch-mode .table-takeaway-invoices-actions {
+  margin-top: 12px;
+}
+
+.banhang-container.touch-mode .table-takeaway-manage-button.ant-btn {
+  height: 48px;
+  font-size: 15px;
+}
+
+.banhang-container.touch-mode .touch-action-button.ant-btn {
+  height: 46px;
+  font-size: 15px;
+}
+
+.banhang-container.touch-mode .table-takeaway-tag {
+  font-size: 13px !important;
+  padding: 2px 14px;
 }
 
 /* Real-time status indicators */
