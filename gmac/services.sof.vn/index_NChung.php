@@ -1876,6 +1876,276 @@ case 'DonBan':
             'topXuat' => $topXuat
         ];
                 break;
+            case 'baoCaoXuatNhapTon':
+        require_once("../clsall/wh_lv0015.php");
+        $whReport = new wh_lv0015($_SESSION['ERPSOFV2RRight'], $_SESSION['ERPSOFV2RUserID'], 'Wh0015');
+
+        $maKhoInput = request_value('maKho', '');
+        $maKhoList = [];
+        if (is_array($maKhoInput)) {
+            $maKhoList = $maKhoInput;
+        } elseif (is_string($maKhoInput) && trim($maKhoInput) !== '') {
+            $maKhoList = explode(',', $maKhoInput);
+        }
+
+        $selectedWarehouses = [];
+        foreach ($maKhoList as $warehouseCode) {
+            $warehouseCode = trim((string)$warehouseCode);
+            if ($warehouseCode !== '') {
+                $selectedWarehouses[] = $warehouseCode;
+            }
+        }
+
+        if (!empty($selectedWarehouses)) {
+            $escapedWarehouses = array_map(function ($code) {
+                return esc_str($code);
+            }, $selectedWarehouses);
+            $warehouseListStr = "'" . implode("','", $escapedWarehouses) . "'";
+        } else {
+            $warehouseListStr = $whReport->Get_WHControler();
+        }
+
+        if ($warehouseListStr === '' || $warehouseListStr === null) {
+            $warehouseListStr = "''";
+        }
+
+        if (empty($selectedWarehouses) && $warehouseListStr !== "''") {
+            $parsedWarehouses = array_map('trim', explode(',', str_replace("'", '', $warehouseListStr)));
+            $selectedWarehouses = array_values(array_filter($parsedWarehouses, function ($item) {
+                return $item !== '';
+            }));
+        }
+
+        $warehouseCondition = '';
+        if ($warehouseListStr !== "''") {
+            $warehouseCondition = " AND h.lv002 IN ($warehouseListStr)";
+        }
+
+        $defaultStart = date('Y-m-d 00:00:00', strtotime('-7 days'));
+        $defaultEnd = date('Y-m-d 23:59:59');
+
+        $rawDateFrom = request_value('dateFrom');
+        $rawDateTo = request_value('dateTo');
+
+        $startDate = $rawDateFrom ? normalize_datetime_input($rawDateFrom, $defaultStart) : $defaultStart;
+        $endDate = $rawDateTo ? normalize_datetime_input($rawDateTo, $defaultEnd) : $defaultEnd;
+
+        if ($startDate > $endDate) {
+            $tmp = $startDate;
+            $startDate = $endDate;
+            $endDate = $tmp;
+        }
+
+        $startDate = substr($startDate, 0, 10) . ' 00:00:00';
+        $endDate = substr($endDate, 0, 10) . ' 23:59:59';
+
+        $startEsc = esc_str($startDate);
+        $endEsc = esc_str($endDate);
+
+        $keyword = trim((string)request_value('keyword', ''));
+        $keywordCondition = '';
+        if ($keyword !== '') {
+            $keywordEsc = esc_str($keyword);
+            $keywordCondition = " AND (sp.lv001 LIKE '%$keywordEsc%' OR sp.lv002 LIKE '%$keywordEsc%')";
+        }
+
+        $limit = (int)request_value('limit', 500);
+        if ($limit < 1) {
+            $limit = 1;
+        }
+        if ($limit > 2000) {
+            $limit = 2000;
+        }
+
+        $includeZero = ((int)request_value('includeZero', 0) === 1);
+
+        $openingReceiptsSql = "
+            SELECT 
+                d.lv003 AS maSanPham,
+                SUM(IFNULL(d.lv004,0)) AS qty,
+                SUM(IFNULL(d.lv004,0) * IFNULL(d.lv008,0)) AS amount
+            FROM wh_lv0009 d
+            INNER JOIN wh_lv0008 h ON h.lv001 = d.lv002
+            WHERE h.lv009 < '$startEsc' $warehouseCondition
+            GROUP BY d.lv003
+        ";
+
+        $openingIssuesSql = "
+            SELECT 
+                d.lv003 AS maSanPham,
+                SUM(IFNULL(d.lv004,0)) AS qty,
+                SUM(IFNULL(d.lv004,0) * IFNULL(d.lv008,0)) AS amount
+            FROM wh_lv0011 d
+            INNER JOIN wh_lv0010 h ON h.lv001 = d.lv002
+            WHERE h.lv009 < '$startEsc' $warehouseCondition
+            GROUP BY d.lv003
+        ";
+
+        $periodReceiptsSql = "
+            SELECT 
+                d.lv003 AS maSanPham,
+                SUM(IFNULL(d.lv004,0)) AS qty,
+                SUM(IFNULL(d.lv004,0) * IFNULL(d.lv008,0)) AS amount
+            FROM wh_lv0009 d
+            INNER JOIN wh_lv0008 h ON h.lv001 = d.lv002
+            WHERE h.lv009 >= '$startEsc' AND h.lv009 <= '$endEsc' $warehouseCondition
+            GROUP BY d.lv003
+        ";
+
+        $periodIssuesSql = "
+            SELECT 
+                d.lv003 AS maSanPham,
+                SUM(IFNULL(d.lv004,0)) AS qty,
+                SUM(IFNULL(d.lv004,0) * IFNULL(d.lv008,0)) AS amount
+            FROM wh_lv0011 d
+            INNER JOIN wh_lv0010 h ON h.lv001 = d.lv002
+            WHERE h.lv009 >= '$startEsc' AND h.lv009 <= '$endEsc' $warehouseCondition
+            GROUP BY d.lv003
+        ";
+
+        $inventorySql = "
+            SELECT *
+            FROM (
+                SELECT
+                    sp.lv001 AS maSanPham,
+                    sp.lv002 AS tenSanPham,
+                    IFNULL(unit.lv002, '') AS donViTinh,
+                    IFNULL(open_in.qty, 0) AS openNhapQty,
+                    IFNULL(open_out.qty, 0) AS openXuatQty,
+                    (IFNULL(open_in.qty, 0) - IFNULL(open_out.qty, 0)) AS tonDauQty,
+                    IFNULL(open_in.amount, 0) AS openNhapAmount,
+                    IFNULL(open_out.amount, 0) AS openXuatAmount,
+                    (IFNULL(open_in.amount, 0) - IFNULL(open_out.amount, 0)) AS tonDauAmount,
+                    IFNULL(period_in.qty, 0) AS nhapQty,
+                    IFNULL(period_in.amount, 0) AS nhapAmount,
+                    IFNULL(period_out.qty, 0) AS xuatQty,
+                    IFNULL(period_out.amount, 0) AS xuatAmount,
+                    (IFNULL(open_in.qty, 0) - IFNULL(open_out.qty, 0) + IFNULL(period_in.qty, 0) - IFNULL(period_out.qty, 0)) AS tonCuoiQty,
+                    (IFNULL(open_in.amount, 0) - IFNULL(open_out.amount, 0) + IFNULL(period_in.amount, 0) - IFNULL(period_out.amount, 0)) AS tonCuoiAmount
+                FROM sl_lv0007 sp
+                LEFT JOIN sl_lv0005 unit ON unit.lv001 = sp.lv004
+                LEFT JOIN ($openingReceiptsSql) open_in ON open_in.maSanPham = sp.lv001
+                LEFT JOIN ($openingIssuesSql) open_out ON open_out.maSanPham = sp.lv001
+                LEFT JOIN ($periodReceiptsSql) period_in ON period_in.maSanPham = sp.lv001
+                LEFT JOIN ($periodIssuesSql) period_out ON period_out.maSanPham = sp.lv001
+                WHERE sp.lv015 >= 0 $keywordCondition
+            ) inv
+            WHERE 1=1
+        ";
+
+        if (!$includeZero) {
+            $inventorySql .= "
+                AND (
+                    ABS(inv.tonDauQty) > 0.0001
+                    OR ABS(inv.nhapQty) > 0.0001
+                    OR ABS(inv.xuatQty) > 0.0001
+                    OR ABS(inv.tonCuoiQty) > 0.0001
+                )
+            ";
+        }
+
+        $inventorySql .= "
+            ORDER BY inv.tenSanPham
+            LIMIT $limit
+        ";
+
+        $result = db_query($inventorySql);
+        if (!$result) {
+            $vOutput = [
+                'success' => false,
+                'message' => 'Không thể truy vấn báo cáo xuất nhập tồn.'
+            ];
+            break;
+        }
+
+        $items = [];
+        $summary = [
+            'tonDau' => 0,
+            'tonNhap' => 0,
+            'tonXuat' => 0,
+            'tonCuoi' => 0,
+            'giaTriTonDau' => 0,
+            'giaTriNhap' => 0,
+            'giaTriXuat' => 0,
+            'giaTriTonCuoi' => 0
+        ];
+
+        while ($row = db_fetch_array($result, MYSQLI_ASSOC)) {
+            $tonDauQty = (float)($row['tonDauQty'] ?? 0);
+            $nhapQty = (float)($row['nhapQty'] ?? 0);
+            $xuatQty = (float)($row['xuatQty'] ?? 0);
+            $tonCuoiQty = (float)($row['tonCuoiQty'] ?? 0);
+
+            $tonDauAmount = (float)($row['tonDauAmount'] ?? 0);
+            $nhapAmount = (float)($row['nhapAmount'] ?? 0);
+            $xuatAmount = (float)($row['xuatAmount'] ?? 0);
+            $tonCuoiAmount = (float)($row['tonCuoiAmount'] ?? 0);
+
+            $giaBinhQuan = 0;
+            if (abs($tonCuoiQty) > 0.000001) {
+                $giaBinhQuan = $tonCuoiAmount / $tonCuoiQty;
+            } elseif (abs($tonDauQty) > 0.000001) {
+                $giaBinhQuan = $tonDauAmount / $tonDauQty;
+            }
+
+            $items[] = [
+                'maSanPham' => $row['maSanPham'] ?? '',
+                'tenSanPham' => $row['tenSanPham'] ?? '',
+                'donViTinh' => $row['donViTinh'] ?? '',
+                'tonDau' => $tonDauQty,
+                'nhap' => $nhapQty,
+                'xuat' => $xuatQty,
+                'tonCuoi' => $tonCuoiQty,
+                'giaBinhQuan' => $giaBinhQuan,
+                'tienTonDau' => $tonDauAmount,
+                'tienNhap' => $nhapAmount,
+                'tienXuat' => $xuatAmount,
+                'tienTonCuoi' => $tonCuoiAmount
+            ];
+
+            $summary['tonDau'] += $tonDauQty;
+            $summary['tonNhap'] += $nhapQty;
+            $summary['tonXuat'] += $xuatQty;
+            $summary['tonCuoi'] += $tonCuoiQty;
+            $summary['giaTriTonDau'] += $tonDauAmount;
+            $summary['giaTriNhap'] += $nhapAmount;
+            $summary['giaTriXuat'] += $xuatAmount;
+            $summary['giaTriTonCuoi'] += $tonCuoiAmount;
+        }
+
+        $warehouseMeta = [];
+        if (!empty($selectedWarehouses)) {
+            $escapedForName = array_map(function ($code) {
+                return esc_str($code);
+            }, $selectedWarehouses);
+            $warehouseNameSql = "SELECT lv001, lv003 FROM wh_lv0001 WHERE lv001 IN ('" . implode("','", $escapedForName) . "')";
+            $warehouseNameResult = db_query($warehouseNameSql);
+            if ($warehouseNameResult) {
+                while ($wRow = db_fetch_array($warehouseNameResult, MYSQLI_ASSOC)) {
+                    $warehouseMeta[] = [
+                        'maKho' => $wRow['lv001'] ?? '',
+                        'tenKho' => $wRow['lv003'] ?? ''
+                    ];
+                }
+            }
+        }
+
+        $vOutput = [
+            'success' => true,
+            'generatedAt' => date('c'),
+            'filters' => [
+                'maKho' => $selectedWarehouses,
+                'keyword' => $keyword,
+                'dateFrom' => $startDate,
+                'dateTo' => $endDate,
+                'includeZero' => $includeZero,
+                'limit' => $limit
+            ],
+            'warehouses' => $warehouseMeta,
+            'summary' => $summary,
+            'items' => $items
+        ];
+                break;
             default:
                 $vOutput = [
                     'success' => false,
