@@ -1,0 +1,68 @@
+.company-page {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.company-card .company-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 600;
+}
+
+.company-controls {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.company-summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.company-table .company-contact-line {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: #595959;
+}
+
+.company-table .company-contact-line svg {
+  color: #8c8c8c;
+}
+
+.company-contact-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.company-name-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.company-expanded {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  padding: 12px 0;
+}
+
+.company-expanded-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: #595959;
+}
+
+.company-expanded-item strong {
+  color: #262626;
+}

@@ -2,6 +2,43 @@
 // error_reporting(E_ALL);	
 // ini_set('display_errors', 1);
 switch ($vtable) {
+    case 'hr_lv0001':
+        switch ($vfun) {
+            case 'data':
+                $vOutput = [];
+                $sql = "SELECT lv001, lv002, lv003, lv004, lv005, lv006, lv007, lv008, lv009, lv010, lv011, lv012, lv013, lv099 FROM hr_lv0001 ORDER BY lv002";
+                $result = db_query($sql);
+                if ($result) {
+                    while ($row = db_fetch_array($result)) {
+                        $vOutput[] = [
+                            'maCongTy' => $row['lv001'] ?? '',
+                            'tenCongTy' => $row['lv002'] ?? '',
+                            'diaChi' => $row['lv003'] ?? '',
+                            'giamDoc' => $row['lv004'] ?? '',
+                            'dienThoai' => $row['lv005'] ?? '',
+                            'fax' => $row['lv006'] ?? '',
+                            'website' => $row['lv007'] ?? '',
+                            'maSoThue' => $row['lv008'] ?? '',
+                            'logo' => $row['lv009'] ?? '',
+                            'maCongTyCha' => $row['lv010'] ?? '',
+                            'capBac' => $row['lv011'] ?? '',
+                            'maTinh' => $row['lv012'] ?? '',
+                            'maQuocGia' => $row['lv013'] ?? '',
+                            'trangThai' => $row['lv099'] ?? ''
+                        ];
+                    }
+                } else {
+                    $vOutput = [];
+                }
+                break;
+            default:
+                $vOutput = [
+                    'success' => false,
+                    'message' => 'Chức năng không hợp lệ'
+                ];
+                break;
+        }
+        break;
     case 'hr_NhanSu':
         include("../cafe/clsall/hr_lv0020.php");
         include("../cafe/clsall/lv_lv0004.php");
