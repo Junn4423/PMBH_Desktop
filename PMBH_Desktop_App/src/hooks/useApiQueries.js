@@ -1,9 +1,8 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { getAllProducts, getProductCategories } from '../../services/domains/catalogService';
 import {
   loadBan,
   loadKhuVuc,
-  getAllSanPham,
-  getLoaiSanPham,
   loadDsHoaDon,
   getChiTietHoaDonTheoMaHD
 } from '../../services/apiServices';
@@ -40,7 +39,7 @@ export function useAreas() {
 export function useProducts() {
   return useQuery({
     queryKey: QUERY_KEYS.PRODUCTS,
-    queryFn: getAllSanPham,
+  queryFn: getAllProducts,
     staleTime: 5 * 60 * 1000,
     enabled: false, // Only load when explicitly enabled
   });
@@ -50,7 +49,7 @@ export function useProducts() {
 export function useProductCategories() {
   return useQuery({
     queryKey: QUERY_KEYS.PRODUCT_CATEGORIES,
-    queryFn: getLoaiSanPham,
+  queryFn: getProductCategories,
     staleTime: 10 * 60 * 1000, // 10 minutes
   });
 }

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Card, Table, Button, Modal, Form, Input, InputNumber, Select, Space, Typography, message, Row, Col, Tag, Spin } from 'antd';
 import { Plus, Pencil, Trash2, RefreshCw } from 'lucide-react';
-import { getLoaiSanPham, getAllSanPham } from '../../services/apiServices';
+import { getProductCategories, getAllProducts } from '../../services/domains/catalogService';
 import ProductImagePlaceholder from '../../components/common/ProductImagePlaceholder';
 import ImageUploadPlaceholder from '../../components/common/ImageUploadPlaceholder';
 import { DEFAULT_IMAGES, PLACEHOLDER_CONFIG } from '../../constants';
@@ -26,8 +26,8 @@ const ThucDon = () => {
     setLoading(true);
     try {
       const [categoriesResult, productsResult] = await Promise.all([
-        getLoaiSanPham(),
-        getAllSanPham()
+        getProductCategories(),
+        getAllProducts()
       ]);
 
       if (categoriesResult && Array.isArray(categoriesResult)) {

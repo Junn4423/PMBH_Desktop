@@ -1,7 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { Card, Breadcrumb, Button, Table, Modal, Form, Input, message, Space, Popconfirm } from 'antd';
 import { Tags, Plus, Edit, Trash2, Search } from 'lucide-react';
-import { getLoaiSanPham, themLoaiSanPham, suaLoaiSanPham, xoaLoaiSanPham } from '../../services/apiServices';
+import {
+  getProductCategories,
+  createProductCategory,
+  updateProductCategory,
+  deleteProductCategory
+} from '../../services/domains/catalogService';
 import './LoaiSanPham.css';
 
 const LoaiSanPham = () => {
@@ -19,7 +24,7 @@ const LoaiSanPham = () => {
   const loadCategories = async () => {
     try {
       setLoading(true);
-      const response = await getLoaiSanPham();
+  const response = await getProductCategories();
       
       let categoriesData = [];
       if (Array.isArray(response)) {
@@ -64,7 +69,7 @@ const LoaiSanPham = () => {
   const handleDelete = async (record) => {
     try {
       const id = record.lv001 || record.idLoaiSp || record.id || record.maLoai;
-      await xoaLoaiSanPham(id);
+  await deleteProductCategory(id);
       message.success('Xóa loại sản phẩm thành công');
       loadCategories();
     } catch (error) {
@@ -76,10 +81,10 @@ const LoaiSanPham = () => {
   const handleSubmit = async (values) => {
     try {
       if (editingCategory) {
-        await suaLoaiSanPham(values);
+  await updateProductCategory(values);
         message.success('Cập nhật loại sản phẩm thành công');
       } else {
-        await themLoaiSanPham(values);
+  await createProductCategory(values);
         message.success('Thêm loại sản phẩm thành công');
       }
       setIsModalVisible(false);

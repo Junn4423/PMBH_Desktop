@@ -3,6 +3,13 @@ import { login as apiLogin, clearAuthCache, startTokenAutoRefresh } from '../ser
 
 const AuthContext = createContext();
 
+const SESSION_TTL_MS = 60 * 60 * 1000; // 1 hour
+const STORAGE_KEYS = {
+  user: 'pmbh_user',
+  token: 'pmbh_token',
+  expiresAt: 'pmbh_token_expires_at',
+};
+
 export const useAuth = () => {
   const context = useContext(AuthContext);
   if (!context) {
@@ -17,13 +24,52 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Clear session trước, không restore từ localStorage
-    // App yêu cầu logout mỗi lần restart
-    localStorage.removeItem('pmbh_user');
-    localStorage.removeItem('pmbh_token');
-    
+    const restoreSession = () => {
+      try {
+        const rawUser = localStorage.getItem(STORAGE_KEYS.user);
+        const token = localStorage.getItem(STORAGE_KEYS.token);
+        const expiresRaw = localStorage.getItem(STORAGE_KEYS.expiresAt);
+
+        if (!rawUser || !token || !expiresRaw) {
+          clearSessionStorage();
+          return;
+        }
+
+        const expiresAt = Number(expiresRaw);
+        if (!Number.isFinite(expiresAt) || Date.now() >= expiresAt) {
+          clearSessionStorage();
+          return;
+        }
+
+        const parsedUser = JSON.parse(rawUser);
+        setUser(parsedUser);
+        setIsAuthenticated(true);
+      } catch (error) {
+        console.error('Failed to restore session:', error);
+        clearSessionStorage();
+      }
+    };
+
+    restoreSession();
     setLoading(false);
   }, []);
+
+  const persistSession = (userData, token) => {
+    try {
+      const expiresAt = Date.now() + SESSION_TTL_MS;
+      localStorage.setItem(STORAGE_KEYS.user, JSON.stringify(userData));
+      localStorage.setItem(STORAGE_KEYS.token, token);
+      localStorage.setItem(STORAGE_KEYS.expiresAt, String(expiresAt));
+    } catch (error) {
+      console.error('Failed to persist session:', error);
+    }
+  };
+
+  const clearSessionStorage = () => {
+    localStorage.removeItem(STORAGE_KEYS.user);
+    localStorage.removeItem(STORAGE_KEYS.token);
+    localStorage.removeItem(STORAGE_KEYS.expiresAt);
+  };
 
   const login = async (taiKhoan, matKhau) => {
     try {
@@ -53,9 +99,7 @@ export const AuthProvider = ({ children }) => {
         
         setUser(userData);
         setIsAuthenticated(true);
-        
-        localStorage.setItem('pmbh_user', JSON.stringify(userData));
-        localStorage.setItem('pmbh_token', userData.token);
+        persistSession(userData, userData.token);
         
         return { success: true };
       }
@@ -78,9 +122,7 @@ export const AuthProvider = ({ children }) => {
         
         setUser(userData);
         setIsAuthenticated(true);
-        
-        localStorage.setItem('pmbh_user', JSON.stringify(userData));
-        localStorage.setItem('pmbh_token', result.token);
+  persistSession(userData, result.token);
 
         startTokenAutoRefresh();
         
@@ -103,8 +145,7 @@ export const AuthProvider = ({ children }) => {
     setUser(null);
     setIsAuthenticated(false);
     clearAuthCache();
-    localStorage.removeItem('pmbh_user');
-    localStorage.removeItem('pmbh_token');
+    clearSessionStorage();
   };
 
   const value = {

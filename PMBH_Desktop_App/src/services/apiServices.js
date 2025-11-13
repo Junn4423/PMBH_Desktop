@@ -1,272 +1,41 @@
 import axios from 'axios';
-import {url_api_services, url_chart_api, url_image_base} from "./url";
-import { getAuthHeaders, refreshAuthToken } from './apiLogin';
-
-const urlApi = url_api_services;
-
-// -------------------- API Functions --------------------
-
-// Hàm g?i API chung v?i auto authentication
-const isInvalidAuthResponse = (data) => {
-  if (data === null || data === undefined) {
-    return false;
-  }
-
-  if (typeof data === 'string') {
-    return data.toLowerCase() === 'invalid' || data.toLowerCase().includes('invalid token');
-  }
-
-  const message = data.message || data.error || data.statusMessage;
-  if (!message) {
-    return false;
-  }
-
-  const normalized = String(message).toLowerCase();
-  return normalized === 'invalid' || normalized.includes('invalid token');
-};
-
-export async function callApi(table, func, additionalData = {}, retryCount = 0) {
-  try {
-    const headers = await getAuthHeaders(retryCount > 0); // Force refresh on retry
-    const payload = {
-      table,
-      func,
-      ...additionalData
-    };
-
-    const res = await axios.post(urlApi, payload, { headers });
-    const data = res.data;
-
-    if (isInvalidAuthResponse(data)) {
-      if (retryCount === 0) {
-        try {
-          await refreshAuthToken();
-        } catch (refreshError) {
-          console.error('Failed to refresh token after invalid response:', refreshError);
-          throw refreshError;
-        }
-        return callApi(table, func, additionalData, 1);
-      }
-      console.warn(`API returned invalid auth response after retry for ${table}.${func}`);
-      return [];
-    }
-    
-    // Log response d? debug
-    
-    // Ð?m b?o tr? v? array n?u d? li?u là null ho?c undefined
-    if (data === null || data === undefined) {
-      console.warn(`API returned null/undefined for ${table}.${func}`);
-      return [];
-    }
-    
-    return data;
-  } catch (error) {
-    // If we get 401 or auth error and haven't retried yet, retry with fresh token
-    if ((error.response?.status === 401 || error.message.includes('token')) && retryCount === 0) {
-      return callApi(table, func, additionalData, 1);
-    }
-    
-    console.error(`API call failed for table: ${table}, func: ${func}`, error);
-    throw error;
-  }
-}
-
-// -------------------- Functions from index_HNhan.php --------------------
-
-
-// L?y lo?i s?n ph?m
-export async function getLoaiSanPham() {
-  return await callApi('Mb_loaiSanPham', 'data');
-}
-
-// Thêm lo?i s?n ph?m
-export async function themLoaiSanPham(loaiSanPhamData) {
-  const { lv001, lv002, lv003, lv004, lv005 } = loaiSanPhamData;
-  return await callApi('Mb_loaiSanPham', 'add', { lv001, lv002, lv003, lv004, lv005 });
-}
-
-// S?a lo?i s?n ph?m
-export async function suaLoaiSanPham(loaiSanPhamData) {
-  const { lv001, lv002, lv003, lv004, lv005 } = loaiSanPhamData;
-  return await callApi('Mb_loaiSanPham', 'edit', { lv001, lv002, lv003, lv004, lv005 });
-}
-
-// Xóa lo?i s?n ph?m
-export async function xoaLoaiSanPham(lv001) {
-  return await callApi('Mb_loaiSanPham', 'delete', { lv001 });
-}
-
-// L?y s?n ph?m theo ID lo?i
-export async function getSanPhamTheoIdLoai(findID) {
-  return await callApi('Mb_sanPham', 'laySanTheoIdLoai', { findID });
-}
-
-// L?y t?t c? s?n ph?m
-export async function getAllSanPham() {
-  return await callApi('Mb_sanPham', 'data');
-}
-
-// Load hình ?nh s?n ph?m t? database
-export async function loadProductImage(productId) {
-  try {
-    if (!productId) {
-      return { success: false };
-    }
-
-    const baseUrl = url_api_services.split('/services.sof.vn/')[0];
-    const getImageUrl = `${baseUrl}/services.sof.vn/get-image.php?id=${encodeURIComponent(productId)}`;
-
-    const headers = await getAuthHeaders();
-    const res = await axios.get(getImageUrl, { headers });
-
-    if (res.data && res.data.status === 2002 && res.data.image) {
-      return {
-        success: true,
-        imageUrl: `data:image/jpeg;base64,${res.data.image}`
-      };
-    }
-
-    return { success: false, data: res.data };
-  } catch (error) {
-    console.error('Error loading product image:', error);
-    return { success: false, error: error.message };
-  }
-}
-
-// L?y URL hình ?nh s?n ph?m d?y d?
-export function getFullImageUrl(imagePath) {
-  if (!imagePath) return null;
-  
-  // N?u dã là URL d?y d? (http/https)
-  if (imagePath.startsWith('http://') || imagePath.startsWith('https://')) {
-    return imagePath;
-  }
-  
-  // N?u là du?ng d?n tuong d?i, t?o URL d?y d?
-  const baseUrl = url_image_base;
-  
-  // X? lý du?ng d?n b?t d?u b?ng /
-  if (imagePath.startsWith('/')) {
-    return `${baseUrl}${imagePath}`;
-  }
-  
-  // X? lý du?ng d?n tuong d?i - n?u không b?t d?u b?ng images/, gi? s? là trong thu m?c products
-  if (!imagePath.startsWith('images/')) {
-    return `${baseUrl}/images/products/${imagePath}`;
-  }
-  
-  // X? lý du?ng d?n tuong d?i
-  return `${baseUrl}/${imagePath}`;
-}
-
-// Thêm chi ti?t hóa don
+import { url_chart_api } from './url';
+import { callApi } from './api/baseApi';
 export async function themChiTietHoaDon(mahd, masp, soluong) {
   return await callApi('Mb_Cthd', 'themCtHd', { mahd, masp, soluong });
 }
 
-// Thanh toán hóa don
+// Thanh toï¿½n hï¿½a don
 export async function thanhToanHoaDon(mahd) {
   return await callApi('Mb_thanhtoan', 'thanhToan_contract', { mahd });
-}
-
-// C?p nh?t s?n ph?m
-export async function updateSanPham(productData) {
-  return await callApi('Mb_sanPham', 'edit', productData);
-}
-
-// Upload ?nh s?n ph?m
-export async function uploadProductImage(productId, imageFile) {
-  try {
-    const formData = new FormData();
-    formData.append('table', 'Mb_sanPham');
-    formData.append('func', 'uploadImage');
-    formData.append('maSp', productId);
-    formData.append('imageFile', imageFile);
-
-    const headers = await getAuthHeaders();
-    const res = await axios.post(url_api_services, formData, {
-      headers: {
-        ...headers,
-        'Content-Type': 'multipart/form-data'
-      }
-    });
-
-    return { success: res.data === true || res.data === 1 || res.data === "1" };
-  } catch (error) {
-    console.error('Error uploading image:', error);
-    return { success: false, error: error.message };
-  }
-}
-
-// C?p nh?t URL ?nh s?n ph?m
-export async function updateProductImageUrl(productId, imageUrl) {
-  try {
-    const result = await callApi('Mb_sanPham', 'updateImageUrl', { maSp: productId, imageUrl });
-    return { success: result === true || result === 1 || result === "1" };
-  } catch (error) {
-    console.error('Error updating product image URL:', error);
-    return { success: false, error: error.message };
-  }
-}
-
-// Upload ?nh s?n ph?m d?ng BLOB vào database (co ch? m?i)
-export async function uploadImageBlob(productId, imageFile) {
-  try {
-    const formData = new FormData();
-    formData.append('id', productId);
-    formData.append('image', imageFile);
-
-    const headers = await getAuthHeaders();
-
-    const baseUrl = url_api_services.split('/services.sof.vn/')[0];
-    const uploadUrl = baseUrl + '/services.sof.vn/insert-image.php';
-
-    const res = await axios.post(uploadUrl, formData, {
-      headers: {
-        ...headers,
-        'Content-Type': 'multipart/form-data'
-      }
-    });
-
-    const success = res.data && res.data.status === 2002;
-    return { success, data: res.data };
-  } catch (error) {
-    console.error('Error uploading image blob:', error);
-    return { success: false, error: error.message };
-  }
-}
-
-// Load ?nh s?n ph?m t? database (BLOB)
-export async function loadProductImageBlob(productId) {
-  return loadProductImage(productId);
 }
 
 
 // -------------------- Functions from index_Cong.php --------------------
 
-// Thêm nhân s?
+// Thï¿½m nhï¿½n s?
 export async function themNhanSu(nhanSuData) {
   return await callApi('hr_NhanSu', 'add', nhanSuData);
 }
 
-// S?a nhân s?
+// S?a nhï¿½n s?
 export async function suaNhanSu(nhanSuData) {
   return await callApi('hr_NhanSu', 'edit', nhanSuData);
 }
 
-// Xóa nhân s?
+// Xï¿½a nhï¿½n s?
 export async function xoaNhanSu(lv001) {
   return await callApi('hr_NhanSu', 'delete', { lv001 });
 }
 
-// L?y danh sách nhân s?
+// L?y danh sï¿½ch nhï¿½n s?
 export async function getDanhSachNhanSu() {
   return await callApi('hr_NhanSu', 'data');
 }
 
 // -------------------- Functions from index_KBao.php --------------------
 
-// Thêm kho
+// Thï¿½m kho
 export async function themKho(khoData) {
   return await callApi('Mb_Kho', 'add', khoData);
 }
@@ -276,17 +45,17 @@ export async function suaKho(khoData) {
   return await callApi('Mb_Kho', 'edit', khoData);
 }
 
-// Xóa kho
+// Xï¿½a kho
 export async function xoaKho(lv001) {
   return await callApi('Mb_Kho', 'delete', { lv001 });
 }
 
-// L?y danh sách kho
+// L?y danh sï¿½ch kho
 export async function getDanhSachKho() {
   return await callApi('Mb_Kho', 'data');
 }
 
-// L?y nguyên v?t li?u theo mã kho
+// L?y nguyï¿½n v?t li?u theo mï¿½ kho
 export async function getNguyenVatLieuTheoMaKho(maKho) {
   return await callApi('Mb_Kho', 'LayNvlTheoMaKho', { maKho });
 }
@@ -487,38 +256,38 @@ export async function deleteChiTietPhieuKiem(maKiemKho, maSanPham) {
   return await callApi('Mb_ChiTietPK', 'delete', { maKiemKho, maSanPham });
 }
 
-// Nguyên li?u
+// Nguyï¿½n li?u
 export async function listTatCaNguyenLieu() {
   return await callApi('Mb_NguyenLieu', 'layAllNguyenLieu');
 }
 
 // -------------------- Functions from index_long.php --------------------
 
-// L?y danh sách bàn
+// L?y danh sï¿½ch bï¿½n
 export async function getDanhSachBan() {
   return await callApi('Mb_LayDsBan', 'data');
 }
 
-// L?y t?ng chi ti?t hóa don - hóa don có món - chua thanh toán và thanh toán r?i
+// L?y t?ng chi ti?t hï¿½a don - hï¿½a don cï¿½ mï¿½n - chua thanh toï¿½n vï¿½ thanh toï¿½n r?i
 export async function getTongChiTietHoaDon() {
   return await callApi('Mb_TongCthd', 'data');
 }
-// L?y chi ti?t hóa don - k? c? hóa don r?ng
+// L?y chi ti?t hï¿½a don - k? c? hï¿½a don r?ng
 export async function getChiTietHoaDonRong() {
   return await callApi('Mb_TongCthdRong', 'data');
 }
 
-// L?y chi ti?t hóa don theo mã hóa don
+// L?y chi ti?t hï¿½a don theo mï¿½ hï¿½a don
 export async function getChiTietHoaDonTheoMaHD(maHd) {
   return await callApi('Mb_LayCthd_', 'layCtHd', { maHd });
 }
 
-// G?p bàn
+// G?p bï¿½n
 export async function gopBan(idDonHang, idBanGop) {
   return await callApi('m_GopBan', 'add', { idDonHang, idBanGop });
 }
 
-// Load bàn
+// Load bï¿½n
 export async function loadBan() {
   return await callApi('Mb_LayDsBan', 'data');
 }
@@ -528,7 +297,7 @@ export async function loadKhuVuc() {
   return await callApi('sl_lv0008', 'loadKhuVuc');
 }
 
-// Thêm khu v?c / t?ng
+// Thï¿½m khu v?c / t?ng
 export async function themKhuVuc(khuVucData) {
   const { lv001, lv002 } = khuVucData;
   return await callApi('sl_lv0008', 'themKhuVuc', { lv001, lv002 });
@@ -552,7 +321,7 @@ export async function suaKhuVuc(khuVucData = {}) {
   });
 }
 
-// Xóa khu v?c / t?ng
+// Xï¿½a khu v?c / t?ng
 export async function xoaKhuVuc(khuVuc) {
   const maKhuVuc = typeof khuVuc === 'string'
     ? khuVuc
@@ -567,7 +336,7 @@ export async function loadDonVi() {
   return await callApi('sl_lv0005', 'loadDonVi');
 }
 
-// Thêm don v?
+// Thï¿½m don v?
 export async function themDonVi(donViData) {
   const { lv001, lv002, lv003 } = donViData;
   return await callApi('sl_lv0005', 'themDonVi', { lv001, lv002, lv003 });
@@ -579,59 +348,59 @@ export async function suaDonVi(donViData) {
   return await callApi('sl_lv0005', 'suaDonVi', { lv001, lv002, lv003 });
 }
 
-// Xóa don v?
+// Xï¿½a don v?
 export async function xoaDonVi(lv001) {
   return await callApi('sl_lv0005', 'xoaDonVi', { lv001 });
 }
 
-// T?o don hàng
+// T?o don hï¿½ng
 export async function taoDonHang(idBan) {
   return await callApi('Mb_TaoDonHang', 'add', { idBan });
 }
 
 // -------------------- Functions from index_NChung.php --------------------
 
-//L?y mã hóa, tên bàn, v? trí, tr?ng thái t? bàn dang bán
+//L?y mï¿½ hï¿½a, tï¿½n bï¿½n, v? trï¿½, tr?ng thï¿½i t? bï¿½n dang bï¿½n
 export async function getMaHoaDonTuBanDangBan(banId) {
   return await callApi('m_loadBan', 'load', { banId });
 }
 
-// L?y danh sách món dang ch? order
+// L?y danh sï¿½ch mï¿½n dang ch? order
 export async function getDsMonDangChoOrder() {
   return await callApi('Mb_Oder', 'layDsMonDangChoOder');
 }
 
-// L?y món an t? bàn dang bán
+// L?y mï¿½n an t? bï¿½n dang bï¿½n
 export async function getMonAnTuBanDangBan() {
   return await callApi('Mb_Oder', 'layMonAnTuBanDangBan');
 }
 
-// L?y món nu?c t? bàn dang bán
+// L?y mï¿½n nu?c t? bï¿½n dang bï¿½n
 export async function getMonNuocTuBanDangBan() {
   return await callApi('Mb_Oder', 'layMonNuocTuBanDangBan');
 }
 
-// L?y danh sách món dã xong
+// L?y danh sï¿½ch mï¿½n dï¿½ xong
 export async function getDsMonDaXong() {
   return await callApi('Mb_Oder', 'layDsMonDaXong');
 }
 
-// L?y thông tin don hàng theo bàn
+// L?y thï¿½ng tin don hï¿½ng theo bï¿½n
 export async function getThongTinDonHang(banid) {
   return await callApi('m_CheckTrangThai', 'layThongTinDonHang', { banid });
 }
 
-// Thêm nhân s?
+// Thï¿½m nhï¿½n s?
 export async function addNhanSu(data) {
   return await callApi('hr_NhanSu', 'add', data);
 }
 
-// S?a nhân s?
+// S?a nhï¿½n s?
 export async function editNhanSu(data) {
   return await callApi('hr_NhanSu', 'edit', data);
 }
 
-// Xóa nhân s?
+// Xï¿½a nhï¿½n s?
 export async function deleteNhanSu(lv001) {
   return await callApi('hr_NhanSu', 'delete', { lv001 });
 }
@@ -643,7 +412,7 @@ export async function getKhoData() {
   return await callApi('Mb_Kho', 'data');
 }
 
-// Thêm kho
+// Thï¿½m kho
 export async function addKho(data) {
   return await callApi('Mb_Kho', 'add', data);
 }
@@ -653,12 +422,12 @@ export async function editKho(data) {
   return await callApi('Mb_Kho', 'edit', data);
 }
 
-// Xóa kho
+// Xï¿½a kho
 export async function deleteKho(lv001) {
   return await callApi('Mb_Kho', 'delete', { lv001 });
 }
 
-// L?y NVL theo mã kho
+// L?y NVL theo mï¿½ kho
 export async function getNvlTheoMaKho(maKho) {
   return await callApi('Mb_Kho', 'LayNvlTheoMaKho', { maKho });
 }
@@ -671,11 +440,11 @@ export async function getSoLuongTonKhoNhieuSPv2(maSPArr, maKho) {
 
 
 // -------------------- GMAC API Integration - Real Implementation --------------------
-// Tích h?p v?i GMAC API th?c t? d? l?y d? li?u khu v?c và bàn
+// Tï¿½ch h?p v?i GMAC API th?c t? d? l?y d? li?u khu v?c vï¿½ bï¿½n
 
 const GMAC_BASE_URL = 'http://localhost/gmac'; // URL c?a GMAC server
 
-// API th?c d? l?y danh sách khu v?c t? GMAC hr_lv0004
+// API th?c d? l?y danh sï¿½ch khu v?c t? GMAC hr_lv0004
 export async function getGmacKhuVucList() {
   try {
     // Th? g?i API th?c t? GMAC hr_lv0004
@@ -690,15 +459,15 @@ export async function getGmacKhuVucList() {
       const htmlData = await response.text();
       return parseGmacHrData(htmlData);
     } else {
-      throw new Error('GMAC API không kh? d?ng');
+      throw new Error('GMAC API khï¿½ng kh? d?ng');
     }
   } catch (error) {
-    console.error('GMAC API không kh? d?ng:', error);
+    console.error('GMAC API khï¿½ng kh? d?ng:', error);
     throw error;
   }
 }
 
-// API th?c d? l?y danh sách bàn t? GMAC sl_lv0008 theo khu v?c
+// API th?c d? l?y danh sï¿½ch bï¿½n t? GMAC sl_lv0008 theo khu v?c
 export async function getGmacBanListByKhuVuc(khuVucId) {
   try {
     // Th? g?i API th?c t? GMAC sl_lv0008
@@ -713,15 +482,15 @@ export async function getGmacBanListByKhuVuc(khuVucId) {
       const htmlData = await response.text();
       return parseGmacBanData(htmlData, khuVucId);
     } else {
-      throw new Error('GMAC API không kh? d?ng');
+      throw new Error('GMAC API khï¿½ng kh? d?ng');
     }
   } catch (error) {
-    console.error('GMAC API không kh? d?ng:', error);
+    console.error('GMAC API khï¿½ng kh? d?ng:', error);
     throw error;
   }
 }
 
-// API d? t?o don hàng th?c qua GMAC sl_lv0201
+// API d? t?o don hï¿½ng th?c qua GMAC sl_lv0201
 export async function createGmacOrder(orderData) {
   try {
     const params = new URLSearchParams({
@@ -749,7 +518,7 @@ export async function createGmacOrder(orderData) {
       const data = await response.text();
       return parseGmacOrderResult(data);
     } else {
-      throw new Error('Không th? t?o don hàng qua GMAC');
+      throw new Error('Khï¿½ng th? t?o don hï¿½ng qua GMAC');
     }
   } catch (error) {
     console.error('Error creating GMAC order:', error);
@@ -772,22 +541,22 @@ function parseGmacHrData(htmlData) {
   }
 }
 
-// Parse d? li?u bàn t? GMAC sl_lv0008 response
+// Parse d? li?u bï¿½n t? GMAC sl_lv0008 response
 function parseGmacBanData(htmlData, khuVucId) {
   try {
     // TODO: Implement actual HTML parsing t? GMAC sl_lv0008
     console.warn('parseGmacBanData chua du?c implement');
     throw new Error('parseGmacBanData chua du?c implement');
   } catch (error) {
-    console.error('L?i parse d? li?u bàn GMAC:', error);
+    console.error('L?i parse d? li?u bï¿½n GMAC:', error);
     throw error;
   }
 }
 
-// Parse k?t qu? t?o don hàng t? GMAC sl_lv0201
+// Parse k?t qu? t?o don hï¿½ng t? GMAC sl_lv0201
 function parseGmacOrderResult(rawData) {
   // Parse response t? GMAC sl_lv0201.php
-  // Tìm [CHECKHOPDONG] và [CHECKORDER] patterns nhu trong source code
+  // Tï¿½m [CHECKHOPDONG] vï¿½ [CHECKORDER] patterns nhu trong source code
   try {
     const contractMatch = rawData.match(/\[CHECKHOPDONG\](.*?)\[ENDCHECKHOPDONG\]/);
     const orderMatch = rawData.match(/\[CHECKORDER\](.*?)\[ENDCHECKORDER\]/);
@@ -831,7 +600,7 @@ export async function loadKhoFeatures(data = {}) {
   return await callApi('wh_lv0001', 'loadKho', data);
 }
 
-// Thêm kho
+// Thï¿½m kho
 export async function themKhoFeatures(khoData) {
   const { lv001, lv002, lv003, lv004, lv005, lv006, lv007, lv008 } = khoData;
   return await callApi('wh_lv0001', 'themKho', {
@@ -847,7 +616,7 @@ export async function capNhatKhoFeatures(khoData) {
   });
 }
 
-// Xóa kho
+// Xï¿½a kho
 export async function xoaKhoFeatures(lv001) {
   return await callApi('wh_lv0001', 'xoaKho', { lv001 });
 }
@@ -862,12 +631,12 @@ export async function loadPhieuNhap(data = {}) {
   return await callApi('wh_lv0002', 'loadPhieuNhap', data);
 }
 
-// Xóa phi?u nh?p
+// Xï¿½a phi?u nh?p
 export async function xoaPhieuNhap(maPhieu) {
   return await callApi('wh_lv0002', 'xoaPhieuNhap', { maPhieu });
 }
 
-// Thêm phi?u nh?p chi ti?t
+// Thï¿½m phi?u nh?p chi ti?t
 export async function ThemPhieuNhapChiTietPn(phieuNhapData) {
   const { maPhieu, maSP, soLuong, donGia, ghiChu, maKho } = phieuNhapData;
   return await callApi('wh_lv0003', 'ThemPhieuNhapChiTietPn', {
@@ -875,7 +644,7 @@ export async function ThemPhieuNhapChiTietPn(phieuNhapData) {
   });
 }
 
-// Fetch all nguyên li?u kho
+// Fetch all nguyï¿½n li?u kho
 export async function fetchAllNguyenLieuKho() {
   return await callApi('wh_lv0004', 'fetchAllNguyenLieuKho');
 }
@@ -900,7 +669,7 @@ export async function layPhieuXuatById(maPhieu) {
   return await callApi('wh_lv0005', 'layPhieuXuatById', { maPhieu });
 }
 
-// Thêm phi?u xu?t chi ti?t
+// Thï¿½m phi?u xu?t chi ti?t
 export async function themPhieuXuatChiTietPX(phieuXuatData) {
   const { maPhieu, maSP, soLuong, donGia, ghiChu, maKho } = phieuXuatData;
   return await callApi('wh_lv0006', 'themPhieuXuatChiTietPX', {
@@ -908,7 +677,7 @@ export async function themPhieuXuatChiTietPX(phieuXuatData) {
   });
 }
 
-// Xóa phi?u xu?t
+// Xï¿½a phi?u xu?t
 export async function xoaPhieuXuat(maPhieu) {
   return await callApi('wh_lv0005', 'xoaPhieuXuat', { maPhieu });
 }
@@ -918,7 +687,7 @@ export async function layCtPhieuXuat(maPhieu) {
   return await callApi('wh_lv0006', 'layCtPhieuXuat', { maPhieu });
 }
 
-// L?y t?t c? lo?i nguyên v?t li?u
+// L?y t?t c? lo?i nguyï¿½n v?t li?u
 export async function layAll_LoaiNVL() {
   return await callApi('Mb_NguyenLieu', 'get_DS_LoaiNVL');
 }
@@ -928,7 +697,7 @@ export async function layAllDanhMucSPCorrected() {
   return await callApi('Mb_LoaiNguyenLieu', 'data');
 }
 
-// Thêm lo?i nguyên li?u (corrected parameters)
+// Thï¿½m lo?i nguyï¿½n li?u (corrected parameters)
 export async function themLoaiNguyenLieuCorrected(loaiData) {
   const { maLoai, moTa, maLoaiCha, trangThai } = loaiData;
   return await callApi('Mb_LoaiNguyenLieu', 'add', {
@@ -936,7 +705,7 @@ export async function themLoaiNguyenLieuCorrected(loaiData) {
   });
 }
 
-// Thêm nguyên li?u (corrected with more params)
+// Thï¿½m nguyï¿½n li?u (corrected with more params)
 export async function themNguyenLieuCorrected(nguyenLieuData) {
   const { 
     maSanPham, tenSanPham, maLoai, maDonVi, donViTinhQuyDoi, 
@@ -952,7 +721,7 @@ export async function themNguyenLieuCorrected(nguyenLieuData) {
   });
 }
 
-// Thêm s?n ph?m (corrected function)
+// Thï¿½m s?n ph?m (corrected function)
 export async function themSanPhamCorrected(sanPhamData) {
   const { 
     maSanPham, tenSanPham, maLoai, maDonVi, donViTinhQuyDoi, 
@@ -973,17 +742,17 @@ export async function layAllDanhMucSP() {
   return await callApi('Mb_loaiSanPham', 'data');
 }
 
-// L?y danh sách nguyên v?t li?u
+// L?y danh sï¿½ch nguyï¿½n v?t li?u
 export async function layDS_NVL() {
   return await callApi('wh_lv0008', 'layDS_NVL');
 }
 
-// L?y danh sách nguyên v?t li?u (version 2 - from features)
+// L?y danh sï¿½ch nguyï¿½n v?t li?u (version 2 - from features)
 export async function layDSNguyenLieu() {
   return await callApi('Mb_NguyenLieu', 'get_dsNVL');
 }
 
-// Thêm nguyên li?u
+// Thï¿½m nguyï¿½n li?u
 export async function themNguyenLieu(nguyenLieuData) {
   const { lv001, lv002, lv003, lv004, lv005, lv006, lv007, lv008, lv009, lv010, lv011, lv012, lv013, lv014, lv015, lv016, lv017, lv018, lv019, lv020 } = nguyenLieuData;
   return await callApi('wh_lv0008', 'themNguyenLieu', {
@@ -992,7 +761,7 @@ export async function themNguyenLieu(nguyenLieuData) {
   });
 }
 
-// C?p nh?t nguyên li?u
+// C?p nh?t nguyï¿½n li?u
 export async function capNhatNguyenLieu(nguyenLieuData) {
   const { lv001, lv002, lv003, lv004, lv005, lv006, lv007, lv008, lv009, lv010, lv011, lv012, lv013, lv014, lv015, lv016, lv017, lv018, lv019, lv020 } = nguyenLieuData;
   return await callApi('wh_lv0008', 'capNhatNguyenLieu', {
@@ -1001,12 +770,12 @@ export async function capNhatNguyenLieu(nguyenLieuData) {
   });
 }
 
-// Xóa nguyên li?u
+// Xï¿½a nguyï¿½n li?u
 export async function xoaNguyenLieu(lv001) {
   return await callApi('wh_lv0008', 'xoaNguyenLieu', { lv001 });
 }
 
-// Thêm lo?i nguyên v?t li?u
+// Thï¿½m lo?i nguyï¿½n v?t li?u
 export async function themLoaiNguyenLieu(loaiData) {
   const { lv001, lv002, lv003, lv004, lv005, lv006, lv007, lv008 } = loaiData;
   return await callApi('wh_lv0007', 'themLoaiNguyenLieu', {
@@ -1014,7 +783,7 @@ export async function themLoaiNguyenLieu(loaiData) {
   });
 }
 
-// C?p nh?t lo?i nguyên v?t li?u
+// C?p nh?t lo?i nguyï¿½n v?t li?u
 export async function capNhatLoaiNVL(loaiData) {
   const { lv001, lv002, lv003, lv004, lv005, lv006, lv007, lv008 } = loaiData;
   return await callApi('wh_lv0007', 'capNhatLoaiNVL', {
@@ -1022,7 +791,7 @@ export async function capNhatLoaiNVL(loaiData) {
   });
 }
 
-// Xóa lo?i nguyên v?t li?u
+// Xï¿½a lo?i nguyï¿½n v?t li?u
 export async function xoaLoaiNVL(lv001) {
   return await callApi('wh_lv0007', 'xoaLoaiNVL', { lv001 });
 }
@@ -1131,7 +900,7 @@ const buildSanPhamPayload = (data, { includeImage = false } = {}) => {
   return payload;
 };
 
-// Thêm s?n ph?m
+// Thï¿½m s?n ph?m
 export async function themSanPham(sanPhamData) {
   const payload = buildSanPhamPayload(sanPhamData, { includeImage: true });
   return await callApi('Mb_sanPham', 'add', payload);
@@ -1144,14 +913,14 @@ export async function capNhatSanPham(sanPhamData) {
   return await callApi('Mb_sanPham', 'edit', payload);
 }
 
-// Xóa s?n ph?m
+// Xï¿½a s?n ph?m
 export async function xoaSanPham(lv001) {
   return await callApi('Mb_sanPham', 'delete', { lv001 });
 }
 
 // -------------------- Functions from features/banhang --------------------
 
-// Load bàn t? banhang
+// Load bï¿½n t? banhang
 export async function loadBanBanhang(data = {}) {
   return await callApi('sl_lv0009', 'loadBan', data);
 }
@@ -1161,12 +930,12 @@ export async function loadKhuVucBanhang(data = {}) {
   return await callApi('sl_lv0008', 'loadKhuVuc', data);
 }
 
-// G?p bàn
+// G?p bï¿½n
 export async function gopBanBanhang(maHoaDon, idBanGop) {
   return await callApi('sl_lv0013', 'gopBan', { maHoaDon, idBanGop });
 }
 
-// Tách bàn
+// Tï¿½ch bï¿½n
 export async function tachBan(maHoaDon) {
   return await callApi('sl_lv0013', 'tachBan', { maHoaDon });
 }
@@ -1178,12 +947,12 @@ export async function loadSanPhamBanhang(data = {}) {
 
 // -------------------- Additional Functions from features/quan-ly --------------------
 
-// L?y danh sách nguyên v?t li?u theo lo?i
+// L?y danh sï¿½ch nguyï¿½n v?t li?u theo lo?i
 export async function layDanhSachNVL_TheoLoai(maLoai) {
   return await callApi('Mb_NguyenLieu', 'layNVLTheoMaLoai', { idLoai: maLoai });
 }
 
-// C?p nh?t nguyên li?u (version corrected)
+// C?p nh?t nguyï¿½n li?u (version corrected)
 export async function capNhatNguyenLieuFixed(nguyenLieuData) {
   const { lv001, lv002, lv003, lv004, lv005, lv006, lv007, lv008, lv009, lv010, lv011, lv012, lv013, lv014, lv015, lv016, lv017, lv018, lv019, lv020 } = nguyenLieuData;
   return await callApi('Mb_NguyenLieu', 'edit', {
@@ -1192,14 +961,14 @@ export async function capNhatNguyenLieuFixed(nguyenLieuData) {
   });
 }
 
-// Xóa nguyên li?u (corrected)
+// Xï¿½a nguyï¿½n li?u (corrected)
 export async function xoaNguyenLieuFixed(maNguyenLieu) {
   return await callApi('Mb_NguyenLieu', 'delete', { maNguyenLieu });
 }
 
 // -------------------- Phi?u ki?m kho --------------------
 
-// L?y danh sách phi?u ki?m kho theo mã kho
+// L?y danh sï¿½ch phi?u ki?m kho theo mï¿½ kho
 export async function layDanhSachPhieuKiemKho(maKho) {
   return await callApi('Mb_KiemKho', 'layDanhSachPhieuKiemTheoKho', { maKho });
 }
@@ -1233,46 +1002,46 @@ export async function updateChiTietPhieuKiemKho(updateData) {
   });
 }
 
-// Xóa chi ti?t phi?u ki?m kho
+// Xï¿½a chi ti?t phi?u ki?m kho
 export async function xoaChiTietPhieuKiemKho(deleteData) {
   const { maKiemKho, maSanPham } = deleteData;
   return await callApi('Mb_ChiTietPK', 'delete', { maKiemKho, maSanPham });
 }
 
-// Ch?nh s?a tr?ng thái phi?u ki?m kho
+// Ch?nh s?a tr?ng thï¿½i phi?u ki?m kho
 export async function chinhSuaTrangThaiPK(dsMaPK) {
   return await callApi('Mb_KiemKho', 'chinhSuaTrangThai_PK', { dsMaPK });
 }
 
-// L?y thông tin phi?u ki?m by ID
+// L?y thï¿½ng tin phi?u ki?m by ID
 export async function layThongTinPhieuKiemByID(maPK) {
   return await callApi('Mb_KiemKho', 'layThongTinPhieuKiemByID', { maPK });
 }
 
 // -------------------- Additional Functions from features/banhang --------------------
 
-// T?o hóa don
+// T?o hï¿½a don
 export async function taoHoaDon(maBan) {
   return await callApi('sl_lv0013', 'taoHoaDon', { maBan });
 }
 
-// T?o chi ti?t hóa don
+// T?o chi ti?t hï¿½a don
 export async function taoCthd(maHd, maSp, soLuong) {
   const result = await callApi('sl_lv0014', 'taoCtHd', { maHd, maSp, soLuong });
   return result;
 }
 
-// Load danh sách chi ti?t hóa don
+// Load danh sï¿½ch chi ti?t hï¿½a don
 export async function loadDsCthd(maHd) {
   return await callApi('sl_lv0014', 'loadCtHd', { maHd });
 }
 
-// Load danh sách chi ti?t hóa don V2
+// Load danh sï¿½ch chi ti?t hï¿½a don V2
 export async function loadDsCthdV2(maHd) {
   return await callApi('sl_lv0014', 'loadCtHdV2', { maHd });
 }
 
-// Xóa chi ti?t hóa don
+// Xï¿½a chi ti?t hï¿½a don
 export async function xoaCtHd(data) {
   // Support both direct maCt parameter and object parameter
   const maCt = typeof data === 'object' && data.maCt ? data.maCt : data;
@@ -1283,7 +1052,7 @@ export async function xoaCtHd(data) {
   return result;
 }
 
-// Chuy?n bàn (corrected parameters)
+// Chuy?n bï¿½n (corrected parameters)
 export async function chuyenBanCorrected(chuyenBanData) {
   const { maHoaDonBanCanChuyen, maHoaDonBanChuyen, maBanChuyen } = chuyenBanData;
   return await callApi('sl_lv0013', 'chuyenBan', { 
@@ -1291,29 +1060,29 @@ export async function chuyenBanCorrected(chuyenBanData) {
   });
 }
 
-// Load hóa don theo bàn
+// Load hï¿½a don theo bï¿½n
 export async function loadHoaDonTheoBan(maBan) {
   return await callApi('sl_lv0013', 'loadHoaDonTheoBan', { maBan });
 }
 
 // -------------------- Additional missing functions from banhang --------------------
 
-// C?p nh?t hóa don (thanh toán contract)
+// C?p nh?t hï¿½a don (thanh toï¿½n contract)
 export async function capNhatHoaDon(mahd) {
   return await callApi('Mb_thanhtoan', 'thanhToan_contract', { mahd });
 }
 
-// C?p nh?t hóa don 2
+// C?p nh?t hï¿½a don 2
 export async function capNhatHoaDon2(maHd, trangThai) {
   return await callApi('sl_lv0013', 'capNhatHoaDon2', { maHd, trangThai });
 }
 
-// C?p nh?t hóa don tr?ng thái 4
+// C?p nh?t hï¿½a don tr?ng thï¿½i 4
 export async function capNhatHoaDonTT4(maHd, trangThai) {
   return await callApi('sl_lv0013', 'capNhatHoaDonTT4', { maHd, trangThai });
 }
 
-// Chuy?n món
+// Chuy?n mï¿½n
 export async function chuyenMon(dsChiTietMonAn, maBanChuyen) {
   return await callApi('sl_lv0013', 'chuyenMonAn', { dsChiTietMonAn, maBanChuyen });
 }
@@ -1325,14 +1094,14 @@ export async function layALLSanPham() {
 
 // -------------------- Additional  functions from commented code in quan-ly --------------------
 
-// L?y danh sách nguyên v?t li?u (uncommented from quan-ly/index.js)
+// L?y danh sï¿½ch nguyï¿½n v?t li?u (uncommented from quan-ly/index.js)
 export async function layDSNguyenLieuQuanLy() {
   return await callApi('Mb_NguyenLieu', 'get_dsNVL');
 }
 
 // ==================== ENHANCED PAYMENT SYSTEM ====================
 
-// Thanh toán hóa don v?i phuong th?c chi ti?t - Enhanced payment processing
+// Thanh toï¿½n hï¿½a don v?i phuong th?c chi ti?t - Enhanced payment processing
 export async function thanhToanHoaDonChiTiet(paymentData) {
   const { 
     maHd, 
@@ -1355,17 +1124,17 @@ export async function thanhToanHoaDonChiTiet(paymentData) {
   });
 }
 
-// L?y l?ch s? thanh toán - Get payment history
+// L?y l?ch s? thanh toï¿½n - Get payment history
 export async function layLichSuThanhToan(maHd) {
   return await callApi('sl_lv0013', 'layLichSuThanhToan', { maHd });
 }
 
-// Luu thông tin thanh toán - Save payment information
+// Luu thï¿½ng tin thanh toï¿½n - Save payment information
 export async function luuThongTinThanhToan(paymentInfo) {
   return await callApi('sl_lv0013', 'luuThongTinThanhToan', paymentInfo);
 }
 
-// In hóa don thanh toán - Print payment receipt
+// In hï¿½a don thanh toï¿½n - Print payment receipt
 export async function inHoaDonThanhToan(maHd, paymentDetails) {
   return await callApi('sl_lv0013', 'inHoaDonThanhToan', { 
     maHd, 
@@ -1373,7 +1142,7 @@ export async function inHoaDonThanhToan(maHd, paymentDetails) {
   });
 }
 
-// Thanh toán h?n h?p - Mixed payment
+// Thanh toï¿½n h?n h?p - Mixed payment
 export async function thanhToanHonHop(paymentData) {
   const {
     maHd,
@@ -1396,7 +1165,7 @@ export async function thanhToanHonHop(paymentData) {
   });
 }
 
-// Luu chi ti?t thanh toán h?n h?p - Save mixed payment details
+// Luu chi ti?t thanh toï¿½n h?n h?p - Save mixed payment details
 export async function luuChiTietThanhToanHonHop(maHd, mixedPayments) {
   return await callApi('sl_lv0013', 'luuChiTietThanhToanHonHop', {
     maHd,
@@ -1404,12 +1173,12 @@ export async function luuChiTietThanhToanHonHop(maHd, mixedPayments) {
   });
 }
 
-// L?y l?ch s? thanh toán h?n h?p - Get mixed payment history
+// L?y l?ch s? thanh toï¿½n h?n h?p - Get mixed payment history
 export async function layLichSuThanhToanHonHop(maHd) {
   return await callApi('sl_lv0013', 'layLichSuThanhToanHonHop', { maHd });
 }
 
-// H?y thanh toán (n?u c?n) - Cancel payment
+// H?y thanh toï¿½n (n?u c?n) - Cancel payment
 export async function huyThanhToan(maHd, reason) {
   return await callApi('sl_lv0013', 'huyThanhToan', { 
     maHd, 
@@ -1419,7 +1188,7 @@ export async function huyThanhToan(maHd, reason) {
 
 // ==================== LEGACY PAYMENT FUNCTION ====================
 
-// Thanh toán hóa don bán hàng - Process payment for sales invoice (Legacy)
+// Thanh toï¿½n hï¿½a don bï¿½n hï¿½ng - Process payment for sales invoice (Legacy)
 export async function thanhToanHoaDonBanhang(paymentData) {
   const { maHd, tongTien, tienKhachDua, tienThua } = paymentData;
   return await callApi('sl_lv0013', 'thanhToanHoaDon', { 
@@ -1430,35 +1199,35 @@ export async function thanhToanHoaDonBanhang(paymentData) {
   });
 }
 
-// Tra ti?n (hoàn t?t thanh toán) - Final payment completion
+// Tra ti?n (hoï¿½n t?t thanh toï¿½n) - Final payment completion
 // Tuong ?ng v?i function tratien(donhangid, bangid, opt) trong sl_lv0201.php
 export async function tratien(donhangid, bangid, trangthai, cusid = '') {
   return await callApi('sl_lv0201', 'ajaxaproval', { 
-    donhangid,  // Mã hóa don
-    bangid,     // ID bàn 
-    trangthai: 2,  // 1=ch? thanh toán, 2=thanh toán hoàn t?t, 3=kích ho?t ch? thanh toán, 4=h?y bill, 5=báo bill
-    cusid       // Mã khách hàng (optional)
+    donhangid,  // Mï¿½ hï¿½a don
+    bangid,     // ID bï¿½n 
+    trangthai: 2,  // 1=ch? thanh toï¿½n, 2=thanh toï¿½n hoï¿½n t?t, 3=kï¿½ch ho?t ch? thanh toï¿½n, 4=h?y bill, 5=bï¿½o bill
+    cusid       // Mï¿½ khï¿½ch hï¿½ng (optional)
   });
 }
 
-// Check tr?ng thái bàn sau thanh toán - Check table status after payment  
+// Check tr?ng thï¿½i bï¿½n sau thanh toï¿½n - Check table status after payment  
 export async function checkBangStatus(bangid) {
   return await callApi('sl_lv0201', 'ajaxbangid', { 
-    bangid      // ID bàn c?n check
+    bangid      // ID bï¿½n c?n check
   });
 }
 
-// C?p nh?t hóa don - Update invoice status (backend function capNhatHd)
+// C?p nh?t hï¿½a don - Update invoice status (backend function capNhatHd)
 export async function capNhatHd(idHd) {
   return await callApi('sl_lv0013', 'capNhatHd', { idHd });
 }
 
-// C?p nh?t hóa don V2 - Update invoice status with flexible state
+// C?p nh?t hï¿½a don V2 - Update invoice status with flexible state
 export async function capNhatHdV2(idHd, trangThai) {
   return await callApi('sl_lv0013', 'capNhatHdV2', { idHd, trangThai });
 }
 
-// Check và refresh tr?ng thái bàn - Check and refresh table status (CRITICAL for clearing invoices)
+// Check vï¿½ refresh tr?ng thï¿½i bï¿½n - Check and refresh table status (CRITICAL for clearing invoices)
 export async function ajaxBangId(bangid) {
   return await callApi('sl_lv0201', 'ajaxbangid', { 
     bangid,
@@ -1473,7 +1242,7 @@ export async function chuyenXuongBep(maHd) {
 
 // ==================== ORDER PROCESSING SYSTEM COMPLETION ====================
 
-// Xác nh?n don hàng - Confirm order
+// Xï¿½c nh?n don hï¿½ng - Confirm order
 export async function xacNhanDonHang(maHd, nguoiXacNhan) {
   return await callApi('sl_lv0013', 'xacNhanDonHang', { 
     maHd, 
@@ -1491,7 +1260,7 @@ export async function batDauChuanBi(maHd, maNhanVienBep) {
   });
 }
 
-// Hoàn thành chu?n b? - Complete preparation
+// Hoï¿½n thï¿½nh chu?n b? - Complete preparation
 export async function hoanThanhChuanBi(maHd, danhSachMon) {
   return await callApi('sl_lv0013', 'hoanThanhChuanBi', { 
     maHd, 
@@ -1500,7 +1269,7 @@ export async function hoanThanhChuanBi(maHd, danhSachMon) {
   });
 }
 
-// Thông báo món s?n sàng - Notify order ready
+// Thï¿½ng bï¿½o mï¿½n s?n sï¿½ng - Notify order ready
 export async function thongBaoMonSanSang(maHd, maBan) {
   return await callApi('sl_lv0013', 'thongBaoMonSanSang', { 
     maHd, 
@@ -1509,7 +1278,7 @@ export async function thongBaoMonSanSang(maHd, maBan) {
   });
 }
 
-// Giao món cho khách - Deliver order to customer
+// Giao mï¿½n cho khï¿½ch - Deliver order to customer
 export async function giaoMonChoKhach(maHd, maBan, nhanVienGiao) {
   return await callApi('sl_lv0013', 'giaoMonChoKhach', { 
     maHd, 
@@ -1519,12 +1288,12 @@ export async function giaoMonChoKhach(maHd, maBan, nhanVienGiao) {
   });
 }
 
-// Theo dõi tr?ng thái don hàng real-time - Track order status
+// Theo dï¿½i tr?ng thï¿½i don hï¿½ng real-time - Track order status
 export async function layTrangThaiDonHangRealtime(maHd) {
   return await callApi('sl_lv0013', 'layTrangThaiRealtime', { maHd });
 }
 
-// C?p nh?t tr?ng thái t?ng món - Update individual item status
+// C?p nh?t tr?ng thï¿½i t?ng mï¿½n - Update individual item status
 export async function capNhatTrangThaiMon(idCthd, trangThaiMoi, ghiChu) {
   return await callApi('sl_lv0014', 'capNhatTrangThaiMon', { 
     idCthd, 
@@ -1534,7 +1303,7 @@ export async function capNhatTrangThaiMon(idCthd, trangThaiMoi, ghiChu) {
   });
 }
 
-// C?p nh?t s? lu?ng chi ti?t hóa don - Update invoice detail quantity
+// C?p nh?t s? lu?ng chi ti?t hï¿½a don - Update invoice detail quantity
 export async function capNhatCtHd(updateData) {
   // Th? g?i API th?t d? update s? lu?ng tr?c ti?p
   const { maCt, soLuong, maHd } = updateData;
@@ -1544,7 +1313,7 @@ export async function capNhatCtHd(updateData) {
   return result;
 }
 
-// Load tr?ng thái bàn theo hóa don - Get table status based on invoices
+// Load tr?ng thï¿½i bï¿½n theo hï¿½a don - Get table status based on invoices
 export async function loadTrangThaiBanTheoHoaDon(data = {}) {
   return await callApi('sl_lv0013', 'loadTrangThaiBanTheoHoaDon', data);
 }
@@ -1554,12 +1323,12 @@ export async function loadDanhMucSp(data = {}) {
   return await callApi('sl_lv0006', 'loadDanhMucSp', data);
 }
 
-// Load s?n ph?m theo mã danh m?c - Get products by category ID
+// Load s?n ph?m theo mï¿½ danh m?c - Get products by category ID
 export async function loadSanPhamTheoMaDanhMucSp(maDm) {
   return await callApi('sl_lv0007', 'loadSanPhamTheoDmSp', { maDm });
 }
 
-// Thêm bàn m?i - Add new table
+// Thï¿½m bï¿½n m?i - Add new table
 export async function themBan(banData) {
   const { lv002, lv004 } = banData; // tenBan, maKhuVuc
   console.log('themBan API called with:', { lv002, lv004 });
@@ -1568,7 +1337,7 @@ export async function themBan(banData) {
   return result;
 }
 
-// Xóa bàn - Delete table
+// Xï¿½a bï¿½n - Delete table
 export async function xoaBan(maBan) {
   console.log('xoaBan API called with maBan:', maBan);
   const result = await callApi('sl_lv0009', 'xoaBan', { maBan });
@@ -1576,7 +1345,7 @@ export async function xoaBan(maBan) {
   return result;
 }
 
-// S?a bàn - Edit table
+// S?a bï¿½n - Edit table
 export async function suaBan(banData) {
   const { maBan, tenBan, maKhuVuc } = banData;
   console.log('suaBan API called with:', { maBan, tenBan, maKhuVuc });
@@ -1585,22 +1354,22 @@ export async function suaBan(banData) {
   return result;
 }
 
-// H?y hóa don - Cancel invoice
+// H?y hï¿½a don - Cancel invoice
 export async function huyHoaDon(maHd) {
   return await callApi('sl_lv0013', 'huyHoaDon', { maHd });
 }
 
-// Load chi ti?t hóa don V3 (enhanced version) - Get enhanced invoice details
+// Load chi ti?t hï¿½a don V3 (enhanced version) - Get enhanced invoice details
 export async function loadDsCthdV3(maHd) {
   return await callApi('sl_lv0014', 'loadCtHdV3', { maHd });
 }
 
-// C?p nh?t tr?ng thái don hàng - Update order status
+// C?p nh?t tr?ng thï¿½i don hï¿½ng - Update order status
 export async function capNhatTrangThaiDonHang(maHd, trangThai) {
   return await callApi('sl_lv0013', 'capNhatTrangThai', { maHd, trangThai });
 }
 
-// L?y l?ch s? hóa don theo bàn - Get invoice history for table
+// L?y l?ch s? hï¿½a don theo bï¿½n - Get invoice history for table
 export async function layLichSuHoaDonTheoBan(maBan, fromDate, toDate) {
   return await callApi('sl_lv0013', 'layLichSuHoaDon', { 
     maBan, 
@@ -1609,32 +1378,32 @@ export async function layLichSuHoaDonTheoBan(maBan, fromDate, toDate) {
   });
 }
 
-// T?o hóa don t?m (draft) - Create draft invoice
+// T?o hï¿½a don t?m (draft) - Create draft invoice
 export async function taoHoaDonTam(maBan) {
   return await callApi('sl_lv0013', 'taoHoaDonTam', { maBan });
 }
 
-// Chuy?n hóa don t?m thành chính th?c - Convert draft to official invoice
+// Chuy?n hï¿½a don t?m thï¿½nh chï¿½nh th?c - Convert draft to official invoice
 export async function chuyenHoaDonTamThanhChinhThuc(maHd) {
   return await callApi('sl_lv0013', 'chuyenHdTamThanhChinhThuc', { maHd });
 }
 
-// Sao chép hóa don - Copy invoice to another table
+// Sao chï¿½p hï¿½a don - Copy invoice to another table
 export async function saoChepHoaDon(maHdGoc, maBanMoi) {
   return await callApi('sl_lv0013', 'saoChepHoaDon', { maHdGoc, maBanMoi });
 }
 
-// Tính toán t?ng ti?n hóa don - Calculate invoice total
+// Tï¿½nh toï¿½n t?ng ti?n hï¿½a don - Calculate invoice total
 export async function tinhTongTienHoaDon(maHd) {
   return await callApi('sl_lv0013', 'tinhTongTien', { maHd });
 }
 
-// Load thông tin chi ti?t bàn (extended) - Get detailed table information
+// Load thï¿½ng tin chi ti?t bï¿½n (extended) - Get detailed table information
 export async function loadThongTinChiTietBan(maBan) {
   return await callApi('sl_lv0009', 'loadThongTinChiTiet', { maBan });
 }
 
-// Ð?t bàn tru?c - Reserve table
+// ï¿½?t bï¿½n tru?c - Reserve table
 export async function datBanTruoc(banData) {
   const { maBan, tenKhach, soDienThoai, thoiGianDat, ghiChu } = banData;
   return await callApi('sl_lv0009', 'datBanTruoc', { 
@@ -1646,46 +1415,46 @@ export async function datBanTruoc(banData) {
   });
 }
 
-// H?y d?t bàn - Cancel table reservation
+// H?y d?t bï¿½n - Cancel table reservation
 export async function huyDatBan(maBan) {
   return await callApi('sl_lv0009', 'huyDatBan', { maBan });
 }
 
 // -------------------- Kitchen Order System APIs --------------------
 
-// L?y danh sách món dang ch? làm - Get pending orders
+// L?y danh sï¿½ch mï¿½n dang ch? lï¿½m - Get pending orders
 export async function layDsMonCho() {
   return await callApi('Mb_Oder', 'layDsMonDangChoOder');
 }
 
-// L?y danh sách món nu?c t? bàn dang bán - Get drink orders from active tables
+// L?y danh sï¿½ch mï¿½n nu?c t? bï¿½n dang bï¿½n - Get drink orders from active tables
 export async function layDsMonNuoc() {
   return await callApi('Mb_Oder', 'layMonNuocTuBanDangBan');
 }
 
-// L?y danh sách món an t? bàn dang bán - Get food orders from active tables
+// L?y danh sï¿½ch mï¿½n an t? bï¿½n dang bï¿½n - Get food orders from active tables
 export async function layDsMonAn() {
   return await callApi('Mb_Oder', 'layMonAnTuBanDangBan');
 }
 
-// C?p nh?t tr?ng thái món - Update dish status (toggles between pending/completed)
+// C?p nh?t tr?ng thï¿½i mï¿½n - Update dish status (toggles between pending/completed)
 export async function updateTrangThaiMon(itemId) {
   return await callApi('m_updateTrangThaiMon', 'updateTrangThaiMon', { itemId });
 }
 
-// L?y danh sách chi ti?t món theo tr?ng thái - Get dish details by status
+// L?y danh sï¿½ch chi ti?t mï¿½n theo tr?ng thï¿½i - Get dish details by status
 export async function layDsMonTheoTrangThai(trangThai) {
   return await callApi('Mb_Oder', 'layDsMonTheoTrangThai', { trangThai });
 }
 
-// L?y danh sách món dã xong - Get completed orders
+// L?y danh sï¿½ch mï¿½n dï¿½ xong - Get completed orders
 export async function layDsMonDaXong() {
   return await callApi('Mb_Oder', 'layDsMonDaXong');
 }
 
 // -------------------- Enhanced Table Management APIs --------------------
 
-// G?p bàn - Enhanced merge table function
+// G?p bï¿½n - Enhanced merge table function
 export async function gopBanEnhanced(maHoaDonBanChinh, maBanGop, bangId) {
   try {
     console.log('gopBanEnhanced params:', { maHoaDonBanChinh, maBanGop, bangId });
@@ -1713,7 +1482,7 @@ export async function gopBanEnhanced(maHoaDonBanChinh, maBanGop, bangId) {
     const responseText = await response.text();
     console.log('gopBanEnhanced response text:', responseText);
     
-    // Ki?m tra n?u response là HTML error
+    // Ki?m tra n?u response lï¿½ HTML error
     if (responseText.includes('<br />') || responseText.includes('<b>')) {
       throw new Error('Backend tr? v? l?i HTML: ' + responseText.substring(0, 200));
     }
@@ -1724,7 +1493,7 @@ export async function gopBanEnhanced(maHoaDonBanChinh, maBanGop, bangId) {
       return result;
     } catch (parseError) {
       console.error('JSON parse error:', parseError);
-      throw new Error('Response không ph?i JSON h?p l?: ' + responseText.substring(0, 100));
+      throw new Error('Response khï¿½ng ph?i JSON h?p l?: ' + responseText.substring(0, 100));
     }
   } catch (error) {
     console.error('Error in gopBanEnhanced:', error);
@@ -1732,14 +1501,14 @@ export async function gopBanEnhanced(maHoaDonBanChinh, maBanGop, bangId) {
   }
 }
 
-// Chuy?n bàn - Enhanced transfer table function  
+// Chuy?n bï¿½n - Enhanced transfer table function  
 export async function chuyenBanEnhanced(maHoaDonBanCanChuyen, maBanChuyen) {
   try {
     
-    // S? d?ng callApi thay vì fetch tr?c ti?p d? tránh l?i backend
+    // S? d?ng callApi thay vï¿½ fetch tr?c ti?p d? trï¿½nh l?i backend
     const result = await callApi('sl_lv0013', 'chuyenBan', {
       maHoaDonBanCanChuyen: maHoaDonBanCanChuyen,
-      maHoaDonBanChuyen: '', // Ð? tr?ng khi chuy?n sang bàn tr?ng
+      maHoaDonBanChuyen: '', // ï¿½? tr?ng khi chuy?n sang bï¿½n tr?ng
       maBanChuyen: maBanChuyen
     });
     return result;
@@ -1749,7 +1518,7 @@ export async function chuyenBanEnhanced(maHoaDonBanCanChuyen, maBanChuyen) {
   }
 }
 
-// Tách bàn - Enhanced split table function
+// Tï¿½ch bï¿½n - Enhanced split table function
 export async function tachBanEnhanced(maHoaDon) {
   try {
     console.log('tachBanEnhanced params:', { maHoaDon });
@@ -1774,7 +1543,7 @@ export async function tachBanEnhanced(maHoaDon) {
     const responseText = await response.text();
     console.log('tachBanEnhanced response text:', responseText);
     
-    // Ki?m tra n?u response là HTML error
+    // Ki?m tra n?u response lï¿½ HTML error
     if (responseText.includes('<br />') || responseText.includes('<b>')) {
       throw new Error('Backend tr? v? l?i HTML: ' + responseText.substring(0, 200));
     }
@@ -1785,7 +1554,7 @@ export async function tachBanEnhanced(maHoaDon) {
       return result;
     } catch (parseError) {
       console.error('JSON parse error:', parseError);
-      throw new Error('Response không ph?i JSON h?p l?: ' + responseText.substring(0, 100));
+      throw new Error('Response khï¿½ng ph?i JSON h?p l?: ' + responseText.substring(0, 100));
     }
   } catch (error) {
     console.error('Error in tachBanEnhanced:', error);
@@ -1793,16 +1562,16 @@ export async function tachBanEnhanced(maHoaDon) {
   }
 }
 
-// ==================== BÁO CÁO BÁN HÀNG CHI TI?T ====================
+// ==================== Bï¿½O Cï¿½O Bï¿½N Hï¿½NG CHI TI?T ====================
 
 /**
- * L?y báo cáo bán hàng chi ti?t theo kho?ng th?i gian
- * @param {string} ngayBatDau - Ngày b?t d?u (format: YYYY-MM-DD)
- * @param {string} ngayKetThuc - Ngày k?t thúc (format: YYYY-MM-DD)
- * @param {string} plang - Ngôn ng? báo cáo (m?c d?nh: 'vi')
- * @param {array} vArrLang - M?ng ngôn ng? (tùy ch?n)
- * @param {number} vOpt - Tùy ch?n báo cáo (m?c d?nh: 0)
- * @returns {Promise<Object>} Object ch?a HTML báo cáo và thông tin k? báo cáo
+ * L?y bï¿½o cï¿½o bï¿½n hï¿½ng chi ti?t theo kho?ng th?i gian
+ * @param {string} ngayBatDau - Ngï¿½y b?t d?u (format: YYYY-MM-DD)
+ * @param {string} ngayKetThuc - Ngï¿½y k?t thï¿½c (format: YYYY-MM-DD)
+ * @param {string} plang - Ngï¿½n ng? bï¿½o cï¿½o (m?c d?nh: 'vi')
+ * @param {array} vArrLang - M?ng ngï¿½n ng? (tï¿½y ch?n)
+ * @param {number} vOpt - Tï¿½y ch?n bï¿½o cï¿½o (m?c d?nh: 0)
+ * @returns {Promise<Object>} Object ch?a HTML bï¿½o cï¿½o vï¿½ thï¿½ng tin k? bï¿½o cï¿½o
  */
 export async function layBaoCaoBanHangChiTiet(ngayBatDau, ngayKetThuc, plang = 'vi', vArrLang = [], vOpt = 0) {
   return await callApi('BaoCaoBanHang', 'layBaoCaoBanHangChiTiet', {
@@ -1815,25 +1584,25 @@ export async function layBaoCaoBanHangChiTiet(ngayBatDau, ngayKetThuc, plang = '
 }
 
 /**
- * Xu?t báo cáo bán hàng chi ti?t (alias function v?i tên rõ ràng hon)
- * @param {Object} params - Object ch?a các tham s?
- * @param {string} params.startDate - Ngày b?t d?u (YYYY-MM-DD)
- * @param {string} params.endDate - Ngày k?t thúc (YYYY-MM-DD)
- * @param {string} params.language - Ngôn ng? (m?c d?nh: 'vi')
- * @returns {Promise<Object>} K?t qu? báo cáo
+ * Xu?t bï¿½o cï¿½o bï¿½n hï¿½ng chi ti?t (alias function v?i tï¿½n rï¿½ rï¿½ng hon)
+ * @param {Object} params - Object ch?a cï¿½c tham s?
+ * @param {string} params.startDate - Ngï¿½y b?t d?u (YYYY-MM-DD)
+ * @param {string} params.endDate - Ngï¿½y k?t thï¿½c (YYYY-MM-DD)
+ * @param {string} params.language - Ngï¿½n ng? (m?c d?nh: 'vi')
+ * @returns {Promise<Object>} K?t qu? bï¿½o cï¿½o
  */
 export async function xuatBaoCaoBanHang({ startDate, endDate, language = 'vi' }) {
   return await layBaoCaoBanHangChiTiet(startDate, endDate, language);
 }
 
 /**
- * L?y báo cáo bán hàng theo tháng
- * @param {number} month - Tháng (1-12)
+ * L?y bï¿½o cï¿½o bï¿½n hï¿½ng theo thï¿½ng
+ * @param {number} month - Thï¿½ng (1-12)
  * @param {number} year - Nam
- * @returns {Promise<Object>} K?t qu? báo cáo
+ * @returns {Promise<Object>} K?t qu? bï¿½o cï¿½o
  */
 export async function layBaoCaoBanHangTheoThang(month, year) {
-  // Tính ngày d?u và cu?i tháng
+  // Tï¿½nh ngï¿½y d?u vï¿½ cu?i thï¿½ng
   const startDate = `${year}-${String(month).padStart(2, '0')}-01`;
   const lastDay = new Date(year, month, 0).getDate();
   const endDate = `${year}-${String(month).padStart(2, '0')}-${String(lastDay).padStart(2, '0')}`;
@@ -1842,8 +1611,8 @@ export async function layBaoCaoBanHangTheoThang(month, year) {
 }
 
 /**
- * L?y báo cáo bán hàng hôm nay
- * @returns {Promise<Object>} K?t qu? báo cáo
+ * L?y bï¿½o cï¿½o bï¿½n hï¿½ng hï¿½m nay
+ * @returns {Promise<Object>} K?t qu? bï¿½o cï¿½o
  */
 export async function layBaoCaoBanHangHomNay() {
   const today = new Date().toISOString().split('T')[0];
@@ -1851,8 +1620,8 @@ export async function layBaoCaoBanHangHomNay() {
 }
 
 /**
- * L?y báo cáo bán hàng tu?n này
- * @returns {Promise<Object>} K?t qu? báo cáo
+ * L?y bï¿½o cï¿½o bï¿½n hï¿½ng tu?n nï¿½y
+ * @returns {Promise<Object>} K?t qu? bï¿½o cï¿½o
  */
 export async function layBaoCaoBanHangTuanNay() {
   const today = new Date();
@@ -1884,13 +1653,13 @@ export async function taoChartDoanhThu(chartData) {
       return {
         success: true,
         chartHtml: response.data,
-        message: 'T?o bi?u d? thành công'
+        message: 'T?o bi?u d? thï¿½nh cï¿½ng'
       };
     } else {
       return {
         success: false,
         chartHtml: null,
-        message: 'Không nh?n du?c d? li?u bi?u d?'
+        message: 'Khï¿½ng nh?n du?c d? li?u bi?u d?'
       };
     }
   } catch (error) {
@@ -1898,7 +1667,7 @@ export async function taoChartDoanhThu(chartData) {
     return {
       success: false,
       chartHtml: null,
-      message: error.message || 'Có l?i x?y ra khi t?o bi?u d?'
+      message: error.message || 'Cï¿½ l?i x?y ra khi t?o bi?u d?'
     };
   }
 }
@@ -1907,56 +1676,56 @@ export async function taoChartDoanhThu(chartData) {
 // -------------------- USER MANAGEMENT & PERMISSIONS --------------------
 
 /**
- * L?y danh sách t?t c? ngu?i dùng
+ * L?y danh sï¿½ch t?t c? ngu?i dï¿½ng
  */
 export async function getAllUsers() {
   return await callApi('Mb_Users', 'getAll');
 }
 
 /**
- * L?y thông tin ngu?i dùng theo ID
+ * L?y thï¿½ng tin ngu?i dï¿½ng theo ID
  */
 export async function getUserById(userId) {
   return await callApi('Mb_Users', 'getById', { userId });
 }
 
 /**
- * Thêm ngu?i dùng m?i
+ * Thï¿½m ngu?i dï¿½ng m?i
  */
 export async function addUser(userData) {
   return await callApi('Mb_Users', 'add', userData);
 }
 
 /**
- * C?p nh?t thông tin ngu?i dùng
+ * C?p nh?t thï¿½ng tin ngu?i dï¿½ng
  */
 export async function updateUser(userData) {
   return await callApi('Mb_Users', 'edit', userData);
 }
 
 /**
- * Xóa ngu?i dùng
+ * Xï¿½a ngu?i dï¿½ng
  */
 export async function deleteUser(userId) {
   return await callApi('Mb_Users', 'delete', { userId });
 }
 
 /**
- * Khóa/M? khóa ngu?i dùng
+ * Khï¿½a/M? khï¿½a ngu?i dï¿½ng
  */
 export async function toggleUserStatus(userId, status) {
   return await callApi('Mb_Users', 'toggleStatus', { userId, status });
 }
 
 /**
- * Ð?i m?t kh?u ngu?i dùng
+ * ï¿½?i m?t kh?u ngu?i dï¿½ng
  */
 export async function changeUserPassword(userId, newPassword) {
   return await callApi('Mb_Users', 'changePassword', { userId, newPassword });
 }
 
 /**
- * L?y danh sách quy?n c?a ngu?i dùng
+ * L?y danh sï¿½ch quy?n c?a ngu?i dï¿½ng
  */
 export async function getUserRights(userId) {
   return await callApi('Mb_UserRights', 'getUserRights', { userId });
@@ -1970,21 +1739,21 @@ export async function getRightDetails(rightId) {
 }
 
 /**
- * Thêm quy?n cho ngu?i dùng
+ * Thï¿½m quy?n cho ngu?i dï¿½ng
  */
 export async function addUserRight(userId, rightId) {
   return await callApi('Mb_UserRights', 'addRight', { userId, rightId });
 }
 
 /**
- * C?p nh?t quy?n c?a ngu?i dùng
+ * C?p nh?t quy?n c?a ngu?i dï¿½ng
  */
 export async function updateUserRight(id, enabled) {
   return await callApi('Mb_UserRights', 'updateRight', { id, enabled });
 }
 
 /**
- * Xóa quy?n c?a ngu?i dùng
+ * Xï¿½a quy?n c?a ngu?i dï¿½ng
  */
 export async function deleteUserRight(id) {
   return await callApi('Mb_UserRights', 'deleteRight', { id });
@@ -1998,42 +1767,42 @@ export async function updateDetailRight(id, enabled) {
 }
 
 /**
- * L?y danh sách t?t c? các lo?i quy?n
+ * L?y danh sï¿½ch t?t c? cï¿½c lo?i quy?n
  */
 export async function getAllPermissions() {
   return await callApi('Mb_Permissions', 'getAll');
 }
 
 /**
- * L?y danh sách nhóm ngu?i dùng cho dropdown
+ * L?y danh sï¿½ch nhï¿½m ngu?i dï¿½ng cho dropdown
  */
 export async function getUserGroups() {
   return await callApi('Mb_UserFormData', 'getUserGroups');
 }
 
 /**
- * L?y danh sách nhân viên cho dropdown
+ * L?y danh sï¿½ch nhï¿½n viï¿½n cho dropdown
  */
 export async function getEmployees() {
   return await callApi('Mb_UserFormData', 'getEmployees');
 }
 
 /**
- * L?y danh sách chi nhánh cho dropdown
+ * L?y danh sï¿½ch chi nhï¿½nh cho dropdown
  */
 export async function getBranches() {
   return await callApi('Mb_UserFormData', 'getBranches');
 }
 
 /**
- * L?y danh sách themes cho dropdown
+ * L?y danh sï¿½ch themes cho dropdown
  */
 export async function getThemes() {
   return await callApi('Mb_UserFormData', 'getThemes');
 }
 
 /**
- * L?y danh sách quy?n có th? gán cho ngu?i dùng
+ * L?y danh sï¿½ch quy?n cï¿½ th? gï¿½n cho ngu?i dï¿½ng
  */
 export async function getAvailableRights() {
   return await callApi('Mb_UserFormData', 'getAvailableRights');
@@ -2097,7 +1866,3 @@ export async function redeemLoyaltyPoints(payload) {
 export async function getLoyaltyHistory(customerId, params = {}) {
   return await callApi('Mb_Loyalty', 'history', { customerId, ...params });
 }
-
-
-
-

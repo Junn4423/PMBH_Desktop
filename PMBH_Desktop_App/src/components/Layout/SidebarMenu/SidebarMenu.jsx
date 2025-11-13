@@ -1,281 +1,160 @@
-import React, { useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Menu, Select, Card } from 'antd';
 import { useNavigate, useLocation } from 'react-router-dom';
-import {
-  Home,
-  Calculator,
-  Package,
-  TrendingUp,
-  Palette,
-  ChevronDown,
-  ShoppingCart,
-  ChefHat
-} from 'lucide-react';
+import { Home, Palette, ChevronDown } from 'lucide-react';
+import { protectedRoutes, menuGroups } from '../../../routes/config';
 import './SidebarMenu.css';
 
 const { Option } = Select;
+
+const ICON_SIZE = 16;
+
+const createIconNode = (IconComponent) =>
+  IconComponent ? React.createElement(IconComponent, { size: ICON_SIZE }) : undefined;
+
+const buildMenuTree = () => {
+  const menuRoutes = protectedRoutes.filter((route) => route.meta?.menu);
+  const nodeMap = new Map();
+  const parentMap = new Map();
+  const groupMap = new Map();
+
+  menuRoutes.forEach((route) => {
+    const { meta } = route;
+    const { menu = {} } = meta;
+    const node = {
+      key: route.path,
+      path: route.path,
+      label: menu.label || meta.title || route.path,
+      order: menu.order ?? 0,
+      parent: menu.parent || null,
+      group: menu.group || 'core',
+      icon: createIconNode(menu.icon),
+      children: []
+    };
+    nodeMap.set(node.key, node);
+  });
+
+  nodeMap.forEach((node) => {
+    if (node.parent && nodeMap.has(node.parent)) {
+      const parentNode = nodeMap.get(node.parent);
+      parentNode.children.push(node);
+      parentMap.set(node.key, parentNode.key);
+      node.group = parentNode.group;
+    }
+  });
+
+  nodeMap.forEach((node) => {
+    groupMap.set(node.key, node.group);
+  });
+
+  const groups = Object.values(menuGroups).map((group) => ({
+    key: group.key,
+    label: group.label,
+    icon: createIconNode(group.icon),
+    order: group.order ?? 0,
+    children: []
+  }));
+
+  nodeMap.forEach((node) => {
+    if (!node.parent) {
+      const targetGroup = groups.find((group) => group.key === node.group) || groups[0];
+      if (targetGroup) {
+        targetGroup.children.push(node);
+      }
+    }
+  });
+
+  const sortNodes = (list) =>
+    list
+      .slice()
+      .sort((a, b) => (a.order ?? 0) - (b.order ?? 0))
+      .map((item) => ({
+        ...item,
+        children: sortNodes(item.children || [])
+      }));
+
+  const sortedGroups = groups
+    .map((group) => ({
+      ...group,
+      children: sortNodes(group.children || [])
+    }))
+    .filter((group) => group.children.length > 0)
+    .sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+
+  return {
+    groups: sortedGroups,
+    parentMap,
+    groupMap
+  };
+};
+
+const getDefaultOpenKeys = (path, parentMap, groupMap) => {
+  const keys = new Set();
+  let current = path;
+  const visited = new Set();
+
+  while (current && parentMap.has(current)) {
+    const parent = parentMap.get(current);
+    if (!parent || visited.has(parent)) {
+      break;
+    }
+    keys.add(parent);
+    visited.add(parent);
+    current = parent;
+  }
+
+  const groupKey = groupMap.get(path);
+  if (groupKey) {
+    keys.add(groupKey);
+  }
+
+  return Array.from(keys);
+};
+
+const mapNodesToMenuItems = (nodes, navigate) =>
+  nodes.map((node) => {
+    const hasChildren = node.children && node.children.length > 0;
+    const label = node.path && hasChildren
+      ? (
+          <span
+            className="sidebar-menu__parent-link"
+            onClick={(event) => {
+              event.stopPropagation();
+              navigate(node.path);
+            }}
+          >
+            {node.label}
+          </span>
+        )
+      : node.label;
+
+    return {
+      key: node.key,
+      icon: node.icon,
+      label,
+      children: hasChildren ? mapNodesToMenuItems(node.children, navigate) : undefined
+    };
+  });
 
 const SidebarMenu = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const [selectedTheme, setSelectedTheme] = useState('default');
-  const [openKeys, setOpenKeys] = useState([]);
+  const menuStructure = useMemo(() => buildMenuTree(), []);
+  const { parentMap, groupMap, groups } = menuStructure;
+  const groupKeys = useMemo(() => new Set(Object.keys(menuGroups)), []);
+  const [openKeys, setOpenKeys] = useState(() =>
+    getDefaultOpenKeys(location.pathname, parentMap, groupMap)
+  );
 
-  const menuItems = [
-    {
-      key: 'muc-chung',
-      icon: <Home size={16} />,
-      label: 'Mục chung',
-      children: [
-        {
-          key: '/trang-chu',
-          label: 'Trang chủ',
-        },
-        {
-          key: '/ket-noi-thue',
-          label: 'Kết nối thuế',
-        },
-        {
-          key: 'cong-ty',
-          label: (
-            <span 
-              onClick={() => handleParentItemClick('cong-ty', '/cong-ty')}
-              style={{ cursor: 'pointer' }}
-            >
-              Công ty
-            </span>
-          ),
-          children: [
-            {
-              key: '/phong-ban',
-              label: 'Phòng ban',
-            },
-            {
-              key: '/nhan-vien-cong-ty',
-              label: 'Nhân viên',
-            }
-          ]
-        },
-        {
-          key: 'bang-dieu-khien-nguoi-dung',
-          label: (
-            <span 
-              onClick={() => handleParentItemClick('bang-dieu-khien-nguoi-dung', '/bang-dieu-khien-nguoi-dung')}
-              style={{ cursor: 'pointer' }}
-            >
-              Bảng điều khiển người dùng
-            </span>
-          ),
-          children: [
-            {
-              key: '/nhom-nguoi-dung',
-              label: 'Nhóm người dùng',
-            },
-            {
-              key: '/chon-kho-quan-ly',
-              label: 'Chọn kho quản lý',
-            }
-          ]
-        },
-        {
-          key: 'giao-dien-mb',
-          label: 'Giao diện MB',
-          children: [
-            {
-              key: '/tai-khoan-mb',
-              label: 'Tài khoản',
-            },
-            {
-              key: '/bc-chi-tien',
-              label: 'BC chi tiền',
-            },
-            {
-              key: '/bc-chi-tien-nhap-kho',
-              label: 'BC chi tiền + nhập kho',
-            },
-            {
-              key: '/nhap-chi',
-              label: 'Nhập chi',
-            },
-            {
-              key: '/nhap-ban-hang',
-              label: 'Nhập bán hàng',
-            },
-            {
-              key: '/cho-nha-bep',
-              label: 'Cho nhà bếp',
-            },
-            {
-              key: '/cho-quay-bar',
-              label: 'Cho quầy bar',
-            },
-            {
-              key: '/bc-ban-hang',
-              label: 'BC bán hàng',
-            },
-            {
-              key: '/bc-tong',
-              label: 'BC tổng',
-            },
-            {
-              key: '/bao-cao-giao-ca',
-              label: 'Báo cáo giao ca',
-            },
-            {
-              key: '/bc-nhap-kho',
-              label: 'BC nhập kho',
-            },
-            {
-              key: '/canh-bao-max-min',
-              label: 'Cảnh báo max/min',
-            },
-            {
-              key: '/bao-ton-mobil',
-              label: 'Báo tồn Mobil',
-            },
-            {
-              key: '/nhap-kho-mb',
-              label: 'Nhập kho',
-            },
-            {
-              key: '/kiem-kho-mb',
-              label: 'Kiểm kho',
-            }
-          ]
-        },
-        {
-          key: 'dieu-khien-san-pham',
-          label: 'Điều khiển sản phẩm',
-          children: [
-            {
-              key: '/don-vi',
-              label: 'Đơn vị',
-            },
-            {
-              key: '/loai-san-pham',
-              label: 'Loại sản phẩm',
-            },
-            {
-              key: '/san-pham',
-              label: 'Sản phẩm',
-            }
-          ]
-        },
-        {
-          key: 'thiet-lap-tang-va-ban',
-          label: 'Thiết lập tầng và bàn',
-          children: [
-            {
-              key: '/tang-nha-hang',
-              label: 'Tầng nhà hàng',
-            },
-            {
-              key: '/ban-nha-hang',
-              label: 'Bàn nhà hàng',
-            }
-          ]
-        }
-      ]
-    },
-    {
-      key: 'ke-toan',
-      icon: <Calculator size={16} />,
-      label: 'Kế toán',
-      children: [
-        {
-          key: '/phieu-chi',
-          label: 'Phiếu chi',
-        }
-      ]
-    },
-    {
-      key: 'quan-li-kho',
-      icon: <Package size={16} />,
-      label: 'Quản lí kho',
-      children: [
-        {
-          key: '/kho',
-          label: 'Kho',
-        },
-        {
-          key: '/kiem-kho',
-          label: 'Kiểm kho',
-        },
-        {
-          key: '/nhap-kho',
-          label: 'Nhập kho',
-        },
-        {
-          key: '/xuat-kho',
-          label: 'Xuất kho',
-        },
-        {
-          key: '/bao-cao-theo-dieu-kien',
-          label: 'Báo cáo theo điều kiện',
-        }
-      ]
-    },
-    {
-      key: 'kinh-doanh',
-      icon: <TrendingUp size={16} />,
-      label: 'Kinh doanh',
-      children: [
-        {
-          key: '/danh-muc-khach-hang',
-          label: 'Danh mục khách hàng',
-        },
-        {
-          key: '/lich-su-tich-diem',
-          label: 'Lịch sử tích điểm',
-        },
-        {
-          key: 'quan-ly-ban-nha-hang',
-          label: (
-            <span 
-              onClick={() => handleParentItemClick('quan-ly-ban-nha-hang', '/quan-ly-ban-nha-hang')}
-              style={{ cursor: 'pointer' }}
-            >
-              Quản lý bán nhà hàng
-            </span>
-          ),
-          children: [
-            {
-              key: '/chuong-trinh-kinh-doanh',
-              label: 'Chương trình kinh doanh',
-            },
-            {
-              key: '/cau-hinh-quan-ly-nha-hang',
-              label: 'Cấu hình quản lý nhà hàng',
-            },
-            {
-              key: '/xem-thong-tin-xoa-don-hang',
-              label: 'Xem thông tin xóa đơn hàng',
-            },
-            {
-              key: '/nguoi-dang-ky',
-              label: 'Người đăng ký',
-            },
-            {
-              key: '/cho-nguoi-quan-ly',
-              label: 'Cho người quản lý',
-            },
-            {
-              key: '/cho-nha-bep-ql',
-              label: 'Cho nhà bếp',
-            },
-            {
-              key: '/cho-quay-bar-ql',
-              label: 'Cho quầy bar',
-            } 
-          ]
-        },
-        {
-          key: '/bao-cao-doanh-thu-khach-hang',
-          label: 'Báo cáo doanh thu khách hàng',
-        }
-      ]
-    }
-  ];
+  const menuItems = useMemo(
+    () => mapNodesToMenuItems(groups, navigate),
+    [groups, navigate]
+  );
+
+  useEffect(() => {
+    setOpenKeys(getDefaultOpenKeys(location.pathname, parentMap, groupMap));
+  }, [location.pathname, parentMap, groupMap]);
 
   const colorThemes = [
     { value: 'default', label: 'Mặc định', colors: ['#197dd3', '#77d4fb'] },
@@ -284,18 +163,6 @@ const SidebarMenu = () => {
     { value: 'sunset', label: 'Hoàng hôn', colors: ['#ff6600', '#ffcc66'] },
     { value: 'purple', label: 'Tím', colors: ['#6600cc', '#cc66ff'] }
   ];
-
-  // Hàm xử lý click vào parent item (có cả navigation và dropdown)
-  const handleParentItemClick = (key, path) => {
-    // Navigate đến trang
-    navigate(path);
-    
-    // Toggle dropdown
-    const newOpenKeys = openKeys.includes(key) 
-      ? openKeys.filter(k => k !== key)
-      : [...openKeys, key];
-    setOpenKeys(newOpenKeys);
-  };
 
   const handleMenuClick = ({ key }) => {
     // Chỉ xử lý navigation cho các items con (routes)
@@ -306,64 +173,15 @@ const SidebarMenu = () => {
 
   // Hàm xử lý khi submenu được mở/đóng
   const handleOpenChange = (keys) => {
-    const latestOpenKey = keys.find(key => !openKeys.includes(key));
-    
-    if (latestOpenKey) {
-      // Định nghĩa các nhóm submenu theo cấp độ
-      const rootSubmenuKeys = ['muc-chung', 'ke-toan', 'quan-li-kho', 'kinh-doanh'];
-      
-      // Các submenu cấp 2 theo từng parent
-      const level2SubmenuGroups = {
-        'muc-chung': ['cong-ty', 'bang-dieu-khien-nguoi-dung', 'giao-dien-mb', 'dieu-khien-san-pham', 'thiet-lap-tang-va-ban'],
-        'kinh-doanh': ['quan-ly-ban-nha-hang']
-      };
-      
-      // Tất cả submenu cấp 2
-      const allLevel2Keys = Object.values(level2SubmenuGroups).flat();
-      
-      if (rootSubmenuKeys.includes(latestOpenKey)) {
-        // Khi mở submenu cấp 1 (root level)
-        // Đóng tất cả submenu cấp 1 khác và các submenu con của chúng
-        const otherRootKeys = rootSubmenuKeys.filter(key => key !== latestOpenKey);
-        const keysToClose = [];
-        
-        // Tìm tất cả submenu con của các root khác
-        otherRootKeys.forEach(rootKey => {
-          if (level2SubmenuGroups[rootKey]) {
-            keysToClose.push(...level2SubmenuGroups[rootKey]);
-          }
-        });
-        
-        // Chỉ giữ lại latestOpenKey và loại bỏ các root khác cùng submenu con
-        const filteredKeys = keys.filter(key => 
-          !otherRootKeys.includes(key) && !keysToClose.includes(key)
-        );
-        setOpenKeys(filteredKeys);
-        
-      } else if (allLevel2Keys.includes(latestOpenKey)) {
-        // Khi mở submenu cấp 2
-        // Tìm parent của submenu này
-        const parentKey = Object.keys(level2SubmenuGroups).find(parent => 
-          level2SubmenuGroups[parent].includes(latestOpenKey)
-        );
-        
-        if (parentKey) {
-          // Đóng tất cả submenu cấp 2 khác trong cùng parent
-          const siblingKeys = level2SubmenuGroups[parentKey].filter(key => key !== latestOpenKey);
-          const filteredKeys = keys.filter(key => !siblingKeys.includes(key));
-          setOpenKeys(filteredKeys);
-        } else {
-          setOpenKeys(keys);
-        }
-        
-      } else {
-        // Các submenu khác (cấp 3 trở đi hoặc không được định nghĩa)
-        setOpenKeys(keys);
-      }
-    } else {
-      // Khi đóng submenu
-      setOpenKeys(keys);
+    const latestKey = keys.find((key) => !openKeys.includes(key));
+
+    if (latestKey && groupKeys.has(latestKey)) {
+      const mergedKeys = [latestKey, ...keys.filter((key) => !groupKeys.has(key))];
+      setOpenKeys(mergedKeys);
+      return;
     }
+
+    setOpenKeys(keys);
   };
 
   const handleThemeChange = (value) => {

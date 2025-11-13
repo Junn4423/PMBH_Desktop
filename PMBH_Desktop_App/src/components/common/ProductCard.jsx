@@ -1,7 +1,7 @@
 import React, { useState, useEffect, memo } from 'react';
 import { Typography } from 'antd';
 import cafeImg from '../../assets/Img/cafe.png';
-import { loadProductImage, getFullImageUrl } from '../../services/apiServices';
+import { loadProductImage, getFullImageUrl } from '../../services/domains/catalogService';
 import './ProductCard.css';
 
 const { Text } = Typography;

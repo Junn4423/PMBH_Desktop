@@ -35,9 +35,9 @@ import {
   createSalesProgram,
   updateSalesProgram,
   deleteSalesProgram,
-  toggleSalesProgramStatus,
-  getAllSanPham
+  toggleSalesProgramStatus
 } from '../../services/apiServices';
+import { getAllProducts } from '../../services/domains/catalogService';
 
 const { Title, Text } = Typography;
 const { RangePicker } = DatePicker;
@@ -90,7 +90,7 @@ const fetchPrograms = async () => {
   const loadProductOptions = useCallback(async () => {
     try {
       setProductLoading(true);
-      const response = await getAllSanPham();
+  const response = await getAllProducts();
       let productsData = [];
 
       if (response?.success && Array.isArray(response.data)) {

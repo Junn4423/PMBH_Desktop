@@ -54,8 +54,6 @@ import { DEFAULT_IMAGES, PLACEHOLDER_CONFIG } from '../../constants';
 import {
   loadBan,
   loadKhuVuc,
-  getAllSanPham,
-  getLoaiSanPham,
   taoHoaDon,
   taoCthd,
   loadDsCthd,
@@ -91,8 +89,6 @@ import {
   gopBanEnhanced,
   chuyenBanEnhanced,
   tachBanEnhanced,
-  loadProductImage,
-  getFullImageUrl,
   layDsMonCho,
   layDsMonDaXong,
   capNhatTrangThaiMon,
@@ -102,6 +98,12 @@ import {
   getLoyaltySummary,
   addLoyaltyPoints
 } from '../../services/apiServices';
+import {
+  getAllProducts,
+  getProductCategories,
+  loadProductImage,
+  getFullImageUrl
+} from '../../services/domains/catalogService';
 import dayjs from 'dayjs';
 import {
   loadTaxConfig,
@@ -1250,7 +1252,7 @@ const BanHang = () => {
       } catch (newApiError) {
   // dev log suppressed
         // Fallback to old API
-        categoriesResponse = await getLoaiSanPham();
+  categoriesResponse = await getProductCategories();
   // dev log suppressed
       }
       
@@ -1302,7 +1304,7 @@ const BanHang = () => {
   // Load sản phẩm (chỉ khi cần) - Enhanced with database image loading
   const loadProducts = async () => {
     try {
-      const productsResponse = await getAllSanPham();
+  const productsResponse = await getAllProducts();
 
       // Xử lý dữ liệu products tương tự như categories
       let productsData = [];
@@ -2598,7 +2600,7 @@ const BanHang = () => {
       // Lấy danh sách sản phẩm để map tên -> mã
       let allProducts = [];
       try {
-        const productsResponse = await getAllSanPham();
+  const productsResponse = await getAllProducts();
         allProducts = Array.isArray(productsResponse) ? productsResponse : [];
       } catch (error) {
       }
@@ -2953,7 +2955,7 @@ const BanHang = () => {
 
       let allProducts = [];
       try {
-        const productsResponse = await getAllSanPham();
+  const productsResponse = await getAllProducts();
         allProducts = Array.isArray(productsResponse) ? productsResponse : [];
         
       } catch (error) {

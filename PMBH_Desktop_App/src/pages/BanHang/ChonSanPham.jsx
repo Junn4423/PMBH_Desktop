@@ -1,7 +1,13 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { Input, Typography, Spin, message } from 'antd';
 import { Search } from 'lucide-react';
-import { getAllSanPham, getLoaiSanPham, getSanPhamTheoIdLoai, loadProductImageBlob, getFullImageUrl } from '../../services/apiServices';
+import {
+  getAllProducts,
+  getProductCategories,
+  getProductsByCategory,
+  loadProductImage,
+  getFullImageUrl,
+} from '../../services/domains/catalogService';
 import ProductCard from '../../components/common/ProductCard';
 import { DEFAULT_IMAGES } from '../../constants';
 import { useText } from '../../components/common/Text';
@@ -61,7 +67,7 @@ const ChonSanPham = ({ onAddToCart }) => {
           }
 
           try {
-            const imageResult = await loadProductImageBlob(product.id);
+            const imageResult = await loadProductImage(product.id);
             if (imageResult.success && imageResult.imageUrl) {
               return { ...product, hinhAnh: imageResult.imageUrl, needLoadImage: false };
             }
@@ -98,8 +104,8 @@ const ChonSanPham = ({ onAddToCart }) => {
 
       // Load categories and products in parallel to improve performance
       const [categoriesResponse, productsResponse] = await Promise.all([
-        getLoaiSanPham(),
-        getAllSanPham()
+        getProductCategories(),
+        getAllProducts()
       ]);
       
       // Process categories
@@ -152,7 +158,7 @@ const ChonSanPham = ({ onAddToCart }) => {
       const categoryPromises = categoriesData.map(async (category) => {
         const categoryId = category.idLoaiSp || category.id || category.maLoai;
         try {
-          const categoryProducts = await getSanPhamTheoIdLoai(categoryId);
+          const categoryProducts = await getProductsByCategory(categoryId);
           let categoryProductsData = [];
           if (Array.isArray(categoryProducts)) {
             categoryProductsData = categoryProducts;

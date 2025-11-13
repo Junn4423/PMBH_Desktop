@@ -1,7 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { Card, Breadcrumb, Button, Typography, Input, message, Spin, Modal, Upload, Form, Select, InputNumber, Popconfirm } from 'antd';
 import { Package2, Search, Grid, Filter, Edit, Plus, Trash2, UploadCloud } from 'lucide-react';
-import { getLoaiSanPham, getSanPhamTheoIdLoai, getAllSanPham, getFullImageUrl, uploadImageBlob, loadProductImageBlob, themSanPham, capNhatSanPham, xoaSanPham, loadDonVi } from '../../services/apiServices';
+import {
+  getProductCategories,
+  getProductsByCategory,
+  getAllProducts,
+  uploadProductImageBlob,
+  loadProductImage
+} from '../../services/domains/catalogService';
+import { themSanPham, capNhatSanPham, xoaSanPham, loadDonVi } from '../../services/apiServices';
 import ProductCard from '../../components/common/ProductCard';
 import './SanPham.css';
 
@@ -164,7 +171,7 @@ const SanPham = () => {
       const updatedProducts = await Promise.all(
         productsSnapshot.map(async (product) => {
           try {
-            const imageResult = await loadProductImageBlob(product.id);
+            const imageResult = await loadProductImage(product.id);
             if (imageResult.success && imageResult.imageUrl) {
               return { ...product, hinhAnh: imageResult.imageUrl, needLoadImage: false };
             }
@@ -206,7 +213,7 @@ const SanPham = () => {
   const loadCategoriesOnly = async () => {
     try {
       // Load danh mục sản phẩm
-      const categoriesResponse = await getLoaiSanPham();
+  const categoriesResponse = await getProductCategories();
       
       // Xử lý dữ liệu categories
       let categoriesData = [];
@@ -250,7 +257,7 @@ const SanPham = () => {
       setLoading(true);
 
       // Get categories for mapping
-      const categoriesResponse = await getLoaiSanPham();
+  const categoriesResponse = await getProductCategories();
       let categoriesData = [];
       if (Array.isArray(categoriesResponse)) {
         categoriesData = categoriesResponse;
@@ -265,7 +272,7 @@ const SanPham = () => {
       }
 
       // Load tất cả sản phẩm với category mapping
-      const productsResponse = await getAllSanPham();
+  const productsResponse = await getAllProducts();
       
       // Xử lý dữ liệu products
       let productsData = [];
@@ -286,7 +293,7 @@ const SanPham = () => {
       for (const category of categoriesData) {
         const categoryId = category.idLoaiSp || category.id || category.maLoai;
         try {
-          const categoryProducts = await getSanPhamTheoIdLoai(categoryId);
+          const categoryProducts = await getProductsByCategory(categoryId);
           let categoryProductsData = [];
           if (Array.isArray(categoryProducts)) {
             categoryProductsData = categoryProducts;
@@ -461,7 +468,7 @@ const SanPham = () => {
         if (productImageFileList.length > 0) {
           const imageFile = productImageFileList[0].originFileObj || productImageFileList[0];
           console.log('Uploading image blob for product:', normalizedMaSp);
-          const imageResult = await uploadImageBlob(normalizedMaSp, imageFile);
+          const imageResult = await uploadProductImageBlob(normalizedMaSp, imageFile);
           console.log('Image blob upload result:', imageResult);
           if (!imageResult.success) {
             message.warning('Cập nhật sản phẩm thành công nhưng không thể lưu ảnh vào database.');
@@ -488,7 +495,7 @@ const SanPham = () => {
           if (productImageFileList.length > 0) {
             const imageFile = productImageFileList[0].originFileObj || productImageFileList[0];
             console.log('Uploading image blob for new product:', normalizedMaSp);
-            const imageResult = await uploadImageBlob(normalizedMaSp, imageFile);
+            const imageResult = await uploadProductImageBlob(normalizedMaSp, imageFile);
             console.log('Image blob upload result:', imageResult);
             if (!imageResult || !imageResult.success) {
               message.warning('Thêm sản phẩm thành công nhưng không thể lưu ảnh vào database.');
