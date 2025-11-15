@@ -211,6 +211,18 @@ switch ($vtable) {
 				$maCt = $input['maCt'] ?? $_POST['maCt'] ?? "";
 				$vOutput = $sl_lv0014->xoaCthd($maCt);
 				break;
+			case 'capNhatCtHd':
+				$maCt = $input['maCt'] ?? $_POST['maCt'] ?? "";
+				$soLuong = $input['soLuong'] ?? $_POST['soLuong'] ?? "";
+				$maHd = $input['maHd'] ?? $_POST['maHd'] ?? "";
+				$vOutput = $sl_lv0014->capNhatCtHd($maCt, $soLuong, $maHd);
+				break;
+			case 'capNhatChietKhauMon':
+				$maCt = $input['maCt'] ?? $_POST['maCt'] ?? "";
+				$chietKhau = $input['chietKhau'] ?? $_POST['chietKhau'] ?? "";
+				$maHd = $input['maHd'] ?? $_POST['maHd'] ?? "";
+				$vOutput = $sl_lv0014->capNhatChietKhauMon($maCt, $chietKhau, $maHd);
+				break;
 
 
 			case 'loadCtHdV2':

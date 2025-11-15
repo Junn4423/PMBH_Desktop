@@ -100,7 +100,8 @@ import {
   getSalesProgram,
   searchLoyaltyCustomers,
   getLoyaltySummary,
-  addLoyaltyPoints
+  addLoyaltyPoints,
+  capNhatChietKhauMon
 } from '../../services/apiServices';
 import dayjs from 'dayjs';
 import {
@@ -196,11 +197,14 @@ const BanHang = () => {
     tax: 0,
     discount: 0,
     total: 0,
-    loyaltyPoints: 0
+    loyaltyPoints: 0,
+    programDiscount: 0,
+    itemDiscount: 0
   });
   const [activeSalesProgram, setActiveSalesProgram] = useState(null);
   const [programDiscountMap, setProgramDiscountMap] = useState({});
   const [programDiscountBreakdown, setProgramDiscountBreakdown] = useState([]);
+  const [itemDiscountBreakdown, setItemDiscountBreakdown] = useState([]);
   const [loyaltyPointsEarned, setLoyaltyPointsEarned] = useState(0);
   const [loyaltyCustomer, setLoyaltyCustomer] = useState(null);
   const [loyaltyCustomerSummary, setLoyaltyCustomerSummary] = useState(null);
@@ -208,6 +212,11 @@ const BanHang = () => {
   const [loyaltyPhoneInput, setLoyaltyPhoneInput] = useState('');
   const [loyaltySearchResults, setLoyaltySearchResults] = useState([]);
   const [loyaltyPickerVisible, setLoyaltyPickerVisible] = useState(false);
+
+  const [invoiceInfoModalVisible, setInvoiceInfoModalVisible] = useState(false);
+  const [itemDiscountModalVisible, setItemDiscountModalVisible] = useState(false);
+  const [selectedItemForDiscount, setSelectedItemForDiscount] = useState(null);
+  const [itemDiscountInput, setItemDiscountInput] = useState(0);
 
   // State cho Enhanced Payment System
   const [showPaymentModal, setShowPaymentModal] = useState(false);
@@ -346,6 +355,31 @@ const BanHang = () => {
       return sum + (Number.isFinite(value) ? value : 0);
     }, 0);
   }, [takeAwayInvoiceCandidates]);
+
+  const itemDiscountPreview = useMemo(() => {
+    if (!selectedItemForDiscount) {
+      return 0;
+    }
+    const unitPrice = parseFloat(
+      selectedItemForDiscount.gia ||
+      selectedItemForDiscount.giaBan ||
+      selectedItemForDiscount.donGia ||
+      0
+    );
+    const quantity = parseInt(
+      selectedItemForDiscount.sl ||
+      selectedItemForDiscount.soLuong ||
+      0,
+      10
+    );
+    const percent = Number(itemDiscountInput);
+
+    if (!Number.isFinite(unitPrice) || !Number.isFinite(quantity) || quantity <= 0 || !Number.isFinite(percent)) {
+      return 0;
+    }
+
+    return Math.max(unitPrice * quantity * (percent / 100), 0);
+  }, [selectedItemForDiscount, itemDiscountInput]);
 
   // Helper functions cho table status
   const getTableBadgeStatus = (status) => {
@@ -1870,6 +1904,86 @@ const BanHang = () => {
     }
   };
 
+  const openItemDiscountModal = (item) => {
+    if (!item) {
+      return;
+    }
+
+    if (editingInvoice) {
+      return;
+    }
+
+    const discountPercent = parseFloat(item.lv011 ?? item.discountPercent ?? item.chietKhau ?? 0) || 0;
+    setSelectedItemForDiscount(item);
+    setItemDiscountInput(Number.isFinite(discountPercent) ? parseFloat(discountPercent.toFixed(2)) : 0);
+    setItemDiscountModalVisible(true);
+  };
+
+  const closeItemDiscountModal = () => {
+    setItemDiscountModalVisible(false);
+    setSelectedItemForDiscount(null);
+    setItemDiscountInput(0);
+  };
+
+  const handleItemDiscountChange = (value) => {
+    if (value === null || value === undefined) {
+      setItemDiscountInput(0);
+      return;
+    }
+    setItemDiscountInput(value);
+  };
+
+  const confirmItemDiscount = async () => {
+    if (!selectedItemForDiscount || !currentInvoice) {
+      message.error('Thiếu thông tin món cần cập nhật');
+      return;
+    }
+
+    const maCt =
+      selectedItemForDiscount.maCt ||
+      selectedItemForDiscount.cthd ||
+      selectedItemForDiscount.idCthd ||
+      selectedItemForDiscount.id;
+
+    if (!maCt) {
+      message.error('Không xác định được mã chi tiết hóa đơn');
+      return;
+    }
+
+    const normalizedDiscount = Number(itemDiscountInput);
+    if (!Number.isFinite(normalizedDiscount) || normalizedDiscount < 0) {
+      message.error('Chiết khấu không hợp lệ');
+      return;
+    }
+
+    try {
+      setLoading(true);
+
+      const response = await capNhatChietKhauMon({
+        maCt,
+        chietKhau: normalizedDiscount,
+        maHd: currentInvoice.maHd
+      });
+
+      if (response && response.success === false) {
+        throw new Error(response.message || 'API không cập nhật được chiết khấu');
+      }
+
+      const detailsResponse = await getChiTietHoaDonTheoMaHD(currentInvoice.maHd);
+      if (Array.isArray(detailsResponse)) {
+        setInvoiceDetails(detailsResponse);
+      }
+
+      message.success('Đã cập nhật chiết khấu món');
+      closeItemDiscountModal();
+      triggerQuickRefresh('UPDATE_ITEM_DISCOUNT');
+    } catch (error) {
+      message.error('Không thể cập nhật chiết khấu: ' + (error.message || 'Lỗi không xác định'));
+    } finally {
+      setLoading(false);
+    }
+  };
+
   // Xóa sản phẩm khỏi đơn hàng
   const removeProductFromOrder = async (maCt) => {
     try {
@@ -3249,10 +3363,13 @@ const BanHang = () => {
         tax: 0,
         discount: 0,
         total: 0,
-        loyaltyPoints: 0
+        loyaltyPoints: 0,
+        programDiscount: 0,
+        itemDiscount: 0
       };
       setInvoiceSummary(emptySummary);
       setProgramDiscountBreakdown([]);
+      setItemDiscountBreakdown([]);
       setLoyaltyPointsEarned(0);
       setOrderTotal(0);
       return emptySummary;
@@ -3261,8 +3378,10 @@ const BanHang = () => {
     let subtotal = 0;
     let programDiscount = 0;
     let generalDiscount = 0; // Chiết khấu chung từ chương trình
+    let itemDiscountTotal = 0;
     let earnedPoints = 0;
     const breakdown = [];
+    const manualDiscountRecords = [];
 
     console.log('=== PROCESSING INVOICE DETAILS ===');
     console.log('programDiscountMap keys:', Object.keys(programDiscountMap));
@@ -3290,8 +3409,22 @@ const BanHang = () => {
       const lineTotal = price * quantity;
       subtotal += lineTotal;
 
-      if (!quantity || !price || !programDiscountMap || Object.keys(programDiscountMap).length === 0) {
-        console.log('Skipping: no quantity/price or no programDiscountMap');
+      const manualDiscountPercent = parseFloat(item.lv011 ?? item.discountPercent ?? item.chietKhau ?? 0) || 0;
+      if (manualDiscountPercent > 0 && price > 0 && quantity > 0) {
+        const manualDiscountAmount = lineTotal * (manualDiscountPercent / 100);
+        itemDiscountTotal += manualDiscountAmount;
+        manualDiscountRecords.push({
+          detailId: item.maCt || item.cthd || item.idCthd || item.id || `item-${index}`,
+          productName: item.tenSp || item.ten || item.tensp || item.name || '',
+          quantity,
+          unitPrice: price,
+          discountPercent: manualDiscountPercent,
+          discountAmount: manualDiscountAmount
+        });
+      }
+
+      if (!quantity || !price) {
+        console.log('Skipping: no quantity/price');
         return;
       }
 
@@ -3301,6 +3434,11 @@ const BanHang = () => {
       
       console.log('Product name:', productName);
       console.log('Product ID from name:', productIdFromName);
+
+      if (!programDiscountMap || Object.keys(programDiscountMap).length === 0) {
+        console.log('Program discount map empty, skipping program discount logic');
+        return;
+      }
 
       const candidateIds = [
         productIdFromName,  // Ưu tiên ID từ tên sản phẩm
@@ -3409,8 +3547,9 @@ const BanHang = () => {
 
     // Tổng chiết khấu = chiết khấu theo sản phẩm + chiết khấu chung
     const totalProgramDiscount = programDiscount + generalDiscount;
+    const totalDiscountValue = totalProgramDiscount + itemDiscountTotal;
     
-    const taxableBase = Math.max(subtotal - totalProgramDiscount, 0);
+    const taxableBase = Math.max(subtotal - totalDiscountValue, 0);
     const tax = includeVAT ? taxableBase * 0.1 : 0;
     const total = taxableBase + tax;
     earnedPoints = Math.max(Math.floor(total / 1000), 0);
@@ -3418,7 +3557,9 @@ const BanHang = () => {
     const summary = {
       subtotal,
       tax,
-      discount: totalProgramDiscount, // Tổng chiết khấu từ chương trình
+      discount: totalDiscountValue,
+      programDiscount,
+      itemDiscount: itemDiscountTotal,
       total,
       loyaltyPoints: earnedPoints
     };
@@ -3428,11 +3569,14 @@ const BanHang = () => {
     console.log('programDiscount (by product):', programDiscount);
     console.log('generalDiscount:', generalDiscount);
     console.log('totalProgramDiscount:', totalProgramDiscount);
+  console.log('itemDiscountTotal:', itemDiscountTotal);
+  console.log('totalDiscountValue:', totalDiscountValue);
     console.log('breakdown:', breakdown);
     console.log('summary:', summary);
 
     setInvoiceSummary(summary);
     setProgramDiscountBreakdown(breakdown);
+  setItemDiscountBreakdown(manualDiscountRecords);
     setLoyaltyPointsEarned(earnedPoints);
     setOrderTotal(total);
 
@@ -3934,10 +4078,25 @@ const BanHang = () => {
                       const rawId = item.maCt || item.cthd || item.idCthd || item.id || item.lv001;
                       const detailId = rawId ? rawId.toString() : `item-${idx}`;
                       const isPendingItem = rawId && pendingKitchenIdSet.has(rawId.toString());
+                      const quantity = parseInt(item.sl || item.soLuong || 0, 10) || 0;
+                      const unitPrice = parseFloat(item.gia || item.giaBan || item.donGia || 0);
+                      const itemDiscountPercent = parseFloat(item.lv011 ?? item.discountPercent ?? item.chietKhau ?? 0) || 0;
+                      const itemDiscountAmount = itemDiscountPercent > 0 ? unitPrice * quantity * (itemDiscountPercent / 100) : 0;
                       return (
                         <div
                           key={detailId}
                           className={`invoice-item-compact ${isPendingItem ? 'invoice-item-pending' : ''}`}
+                          role="button"
+                          tabIndex={0}
+                          onClick={() => openItemDiscountModal(item)}
+                          onKeyDown={(event) => {
+                            if (event.key === 'Enter' || event.key === ' ') {
+                              event.preventDefault();
+                              openItemDiscountModal(item);
+                            }
+                          }}
+                          title="Nhấn để thiết lập chiết khấu món"
+                          style={{ cursor: 'pointer' }}
                         >
                           <div className="item-info-compact">
                             <div className="item-info-header">
@@ -3949,25 +4108,47 @@ const BanHang = () => {
                             <div className="item-details">
                               <Text type="secondary">SL: {item.sl}</Text>
                               <Text type="secondary">
-                                {parseFloat(item.gia || item.giaBan || item.donGia || 0).toLocaleString('vi-VN')}đ
+                                {unitPrice.toLocaleString('vi-VN')}đ
                               </Text>
+                              {itemDiscountPercent > 0 && (
+                                <Text type="danger" style={{ display: 'block', fontSize: '11px', marginTop: 2 }}>
+                                  Giảm {itemDiscountPercent}% (-{itemDiscountAmount.toLocaleString('vi-VN')}đ)
+                                </Text>
+                              )}
                             </div>
                           </div>
                           
-                          <div className="item-controls-compact">
-                            <Button
-                              size="small"
-                              icon={<Minus size={12} />}
-                              onClick={() => updateProductQuantity(item, parseInt(item.sl || item.soLuong || 1) - 1)}
-                              disabled={editingInvoice}
-                            />
-                            <span className="quantity-compact">{item.sl || item.soLuong || 1}</span>
-                            <Button
-                              size="small"
-                              icon={<Plus size={12} />}
-                              onClick={() => updateProductQuantity(item, parseInt(item.sl || item.soLuong || 1) + 1)}
-                              disabled={editingInvoice}
-                            />
+                          <div
+                            className="item-controls-compact"
+                            onClick={(event) => event.stopPropagation()}
+                          >
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                              <Button
+                                size="small"
+                                icon={<Minus size={12} />}
+                                onClick={(event) => {
+                                  event.stopPropagation();
+                                  updateProductQuantity(
+                                    item,
+                                    parseInt(item.sl || item.soLuong || 1) - 1
+                                  );
+                                }}
+                                disabled={editingInvoice}
+                              />
+                              <span className="quantity-compact">{item.sl || item.soLuong || 1}</span>
+                              <Button
+                                size="small"
+                                icon={<Plus size={12} />}
+                                onClick={(event) => {
+                                  event.stopPropagation();
+                                  updateProductQuantity(
+                                    item,
+                                    parseInt(item.sl || item.soLuong || 1) + 1
+                                  );
+                                }}
+                                disabled={editingInvoice}
+                              />
+                            </div>
                           </div>
                         </div>
                       );
@@ -3979,113 +4160,47 @@ const BanHang = () => {
               {/* Fixed footer with total and actions */}
               <div className="invoice-footer-fixed">
                 <div className="invoice-total-compact">
-                  <div style={{ marginBottom: '12px', position: 'relative' }}>
-                    <Text strong style={{ display: 'block', marginBottom: 4 }}>Khách hàng tích điểm</Text>
-                    <Input.Search
-                      placeholder="Nhập số điện thoại khách hàng"
-                      value={loyaltyPhoneInput}
-                      onChange={handleLoyaltyPhoneInputChange}
-                      onSearch={handleLoyaltySearchByPhone}
-                      enterButton="Tìm"
-                      loading={loyaltySearchLoading}
-                      allowClear
-                    />
-                    
-                    {/* Real-time search suggestions dropdown */}
-                    {loyaltyPickerVisible && loyaltySearchResults.length > 0 && (
-                      <div style={{
-                        position: 'absolute',
-                        top: '100%',
-                        left: 0,
-                        right: 0,
-                        maxHeight: '200px',
-                        overflowY: 'auto',
-                        background: 'white',
-                        border: '1px solid #d9d9d9',
-                        borderRadius: '4px',
-                        boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
-                        zIndex: 1000,
-                        marginTop: '4px'
-                      }}>
-                        {loyaltySearchResults.map((customer) => (
-                          <div
-                            key={customer.id}
-                            onClick={() => handleSelectLoyaltyResult(customer)}
-                            style={{
-                              padding: '8px 12px',
-                              cursor: 'pointer',
-                              borderBottom: '1px solid #f0f0f0',
-                              transition: 'background 0.2s'
-                            }}
-                            onMouseEnter={(e) => e.currentTarget.style.background = '#f5f5f5'}
-                            onMouseLeave={(e) => e.currentTarget.style.background = 'white'}
-                          >
-                            <div style={{ fontWeight: 'bold', color: '#1890ff' }}>
-                              {customer.name || 'Khách hàng'}
-                            </div>
-                            <div style={{ fontSize: '12px', color: '#666' }}>
-                              SĐT: {customer.phone || customer.id}
-                            </div>
-                            <div style={{ fontSize: '12px', color: '#52c41a' }}>
-                              Điểm: {customer.points?.toLocaleString('vi-VN') || 0}
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                    
+                  <div style={{ marginBottom: '12px' }}>
                     <Button
-                      style={{ marginTop: 6 }}
                       size="small"
-                      onClick={clearLoyaltyCustomer}
-                      disabled={!loyaltyCustomer && loyaltyPhoneInput === ''}
+                      type="default"
+                      block
+                      icon={<FileText size={12} />}
+                      onClick={() => setInvoiceInfoModalVisible(true)}
                     >
-                      Xóa khách hàng
+                      Thông tin khách & ưu đãi
                     </Button>
-                    {loyaltyCustomer && (
-                      <div style={{ marginTop: 6, padding: '8px', background: '#f0f5ff', borderRadius: '4px' }}>
-                        <Text strong style={{ display: 'block', color: '#1890ff' }}>
-                          {loyaltyCustomer.name || 'Khách hàng'}
-                        </Text>
-                        <Text type="secondary" style={{ fontSize: '12px' }}>
-                          SĐT: {loyaltyCustomer.phone || loyaltyCustomer.id}
-                        </Text>
-                      </div>
-                    )}
-                    {loyaltyCustomerSummary && (
-                      <div style={{ marginTop: 6 }}>
-                        <Text type="secondary">
-                          Điểm hiện có: {loyaltyCustomerSummary.points.toLocaleString('vi-VN')}
-                        </Text>
-                        {loyaltyCustomerSummary.tier && (
-                          <Text type="secondary" style={{ display: 'block' }}>
-                            Hạng: {loyaltyCustomerSummary.tier}
-                          </Text>
-                        )}
-                      </div>
+                    {loyaltyCustomer ? (
+                      <Text style={{ display: 'block', marginTop: 6 }}>
+                        Khách: <strong>{loyaltyCustomer.name || 'Khách hàng'}</strong>
+                        {loyaltyCustomer.phone && ` • ${loyaltyCustomer.phone}`}
+                      </Text>
+                    ) : (
+                      <Text type="secondary" style={{ display: 'block', marginTop: 6 }}>
+                        Chưa chọn khách hàng tích điểm
+                      </Text>
                     )}
                     {loyaltyPointsEarned > 0 && (
-                      <div style={{ marginTop: 4 }}>
-                        <Text type="success">
-                          Điểm sẽ cộng: {loyaltyPointsEarned.toLocaleString('vi-VN')}
-                        </Text>
-                      </div>
+                      <Text type="success" style={{ display: 'block', marginTop: 4 }}>
+                        Điểm sẽ cộng: {loyaltyPointsEarned.toLocaleString('vi-VN')}
+                      </Text>
+                    )}
+                    {invoiceSummary.itemDiscount > 0 && (
+                      <Text type="danger" style={{ display: 'block', marginTop: 4 }}>
+                        Giảm món: -{invoiceSummary.itemDiscount.toLocaleString('vi-VN')} đ
+                      </Text>
+                    )}
+                    {invoiceSummary.programDiscount > 0 && (
+                      <Text type="danger" style={{ display: 'block', marginTop: 2 }}>
+                        CTKM: -{invoiceSummary.programDiscount.toLocaleString('vi-VN')} đ
+                      </Text>
+                    )}
+                    {invoiceSummary.discount > 0 && (
+                      <Text type="danger" style={{ display: 'block', marginTop: 2 }}>
+                        Tổng giảm: -{invoiceSummary.discount.toLocaleString('vi-VN')} đ
+                      </Text>
                     )}
                   </div>
-                  {activeSalesProgram && (
-                    <div style={{ marginBottom: '12px' }}>
-                      <Text type="secondary">
-                        CTKM: {activeSalesProgram.name || activeSalesProgram.programId}
-                      </Text>
-                      {invoiceSummary.discount > 0 && (
-                        <div>
-                          <Text type="danger">
-                            Ưu đãi: -{invoiceSummary.discount.toLocaleString('vi-VN')} đ`
-                          </Text>
-                        </div>
-                      )}
-                    </div>
-                  )}
                   <div style={{ marginBottom: '8px' }}>
                     <Checkbox
                       checked={includeVAT}
@@ -4580,6 +4695,229 @@ const BanHang = () => {
         </div>
       </Modal>
 
+      <Modal
+        title="Thông tin khách hàng & ưu đãi"
+        open={invoiceInfoModalVisible}
+        onCancel={() => {
+          setInvoiceInfoModalVisible(false);
+          setLoyaltyPickerVisible(false);
+        }}
+        footer={[
+          <Button key="close" type="primary" onClick={() => {
+            setInvoiceInfoModalVisible(false);
+            setLoyaltyPickerVisible(false);
+          }}>
+            Đóng
+          </Button>
+        ]}
+        width={540}
+      >
+        <Space direction="vertical" size={16} style={{ width: '100%' }}>
+          <div>
+            <Text strong>Khách hàng tích điểm</Text>
+            <div style={{ marginTop: 8, position: 'relative' }}>
+              <Input.Search
+                placeholder="Nhập số điện thoại khách hàng"
+                value={loyaltyPhoneInput}
+                onChange={handleLoyaltyPhoneInputChange}
+                onSearch={handleLoyaltySearchByPhone}
+                enterButton="Tìm"
+                loading={loyaltySearchLoading}
+                allowClear
+              />
+              {loyaltyPickerVisible && loyaltySearchResults.length > 0 && (
+                <div
+                  style={{
+                    position: 'absolute',
+                    top: '100%',
+                    left: 0,
+                    right: 0,
+                    maxHeight: '220px',
+                    overflowY: 'auto',
+                    background: 'white',
+                    border: '1px solid #d9d9d9',
+                    borderRadius: 4,
+                    boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
+                    marginTop: 4,
+                    zIndex: 1000
+                  }}
+                >
+                  {loyaltySearchResults.map((customer) => (
+                    <div
+                      key={customer.id}
+                      onClick={() => handleSelectLoyaltyResult(customer)}
+                      style={{
+                        padding: '8px 12px',
+                        cursor: 'pointer',
+                        borderBottom: '1px solid #f0f0f0'
+                      }}
+                      onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#f5f5f5')}
+                      onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'white')}
+                    >
+                      <div style={{ fontWeight: 'bold', color: '#1890ff' }}>
+                        {customer.name || 'Khách hàng'}
+                      </div>
+                      <div style={{ fontSize: 12, color: '#666' }}>
+                        SĐT: {customer.phone || customer.id}
+                      </div>
+                      <div style={{ fontSize: 12, color: '#52c41a' }}>
+                        Điểm: {customer.points?.toLocaleString('vi-VN') || 0}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+            <Space direction="vertical" size={6} style={{ width: '100%', marginTop: 8 }}>
+              <Button
+                size="small"
+                onClick={clearLoyaltyCustomer}
+                disabled={!loyaltyCustomer && loyaltyPhoneInput === ''}
+              >
+                Xóa khách hàng
+              </Button>
+              {loyaltyCustomer && (
+                <div style={{ padding: 8, background: '#f0f5ff', borderRadius: 4 }}>
+                  <Text strong style={{ color: '#1890ff', display: 'block' }}>
+                    {loyaltyCustomer.name || 'Khách hàng'}
+                  </Text>
+                  <Text type="secondary" style={{ fontSize: 12 }}>
+                    SĐT: {loyaltyCustomer.phone || loyaltyCustomer.id}
+                  </Text>
+                </div>
+              )}
+              {loyaltyCustomerSummary && (
+                <div>
+                  <Text type="secondary">
+                    Điểm hiện có: {loyaltyCustomerSummary.points.toLocaleString('vi-VN')}
+                  </Text>
+                  {loyaltyCustomerSummary.tier && (
+                    <Text type="secondary" style={{ display: 'block' }}>
+                      Hạng: {loyaltyCustomerSummary.tier}
+                    </Text>
+                  )}
+                </div>
+              )}
+              {loyaltyPointsEarned > 0 && (
+                <Text type="success">
+                  Điểm sẽ cộng: {loyaltyPointsEarned.toLocaleString('vi-VN')}
+                </Text>
+              )}
+            </Space>
+          </div>
+          <Divider style={{ margin: '12px 0' }} />
+          <div>
+            <Text strong>Chương trình khuyến mãi</Text>
+            {activeSalesProgram ? (
+              <div style={{ marginTop: 8 }}>
+                <Text style={{ display: 'block' }}>
+                  Tên chương trình: <strong>{activeSalesProgram.name || activeSalesProgram.programId}</strong>
+                </Text>
+                {activeSalesProgram.value && (
+                  <Text style={{ display: 'block', marginTop: 4 }}>
+                    Chiết khấu chung: {activeSalesProgram.value}%
+                  </Text>
+                )}
+                {programDiscountBreakdown.length > 0 && (
+                  <List
+                    size="small"
+                    dataSource={programDiscountBreakdown}
+                    style={{ marginTop: 8 }}
+                    renderItem={(discountItem) => (
+                      <List.Item>
+                        <List.Item.Meta
+                          title={`${discountItem.productName} (x${discountItem.quantity})`}
+                          description={`Chiết khấu: ${discountItem.discountPercent}%`}
+                        />
+                        <div style={{ color: '#cf1322', fontWeight: 600 }}>
+                          -{discountItem.discountAmount.toLocaleString('vi-VN')} đ
+                        </div>
+                      </List.Item>
+                    )}
+                  />
+                )}
+                <Text strong style={{ display: 'block', marginTop: 8, color: '#cf1322' }}>
+                  Tổng chiết khấu chương trình: -{(invoiceSummary.programDiscount || 0).toLocaleString('vi-VN')} đ
+                </Text>
+              </div>
+            ) : (
+              <Text type="secondary" style={{ display: 'block', marginTop: 8 }}>
+                Chưa áp dụng chương trình khuyến mãi.
+              </Text>
+            )}
+          </div>
+          <Divider style={{ margin: '12px 0' }} />
+          <div>
+            <Text strong>Chiết khấu từng món</Text>
+            {itemDiscountBreakdown.length > 0 ? (
+              <List
+                size="small"
+                dataSource={itemDiscountBreakdown}
+                style={{ marginTop: 8 }}
+                renderItem={(discountItem) => (
+                  <List.Item>
+                    <List.Item.Meta
+                      title={`${discountItem.productName} (x${discountItem.quantity})`}
+                      description={`Chiết khấu: ${discountItem.discountPercent}%`}
+                    />
+                    <div style={{ color: '#d4380d', fontWeight: 600 }}>
+                      -{discountItem.discountAmount.toLocaleString('vi-VN')} đ
+                    </div>
+                  </List.Item>
+                )}
+              />
+            ) : (
+              <Text type="secondary" style={{ display: 'block', marginTop: 8 }}>
+                Chưa áp dụng chiết khấu cho món nào.
+              </Text>
+            )}
+            <Text strong style={{ display: 'block', marginTop: 8, color: '#d4380d' }}>
+              Tổng chiết khấu món: -{(invoiceSummary.itemDiscount || 0).toLocaleString('vi-VN')} đ
+            </Text>
+          </div>
+        </Space>
+      </Modal>
+
+      <Modal
+        title={`Chiết khấu món: ${selectedItemForDiscount?.tenSp || ''}`}
+        open={itemDiscountModalVisible}
+        onCancel={closeItemDiscountModal}
+        onOk={confirmItemDiscount}
+        okText="Lưu"
+        cancelText="Hủy"
+        confirmLoading={loading}
+        width={420}
+      >
+        <Space direction="vertical" size={12} style={{ width: '100%' }}>
+          <div>
+            <Text strong style={{ display: 'block' }}>
+              {selectedItemForDiscount?.tenSp || 'Chọn món để thiết lập chiết khấu'}
+            </Text>
+            {selectedItemForDiscount && (
+              <Text type="secondary" style={{ display: 'block', marginTop: 4 }}>
+                Đơn giá: {parseFloat(selectedItemForDiscount.gia || selectedItemForDiscount.giaBan || selectedItemForDiscount.donGia || 0).toLocaleString('vi-VN')} đ • SL: {selectedItemForDiscount.sl || selectedItemForDiscount.soLuong || 0}
+              </Text>
+            )}
+          </div>
+          <div>
+            <Text style={{ display: 'block', marginBottom: 6 }}>Chiết khấu (%)</Text>
+            <InputNumber
+              value={itemDiscountInput}
+              onChange={handleItemDiscountChange}
+              min={0}
+              max={100}
+              precision={2}
+              style={{ width: '100%' }}
+            />
+          </div>
+          <div style={{ padding: 10, background: '#fff7e6', borderRadius: 6, border: '1px solid #ffd591' }}>
+            <Text style={{ display: 'block', color: '#d46b08' }}>
+              Số tiền giảm ước tính: -{itemDiscountPreview.toLocaleString('vi-VN')} đ
+            </Text>
+          </div>
+        </Space>
+      </Modal>
+
       {/* Enhanced Payment Modal */}
       <PaymentModal
         visible={showPaymentModal}
@@ -4595,6 +4933,9 @@ const BanHang = () => {
         subtotalBeforeDiscount={invoiceSummary.subtotal}
         activeSalesProgram={activeSalesProgram}
         programDiscountBreakdown={programDiscountBreakdown}
+        programDiscountAmount={invoiceSummary.programDiscount || 0}
+        itemDiscountAmount={invoiceSummary.itemDiscount || 0}
+        itemDiscountBreakdown={itemDiscountBreakdown}
       />
     </div>
   );

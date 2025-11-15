@@ -1727,22 +1727,26 @@ class sl_lv0014 extends lv_controler
 	{
 		// Cập nhật trạng thái món trong bảng sl_lv0014
 		$sql = "SELECT 
-				sp.lv002 as tenSp, 
-				cthd.lv002 AS idHoaDon,
-				cthd.lv004 as sl,
-				cthd.lv006 as gia,
-				cthd.lv001 as cthd
-				FROM sl_lv0014 cthd
-				JOIN sl_lv0007 sp ON cthd.lv003 = sp.lv001
-				WHERE cthd.lv002 = '$idHd'";
+			sp.lv002 as tenSp, 
+			cthd.lv002 AS idHoaDon,
+			cthd.lv004 as sl,
+			cthd.lv006 as gia,
+			cthd.lv011 as chietKhau,
+			cthd.lv001 as cthd
+			FROM sl_lv0014 cthd
+			JOIN sl_lv0007 sp ON cthd.lv003 = sp.lv001
+			WHERE cthd.lv002 = '$idHd'";
 		// Thực thi câu lệnh SQL sử dụng hàm db_query thay vì $this->db->query
 		$result = db_query($sql);
 		while ($vrow = db_fetch_array($result, MYSQLI_ASSOC)) {
+			$discountValue = isset($vrow['chietKhau']) && is_numeric($vrow['chietKhau']) ? (float) $vrow['chietKhau'] : 0;
 			$vArrRe[] = [
 				'tenSp' => $vrow['tenSp'],
 				'maHoaDon' => $vrow['idHoaDon'],
 				'soLuong' => $vrow['sl'],
 				'giaBan' => $vrow['gia'],
+				'lv011' => $discountValue,
+				'chietKhau' => $discountValue,
 				"maCt" => $vrow["cthd"]
 			];
 		}
@@ -1811,24 +1815,28 @@ class sl_lv0014 extends lv_controler
 	{
 		// Cập nhật trạng thái món trong bảng sl_lv0014
 		$sql = "SELECT 
-				sp.lv002 as tenSp, 
-				cthd.lv002 AS idHoaDon,
-				cthd.lv004 as sl,
-				cthd.lv006 as gia,
-				cthd.lv001 as cthd,
-				hd.lv004 AS gioVao
-				FROM sl_lv0014 cthd
+			sp.lv002 as tenSp, 
+			cthd.lv002 AS idHoaDon,
+			cthd.lv004 as sl,
+			cthd.lv006 as gia,
+			cthd.lv011 as chietKhau,
+			cthd.lv001 as cthd,
+			hd.lv004 AS gioVao
+			FROM sl_lv0014 cthd
 				JOIN sl_lv0007 sp ON cthd.lv003 = sp.lv001
 				JOIN sl_lv0013 hd ON cthd.lv002 = hd.lv001
 				WHERE cthd.lv002 = '$idHd'";
 		// Thực thi câu lệnh SQL sử dụng hàm db_query thay vì $this->db->query
 		$result = db_query($sql);
 		while ($vrow = db_fetch_array($result, MYSQLI_ASSOC)) {
+			$discountValue = isset($vrow['chietKhau']) && is_numeric($vrow['chietKhau']) ? (float) $vrow['chietKhau'] : 0;
 			$vArrRe[] = [
 				'tenSp' => $vrow['tenSp'],
 				'maHoaDon' => $vrow['idHoaDon'],
 				'soLuong' => $vrow['sl'],
 				'giaBan' => $vrow['gia'],
+				'lv011' => $discountValue,
+				'chietKhau' => $discountValue,
 				"maCt" => $vrow["cthd"],
 				"gioVao" => $vrow["gioVao"]
 			];
@@ -1862,6 +1870,74 @@ class sl_lv0014 extends lv_controler
 		return [
 			'success' => $success,
 			'message' => $errorMessage
+		];
+	}
+
+	function capNhatCtHd($maCt, $soLuong, $maHd = '')
+	{
+		$success = true;
+		$errorMessage = '';
+
+		if ($maCt === null || $maCt === '') {
+			return [
+				'success' => false,
+				'message' => 'Thiếu mã chi tiết hóa đơn'
+			];
+		}
+
+		$maCt = addslashes($maCt);
+		$soLuong = (int) $soLuong;
+		if ($soLuong < 0) {
+			$soLuong = 0;
+		}
+
+		$sql = "UPDATE sl_lv0014 SET lv004 = '$soLuong' WHERE lv001 = '$maCt'";
+		$result = db_query($sql);
+
+		if (!$result) {
+			$success = false;
+			$errorMessage = 'Không thể cập nhật số lượng: ' . db_error();
+		}
+
+		return [
+			'success' => $success,
+			'message' => $errorMessage,
+			'maCt' => $maCt,
+			'soLuong' => $soLuong
+		];
+	}
+
+	function capNhatChietKhauMon($maCt, $chietKhau, $maHd = '')
+	{
+		$success = true;
+		$errorMessage = '';
+
+		if ($maCt === null || $maCt === '') {
+			return [
+				'success' => false,
+				'message' => 'Thiếu mã chi tiết hóa đơn'
+			];
+		}
+
+		$maCt = addslashes($maCt);
+		$chietKhau = (float) $chietKhau;
+		if ($chietKhau < 0) {
+			$chietKhau = 0;
+		}
+
+		$sql = "UPDATE sl_lv0014 SET lv011 = '$chietKhau' WHERE lv001 = '$maCt'";
+		$result = db_query($sql);
+
+		if (!$result) {
+			$success = false;
+			$errorMessage = 'Không thể cập nhật chiết khấu: ' . db_error();
+		}
+
+		return [
+			'success' => $success,
+			'message' => $errorMessage,
+			'maCt' => $maCt,
+			'chietKhau' => $chietKhau
 		];
 	}
 
