@@ -59,6 +59,25 @@
   gap: 4px;
 }
 
+.combo-guidance {
+  margin-top: 12px;
+  padding: 12px;
+  border-radius: 8px;
+  background: #f8fafc;
+  border: 1px dashed #cbd5e1;
+  font-size: 12px;
+  line-height: 1.6;
+  color: #475569;
+}
+
+.combo-guidance code {
+  background: rgba(25, 125, 211, 0.08);
+  color: #197dd3;
+  padding: 0 4px;
+  border-radius: 4px;
+  font-weight: 600;
+}
+
 .category-item {
   display: flex;
   align-items: center;
@@ -348,3 +367,73 @@
     display: none;
   }
 }
+
+  /* BOM Modal */
+  .bom-modal .bom-modal-header {
+    margin-bottom: 12px;
+  }
+
+  .bom-components-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin: 16px 0;
+    max-height: 420px;
+    overflow-y: auto;
+    padding-right: 4px;
+  }
+
+  .bom-component-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    padding: 12px;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    background: #f8fafc;
+  }
+
+  .bom-component-col {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-width: 140px;
+  }
+
+  .bom-component-col.col-component {
+    flex: 2;
+    min-width: 220px;
+  }
+
+  .bom-component-col.col-quantity {
+    flex: 0 0 140px;
+  }
+
+  .bom-component-col.col-unit {
+    flex: 0 0 160px;
+  }
+
+  .bom-component-col.col-waste {
+    flex: 0 0 130px;
+  }
+
+  .bom-component-col.col-note {
+    flex: 2;
+    min-width: 200px;
+  }
+
+  .bom-component-col.col-action {
+    flex: 0 0 36px;
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+  }
+
+  .bom-modal .ant-btn-dashed {
+    margin-top: 12px;
+  }
+
+  .bom-modal-footer-note {
+    display: block;
+    margin-top: 16px;
+  }

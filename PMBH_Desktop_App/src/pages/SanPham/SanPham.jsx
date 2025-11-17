@@ -1,16 +1,17 @@
-import React, { useState, useEffect } from 'react';
-import { Card, Breadcrumb, Button, Typography, Input, message, Spin, Modal, Upload, Form, Select, InputNumber, Popconfirm } from 'antd';
-import { Package2, Search, Grid, Filter, Edit, Plus, Trash2, UploadCloud } from 'lucide-react';
-import { getLoaiSanPham, getSanPhamTheoIdLoai, getAllSanPham, getFullImageUrl, uploadImageBlob, loadProductImageBlob, themSanPham, capNhatSanPham, xoaSanPham, loadDonVi } from '../../services/apiServices';
+import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
+import { Card, Breadcrumb, Button, Typography, Input, message, Spin, Modal, Upload, Form, Select, InputNumber, Popconfirm, Space } from 'antd';
+import { Package2, Search, Grid, Filter, Edit, Plus, Trash2, UploadCloud, Layers } from 'lucide-react';
+import { getLoaiSanPham, getSanPhamTheoIdLoai, getAllSanPham, uploadImageBlob, loadProductImageBlob, themSanPham, capNhatSanPham, xoaSanPham, loadDonVi, getProductBom, saveProductBom } from '../../services/apiServices';
 import ProductCard from '../../components/common/ProductCard';
 import './SanPham.css';
 
 const { Text } = Typography;
 const { Search: SearchInput } = Input;
-const { Option } = Select;
 
 const DEFAULT_CURRENCY = 'VND';
 const DEFAULT_CONVERSION_VALUE = 1;
+const COMBO_PREFIX = 'CBO';
+const COMBO_CATEGORY_VALUE = '__combo__';
 
 const parseGiaBanToNumber = (value) => {
   if (value === null || value === undefined || value === '') {
@@ -70,7 +71,14 @@ const mapSanPhamFromApi = (product, productsByCategory = {}) => {
     product.idSp ||
     product.lv001 || '';
 
-  const categoryId = productsByCategory[productId] ?? product.danhMuc ?? product.maLoai ?? product.maDanhMucSp ?? null;
+  const normalizedProductId = productId ? productId.toString() : '';
+  const isComboProduct = normalizedProductId.toUpperCase().startsWith(COMBO_PREFIX);
+  const categoryId =
+    productsByCategory[normalizedProductId] ??
+    product.danhMuc ??
+    product.maLoai ??
+    product.maDanhMucSp ??
+    null;
 
   const rawGiaBan =
     product.giaBan ??
@@ -103,6 +111,7 @@ const mapSanPhamFromApi = (product, productsByCategory = {}) => {
     moTa,
     hinhAnh: null, // Sẽ được load sau từ database
     imageValue,
+    isCombo: isComboProduct,
     originalProduct: normalizedOriginalProduct,
     needLoadImage: true // Flag để biết cần load ảnh
   };
@@ -112,6 +121,7 @@ const SanPham = () => {
   const [categories, setCategories] = useState([]);
   const [donViList, setDonViList] = useState([]);
   const [products, setProducts] = useState([]);
+  const [allProducts, setAllProducts] = useState([]);
   const [filteredProducts, setFilteredProducts] = useState([]);
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [loading, setLoading] = useState(false);
@@ -119,13 +129,390 @@ const SanPham = () => {
   const [imageReloadTrigger, setImageReloadTrigger] = useState(0); // Trigger để reload images
   
   const [renderKey, setRenderKey] = useState(0);
-  const [form] = Form.useForm();
   
   // Product CRUD modal states
   const [isProductModalVisible, setIsProductModalVisible] = useState(false);
   const [editingProduct, setEditingProduct] = useState(null);
   const [productForm] = Form.useForm();
   const [productImageFileList, setProductImageFileList] = useState([]);
+
+  // BOM modal states
+  const [isBomModalVisible, setIsBomModalVisible] = useState(false);
+  const [selectedBomProduct, setSelectedBomProduct] = useState(null);
+  const [bomLoading, setBomLoading] = useState(false);
+  const [bomSaving, setBomSaving] = useState(false);
+  const [bomForm] = Form.useForm();
+  const [currentBomComponents, setCurrentBomComponents] = useState([]);
+  const [bomExtraOptions, setBomExtraOptions] = useState([]);
+
+  const productsRef = useRef([]);
+
+  useEffect(() => {
+    productsRef.current = products;
+  }, [products]);
+
+  const productLookup = useMemo(() => {
+    const map = new Map();
+    allProducts.forEach((product) => {
+      if (!product?.id) {
+        return;
+      }
+      map.set(product.id.toString(), product);
+    });
+    return map;
+  }, [allProducts]);
+
+  const bomComponentOptions = useMemo(() => {
+    const currentProductId = selectedBomProduct?.id
+      ? selectedBomProduct.id.toString()
+      : '';
+
+    const optionMap = new Map();
+
+    allProducts.forEach((product) => {
+      if (!product?.id) {
+        return;
+      }
+      const productId = product.id.toString();
+      if (productId === currentProductId) {
+        return;
+      }
+      if (!optionMap.has(productId)) {
+        optionMap.set(productId, {
+          value: product.id,
+          label: `${product.ten || product.id} (${product.id})`
+        });
+      }
+    });
+
+    bomExtraOptions.forEach((option) => {
+      if (!option?.value) {
+        return;
+      }
+      const optionId = option.value.toString();
+      if (optionId === currentProductId) {
+        return;
+      }
+      if (!optionMap.has(optionId)) {
+        optionMap.set(optionId, {
+          value: option.value,
+          label: option.label || option.value
+        });
+      }
+    });
+
+    return Array.from(optionMap.values());
+  }, [allProducts, bomExtraOptions, selectedBomProduct]);
+
+  const createDefaultBomRows = useCallback(
+    () => [
+      { componentId: null, quantity: 1, unitCode: '', wastePercent: 0, note: '' },
+      { componentId: null, quantity: 1, unitCode: '', wastePercent: 0, note: '' }
+    ],
+    []
+  );
+
+  const bomInitialValues = useMemo(
+    () => ({ components: createDefaultBomRows() }),
+    [createDefaultBomRows]
+  );
+
+  const getUnitFromProduct = useCallback(
+    (componentId) => {
+      if (!componentId) {
+        return '';
+      }
+      const lookupKey = componentId.toString();
+      const targetProduct = productLookup.get(lookupKey);
+      if (!targetProduct) {
+        const fallback = currentBomComponents.find(
+          (item) => item?.componentId?.toString() === lookupKey
+        );
+        if (!fallback) {
+          return '';
+        }
+        return fallback.unitCode || '';
+      }
+      const candidate =
+        targetProduct.donVi ||
+        targetProduct.originalProduct?.donVi ||
+        targetProduct.originalProduct?.lv004 ||
+        targetProduct.originalProduct?.lv005;
+      return candidate ? candidate.toString() : '';
+    },
+    [currentBomComponents, productLookup]
+  );
+
+  const normalizeBomItemsForForm = useCallback(
+    (sourceItems = []) => {
+      if (!Array.isArray(sourceItems)) {
+        return [];
+      }
+      return sourceItems
+        .map((item) => {
+          const componentId =
+            item?.componentId || item?.componentCode || item?.id || '';
+          if (!componentId) {
+            return null;
+          }
+          const quantityRaw = Number(item?.quantity);
+          const normalizedQuantity =
+            Number.isFinite(quantityRaw) && quantityRaw > 0 ? quantityRaw : 1;
+          const normalizedUnit =
+            item?.unitCode ||
+            item?.unitName ||
+            getUnitFromProduct(componentId) ||
+            '';
+          return {
+            componentId,
+            quantity: normalizedQuantity,
+            unitCode: normalizedUnit,
+            wastePercent:
+              item?.wastePercent !== undefined
+                ? Number(item.wastePercent) || 0
+                : 0,
+            note: item?.note ? item.note.toString() : ''
+          };
+        })
+        .filter(Boolean);
+    },
+    [getUnitFromProduct]
+  );
+
+  const handleBomComponentChange = useCallback(
+    (componentId, fieldIndex) => {
+      const components = [...(bomForm.getFieldValue('components') || [])];
+      if (!components[fieldIndex]) {
+        components[fieldIndex] = {
+          componentId: null,
+          quantity: 1,
+          unitCode: '',
+          wastePercent: 0,
+          note: ''
+        };
+      }
+      components[fieldIndex] = {
+        ...components[fieldIndex],
+        componentId,
+        unitCode:
+          components[fieldIndex].unitCode ||
+          getUnitFromProduct(componentId) ||
+          ''
+      };
+      if (
+        !components[fieldIndex].quantity ||
+        components[fieldIndex].quantity <= 0
+      ) {
+        components[fieldIndex].quantity = 1;
+      }
+      bomForm.setFieldsValue({ components });
+      setCurrentBomComponents(components);
+    },
+    [bomForm, getUnitFromProduct]
+  );
+
+  const handleOpenBomModal = useCallback(
+    async (product) => {
+      if (!product?.id) {
+        message.warning('Không xác định được sản phẩm để cấu hình BOM');
+        return;
+      }
+
+      setSelectedBomProduct(product);
+      setIsBomModalVisible(true);
+      setBomLoading(true);
+
+      try {
+        bomForm.resetFields();
+        setBomExtraOptions([]);
+        setCurrentBomComponents([]);
+        const response = await getProductBom(product.id);
+
+        if (response?.success === false && response?.message) {
+          message.warning(response.message);
+        }
+
+        const rawItems = Array.isArray(response?.items)
+          ? response.items
+          : Array.isArray(response)
+            ? response
+            : [];
+
+        const normalized = normalizeBomItemsForForm(rawItems);
+        const rows = normalized.length >= 1 ? normalized : createDefaultBomRows();
+
+        const responseOptions = rawItems
+          .map((item) => {
+            const componentId = item?.componentId || item?.componentCode || item?.id;
+            if (!componentId) {
+              return null;
+            }
+            const optionId = componentId.toString();
+            const optionLabel = item?.componentName || componentId;
+            return {
+              value: optionId,
+              label: `${optionLabel} (${optionId})`
+            };
+          })
+          .filter(Boolean);
+
+        setBomExtraOptions(responseOptions);
+        setCurrentBomComponents(rows);
+        bomForm.setFieldsValue({ components: rows });
+      } catch (error) {
+        console.error('Error loading BOM structure:', error);
+        message.error('Không thể tải cấu trúc BOM của sản phẩm');
+        const fallbackRows = createDefaultBomRows();
+        setCurrentBomComponents(fallbackRows);
+        bomForm.setFieldsValue({ components: fallbackRows });
+      } finally {
+        setBomLoading(false);
+      }
+    },
+    [
+      bomForm,
+      createDefaultBomRows,
+      normalizeBomItemsForForm
+    ]
+  );
+
+  const handleCloseBomModal = useCallback(() => {
+    setIsBomModalVisible(false);
+    setSelectedBomProduct(null);
+    setBomLoading(false);
+    bomForm.resetFields();
+    setBomExtraOptions([]);
+    setCurrentBomComponents([]);
+  }, [bomForm]);
+
+  const handleBomSubmit = useCallback(
+    async (values) => {
+      if (!selectedBomProduct?.id) {
+        message.warning('Chưa chọn sản phẩm để lưu cấu trúc BOM');
+        return;
+      }
+
+      const rawComponents = Array.isArray(values?.components)
+        ? values.components
+        : [];
+
+      const normalizedComponents = rawComponents
+        .map((component) => {
+          const componentId = component?.componentId || component?.id || '';
+          if (!componentId) {
+            return null;
+          }
+
+          const quantityValue = Number(component?.quantity);
+          const normalizedQuantity =
+            Number.isFinite(quantityValue) && quantityValue > 0
+              ? quantityValue
+              : 0;
+
+          const unitCode =
+            (component?.unitCode || getUnitFromProduct(componentId) || '')
+              .toString()
+              .trim();
+
+          return {
+            componentId: componentId.toString(),
+            quantity: normalizedQuantity,
+            unitCode,
+            wastePercent:
+              component?.wastePercent !== undefined
+                ? Number(component.wastePercent) || 0
+                : 0,
+            note: component?.note ? component.note.toString().trim() : ''
+          };
+        })
+        .filter(
+          (item) =>
+            item &&
+            item.componentId &&
+            item.componentId !== selectedBomProduct.id &&
+            item.quantity > 0
+        );
+
+      const duplicateCheck = normalizedComponents.reduce((acc, item) => {
+        acc[item.componentId] = (acc[item.componentId] || 0) + 1;
+        return acc;
+      }, {});
+
+      const duplicatedIds = Object.keys(duplicateCheck).filter(
+        (id) => duplicateCheck[id] > 1
+      );
+
+      if (duplicatedIds.length > 0) {
+        message.warning(
+          `Thành phần bị trùng: ${duplicatedIds.join(', ')}. Vui lòng điều chỉnh.`
+        );
+        return;
+      }
+
+      setBomSaving(true);
+
+      try {
+        const result = await saveProductBom(
+          selectedBomProduct.id,
+          normalizedComponents
+        );
+
+        const success =
+          result?.success === true ||
+          result === true ||
+          result === 1 ||
+          result === '1';
+
+        if (!success) {
+          const errorMessage =
+            (result && result.message) || 'Không thể lưu cấu trúc BOM';
+          message.error(errorMessage);
+          return;
+        }
+
+        message.success(result?.message || 'Đã lưu cấu trúc BOM');
+
+        const updatedItems = Array.isArray(result?.items)
+          ? result.items
+          : normalizedComponents;
+
+        const normalized = normalizeBomItemsForForm(updatedItems);
+        const responseOptions = updatedItems
+          .map((item) => {
+            const componentId = item?.componentId || item?.componentCode || item?.id;
+            if (!componentId) {
+              return null;
+            }
+            const optionId = componentId.toString();
+            const optionLabel = item?.componentName || componentId;
+            return {
+              value: optionId,
+              label: `${optionLabel} (${optionId})`
+            };
+          })
+          .filter(Boolean);
+
+        setBomExtraOptions(responseOptions);
+        setCurrentBomComponents(normalized);
+        bomForm.setFieldsValue({
+          components:
+            normalized.length >= 1 ? normalized : createDefaultBomRows()
+        });
+      } catch (error) {
+        console.error('Error saving BOM structure:', error);
+        message.error(error?.message || 'Không thể lưu cấu trúc BOM');
+      } finally {
+        setBomSaving(false);
+      }
+    },
+    [
+      bomForm,
+      createDefaultBomRows,
+      getUnitFromProduct,
+      normalizeBomItemsForForm,
+      selectedBomProduct
+    ]
+  );
 
   // Load categories and don vi immediately, products with delay (lazy load)
   useEffect(() => {
@@ -146,7 +533,9 @@ const SanPham = () => {
     let filtered = products;
     
     // Filter by category
-    if (selectedCategory !== 'all') {
+    if (selectedCategory === COMBO_CATEGORY_VALUE) {
+      filtered = filtered.filter(product => product.isCombo);
+    } else if (selectedCategory !== 'all') {
       filtered = filtered.filter(product => product.danhMuc === selectedCategory);
     }
     
@@ -156,13 +545,13 @@ const SanPham = () => {
   // Load images from database after products are loaded or when trigger changes
   useEffect(() => {
     const loadImages = async () => {
-      if (products.length === 0) return;
-      
-      const productsSnapshot = [...products]; // Snapshot để tránh dependency issues
-      
-      // Load images cho tất cả products
+      const snapshot = productsRef.current;
+      if (!Array.isArray(snapshot) || snapshot.length === 0) {
+        return;
+      }
+
       const updatedProducts = await Promise.all(
-        productsSnapshot.map(async (product) => {
+        snapshot.map(async (product) => {
           try {
             const imageResult = await loadProductImageBlob(product.id);
             if (imageResult.success && imageResult.imageUrl) {
@@ -174,11 +563,10 @@ const SanPham = () => {
           return { ...product, hinhAnh: null, needLoadImage: false };
         })
       );
-      
+
       setProducts(updatedProducts);
-      setFilteredProducts(updatedProducts);
     };
-    
+
     if (imageReloadTrigger > 0) {
       loadImages();
     }
@@ -189,7 +577,7 @@ const SanPham = () => {
     if (products.length > 0 && products.some(p => p.needLoadImage)) {
       setImageReloadTrigger(prev => prev + 1);
     }
-  }, [products.length]);
+  }, [products]);
 
   const loadDonViData = async () => {
     try {
@@ -224,6 +612,7 @@ const SanPham = () => {
 
       const allCategories = [
         { value: 'all', label: 'Tất cả' },
+        { value: COMBO_CATEGORY_VALUE, label: 'Combo BOM' },
         ...categoriesData
           .filter(cat => {
             // Filter out categories with "NVL" in name or ID (Nguyên vật liệu)
@@ -295,9 +684,15 @@ const SanPham = () => {
           }
           
           // Map each product to its category
-          categoryProductsData.forEach(product => {
-            const productId = product.idSp || product.maSp || product.id;
-            productsByCategory[productId] = categoryId;
+          categoryProductsData.forEach(productItem => {
+            const mappedId =
+              productItem.idSp ||
+              productItem.maSp ||
+              productItem.id;
+            const normalizedId = mappedId ? mappedId.toString() : '';
+            if (normalizedId) {
+              productsByCategory[normalizedId] = categoryId;
+            }
           });
         } catch (error) {
           console.warn(`Failed to load products for category ${categoryId}:`, error);
@@ -306,22 +701,27 @@ const SanPham = () => {
 
       console.log('Category mapping:', productsByCategory);
 
-      // Enhanced product mapping - Lazy load images (only load URL, not fetch from DB)
-      const formattedProducts = productsData
-        .filter(product => {
-          // Filter out products with codes starting with "NL" (Nguyên liệu)
-          const productCode = product.maSp || product.id || product.maSP || '';
-          return !productCode.toString().startsWith('NL');
-        })
-        .map((product) => mapSanPhamFromApi(product, productsByCategory));
+      // Chuẩn hóa dữ liệu sản phẩm để tái sử dụng (bao gồm cả nguyên vật liệu)
+      const normalizedProducts = productsData.map((product) =>
+        mapSanPhamFromApi(product, productsByCategory)
+      );
 
-      setProducts([...formattedProducts]); // Force new array reference
-      setFilteredProducts([...formattedProducts]); // Force new array reference
+      setAllProducts(normalizedProducts);
+
+      // Lọc danh sách hiển thị (ẩn nguyên vật liệu khỏi danh sách quản lý sản phẩm)
+      const filteredForDisplay = normalizedProducts.filter((product) => {
+        const productCode = product?.id ? product.id.toString().toUpperCase() : '';
+        return !productCode.startsWith('NL');
+      });
+
+      setProducts([...filteredForDisplay]); // Force new array reference
+      setFilteredProducts([...filteredForDisplay]); // Force new array reference
       setRenderKey(prev => prev + 1); // Force re-render
-      console.log('Loaded', formattedProducts.length, 'products for management');
+      console.log('Loaded', filteredForDisplay.length, 'products for management');
     } catch (error) {
       console.error('Error loading products:', error);
       message.error('Không thể tải danh sách sản phẩm');
+      setAllProducts([]);
       setProducts([]);
       setFilteredProducts([]);
     } finally {
@@ -567,7 +967,9 @@ const SanPham = () => {
               
               {/* Show categories with product counts */}
               {categories.filter(c => c.value !== 'all').map(category => {
-                const categoryCount = products.filter(p => p.danhMuc === category.value).length;
+                const categoryCount = category.value === COMBO_CATEGORY_VALUE
+                  ? products.filter(p => p.isCombo).length
+                  : products.filter(p => p.danhMuc === category.value).length;
                 return (
                   <div
                     key={category.value}
@@ -580,6 +982,10 @@ const SanPham = () => {
                   </div>
                 );
               })}
+            </div>
+            <div className="combo-guidance">
+              <Text strong>Combo BOM:</Text>{' '}
+              Sản phẩm có mã bắt đầu bằng <code>{COMBO_PREFIX}</code> sẽ tự động được gom vào mục này.
             </div>
           </Card>
         </div>
@@ -633,7 +1039,20 @@ const SanPham = () => {
                     product={product}
                     loading={loading}
                     showBadge={false}
+                    onClick={() => handleOpenBomModal(product)}
                     extraActions={[
+                      <Button
+                        key="bom"
+                        type="link"
+                        size="small"
+                        icon={<Layers size={14} />}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleOpenBomModal(product);
+                        }}
+                      >
+                        BOM
+                      </Button>,
                       <Button 
                         key="edit" 
                         type="link" 
@@ -676,6 +1095,140 @@ const SanPham = () => {
         </div>
       </div>
 
+        {/* BOM Modal */}
+        <Modal
+          title={
+            selectedBomProduct
+              ? `Cấu hình BOM - ${selectedBomProduct.ten || selectedBomProduct.id}`
+              : 'Cấu hình BOM'
+          }
+          open={isBomModalVisible}
+          onCancel={handleCloseBomModal}
+          onOk={() => bomForm.submit()}
+          okText="Lưu cấu trúc"
+          cancelText="Đóng"
+          confirmLoading={bomSaving}
+          width={920}
+          className="bom-modal"
+          destroyOnClose
+        >
+          <Spin spinning={bomLoading}>
+            <Space direction="vertical" size={4} className="bom-modal-header">
+              <Text strong>Mã sản phẩm: {selectedBomProduct?.id || '—'}</Text>
+              <Text type="secondary">
+                Cần tối thiểu 2 thành phần. Chọn sản phẩm, số lượng và các thông tin liên quan.
+              </Text>
+            </Space>
+
+            <Form
+              form={bomForm}
+              layout="vertical"
+              onFinish={handleBomSubmit}
+              onValuesChange={(_, allValues) => {
+                const nextComponents = Array.isArray(allValues?.components)
+                  ? allValues.components
+                  : [];
+                setCurrentBomComponents(nextComponents);
+              }}
+              initialValues={bomInitialValues}
+            >
+              <Form.List name="components">
+                {(fields, { add, remove }) => (
+                  <>
+                    <div className="bom-components-list">
+                      {fields.map((field, index) => (
+                        <div key={field.key} className="bom-component-row">
+                          <div className="bom-component-col col-component">
+                            <Form.Item
+                              label={index === 0 ? 'Thành phần' : ''}
+                              name={[field.name, 'componentId']}
+                              rules={[{ required: true, message: 'Chọn sản phẩm thành phần' }]}
+                            >
+                              <Select
+                                placeholder="Chọn sản phẩm"
+                                showSearch
+                                options={bomComponentOptions}
+                                optionFilterProp="label"
+                                allowClear
+                                onChange={(value) => handleBomComponentChange(value, field.name)}
+                              />
+                            </Form.Item>
+                          </div>
+
+                          <div className="bom-component-col col-quantity">
+                            <Form.Item
+                              label={index === 0 ? 'Số lượng' : ''}
+                              name={[field.name, 'quantity']}
+                              rules={[
+                                {
+                                  required: true,
+                                  message: 'Nhập số lượng'
+                                },
+                                {
+                                  validator: (_, value) => {
+                                    if (value && value > 0) {
+                                      return Promise.resolve();
+                                    }
+                                    return Promise.reject(new Error('Số lượng phải lớn hơn 0'));
+                                  }
+                                }
+                              ]}
+                            >
+                              <InputNumber min={0.0001} step={0.1} style={{ width: '100%' }} />
+                            </Form.Item>
+                          </div>
+
+                          <div className="bom-component-col col-unit">
+                            <Form.Item label={index === 0 ? 'Đơn vị' : ''} name={[field.name, 'unitCode']}>
+                              <Input placeholder="VD: Ly, Phần..." />
+                            </Form.Item>
+                          </div>
+
+                          <div className="bom-component-col col-waste">
+                            <Form.Item label={index === 0 ? '% hao hụt' : ''} name={[field.name, 'wastePercent']}>
+                              <InputNumber min={0} max={100} step={0.1} style={{ width: '100%' }} />
+                            </Form.Item>
+                          </div>
+
+                          <div className="bom-component-col col-note">
+                            <Form.Item label={index === 0 ? 'Ghi chú' : ''} name={[field.name, 'note']}>
+                              <Input placeholder="Ghi chú (tuỳ chọn)" />
+                            </Form.Item>
+                          </div>
+
+                          <div className="bom-component-col col-action">
+                            <Button
+                              danger
+                              type="text"
+                              icon={<Trash2 size={14} />}
+                              onClick={() => remove(field.name)}
+                            />
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+
+                    <Button
+                      type="dashed"
+                      block
+                      icon={<Plus size={14} />}
+                      onClick={() =>
+                        add({ componentId: null, quantity: 1, unitCode: '', wastePercent: 0, note: '' })
+                      }
+                    >
+                      Thêm thành phần
+                    </Button>
+                  </>
+                )}
+              </Form.List>
+            </Form>
+
+            <Text type="secondary" className="bom-modal-footer-note">
+              Sau khi lưu, mở lại sản phẩm để xem danh sách thành phần đã cấu hình.
+            </Text>
+          </Spin>
+        </Modal>
+
       {/* Product CRUD Modal */}
       <Modal
         title={editingProduct ? 'Sửa sản phẩm' : 'Thêm sản phẩm'}
@@ -699,6 +1252,7 @@ const SanPham = () => {
             name="maSanPham"
             label="Mã sản phẩm"
             rules={[{ required: true, message: 'Vui lòng nhập mã sản phẩm' }]}
+            extra={`Nhập mã bắt đầu bằng '${COMBO_PREFIX}' (ví dụ: ${COMBO_PREFIX}001) để hệ thống tự nhận diện Combo BOM.`}
           >
             <Input disabled={!!editingProduct} placeholder="Nhập mã sản phẩm" />
           </Form.Item>
@@ -717,7 +1271,9 @@ const SanPham = () => {
             rules={[{ required: true, message: 'Vui lòng chọn loại sản phẩm' }]}
           >
             <Select placeholder="Chọn loại sản phẩm">
-              {categories.filter(c => c.value !== 'all').map(cat => (
+                {categories
+                  .filter(c => c.value !== 'all' && c.value !== COMBO_CATEGORY_VALUE)
+                  .map(cat => (
                 <Select.Option key={cat.value} value={cat.value}>
                   {cat.label}
                 </Select.Option>

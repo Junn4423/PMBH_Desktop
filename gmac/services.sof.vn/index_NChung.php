@@ -1314,7 +1314,7 @@ case 'DonBan':
                 $vsql = "SELECT lv001, lv002, lv003, lv004, lv006, lv007, lv094, lv095, lv099, lv100 FROM lv_lv0007 ORDER BY lv001";
                 $vresult = db_query($vsql);
                 $vOutput = [];
-                while ($vrow = db_fetch_array($vresult, MYSQLI_ASSOC)) {
+                while ($vrow = db_fetch_array($vresult)) {
                     $vOutput[] = [
                         'userId' => $vrow['lv001'],
                         'groupId' => $vrow['lv002'],
@@ -1535,7 +1535,7 @@ case 'DonBan':
                 $vresult = db_query($vsql);
                 $vOutput = [];
                 
-                while ($vrow = db_fetch_array($vresult, MYSQLI_ASSOC)) {
+                while ($vrow = db_fetch_array($vresult)) {
                     $vOutput[] = [
                         'id' => $vrow['lv001'],
                         'userId' => $vrow['lv002'],
@@ -1563,7 +1563,7 @@ case 'DonBan':
                 $vresult = db_query($vsql);
                 $vOutput = [];
                 
-                while ($vrow = db_fetch_array($vresult, MYSQLI_ASSOC)) {
+                while ($vrow = db_fetch_array($vresult)) {
                     $vOutput[] = [
                         'id' => $vrow['lv001'],
                         'controlType' => $vrow['lv002'],
@@ -2154,6 +2154,253 @@ case 'DonBan':
                 break;
         }
         break;
+
+    case 'Mb_BOM':
+        if (!function_exists('mb_bom_fetch_items')) {
+            function mb_bom_fetch_items($productId)
+            {
+                $productIdEsc = esc_str($productId);
+                $sql = "
+                    SELECT 
+                        bom.lv001 AS id,
+                        bom.lv002 AS product_id,
+                        bom.lv003 AS component_id,
+                        bom.lv004 AS quantity,
+                        bom.lv005 AS unit_code,
+                        bom.lv006 AS waste_percent,
+                        bom.lv007 AS width_value,
+                        bom.lv008 AS color_value,
+                        bom.lv009 AS note_value,
+                        bom.lv010 AS locked_flag,
+                        sp.lv002 AS component_name,
+                        sp.lv004 AS default_unit,
+                        unit.lv002 AS unit_name
+                    FROM mn_lv0004 bom
+                    LEFT JOIN sl_lv0007 sp ON sp.lv001 = bom.lv003
+                    LEFT JOIN sl_lv0005 unit ON unit.lv001 = bom.lv005
+                    WHERE bom.lv002 = '$productIdEsc'
+                    ORDER BY CAST(bom.lv001 AS UNSIGNED) ASC
+                ";
+                $items = [];
+                $result = db_query($sql);
+                if ($result) {
+                    while ($row = db_fetch_array($result)) {
+                        $items[] = [
+                            'id' => $row['id'],
+                            'productId' => $row['product_id'],
+                            'componentId' => $row['component_id'],
+                            'componentCode' => $row['component_id'],
+                            'componentName' => ($row['component_name'] ?? '') !== '' ? $row['component_name'] : $row['component_id'],
+                            'quantity' => (float)($row['quantity'] ?? 0),
+                            'unitCode' => $row['unit_code'] ?: ($row['default_unit'] ?? ''),
+                            'unitName' => $row['unit_name'] ?? '',
+                            'wastePercent' => (float)($row['waste_percent'] ?? 0),
+                            'width' => $row['width_value'] ?? '',
+                            'color' => $row['color_value'] ?? '',
+                            'note' => $row['note_value'] ?? '',
+                            'locked' => (int)($row['locked_flag'] ?? 0)
+                        ];
+                    }
+                }
+                return $items;
+            }
+        }
+
+        $productId = trim($input['productId'] ?? ($_POST['productId'] ?? ''));
+
+        switch ($vfun) {
+            case 'list':
+                if ($productId === '') {
+                    $vOutput = [
+                        'success' => false,
+                        'message' => 'Thieu ma san pham'
+                    ];
+                    break;
+                }
+
+                $items = mb_bom_fetch_items($productId);
+                $vOutput = [
+                    'success' => true,
+                    'productId' => $productId,
+                    'count' => count($items),
+                    'items' => $items
+                ];
+                break;
+
+            case 'save':
+                if ($productId === '') {
+                    $vOutput = [
+                        'success' => false,
+                        'message' => 'Thieu ma san pham'
+                    ];
+                    break;
+                }
+
+                $componentsInput = $input['components'] ?? ($_POST['components'] ?? []);
+                $componentsArray = normalize_to_array($componentsInput);
+
+                $normalizedComponents = [];
+                foreach ($componentsArray as $component) {
+                    if (!is_array($component)) {
+                        continue;
+                    }
+                    $componentId = trim($component['componentId'] ?? $component['id'] ?? '');
+                    $quantity = isset($component['quantity']) ? (float)$component['quantity'] : 0;
+                    if ($componentId === '' || $componentId === $productId || $quantity <= 0) {
+                        continue;
+                    }
+
+                    $normalizedComponents[] = [
+                        'componentId' => $componentId,
+                        'quantity' => $quantity,
+                        'unitCode' => trim($component['unitCode'] ?? $component['unit'] ?? ''),
+                        'wastePercent' => isset($component['wastePercent']) ? (float)$component['wastePercent'] : 0,
+                        'width' => trim($component['width'] ?? ''),
+                        'color' => trim($component['color'] ?? ''),
+                        'note' => trim($component['note'] ?? '')
+                    ];
+                }
+
+                $componentIds = array_unique(array_map(function ($item) {
+                    return $item['componentId'];
+                }, $normalizedComponents));
+
+                $hasComponents = !empty($componentIds);
+
+                $componentIdList = '';
+                if ($hasComponents) {
+                    $componentIdList = implode(',', array_map(function ($id) {
+                        return "'" . esc_str($id) . "'";
+                    }, $componentIds));
+                }
+
+                $componentMeta = [];
+                if ($hasComponents && $componentIdList !== '') {
+                    $metaSql = "
+                        SELECT lv001, lv002, lv004
+                        FROM sl_lv0007
+                        WHERE lv001 IN ($componentIdList)
+                    ";
+                    $metaResult = db_query($metaSql);
+                    if ($metaResult) {
+                        while ($row = db_fetch_array($metaResult)) {
+                            $componentMeta[$row['lv001']] = [
+                                'name' => $row['lv002'],
+                                'unit' => $row['lv004']
+                            ];
+                        }
+                    }
+                }
+
+                if ($hasComponents) {
+                    $missingComponents = array_values(array_diff($componentIds, array_keys($componentMeta)));
+                    if (!empty($missingComponents)) {
+                        $vOutput = [
+                            'success' => false,
+                            'message' => 'Khong tim thay san pham: ' . implode(', ', $missingComponents)
+                        ];
+                        break;
+                    }
+                }
+
+                $productEsc = esc_str($productId);
+                $startTrans = db_query("START TRANSACTION");
+                if (!$startTrans) {
+                    $vOutput = [
+                        'success' => false,
+                        'message' => 'Khong the bat dau giao dich'
+                    ];
+                    break;
+                }
+
+                $deleteSql = "DELETE FROM mn_lv0004 WHERE lv002 = '$productEsc'";
+                $deleteResult = db_query($deleteSql);
+                if (!$deleteResult) {
+                    db_query("ROLLBACK");
+                    $vOutput = [
+                        'success' => false,
+                        'message' => 'Khong the xoa cau truc cu'
+                    ];
+                    break;
+                }
+
+                if ($hasComponents) {
+                    $maxSql = "SELECT COALESCE(MAX(CAST(lv001 AS UNSIGNED)), 0) AS max_id FROM mn_lv0004";
+                    $maxResult = db_query($maxSql);
+                    $nextId = 1;
+                    if ($maxResult) {
+                        $maxRow = db_fetch_array($maxResult);
+                        if ($maxRow && isset($maxRow['max_id'])) {
+                            $nextId = ((int)$maxRow['max_id']) + 1;
+                        }
+                    }
+
+                    $insertOk = true;
+                    foreach ($normalizedComponents as $component) {
+                        $unitCode = $component['unitCode'] !== ''
+                            ? $component['unitCode']
+                            : ($componentMeta[$component['componentId']]['unit'] ?? '');
+                        $quantityValue = max(0, $component['quantity']);
+                        $wasteValue = max(0, $component['wastePercent']);
+                        $formattedQuantity = number_format($quantityValue, 4, '.', '');
+                        $formattedWaste = number_format($wasteValue, 2, '.', '');
+                        $values = [
+                            'lv001' => (string)$nextId++,
+                            'lv002' => $productEsc,
+                            'lv003' => esc_str($component['componentId']),
+                            'lv004' => $formattedQuantity,
+                            'lv005' => esc_str($unitCode),
+                            'lv006' => $formattedWaste,
+                            'lv007' => esc_str($component['width']),
+                            'lv008' => esc_str($component['color']),
+                            'lv009' => esc_str($component['note']),
+                            'lv010' => '0'
+                        ];
+
+                        $insertSql = "
+                            INSERT INTO mn_lv0004
+                                (lv001, lv002, lv003, lv004, lv005, lv006, lv007, lv008, lv009, lv010)
+                            VALUES
+                                ('{$values['lv001']}', '{$values['lv002']}', '{$values['lv003']}', {$values['lv004']},
+                                 '{$values['lv005']}', {$values['lv006']}, '{$values['lv007']}', '{$values['lv008']}',
+                                 '{$values['lv009']}', '{$values['lv010']}')
+                        ";
+                        $insertResult = db_query($insertSql);
+                        if (!$insertResult) {
+                            $insertOk = false;
+                            break;
+                        }
+                    }
+
+                    if (!$insertOk) {
+                        db_query("ROLLBACK");
+                        $vOutput = [
+                            'success' => false,
+                            'message' => 'Khong the luu cau truc BOM'
+                        ];
+                        break;
+                    }
+                }
+
+                db_query("COMMIT");
+                $items = mb_bom_fetch_items($productId);
+                $vOutput = [
+                    'success' => true,
+                    'productId' => $productId,
+                    'count' => count($items),
+                    'message' => 'Da cap nhat cau truc BOM',
+                    'items' => $items
+                ];
+                break;
+
+            default:
+                $vOutput = [
+                    'success' => false,
+                    'message' => 'Chuc nang khong ton tai'
+                ];
+                break;
+        }
+        break;
         
     case 'Mb_Permissions':
         switch ($vfun) {
@@ -2162,7 +2409,7 @@ case 'DonBan':
                 $vresult = db_query($vsql);
                 $vOutput = [];
                 
-                while ($vrow = db_fetch_array($vresult, MYSQLI_ASSOC)) {
+                while ($vrow = db_fetch_array($vresult)) {
                     $vOutput[] = [
                         'id' => $vrow['lv001'],
                         'name' => $vrow['lv002']
@@ -2195,7 +2442,7 @@ case 'DonBan':
                 $vresult = db_query($vsql);
                 $vOutput = [];
                 
-                while ($vrow = db_fetch_array($vresult, MYSQLI_ASSOC)) {
+                while ($vrow = db_fetch_array($vresult)) {
                     $vOutput[] = [
                         'value' => $vrow['lv001'],
                         'label' => $vrow['lv002']
@@ -2209,7 +2456,7 @@ case 'DonBan':
                 $vresult = db_query($vsql);
                 $vOutput = [];
                 
-                while ($vrow = db_fetch_array($vresult, MYSQLI_ASSOC)) {
+                while ($vrow = db_fetch_array($vresult)) {
                     $vOutput[] = [
                         'value' => $vrow['lv001'],
                         'label' => $vrow['lv002'] . ' (' . $vrow['lv001'] . ')'
@@ -2264,3 +2511,4 @@ case 'DonBan':
 
 }
 ?>
+

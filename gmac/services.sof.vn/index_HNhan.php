@@ -76,6 +76,7 @@ switch ($vtable) {
 				$sl_lv0007->lv009 = $lv009;
 				$sl_lv0007->lv010 = $lv010;
 				$sl_lv0007->lv014 = $lv014;
+				$sl_lv0007->lv016 = 'KHOTONG';
 				$vOutput = $sl_lv0007->LV_Insert();
 				break;
 			case 'edit':
@@ -166,7 +167,8 @@ switch ($vtable) {
 		// $userid = isset($input['userid']) ? $input['userid'] : (isset($_POST['userid']) ? $_POST['userid'] : "");
 		switch ($vfun) {
 			case 'thanhToan_contract':
-				$objEmps = $sl_lv0014->thanhToan('', $mahd, '', '', '', 'admin');
+				$objEmps = $sl_lv0014->thanhToan('', $mahd, '', ''
+				, '', 'admin');
 				break;
 			default:
 				break;

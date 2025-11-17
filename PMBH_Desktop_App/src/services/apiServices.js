@@ -104,6 +104,24 @@ export async function getAllSanPham() {
   return await callApi('Mb_sanPham', 'data');
 }
 
+// Lấy cấu trúc BOM của sản phẩm
+export async function getProductBom(productId) {
+  const normalizedId =
+    productId !== undefined && productId !== null
+      ? productId.toString().trim()
+      : '';
+  return await callApi('Mb_BOM', 'list', { productId: normalizedId });
+}
+
+// Lưu cấu trúc BOM của sản phẩm
+export async function saveProductBom(productId, components = []) {
+  const normalizedId =
+    productId !== undefined && productId !== null
+      ? productId.toString().trim()
+      : '';
+  return await callApi('Mb_BOM', 'save', { productId: normalizedId, components });
+}
+
 // Load hình ảnh sản phẩm từ database
 export async function loadProductImage(productId) {
   try {
