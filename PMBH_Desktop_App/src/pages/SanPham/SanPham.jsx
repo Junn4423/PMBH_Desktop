@@ -11,7 +11,6 @@ const { Search: SearchInput } = Input;
 const DEFAULT_CURRENCY = 'VND';
 const DEFAULT_CONVERSION_VALUE = 1;
 const COMBO_PREFIX = 'CBO';
-const COMBO_CATEGORY_VALUE = '__combo__';
 
 const parseGiaBanToNumber = (value) => {
   if (value === null || value === undefined || value === '') {
@@ -533,9 +532,7 @@ const SanPham = () => {
     let filtered = products;
     
     // Filter by category
-    if (selectedCategory === COMBO_CATEGORY_VALUE) {
-      filtered = filtered.filter(product => product.isCombo);
-    } else if (selectedCategory !== 'all') {
+    if (selectedCategory !== 'all') {
       filtered = filtered.filter(product => product.danhMuc === selectedCategory);
     }
     
@@ -612,7 +609,6 @@ const SanPham = () => {
 
       const allCategories = [
         { value: 'all', label: 'Tất cả' },
-        { value: COMBO_CATEGORY_VALUE, label: 'Combo BOM' },
         ...categoriesData
           .filter(cat => {
             // Filter out categories with "NVL" in name or ID (Nguyên vật liệu)
@@ -967,9 +963,7 @@ const SanPham = () => {
               
               {/* Show categories with product counts */}
               {categories.filter(c => c.value !== 'all').map(category => {
-                const categoryCount = category.value === COMBO_CATEGORY_VALUE
-                  ? products.filter(p => p.isCombo).length
-                  : products.filter(p => p.danhMuc === category.value).length;
+                const categoryCount = products.filter(p => p.danhMuc === category.value).length;
                 return (
                   <div
                     key={category.value}
@@ -982,10 +976,6 @@ const SanPham = () => {
                   </div>
                 );
               })}
-            </div>
-            <div className="combo-guidance">
-              <Text strong>Combo BOM:</Text>{' '}
-              Sản phẩm có mã bắt đầu bằng <code>{COMBO_PREFIX}</code> sẽ tự động được gom vào mục này.
             </div>
           </Card>
         </div>
@@ -1272,7 +1262,7 @@ const SanPham = () => {
           >
             <Select placeholder="Chọn loại sản phẩm">
                 {categories
-                  .filter(c => c.value !== 'all' && c.value !== COMBO_CATEGORY_VALUE)
+                  .filter(c => c.value !== 'all')
                   .map(cat => (
                 <Select.Option key={cat.value} value={cat.value}>
                   {cat.label}

@@ -1940,7 +1940,7 @@ case 'DonBan':
         $endDate = substr($endDate, 0, 10) . ' 23:59:59';
 
         $startEsc = esc_str($startDate);
-        $endEsc = esc_str($endDate);
+            $endEsc = esc_str($endDate);
 
         $keyword = trim((string)request_value('keyword', ''));
         $keywordCondition = '';
