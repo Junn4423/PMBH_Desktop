@@ -77,6 +77,13 @@ class   sl_lv0005 extends lv_controler
 			return false;
 		}
 
+		// Check for duplicate lv001
+		$checkSql = "SELECT lv001 FROM sl_lv0005 WHERE lv001 = '$this->lv001'";
+		$checkResult = db_query($checkSql);
+		if (db_num_rows($checkResult) > 0) {
+			return -2; // Duplicate code
+		}
+
 		$lvsql="insert into sl_lv0005 (lv001,lv002,lv003) values('$this->lv001','$this->lv002','$this->lv003')";
 		$vReturn= db_query($lvsql);
 		if($vReturn) $this->InsertLogOperation($this->DateCurrent,'sl_lv0005.insert',sof_escape_string($lvsql));

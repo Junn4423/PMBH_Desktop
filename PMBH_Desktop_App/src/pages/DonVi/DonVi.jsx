@@ -133,6 +133,16 @@ const DonVi = () => {
         console.log('Add payload:', payload);
         const result = await themDonVi(payload);
         console.log('Add result:', result);
+
+        if (result === -2) {
+          message.error('Mã đơn vị đã tồn tại');
+          return;
+        }
+        if (!result) {
+          message.error('Thêm thất bại');
+          return;
+        }
+
         message.success('Thêm thành công');
       }
       setIsModalVisible(false);
