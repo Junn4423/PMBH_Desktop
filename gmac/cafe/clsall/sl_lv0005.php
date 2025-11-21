@@ -65,6 +65,18 @@ class   sl_lv0005 extends lv_controler
 	function LV_Insert()
 	{
 		if($this->isAdd==0) return false;
+
+		// Validate special characters in lv002 (Unit Name)
+		// Allow alphanumeric, spaces, and Vietnamese characters
+		if (!preg_match('/^[a-zA-Z0-9\s\x{00C0}-\x{1EF9}]+$/u', $this->lv002)) {
+			return false;
+		}
+
+		// Validate special characters in lv001 (Unit Code)
+		if (!preg_match('/^[a-zA-Z0-9\s\x{00C0}-\x{1EF9}]+$/u', $this->lv001)) {
+			return false;
+		}
+
 		$lvsql="insert into sl_lv0005 (lv001,lv002,lv003) values('$this->lv001','$this->lv002','$this->lv003')";
 		$vReturn= db_query($lvsql);
 		if($vReturn) $this->InsertLogOperation($this->DateCurrent,'sl_lv0005.insert',sof_escape_string($lvsql));
@@ -73,6 +85,13 @@ class   sl_lv0005 extends lv_controler
 	function LV_Update()
 	{
 		if($this->isEdit==0) return false;
+
+		// Validate special characters in lv002 (Unit Name)
+		// Allow alphanumeric, spaces, and Vietnamese characters
+		if (!preg_match('/^[a-zA-Z0-9\s\x{00C0}-\x{1EF9}]+$/u', $this->lv002)) {
+			return false;
+		}
+
 		 $lvsql="Update sl_lv0005 set lv002='$this->lv002',lv003='$this->lv003' where  lv001='$this->lv001';";
 		$vReturn= db_query($lvsql);
 		if($vReturn) $this->InsertLogOperation($this->DateCurrent,'sl_lv0005.update',sof_escape_string($lvsql));

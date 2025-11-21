@@ -51,9 +51,9 @@ const DonVi = () => {
       setFilteredList(donViList);
       return;
     }
-    
+
     const searchLower = value.toLowerCase().trim();
-    const filtered = donViList.filter(item => 
+    const filtered = donViList.filter(item =>
       (item.maDonVi && item.maDonVi.toLowerCase().includes(searchLower)) ||
       (item.tenDonVi && item.tenDonVi.toLowerCase().includes(searchLower)) ||
       (item.heSo && item.heSo.toString().includes(searchLower))
@@ -92,11 +92,32 @@ const DonVi = () => {
     try {
       console.log('Form values:', values);
       console.log('Editing don vi:', editingDonVi);
-      
+
+      const tenDonVi = values.tenDonVi ? values.tenDonVi.toString().trim() : '';
+      const maDonVi = values.maDonVi ? values.maDonVi.toString().trim() : '';
+
+      // Validate special characters
+      // Allow alphanumeric, spaces, and Vietnamese characters
+      const specialCharRegex = /^[a-zA-Z0-9\s\u00C0-\u1EF9]+$/;
+
+      // Validate Unit Code (maDonVi) only when adding new
+      if (!editingDonVi) {
+        if (!specialCharRegex.test(maDonVi)) {
+          message.error('Mã đơn vị không được chứa kí tự đặc biệt');
+          return;
+        }
+      }
+
+      // Validate Unit Name (tenDonVi)
+      if (!specialCharRegex.test(tenDonVi)) {
+        message.error('Tên đơn vị không được chứa kí tự đặc biệt');
+        return;
+      }
+
       if (editingDonVi) {
         const payload = {
           lv001: editingDonVi.maDonVi,
-          lv002: values.tenDonVi || '',
+          lv002: tenDonVi,
           lv003: values.heSo || ''
         };
         console.log('Update payload:', payload);
@@ -105,8 +126,8 @@ const DonVi = () => {
         message.success('Cập nhật thành công');
       } else {
         const payload = {
-          lv001: (values.maDonVi || '').toString().trim(),
-          lv002: (values.tenDonVi || '').toString().trim(),
+          lv001: maDonVi,
+          lv002: tenDonVi,
           lv003: (values.heSo || '').toString().trim()
         };
         console.log('Add payload:', payload);
@@ -182,7 +203,7 @@ const DonVi = () => {
         <Breadcrumb.Item>Điều khiển sản phẩm</Breadcrumb.Item>
         <Breadcrumb.Item>Đơn vị</Breadcrumb.Item>
       </Breadcrumb>
-      
+
       <Card
         title={
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
@@ -214,7 +235,7 @@ const DonVi = () => {
         <div style={{ marginBottom: 16 }}>
           {/* Search moved to header */}
         </div>
-        
+
         <Table
           columns={columns}
           dataSource={filteredList}
@@ -249,7 +270,7 @@ const DonVi = () => {
           >
             <Input disabled={!!editingDonVi} placeholder="VD: DV001, KG, LY..." />
           </Form.Item>
-          
+
           <Form.Item
             name="tenDonVi"
             label="Tên đơn vị"
@@ -257,7 +278,7 @@ const DonVi = () => {
           >
             <Input placeholder="VD: Kilogram, Lý, Chai..." />
           </Form.Item>
-          
+
           <Form.Item
             name="heSo"
             label="Hệ số"
