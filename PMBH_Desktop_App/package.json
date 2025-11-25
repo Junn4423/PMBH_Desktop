@@ -42,11 +42,10 @@
       "category": "public.app-category.business"
     },
     "win": {
-      "target": "nsis",
-      "sign": false,
-      "verifyUpdateCodeSignature": false
+      "target": "nsis"
     },
     "linux": {
+      "icon": "build/icon.png",
       "category": "Office"
     },
     "nsis": {
