@@ -45,7 +45,7 @@
       "target": "nsis"
     },
     "linux": {
-      "icon": "build/icon.png",
+      "target": "zip",
       "category": "Office"
     },
     "nsis": {
