@@ -295,7 +295,23 @@ class lv_controler
 	{
 		if ($this->isLog == 0)
 			return false;
-		$lvsql = "insert into lv_lv0001 (lv002,lv003,lv004,lv005,lv006,lv007) values('$this->UserID','$vDateLog','$vTableID','$vLogText','" . $_SESSION['SOFIP'] . "','" . $_SESSION['SOFMAC'] . "')";
+		$clientIp = isset($_SESSION['SOFIP']) ? trim((string) $_SESSION['SOFIP']) : '';
+		if ($clientIp === '' && isset($_SERVER['HTTP_X_FORWARDED_FOR'])) {
+			$forwarded = explode(',', (string) $_SERVER['HTTP_X_FORWARDED_FOR']);
+			$clientIp = trim($forwarded[0]);
+		}
+		if ($clientIp === '' && isset($_SERVER['REMOTE_ADDR'])) {
+			$clientIp = trim((string) $_SERVER['REMOTE_ADDR']);
+		}
+		$clientDevice = isset($_SESSION['SOFMAC']) ? trim((string) $_SESSION['SOFMAC']) : '';
+		if ($clientDevice === '' && isset($_SERVER['HTTP_USER_AGENT'])) {
+			$clientDevice = substr(trim((string) $_SERVER['HTTP_USER_AGENT']), 0, 120);
+		}
+		if (function_exists('sof_escape_string')) {
+			$clientIp = sof_escape_string($clientIp);
+			$clientDevice = sof_escape_string($clientDevice);
+		}
+		$lvsql = "insert into lv_lv0001 (lv002,lv003,lv004,lv005,lv006,lv007) values('$this->UserID','$vDateLog','$vTableID','$vLogText','$clientIp','$clientDevice')";
 		$return = db_query($lvsql);
 		if ($return)
 			return $return;

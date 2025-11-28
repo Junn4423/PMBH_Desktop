@@ -4510,6 +4510,7 @@ const BanHang = () => {
       </Modal>
 
       <Modal
+        className="cancel-reason-modal"
         title="Chọn lý do hủy hóa đơn"
         open={isCancelReasonModalOpen}
         onCancel={closeCancelReasonModal}
@@ -4517,34 +4518,39 @@ const BanHang = () => {
         okText="Xác nhận hủy"
         cancelText="Đóng"
         confirmLoading={cancelReasonSubmitting}
-        width={780}
+        width={920}
+        centered
         destroyOnClose
       >
-        <Form form={cancelReasonForm} layout="vertical">
+        <Form form={cancelReasonForm} layout="vertical" className="cancel-reason-form">
           <Form.Item
             label="Lý do hủy hóa đơn"
             name="cancelReasonCode"
             rules={[{ required: true, message: 'Vui lòng chọn lý do hủy hóa đơn' }]}
           >
             <Radio.Group className="cancel-reason-radio-group">
-              {CANCEL_REASON_GROUPS.map((group) => (
-                <div key={group.id} className="cancel-reason-group">
-                  <div className="cancel-reason-group__header">
-                    <Tag color={group.color}>{group.title}</Tag>
-                    <Text type="secondary">{group.description}</Text>
+              <div className="cancel-reason-grid">
+                {CANCEL_REASON_GROUPS.map((group) => (
+                  <div key={group.id} className="cancel-reason-card">
+                    <div className="cancel-reason-card__header">
+                      <Tag color={group.color}>{group.title}</Tag>
+                      <Text type="secondary">{group.description}</Text>
+                    </div>
+                    <div className="cancel-reason-card__body">
+                      {group.reasons.map((reason) => (
+                        <Radio key={reason.code} value={reason.code} className="cancel-reason-card__option">
+                          <div className="cancel-reason-card__option-content">
+                            <Text strong>{reason.label}</Text>
+                            <Text type="secondary" className="cancel-reason-card__option-desc">
+                              {reason.description}
+                            </Text>
+                          </div>
+                        </Radio>
+                      ))}
+                    </div>
                   </div>
-                  <div className="cancel-reason-group__options">
-                    {group.reasons.map((reason) => (
-                      <Radio key={reason.code} value={reason.code} className="cancel-reason-option">
-                        <div>
-                          <Text strong>{reason.label}</Text>
-                          <div className="cancel-reason-option__description">{reason.description}</div>
-                        </div>
-                      </Radio>
-                    ))}
-                  </div>
-                </div>
-              ))}
+                ))}
+              </div>
             </Radio.Group>
           </Form.Item>
 

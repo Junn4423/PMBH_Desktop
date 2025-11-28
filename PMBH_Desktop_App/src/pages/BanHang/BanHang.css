@@ -2275,43 +2275,81 @@
 }
 
 /* Cancel reason modal */
-.cancel-reason-group {
+.cancel-reason-modal .ant-modal-body {
+  padding: 12px 24px 8px;
+}
+
+.cancel-reason-form .ant-form-item-label > label {
+  font-weight: 600;
+}
+
+.cancel-reason-radio-group {
+  width: 100%;
+}
+
+.cancel-reason-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 16px;
+}
+
+.cancel-reason-card {
   border: 1px solid #e8e8e8;
-  border-radius: 12px;
+  border-radius: 14px;
   padding: 12px 16px;
-  margin-bottom: 12px;
-  background: #fafafa;
-}
-
-.cancel-reason-group__header {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  align-items: center;
-  margin-bottom: 8px;
-}
-
-.cancel-reason-group__options {
+  background: #ffffff;
+  min-height: 220px;
   display: flex;
   flex-direction: column;
-  gap: 6px;
 }
 
-.cancel-reason-option.ant-radio-wrapper {
+.cancel-reason-card__header {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 10px;
+}
+
+.cancel-reason-card__body {
+  display: grid;
+  grid-auto-rows: minmax(64px, auto);
+  gap: 8px;
+}
+
+.cancel-reason-card__option.ant-radio-wrapper {
   width: 100%;
   margin: 0;
-  padding: 8px 12px;
-  border-radius: 8px;
+  padding: 10px 12px;
+  border-radius: 10px;
   border: 1px solid transparent;
   transition: border-color 0.2s ease, background-color 0.2s ease;
+  display: flex;
+  gap: 10px;
 }
 
-.cancel-reason-option.ant-radio-wrapper:hover {
-  border-color: rgba(25, 125, 211, 0.5);
+.cancel-reason-card__option.ant-radio-wrapper:hover {
+  border-color: rgba(25, 125, 211, 0.45);
   background: rgba(25, 125, 211, 0.04);
 }
 
-.cancel-reason-option__description {
+.cancel-reason-card__option .ant-radio {
+  margin-top: 4px;
+}
+
+.cancel-reason-card__option .ant-radio + * {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.cancel-reason-card__option-content {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.cancel-reason-card__option-desc {
   font-size: 12px;
   color: #666666;
 }
