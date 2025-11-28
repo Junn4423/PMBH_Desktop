@@ -979,14 +979,18 @@ const BanHang = () => {
               ? rawAreaId
               : derivedIsTakeAway
                 ? '__TAKEAWAY__'
-                : rawAreaId;
+                : undefined;
+          const areaIdAsString =
+            normalizedAreaId !== undefined && normalizedAreaId !== null
+              ? normalizedAreaId.toString()
+              : undefined;
 
           return {
             id: normalizedId,
             maBan: normalizedId, // Sử dụng normalizedId cho modal
             name: tableName,
             tenBan: tableName,
-            areaId: normalizedAreaId,
+            areaId: areaIdAsString,
             areaName: table?.tenKhuVuc ?? table?.areaName ?? (derivedIsTakeAway ? 'Take Away' : undefined),
             status: 'available', // Sẽ được cập nhật từ loadTableStatuses
             tableType: table?.tableType ?? (derivedIsTakeAway ? 'TAKEAWAY' : 'DINE_IN'),
@@ -1259,12 +1263,46 @@ const BanHang = () => {
         areasData = Object.values(areasResponse);
       }
 
-      const hasTakeAwayArea = areasData.some(area => area?.idKhuVuc === '__TAKEAWAY__');
-      const normalizedAreas = hasTakeAwayArea
-        ? areasData
-        : [...areasData, { idKhuVuc: '__TAKEAWAY__', ten: 'Take Away', isTakeAwayArea: true }];
+      const normalizeAreaRecord = (area) => {
+        if (!area) return null;
+        const rawId = area.idKhuVuc ?? area.maKhuVuc ?? area.khuVucId ?? area.lv001 ?? area.id ?? area.code ?? area.value;
+        const normalizedId = rawId !== undefined && rawId !== null ? rawId.toString() : null;
+        const label = area.ten ?? area.tenKhuVuc ?? area.tenKhu ?? area.lv002 ?? area.name ?? area.label;
+
+        if (!normalizedId && !area.isTakeAwayArea) {
+          return null;
+        }
+
+        return {
+          ...area,
+          idKhuVuc: normalizedId ?? area.idKhuVuc ?? '__TAKEAWAY__',
+          ten: label || (normalizedId ? `Khu vực ${normalizedId}` : 'Khu vực'),
+          isTakeAwayArea: Boolean(area.isTakeAwayArea)
+        };
+      };
+
+      const normalizedAreasMap = new Map();
+      areasData.forEach(area => {
+        const normalized = normalizeAreaRecord(area);
+        if (normalized) {
+          normalizedAreasMap.set(normalized.idKhuVuc, normalized);
+        }
+      });
+
+      const hasTakeAwayArea = Array.from(normalizedAreasMap.values()).some(area =>
+        area.idKhuVuc === '__TAKEAWAY__' || area.isTakeAwayArea
+      );
+
+      if (!hasTakeAwayArea) {
+        const takeAwayArea = normalizeAreaRecord({ idKhuVuc: '__TAKEAWAY__', ten: 'Take Away', isTakeAwayArea: true });
+        normalizedAreasMap.set(takeAwayArea.idKhuVuc, takeAwayArea);
+      }
+
+      const normalizedAreas = Array.from(normalizedAreasMap.values())
+        .sort((a, b) => a.ten.localeCompare(b.ten, 'vi', { sensitivity: 'base' }));
 
       setAreas(normalizedAreas);
+      setSelectedArea(prev => (prev === 'all' || normalizedAreas.some(area => area.idKhuVuc === prev) ? prev : 'all'));
     } catch (error) {
   // console.error('Error loading areas:', error);
     message.error(__('Không thể tải danh sách khu vực'));
@@ -3654,7 +3692,9 @@ const BanHang = () => {
 
   // Filter dữ liệu
   const filteredTables = tables.filter(table => {
-    const matchesArea = selectedArea === 'all' || table.areaId === selectedArea;
+    const matchesArea =
+      selectedArea === 'all' ||
+      (table.areaId !== undefined && table.areaId !== null && table.areaId.toString() === selectedArea);
     return matchesArea;
   });
 
@@ -3716,7 +3756,7 @@ const BanHang = () => {
           </Button>
           <Select
             value={selectedArea}
-            onChange={setSelectedArea}
+            onChange={(value) => setSelectedArea(value === undefined || value === null ? 'all' : value.toString())}
             size={controlSize}
             style={{ width: selectWidth }}
             placeholder="Chọn khu vực"
