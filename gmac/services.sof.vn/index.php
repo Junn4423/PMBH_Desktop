@@ -48,8 +48,25 @@ switch ($vtable) {
 				$vOutput = $sl_lv0009->LoadBan();
 				break;
 			case 'themBan':
-				$sl_lv0009->lv002 = $input['lv002'] ?? $_POST['lv002'] ?? "";
-				$sl_lv0009->lv004 = $input['lv004'] ?? $_POST['lv004'] ?? "";
+				$maBan = trim($input['lv001'] ?? $_POST['lv001'] ?? "");
+				$tenBan = $input['lv002'] ?? $_POST['lv002'] ?? "";
+				$maKhuVuc = $input['lv004'] ?? $_POST['lv004'] ?? "";
+				if ($maBan !== '') {
+					$maBanEsc = sof_escape_string($maBan);
+					$tenBanEsc = sof_escape_string($tenBan);
+					$maKhuVucEsc = sof_escape_string($maKhuVuc);
+					$checkSql = "SELECT 1 FROM sl_lv0009 WHERE lv001='" . $maBanEsc . "' LIMIT 1";
+					$checkResult = db_query($checkSql);
+					if ($checkResult && db_fetch_array($checkResult)) {
+						$vOutput = false;
+						break;
+					}
+					$insertSql = "INSERT INTO sl_lv0009 (lv001, lv002, lv003, lv004, lv005) VALUES ('" . $maBanEsc . "', '" . $tenBanEsc . "', '', '" . $maKhuVucEsc . "', 0)";
+					$vOutput = db_query($insertSql) ? true : false;
+					break;
+				}
+				$sl_lv0009->lv002 = $tenBan;
+				$sl_lv0009->lv004 = $maKhuVuc;
 				$vOutput = $sl_lv0009->LV_Insert();
 				break;
 			case 'suaBan':

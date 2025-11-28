@@ -18,7 +18,6 @@ import {
   Popconfirm,
   Modal,
   Table,
-  Checkbox,
   Form,
   Radio,
   Tag
@@ -191,7 +190,7 @@ const BanHang = () => {
   const [isTouchDevice, setIsTouchDevice] = useState(false);
 
   const [draftInvoices, setDraftInvoices] = useState([]);
-  const [includeVAT, setIncludeVAT] = useState(false); // Checkbox for VAT tax
+  const [includeVAT] = useState(false); // VAT always excluded in UI
   const [invoiceSummary, setInvoiceSummary] = useState({
     subtotal: 0,
     tax: 0,
@@ -4220,11 +4219,6 @@ const BanHang = () => {
                         Chưa chọn khách hàng tích điểm
                       </Text>
                     )}
-                    {loyaltyPointsEarned > 0 && (
-                      <Text type="success" style={{ display: 'block', marginTop: 4 }}>
-                        Điểm sẽ cộng: {loyaltyPointsEarned.toLocaleString('vi-VN')}
-                      </Text>
-                    )}
                     {invoiceSummary.itemDiscount > 0 && (
                       <Text type="danger" style={{ display: 'block', marginTop: 4 }}>
                         Giảm món: -{invoiceSummary.itemDiscount.toLocaleString('vi-VN')} đ
@@ -4240,14 +4234,6 @@ const BanHang = () => {
                         Tổng giảm: -{invoiceSummary.discount.toLocaleString('vi-VN')} đ
                       </Text>
                     )}
-                  </div>
-                  <div style={{ marginBottom: '8px' }}>
-                    <Checkbox
-                      checked={includeVAT}
-                      onChange={(e) => setIncludeVAT(e.target.checked)}
-                    >
-                      Thuế VAT (10%)
-                    </Checkbox>
                   </div>
                   <div className="total-display">
                     <Text strong style={{ fontSize: '16px' }}>Tổng: </Text>

@@ -1600,10 +1600,15 @@ export async function loadSanPhamTheoMaDanhMucSp(maDm) {
   return await callApi('sl_lv0007', 'loadSanPhamTheoDmSp', { maDm });
 }
 
-export async function themBan(banData) {
-  const { lv002, lv004 } = banData; // tenBan, maKhuVuc
-  console.log('themBan API called with:', { lv002, lv004 });
-  const result = await callApi('sl_lv0009', 'themBan', { lv002, lv004 });
+export async function themBan(banData = {}) {
+  const { maBan, tenBan, maKhuVuc } = banData;
+  const payload = {
+    lv001: maBan,
+    lv002: tenBan,
+    lv004: maKhuVuc
+  };
+  console.log('themBan API called with:', payload);
+  const result = await callApi('sl_lv0009', 'themBan', payload);
   console.log('themBan API result:', result);
   return result;
 }

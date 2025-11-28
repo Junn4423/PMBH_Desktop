@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Card, Button, Modal, Form, Input, Select, InputNumber, Table, Space, Breadcrumb, Tag, message, Popconfirm } from 'antd';
 import { Coffee, Plus, Edit, Trash2, Search } from 'lucide-react';
 import { loadBan, loadKhuVuc, themBan, suaBan, xoaBan } from '../../services/apiServices';
@@ -6,6 +6,25 @@ import './BanNhaHang.css';
 
 const { Search: SearchInput } = Input;
 const { Option } = Select;
+
+const getKhuVucId = (khuVuc) => (
+  khuVuc?.idKhuVuc ?? khuVuc?.maKhuVuc ?? khuVuc?.lv001 ?? khuVuc?.id ?? ''
+);
+
+const getKhuVucName = (khuVuc) => (
+  khuVuc?.ten ?? khuVuc?.tenKhuVuc ?? khuVuc?.lv002 ?? khuVuc?.name ?? 'Không xác định'
+);
+
+const buildKhuVucMap = (list = []) => {
+  const map = {};
+  list.forEach(item => {
+    const id = getKhuVucId(item);
+    if (id) {
+      map[id] = getKhuVucName(item);
+    }
+  });
+  return map;
+};
 
 const BanNhaHang = () => {
   const [tables, setTables] = useState([]);
@@ -17,43 +36,38 @@ const BanNhaHang = () => {
   const [loading, setLoading] = useState(false);
   const [khuVucList, setKhuVucList] = useState([]);
 
-  useEffect(() => {
-    loadTablesData();
-    loadKhuVucData();
-  }, []);
-
-  useEffect(() => {
-    handleSearch(searchText);
-  }, [searchText, tables]);
-
-  const loadTablesData = async () => {
+  const loadTablesData = useCallback(async () => {
     setLoading(true);
     try {
       const [banData, khuVucData] = await Promise.all([loadBan(), loadKhuVuc()]);
       console.log('Raw ban data:', banData);
       console.log('Raw khu vuc data:', khuVucData);
-      
-      // Create khu vuc map for quick lookup
-      const khuVucMap = {};
-      if (khuVucData && Array.isArray(khuVucData)) {
-        khuVucData.forEach(kv => {
-          khuVucMap[kv.idKhuVuc] = kv.ten || kv.tenKhuVuc;
-        });
-      }
-      
+
+      const normalizedKhuVuc = Array.isArray(khuVucData) ? khuVucData : [];
+      const nextKhuVucMap = buildKhuVucMap(normalizedKhuVuc);
+      setKhuVucList(normalizedKhuVuc);
+
       if (banData && Array.isArray(banData)) {
-        // Map dữ liệu từ backend (format: idBan, tenBan, idKhuVuc)
-        const mappedTables = banData.map(table => ({
-          id: table.idBan || table.id,
-          ten: (table.tenBan || table.ten || 'undefined').trim(), // Trim whitespace
-          khuVuc: khuVucMap[table.idKhuVuc] || table.idKhuVuc || 'Không xác định', // Get tên from map
-          maKhuVuc: table.idKhuVuc, // idKhuVuc chính là mã khu vực
-          soGhe: table.soGhe,
-          trangThai: table.trangThai || 'available',
-          // Keep original data for reference
-          _raw: table
-        }));
-        
+        const mappedTables = banData
+          .map(table => {
+            const maBan = table.maBan ?? table.idBan ?? table.lv001 ?? table.id;
+            const maKhuVuc = table.maKhuVuc ?? table.idKhuVuc ?? table.lv004 ?? '';
+            if (!maBan) {
+              return null;
+            }
+            return {
+              id: maBan,
+              maBan,
+              ten: (table.tenBan || table.ten || table.lv002 || 'Chưa đặt tên').trim(),
+              khuVuc: nextKhuVucMap[maKhuVuc] || maKhuVuc || 'Không xác định',
+              maKhuVuc,
+              soGhe: Number(table.soGhe) || 4,
+              trangThai: table.trangThai || 'available',
+              _raw: table
+            };
+          })
+          .filter(Boolean);
+
         console.log('Mapped tables:', mappedTables);
         setTables(mappedTables);
         setFilteredTables(mappedTables);
@@ -70,39 +84,26 @@ const BanNhaHang = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
-  const handleSearch = (value) => {
-    if (!value || value.trim() === '') {
+  useEffect(() => {
+    loadTablesData();
+  }, [loadTablesData]);
+
+  useEffect(() => {
+    if (!searchText || searchText.trim() === '') {
       setFilteredTables(tables);
       return;
     }
-    
-    const searchLower = value.toLowerCase().trim();
-    const filtered = tables.filter(item => 
+
+    const searchLower = searchText.toLowerCase().trim();
+    const filtered = tables.filter(item =>
       (item.ten && item.ten.toLowerCase().includes(searchLower)) ||
       (item.khuVuc && item.khuVuc.toLowerCase().includes(searchLower)) ||
-      (item.id && item.id.toString().toLowerCase().includes(searchLower))
+      (item.maBan && item.maBan.toString().toLowerCase().includes(searchLower))
     );
     setFilteredTables(filtered);
-  };
-
-  const loadKhuVucData = async () => {
-    try {
-      const data = await loadKhuVuc();
-      console.log('Raw khu vuc data:', data);
-      
-      if (data && Array.isArray(data)) {
-        setKhuVucList(data);
-      } else {
-        console.warn('Invalid khu vuc data:', data);
-        setKhuVucList([]);
-      }
-    } catch (error) {
-      console.error('Error loading khu vuc:', error);
-      setKhuVucList([]);
-    }
-  };
+  }, [searchText, tables]);
 
   const getStatusColor = (status) => {
     switch (status) {
@@ -133,20 +134,17 @@ const BanNhaHang = () => {
   const handleAdd = () => {
     setEditingTable(null);
     form.resetFields();
+    form.setFieldsValue({ soGhe: 4, trangThai: 'available' });
     setIsModalVisible(true);
   };
 
   const handleEdit = (record) => {
     console.log('Editing record:', record);
     setEditingTable(record);
-    
-    // Find khu vuc name
-    const khuVuc = khuVucList.find(k => k.idKhuVuc === record.maKhuVuc);
-    const khuVucName = khuVuc ? (khuVuc.ten || khuVuc.tenKhuVuc) : record.khuVuc;
-    
     form.setFieldsValue({
+      maBan: record.maBan,
       ten: record.ten,
-      khuVuc: khuVucName,
+      khuVuc: record.maKhuVuc,
       soGhe: record.soGhe || 4,
       trangThai: record.trangThai
     });
@@ -162,7 +160,7 @@ const BanNhaHang = () => {
       okType: 'danger',
       onOk: async () => {
         try {
-          const maBan = record.id || record._raw?.idBan;
+          const maBan = record.maBan || record.id || record._raw?.maBan || record._raw?.idBan;
           console.log('Deleting table:', record);
           console.log('Deleting table with ID:', maBan);
           
@@ -187,26 +185,24 @@ const BanNhaHang = () => {
     try {
       console.log('Form values:', values);
       console.log('Editing table:', editingTable);
-      console.log('Khu vuc list:', khuVucList);
       
-      // Tìm khu vực từ tên (format: {idKhuVuc, ten} hoặc {maKhuVuc, tenKhuVuc})
-      const khuVuc = khuVucList.find(k => {
-        const tenKV = k.ten || k.tenKhuVuc;
-        return tenKV === values.khuVuc;
-      });
-      // Lấy mã khu vực từ các property có thể có
-      const maKhuVuc = khuVuc ? (khuVuc.idKhuVuc || khuVuc.maKhuVuc || khuVuc.id) : '';
-      
-      console.log('Found khu vuc:', khuVuc, 'maKhuVuc:', maKhuVuc);
-      
+      const maKhuVuc = values.khuVuc;
+      const maBanInput = values.maBan?.toString().trim();
+
+      console.log('Selected maKhuVuc:', maKhuVuc, 'maBan:', maBanInput);
+
       if (!maKhuVuc) {
         message.warning('Không tìm thấy khu vực, vui lòng chọn lại');
+        return;
+      }
+      if (!maBanInput) {
+        message.warning('Vui lòng nhập mã bàn hợp lệ');
         return;
       }
       
       if (editingTable) {
         // Cập nhật bàn
-        const maBan = editingTable.id || editingTable._raw?.idBan;
+        const maBan = editingTable.maBan || editingTable.id || editingTable._raw?.maBan || editingTable._raw?.idBan || maBanInput;
         
         if (!maBan) {
           message.error('Không tìm thấy mã bàn');
@@ -215,7 +211,7 @@ const BanNhaHang = () => {
         }
         
         const payload = {
-          maBan: maBan,
+          maBan,
           tenBan: values.ten.trim(),
           maKhuVuc: maKhuVuc
         };
@@ -226,8 +222,9 @@ const BanNhaHang = () => {
       } else {
         // Thêm bàn mới
         const payload = {
-          lv002: values.ten.trim(),
-          lv004: maKhuVuc
+          maBan: maBanInput,
+          tenBan: values.ten.trim(),
+          maKhuVuc: maKhuVuc
         };
         
         console.log('Add payload:', payload);
@@ -246,6 +243,13 @@ const BanNhaHang = () => {
   };
 
   const columns = [
+    {
+      title: 'Mã bàn',
+      dataIndex: 'maBan',
+      key: 'maBan',
+      width: 120,
+      sorter: (a, b) => a.maBan.localeCompare(b.maBan),
+    },
     {
       title: 'Tên bàn',
       dataIndex: 'ten',
@@ -337,7 +341,7 @@ const BanNhaHang = () => {
               prefix={<Search size={16} />}
               value={searchText}
               onChange={(e) => setSearchText(e.target.value)}
-              onSearch={handleSearch}
+              onSearch={(value) => setSearchText(value)}
               style={{ width: 250 }}
             />
             <Button
@@ -353,7 +357,7 @@ const BanNhaHang = () => {
         <Table
           columns={columns}
           dataSource={filteredTables}
-          rowKey="id"
+          rowKey="maBan"
           loading={loading}
           pagination={{
             pageSize: 10,
@@ -381,6 +385,17 @@ const BanNhaHang = () => {
           onFinish={handleSave}
         >
           <Form.Item
+            name="maBan"
+            label="Mã bàn"
+            rules={[
+              { required: true, message: 'Vui lòng nhập mã bàn!' },
+              { pattern: /^[A-Za-z0-9_-]+$/, message: 'Mã bàn chỉ chứa chữ, số, -, _' }
+            ]}
+          >
+            <Input placeholder="Ví dụ: B01" disabled={!!editingTable} />
+          </Form.Item>
+
+          <Form.Item
             name="ten"
             label="Tên bàn"
             rules={[
@@ -399,11 +414,11 @@ const BanNhaHang = () => {
           >
             <Select placeholder="Chọn khu vực">
               {khuVucList.map(khuVuc => {
-                const tenKV = khuVuc.ten || khuVuc.tenKhuVuc;
-                const idKV = khuVuc.idKhuVuc;
+                const idKV = getKhuVucId(khuVuc);
+                if (!idKV) return null;
                 return (
-                  <Option key={idKV} value={tenKV}>
-                    {tenKV}
+                  <Option key={idKV} value={idKV}>
+                    {getKhuVucName(khuVuc)}
                   </Option>
                 );
               })}

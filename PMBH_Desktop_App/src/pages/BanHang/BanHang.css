@@ -1976,10 +1976,13 @@
 }
 
 .invoice-footer-fixed {
-  padding: 12px 20px 120px;
+  padding: 12px 20px 24px;
   border-top: 1px solid #f0f0f0;
   background: rgba(255, 255, 255, 0.98);
   backdrop-filter: blur(10px);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
 }
 
 .empty-items-compact {

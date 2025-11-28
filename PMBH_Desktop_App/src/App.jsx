@@ -26,9 +26,6 @@ const KiemKho = React.lazy(() => import('./pages/KiemKho/KiemKho'));
 const PhongBan = React.lazy(() => import('./pages/PhongBan/PhongBan'));
 const NhomNguoiDung = React.lazy(() => import('./pages/NhomNguoiDung/NhomNguoiDung'));
 const ChonKhoQuanLy = React.lazy(() => import('./pages/ChonKhoQuanLy/ChonKhoQuanLy'));
-const TaiKhoanMB = React.lazy(() => import('./pages/TaiKhoanMB/TaiKhoanMB'));
-const NhapChi = React.lazy(() => import('./pages/NhapChi/NhapChi'));
-const CanhBaoMaxMin = React.lazy(() => import('./pages/CanhBaoMaxMin/CanhBaoMaxMin'));
 const VNPayReturn = React.lazy(() => import('./pages/Payment/VNPayReturn'));
 const MoMoReturn = React.lazy(() => import('./pages/Payment/MoMoReturn'));
 const ZaloPayReturn = React.lazy(() => import('./pages/Payment/ZaloPayReturn'));
@@ -39,18 +36,6 @@ const ChuongTrinhKinhDoanh = React.lazy(() => import('./pages/ChuongTrinhKinhDoa
 const NguoiDangKy = React.lazy(() => import('./pages/NguoiDangKy/NguoiDangKy'));
 const ChoNguoiQuanLy = React.lazy(() => import('./pages/ChoNguoiQuanLy/ChoNguoiQuanLy'));
 const NhanVienCongTy = React.lazy(() => import('./pages/NhanVienCongTy/NhanVienCongTy'));
-const BcChiTien = React.lazy(() => import('./pages/BcChiTien/BcChiTien'));
-const BcChiTienNhapKho = React.lazy(() => import('./pages/BcChiTienNhapKho/BcChiTienNhapKho'));
-const NhapBanHang = React.lazy(() => import('./pages/NhapBanHang/NhapBanHang'));
-const ChoNhaBep = React.lazy(() => import('./pages/ChoNhaBep/ChoNhaBep'));
-const ChoQuayBar = React.lazy(() => import('./pages/ChoQuayBar/ChoQuayBar'));
-const BcBanHang = React.lazy(() => import('./pages/BcBanHang/BcBanHang'));
-const BcTong = React.lazy(() => import('./pages/BcTong/BcTong'));
-const BaoCaoGiaoCa = React.lazy(() => import('./pages/BaoCaoGiaoCa/BaoCaoGiaoCa'));
-const BcNhapKho = React.lazy(() => import('./pages/BcNhapKho/BcNhapKho'));
-const BaoTonMobil = React.lazy(() => import('./pages/BaoTonMobil/BaoTonMobil'));
-const NhapKhoMb = React.lazy(() => import('./pages/NhapKhoMb/NhapKhoMb'));
-const KiemKhoMb = React.lazy(() => import('./pages/KiemKhoMb/KiemKhoMb'));
 const LoaiSanPham = React.lazy(() => import('./pages/LoaiSanPham/LoaiSanPham'));
 const SanPham = React.lazy(() => import('./pages/SanPham/SanPham'));
 const LichSuTichDiem = React.lazy(() => import('./pages/LichSuTichDiem/LichSuTichDiem'));
@@ -68,7 +53,7 @@ const ChoNhaBepQl = React.lazy(() => import('./pages/ChoNhaBepQl/ChoNhaBepQl'));
 const ChoQuayBarQl = React.lazy(() => import('./pages/ChoQuayBarQl/ChoQuayBarQl'));
 const BaoCaoDoanhThuKhachHang = React.lazy(() => import('./pages/BaoCaoDoanhThuKhachHang/BaoCaoDoanhThuKhachHang'));
 
-const { Sider, Content } = Layout;
+const { Content } = Layout;
 
 function App() {
   const { isAuthenticated } = useAuth();
@@ -164,7 +149,6 @@ function App() {
               {/* Routes cho mục chung */}
               <Route path="/cong-ty" element={<CongTy />} />
               <Route path="/bang-dieu-khien-nguoi-dung" element={<BangDieuKhienNguoiDung />} />
-              <Route path="/giao-dien-mb" element={<TrangChu />} />
               <Route path="/dieu-khien-san-pham" element={<TrangChu />} />
               <Route path="/thiet-lap-tang-va-ban" element={<TrangChu />} />
               
@@ -176,22 +160,6 @@ function App() {
               <Route path="/nhom-nguoi-dung" element={<NhomNguoiDung />} />
               <Route path="/chon-kho-quan-ly" element={<ChonKhoQuanLy />} />
               
-              {/* Routes con cho Giao diện MB */}
-              <Route path="/tai-khoan-mb" element={<TaiKhoanMB />} />
-              <Route path="/bc-chi-tien" element={<BcChiTien />} />
-              <Route path="/bc-chi-tien-nhap-kho" element={<BcChiTienNhapKho />} />
-              <Route path="/nhap-chi" element={<NhapChi />} />
-              <Route path="/nhap-ban-hang" element={<NhapBanHang />} />
-              <Route path="/cho-nha-bep" element={<ChoNhaBep />} />
-              <Route path="/cho-quay-bar" element={<ChoQuayBar />} />
-              <Route path="/bc-ban-hang" element={<BcBanHang />} />
-              <Route path="/bc-tong" element={<BcTong />} />
-              <Route path="/bao-cao-giao-ca" element={<BaoCaoGiaoCa />} />
-              <Route path="/bc-nhap-kho" element={<BcNhapKho />} />
-              <Route path="/canh-bao-max-min" element={<CanhBaoMaxMin />} />
-              <Route path="/bao-ton-mobil" element={<BaoTonMobil />} />
-              <Route path="/nhap-kho-mb" element={<NhapKhoMb />} />
-              <Route path="/kiem-kho-mb" element={<KiemKhoMb />} />
               
               {/* Routes con cho Điều khiển sản phẩm */}
               <Route path="/don-vi" element={<DonVi />} />

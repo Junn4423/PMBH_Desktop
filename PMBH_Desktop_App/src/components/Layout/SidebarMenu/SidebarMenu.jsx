@@ -80,72 +80,6 @@ const SidebarMenu = ({ isCollapsed = false, onCollapseChange }) => {
           ]
         },
         {
-          key: 'giao-dien-mb',
-          label: 'Giao diện MB',
-          children: [
-            {
-              key: '/tai-khoan-mb',
-              label: 'Tài khoản',
-            },
-            {
-              key: '/bc-chi-tien',
-              label: 'BC chi tiền',
-            },
-            {
-              key: '/bc-chi-tien-nhap-kho',
-              label: 'BC chi tiền + nhập kho',
-            },
-            {
-              key: '/nhap-chi',
-              label: 'Nhập chi',
-            },
-            {
-              key: '/nhap-ban-hang',
-              label: 'Nhập bán hàng',
-            },
-            {
-              key: '/cho-nha-bep',
-              label: 'Cho nhà bếp',
-            },
-            {
-              key: '/cho-quay-bar',
-              label: 'Cho quầy bar',
-            },
-            {
-              key: '/bc-ban-hang',
-              label: 'BC bán hàng',
-            },
-            {
-              key: '/bc-tong',
-              label: 'BC tổng',
-            },
-            {
-              key: '/bao-cao-giao-ca',
-              label: 'Báo cáo giao ca',
-            },
-            {
-              key: '/bc-nhap-kho',
-              label: 'BC nhập kho',
-            },
-            {
-              key: '/canh-bao-max-min',
-              label: 'Cảnh báo max/min',
-            },
-            {
-              key: '/bao-ton-mobil',
-              label: 'Báo tồn Mobil',
-            },
-            {
-              key: '/nhap-kho-mb',
-              label: 'Nhập kho',
-            },
-            {
-              key: '/kiem-kho-mb',
-              label: 'Kiểm kho',
-            }
-          ]
-        },
-        {
           key: 'dieu-khien-san-pham',
           label: 'Điều khiển sản phẩm',
           children: [
@@ -320,7 +254,7 @@ const SidebarMenu = ({ isCollapsed = false, onCollapseChange }) => {
       
       // Các submenu cấp 2 theo từng parent
       const level2SubmenuGroups = {
-        'muc-chung': ['cong-ty', 'bang-dieu-khien-nguoi-dung', 'giao-dien-mb', 'dieu-khien-san-pham', 'thiet-lap-tang-va-ban'],
+        'muc-chung': ['cong-ty', 'bang-dieu-khien-nguoi-dung', 'dieu-khien-san-pham', 'thiet-lap-tang-va-ban'],
         'kinh-doanh': ['quan-ly-ban-nha-hang']
       };
       
