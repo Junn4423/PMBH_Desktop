@@ -9,13 +9,15 @@ import {
   Palette,
   ChevronDown,
   ShoppingCart,
-  ChefHat
+  ChefHat,
+  ChevronLeft,
+  ChevronRight
 } from 'lucide-react';
 import './SidebarMenu.css';
 
 const { Option } = Select;
 
-const SidebarMenu = () => {
+const SidebarMenu = ({ isCollapsed = false, onCollapseChange }) => {
   const navigate = useNavigate();
   const location = useLocation();
   const [selectedTheme, setSelectedTheme] = useState('default');
@@ -304,6 +306,10 @@ const SidebarMenu = () => {
     }
   };
 
+  const toggleSidebar = () => {
+    onCollapseChange?.(!isCollapsed);
+  };
+
   // Hàm xử lý khi submenu được mở/đóng
   const handleOpenChange = (keys) => {
     const latestOpenKey = keys.find(key => !openKeys.includes(key));
@@ -376,24 +382,37 @@ const SidebarMenu = () => {
     }
   };
 
+  const renderedOpenKeys = isCollapsed ? [] : openKeys;
+
   return (
-    <div className="sidebar-menu">
+    <div className={`sidebar-menu ${isCollapsed ? 'collapsed' : ''}`}>
       <div className="logo-section">
-        <div className="logo-icon">
-          <Home size={24} />
+        <div className="logo-brand">
+          <div className="logo-icon">
+            <Home size={24} />
+          </div>
+          <span className="logo-text">PMBH Desktop</span>
         </div>
-        <span className="logo-text">PMBH Desktop</span>
+        <button
+          type="button"
+          className="collapse-toggle"
+          onClick={toggleSidebar}
+          aria-label={isCollapsed ? 'Mở rộng sidebar' : 'Thu gọn sidebar'}
+        >
+          {isCollapsed ? <ChevronRight size={18} /> : <ChevronLeft size={18} />}
+        </button>
       </div>
       
       <Menu
         mode="inline"
         selectedKeys={[location.pathname]}
-        openKeys={openKeys}
+        openKeys={renderedOpenKeys}
         onClick={handleMenuClick}
         onOpenChange={handleOpenChange}
         items={menuItems}
         style={{ border: 'none' }}
         className="main-menu"
+        inlineCollapsed={isCollapsed}
       />
 
       <div className="theme-selector">

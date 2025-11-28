@@ -1,4 +1,4 @@
-import React, { Suspense } from 'react';
+import React, { Suspense, useEffect, useState } from 'react';
 import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { Layout, Spin } from 'antd';
 import { useAuth } from './contexts/AuthContext';
@@ -73,6 +73,12 @@ const { Sider, Content } = Layout;
 function App() {
   const { isAuthenticated } = useAuth();
   const location = useLocation();
+  const [isSidebarCollapsed, setSidebarCollapsed] = useState(false);
+
+  useEffect(() => {
+    const width = isSidebarCollapsed ? '80px' : '250px';
+    document.documentElement.style.setProperty('--sidebar-width', width);
+  }, [isSidebarCollapsed]);
   
   // Check if current route is customer display
   const isCustomerDisplay = location.pathname === '/customer-display';
@@ -82,6 +88,7 @@ function App() {
   const isMoMoReturn = location.pathname.startsWith('/payment/momo-return');
   const isZaloPayReturn = location.pathname.startsWith('/payment/zalopay-return');
   const isStandalonePayment = isVNPayReturn || isVNPaySuccess || isPaymentSuccess || isMoMoReturn || isZaloPayReturn;
+  const isBanHangPage = location.pathname.startsWith('/ban-hang');
   // Customer Display without authentication - shown directly without login
   if (isCustomerDisplay) {
     return (
@@ -123,20 +130,23 @@ function App() {
   return (
     <LanguageProvider>
       <Layout style={{ minHeight: '100vh' }}>
-      <SidebarMenu />
-      <HeaderBar />
-      <Layout>
+        <SidebarMenu 
+          isCollapsed={isSidebarCollapsed}
+          onCollapseChange={setSidebarCollapsed}
+        />
+        <HeaderBar />
+        <Layout>
         <Content 
           className="app-content" 
           style={{ 
-            marginLeft: '250px', 
             marginTop: '64px', 
             padding: '20px',
             minHeight: 'calc(100vh - 64px)'
           }}
         >
-          <Suspense fallback={<div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}><Spin size="large" /></div>}>
-            <Routes>
+          <div className={`page-scroll-wrapper ${isBanHangPage ? 'page-scroll-wrapper--banhang' : ''}`}>
+            <Suspense fallback={<div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}><Spin size="large" /></div>}>
+              <Routes>
               <Route path="/" element={<Navigate to="/trang-chu" replace />} />
               <Route path="/trang-chu" element={<TrangChu />} />
               <Route path="/ban-hang" element={<BanHang />} />
@@ -221,6 +231,7 @@ function App() {
               <Route path="/payment/vnpay-success" element={<VNPaySuccess />} />
             </Routes>
           </Suspense>
+          </div>
         </Content>
       </Layout>
     </Layout>
