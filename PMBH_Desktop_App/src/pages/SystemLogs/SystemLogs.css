@@ -1,0 +1,60 @@
+.system-logs-page {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.system-logs__summary .ant-card {
+  height: 100%;
+}
+
+.system-logs__filters-card .ant-card-head-title,
+.system-logs__table-card .ant-card-head-title {
+  font-weight: 600;
+}
+
+.system-logs__table-card .ant-card-body {
+  max-height: 65vh;
+  overflow: auto;
+}
+
+.system-logs__filters {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 12px;
+}
+
+.system-logs__select,
+.system-logs__range-picker {
+  width: 100%;
+}
+
+.system-log__action-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.system-log__verb-tag {
+  width: fit-content;
+}
+
+.system-log__resource {
+  font-size: 12px;
+}
+
+.system-log__details {
+  margin-bottom: 0;
+}
+
+.system-log__meta {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.4;
+}
+
+@media (max-width: 768px) {
+  .system-logs__summary {
+    flex-direction: column;
+  }
+}

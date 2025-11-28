@@ -2274,6 +2274,48 @@
   flex-wrap: wrap;
 }
 
+/* Cancel reason modal */
+.cancel-reason-group {
+  border: 1px solid #e8e8e8;
+  border-radius: 12px;
+  padding: 12px 16px;
+  margin-bottom: 12px;
+  background: #fafafa;
+}
+
+.cancel-reason-group__header {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.cancel-reason-group__options {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.cancel-reason-option.ant-radio-wrapper {
+  width: 100%;
+  margin: 0;
+  padding: 8px 12px;
+  border-radius: 8px;
+  border: 1px solid transparent;
+  transition: border-color 0.2s ease, background-color 0.2s ease;
+}
+
+.cancel-reason-option.ant-radio-wrapper:hover {
+  border-color: rgba(25, 125, 211, 0.5);
+  background: rgba(25, 125, 211, 0.04);
+}
+
+.cancel-reason-option__description {
+  font-size: 12px;
+  color: #666666;
+}
+
 .table-management-buttons {
   display: flex;
   gap: 4px;

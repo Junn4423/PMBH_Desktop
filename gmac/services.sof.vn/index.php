@@ -184,7 +184,12 @@ switch ($vtable) {
 
 			case 'huyHoaDon':
 				$maHd = $input['maHd'] ?? $_POST['maHd'] ?? "";
-				$vOutput = $sl_lv0013->huyHoaDon($maHd);
+				$cancelReason = [
+					'cancelReasonCode' => $input['cancelReasonCode'] ?? $_POST['cancelReasonCode'] ?? '',
+					'cancelReasonLabel' => $input['cancelReasonLabel'] ?? $_POST['cancelReasonLabel'] ?? '',
+					'cancelReasonNote' => $input['cancelReasonNote'] ?? $_POST['cancelReasonNote'] ?? ''
+				];
+				$vOutput = $sl_lv0013->huyHoaDon($maHd, $cancelReason);
 				break;
 
 			default:

@@ -48,6 +48,11 @@ import {
 
 // Import constants
 import { DEFAULT_IMAGES, PLACEHOLDER_CONFIG } from '../../constants';
+import {
+  CANCEL_REASON_GROUPS,
+  CANCEL_REASON_MAP,
+  SYSTEM_AUTO_CANCEL_REASON
+} from '../../constants/cancelReasons';
 
 // Import API services
 import {
@@ -216,6 +221,9 @@ const BanHang = () => {
   const [itemDiscountModalVisible, setItemDiscountModalVisible] = useState(false);
   const [selectedItemForDiscount, setSelectedItemForDiscount] = useState(null);
   const [itemDiscountInput, setItemDiscountInput] = useState(0);
+  const [isCancelReasonModalOpen, setIsCancelReasonModalOpen] = useState(false);
+  const [cancelReasonSubmitting, setCancelReasonSubmitting] = useState(false);
+  const [cancelReasonForm] = Form.useForm();
 
   // State cho Enhanced Payment System
   const [showPaymentModal, setShowPaymentModal] = useState(false);
@@ -2563,39 +2571,46 @@ const BanHang = () => {
     message.info('Đã hủy chỉnh sửa hóa đơn');
   };
 
-  // Cancel/Hủy hóa đơn
-  const cancelInvoice = async () => {
+  const openCancelReasonModal = () => {
     if (!currentInvoice) {
       message.error('Không có hóa đơn để hủy');
       return;
     }
+    cancelReasonForm.resetFields();
+    setIsCancelReasonModalOpen(true);
+  };
+
+  const closeCancelReasonModal = () => {
+    cancelReasonForm.resetFields();
+    setIsCancelReasonModalOpen(false);
+  };
+
+  const cancelInvoice = async (reasonPayload) => {
+    if (!currentInvoice) {
+      message.error('Không có hóa đơn để hủy');
+      return false;
+    }
 
     try {
       setLoading(true);
-      await huyHoaDon(currentInvoice.maHd);
+      await huyHoaDon(currentInvoice.maHd, reasonPayload);
       message.success('Đã hủy hóa đơn thành công');
-      
-      // Trigger quick refresh sau khi hủy hóa đơn
+
       triggerQuickRefresh('CANCEL_INVOICE');
-      
-      // Reset và quay về trang chọn bàn
+
       setCurrentInvoice(null);
       setInvoiceDetails([]);
       setSelectedTable(null);
       setCurrentView(VIEW_STATES.TABLES);
-      
-      // Xóa bàn khỏi mergedTableGroups nếu có
+
       if (selectedTable) {
         setMergedTableGroups(prev => {
           const newGroups = { ...prev };
-          // Xóa nhóm nếu bàn hiện tại là bàn chính
           if (newGroups[selectedTable.id]) {
             delete newGroups[selectedTable.id];
           }
-          // Hoặc xóa bàn khỏi nhóm khác nếu là bàn phụ
           Object.keys(newGroups).forEach(mainTableId => {
             newGroups[mainTableId] = newGroups[mainTableId].filter(t => t.id !== selectedTable.id);
-            // Nếu nhóm chỉ còn 1 bàn, xóa luôn nhóm
             if (newGroups[mainTableId].length <= 1) {
               delete newGroups[mainTableId];
             }
@@ -2603,15 +2618,40 @@ const BanHang = () => {
           return newGroups;
         });
       }
-      
-      // Refresh table data to update status
+
       await loadTables();
-      
+      return true;
+
     } catch (error) {
   // Silent console
       message.error('Không thể hủy hóa đơn: ' + (error.message || 'Lỗi không xác định'));
+      return false;
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleConfirmCancelInvoice = async () => {
+    try {
+      const values = await cancelReasonForm.validateFields();
+      const reasonMeta = CANCEL_REASON_MAP[values.cancelReasonCode] || {
+        label: values.cancelReasonCode
+      };
+      setCancelReasonSubmitting(true);
+      const success = await cancelInvoice({
+        cancelReasonCode: values.cancelReasonCode,
+        cancelReasonLabel: reasonMeta.label,
+        cancelReasonNote: values.cancelReasonNote ? values.cancelReasonNote.trim() : ''
+      });
+      if (success) {
+        closeCancelReasonModal();
+      }
+    } catch (error) {
+      if (!error?.errorFields) {
+        message.error(error.message || 'Không thể xác nhận lý do hủy hóa đơn');
+      }
+    } finally {
+      setCancelReasonSubmitting(false);
     }
   };
 
@@ -2910,8 +2950,11 @@ const BanHang = () => {
 
       // 8. Xóa hóa đơn bàn nguồn (thay vì chỉ cập nhật trạng thái)
       if (selectedTable.invoiceId) {
-        try {
-          await huyHoaDon(selectedTable.invoiceId);
+    try {
+      await huyHoaDon(selectedTable.invoiceId, {
+      ...SYSTEM_AUTO_CANCEL_REASON,
+      cancelReasonNote: 'Gộp bàn - tự động xóa bill nguồn'
+      });
           } catch (error) {
           }
       }
@@ -4291,7 +4334,7 @@ const BanHang = () => {
                       <Button
                         danger
                         icon={<X size={14} />}
-                        onClick={cancelInvoice}
+                        onClick={openCancelReasonModal}
                         size="small"
                       >
                         Hủy HĐ
@@ -4464,6 +4507,68 @@ const BanHang = () => {
             </Button>
           </Space>
         </Space>
+      </Modal>
+
+      <Modal
+        title="Chọn lý do hủy hóa đơn"
+        open={isCancelReasonModalOpen}
+        onCancel={closeCancelReasonModal}
+        onOk={handleConfirmCancelInvoice}
+        okText="Xác nhận hủy"
+        cancelText="Đóng"
+        confirmLoading={cancelReasonSubmitting}
+        width={780}
+        destroyOnClose
+      >
+        <Form form={cancelReasonForm} layout="vertical">
+          <Form.Item
+            label="Lý do hủy hóa đơn"
+            name="cancelReasonCode"
+            rules={[{ required: true, message: 'Vui lòng chọn lý do hủy hóa đơn' }]}
+          >
+            <Radio.Group className="cancel-reason-radio-group">
+              {CANCEL_REASON_GROUPS.map((group) => (
+                <div key={group.id} className="cancel-reason-group">
+                  <div className="cancel-reason-group__header">
+                    <Tag color={group.color}>{group.title}</Tag>
+                    <Text type="secondary">{group.description}</Text>
+                  </div>
+                  <div className="cancel-reason-group__options">
+                    {group.reasons.map((reason) => (
+                      <Radio key={reason.code} value={reason.code} className="cancel-reason-option">
+                        <div>
+                          <Text strong>{reason.label}</Text>
+                          <div className="cancel-reason-option__description">{reason.description}</div>
+                        </div>
+                      </Radio>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </Radio.Group>
+          </Form.Item>
+
+          <Form.Item
+            label="Ghi chú thêm"
+            name="cancelReasonNote"
+            rules={[
+              ({ getFieldValue }) => ({
+                validator(_, value) {
+                  if (getFieldValue('cancelReasonCode') === 'OTHER' && !value?.trim()) {
+                    return Promise.reject(new Error('Vui lòng mô tả lý do khác'));
+                  }
+                  return Promise.resolve();
+                }
+              })
+            ]}
+          >
+            <Input.TextArea
+              rows={3}
+              placeholder="Nhập ghi chú (bắt buộc khi chọn lý do khác)"
+              allowClear
+            />
+          </Form.Item>
+        </Form>
       </Modal>
       
       {/* Invoice History Modal */}

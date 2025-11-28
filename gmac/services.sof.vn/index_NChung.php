@@ -472,6 +472,414 @@ case 'DonBan':
     }
     break;
 
+    case 'SystemLogs':
+        try {
+            $page = (int)request_value('page', 1);
+            if ($page < 1) {
+                $page = 1;
+            }
+
+            $pageSize = (int)request_value('pageSize', 50);
+            if ($pageSize < 10) {
+                $pageSize = 10;
+            }
+            if ($pageSize > 200) {
+                $pageSize = 200;
+            }
+
+            $keyword = trim((string)request_value('keyword', ''));
+            $actionFilter = trim((string)request_value('action', ''));
+            $userFilter = trim((string)request_value('user', ''));
+            $fromDateInput = request_value('fromDate', null);
+            $toDateInput = request_value('toDate', null);
+
+            $parseDate = function ($value, $fallback = null) {
+                if ($value === null || $value === '') {
+                    return $fallback;
+                }
+                if ($value instanceof DateTimeInterface) {
+                    return $value->format('Y-m-d H:i:s');
+                }
+                $stringValue = trim((string)$value);
+                if ($stringValue === '') {
+                    return $fallback;
+                }
+                $timestamp = strtotime($stringValue);
+                if ($timestamp === false) {
+                    return $fallback;
+                }
+                return date('Y-m-d H:i:s', $timestamp);
+            };
+
+            if (($fromDateInput === null || $fromDateInput === '') && ($toDateInput === null || $toDateInput === '')) {
+                $toDate = date('Y-m-d H:i:s');
+                $fromDate = date('Y-m-d H:i:s', strtotime('-7 days', strtotime($toDate)));
+            } else {
+                $fromDate = $parseDate($fromDateInput, null);
+                $toDate = $parseDate($toDateInput, null);
+            }
+
+            if ($fromDate !== null && $toDate !== null) {
+                $fromTs = strtotime($fromDate);
+                $toTs = strtotime($toDate);
+                if ($fromTs !== false && $toTs !== false && $fromTs > $toTs) {
+                    $tmp = $fromDate;
+                    $fromDate = $toDate;
+                    $toDate = $tmp;
+                }
+            }
+
+            $conditions = [];
+            if ($fromDate !== null) {
+                $conditions[] = "lv003 >= '" . esc_str($fromDate) . "'";
+            }
+            if ($toDate !== null) {
+                $conditions[] = "lv003 <= '" . esc_str($toDate) . "'";
+            }
+            if ($userFilter !== '') {
+                $conditions[] = "lv002 = '" . esc_str($userFilter) . "'";
+            }
+            if ($actionFilter !== '') {
+                $conditions[] = "lv004 = '" . esc_str($actionFilter) . "'";
+            }
+            if ($keyword !== '') {
+                $kw = esc_str('%' . $keyword . '%');
+                $conditions[] = "(lv005 LIKE '$kw' OR lv004 LIKE '$kw' OR lv002 LIKE '$kw')";
+            }
+
+            $whereClause = count($conditions) > 0 ? ('WHERE ' . implode(' AND ', $conditions)) : '';
+            $fromClause = "FROM lv_lv0001 $whereClause";
+
+            $countSql = "SELECT COUNT(1) AS total $fromClause";
+            $countRes = db_query($countSql);
+            if (!$countRes) {
+                throw new Exception('Không thể thống kê tổng số log');
+            }
+            $countRow = db_fetch_array($countRes, MYSQLI_ASSOC);
+            $totalRows = isset($countRow['total']) ? (int)$countRow['total'] : 0;
+
+            $offset = ($page - 1) * $pageSize;
+            $logs = [];
+            if ($totalRows > 0) {
+                $dataSql = "SELECT lv001, lv002, lv003, lv004, lv005, lv006, lv007 $fromClause ORDER BY lv003 DESC, lv001 DESC LIMIT $offset, $pageSize";
+                $dataRes = db_query($dataSql);
+                if (!$dataRes) {
+                    throw new Exception('Không thể tải chi tiết log');
+                }
+                while ($row = db_fetch_array($dataRes, MYSQLI_ASSOC)) {
+                    $actionKey = isset($row['lv004']) ? (string)$row['lv004'] : '';
+                    $segments = $actionKey !== '' ? explode('.', $actionKey) : [];
+                    $verb = '';
+                    $resource = $actionKey;
+                    if (count($segments) > 1) {
+                        $verb = strtolower(array_pop($segments));
+                        $resource = implode('.', $segments);
+                    } elseif ($actionKey !== '') {
+                        $verb = strtolower($actionKey);
+                    }
+                    $detailText = isset($row['lv005']) ? (string)$row['lv005'] : '';
+                    $detailPreview = function_exists('mb_substr') ? mb_substr($detailText, 0, 250) : substr($detailText, 0, 250);
+
+                    $logs[] = [
+                        'id' => (int)$row['lv001'],
+                        'userId' => isset($row['lv002']) ? $row['lv002'] : '',
+                        'timestamp' => isset($row['lv003']) ? $row['lv003'] : '',
+                        'actionKey' => $actionKey,
+                        'resource' => $resource,
+                        'verb' => $verb,
+                        'details' => $detailText,
+                        'detailsPreview' => $detailPreview,
+                        'ip' => isset($row['lv006']) ? $row['lv006'] : '',
+                        'device' => isset($row['lv007']) ? $row['lv007'] : ''
+                    ];
+                }
+            }
+
+            $actionStats = [];
+            $actionSql = "SELECT lv004 AS actionKey, COUNT(1) AS total $fromClause GROUP BY lv004 ORDER BY total DESC LIMIT 40";
+            $actionRes = db_query($actionSql);
+            if ($actionRes) {
+                while ($row = db_fetch_array($actionRes, MYSQLI_ASSOC)) {
+                    $actionStats[] = [
+                        'actionKey' => $row['actionKey'],
+                        'total' => (int)$row['total']
+                    ];
+                }
+            }
+
+            $userStats = [];
+            $userSql = "SELECT lv002 AS userId, COUNT(1) AS total $fromClause GROUP BY lv002 ORDER BY total DESC LIMIT 25";
+            $userRes = db_query($userSql);
+            if ($userRes) {
+                while ($row = db_fetch_array($userRes, MYSQLI_ASSOC)) {
+                    $userStats[] = [
+                        'userId' => $row['userId'],
+                        'total' => (int)$row['total']
+                    ];
+                }
+            }
+
+            $verbSummary = [];
+            foreach ($actionStats as $stat) {
+                $actionKey = isset($stat['actionKey']) ? (string)$stat['actionKey'] : '';
+                $segments = $actionKey !== '' ? explode('.', $actionKey) : [];
+                $verb = '';
+                if (count($segments) > 1) {
+                    $verb = strtolower(array_pop($segments));
+                } else {
+                    $verb = strtolower($actionKey);
+                }
+                if ($verb === '') {
+                    $verb = 'khac';
+                }
+                if (!isset($verbSummary[$verb])) {
+                    $verbSummary[$verb] = 0;
+                }
+                $verbSummary[$verb] += $stat['total'];
+            }
+            $verbStats = [];
+            foreach ($verbSummary as $verb => $countValue) {
+                $verbStats[] = [
+                    'verb' => $verb,
+                    'total' => (int)$countValue
+                ];
+            }
+            usort($verbStats, function ($a, $b) {
+                return $b['total'] <=> $a['total'];
+            });
+
+            $vOutput = [
+                'success' => true,
+                'data' => $logs,
+                'pagination' => [
+                    'page' => $page,
+                    'pageSize' => $pageSize,
+                    'total' => $totalRows,
+                    'totalPages' => $pageSize > 0 ? (int)ceil($totalRows / $pageSize) : 0
+                ],
+                'filters' => [
+                    'fromDate' => $fromDate,
+                    'toDate' => $toDate,
+                    'keyword' => $keyword,
+                    'action' => $actionFilter,
+                    'user' => $userFilter
+                ],
+                'summary' => [
+                    'actionBreakdown' => $actionStats,
+                    'userBreakdown' => $userStats,
+                    'verbBreakdown' => $verbStats
+                ]
+            ];
+        } catch (Exception $ex) {
+            $vOutput = [
+                'success' => false,
+                'message' => 'Không thể tải log hệ thống: ' . $ex->getMessage()
+            ];
+        }
+        break;
+
+    case 'CancelLogs':
+        if ($vfun !== 'list') {
+            $vOutput = ['success' => false, 'message' => 'Chức năng không tồn tại'];
+            break;
+        }
+        try {
+            $page = (int)request_value('page', 1);
+            if ($page < 1) {
+                $page = 1;
+            }
+            $pageSize = (int)request_value('pageSize', 20);
+            if ($pageSize < 10) {
+                $pageSize = 10;
+            }
+            if ($pageSize > 200) {
+                $pageSize = 200;
+            }
+
+            $keyword = trim((string)request_value('keyword', ''));
+            $reasonCode = trim((string)request_value('reasonCode', ''));
+            $userFilter = trim((string)request_value('user', ''));
+            $fromDateInput = request_value('fromDate', null);
+            $toDateInput = request_value('toDate', null);
+
+            $parseDate = function ($value, $fallback = null) {
+                if ($value === null || $value === '') {
+                    return $fallback;
+                }
+                if ($value instanceof DateTimeInterface) {
+                    return $value->format('Y-m-d H:i:s');
+                }
+                $stringValue = trim((string)$value);
+                if ($stringValue === '') {
+                    return $fallback;
+                }
+                $timestamp = strtotime($stringValue);
+                if ($timestamp === false) {
+                    return $fallback;
+                }
+                return date('Y-m-d H:i:s', $timestamp);
+            };
+
+            if (($fromDateInput === null || $fromDateInput === '') && ($toDateInput === null || $toDateInput === '')) {
+                $toDate = date('Y-m-d H:i:s');
+                $fromDate = date('Y-m-d H:i:s', strtotime('-7 days', strtotime($toDate)));
+            } else {
+                $fromDate = $parseDate($fromDateInput, null);
+                $toDate = $parseDate($toDateInput, null);
+            }
+
+            if ($fromDate !== null && $toDate !== null) {
+                $fromTs = strtotime($fromDate);
+                $toTs = strtotime($toDate);
+                if ($fromTs !== false && $toTs !== false && $fromTs > $toTs) {
+                    $tmp = $fromDate;
+                    $fromDate = $toDate;
+                    $toDate = $tmp;
+                }
+            }
+
+            $conditions = ["lv004 = 'sl_lv0013.cancel'"];
+            if ($fromDate !== null) {
+                $conditions[] = "lv003 >= '" . esc_str($fromDate) . "'";
+            }
+            if ($toDate !== null) {
+                $conditions[] = "lv003 <= '" . esc_str($toDate) . "'";
+            }
+            if ($userFilter !== '') {
+                $conditions[] = "lv002 = '" . esc_str($userFilter) . "'";
+            }
+            if ($reasonCode !== '') {
+                $conditions[] = "lv005 LIKE '%\"cancelReasonCode\":\"" . esc_str($reasonCode) . "\"%'";
+            }
+            if ($keyword !== '') {
+                $kw = esc_str('%' . $keyword . '%');
+                $conditions[] = "(lv005 LIKE '$kw' OR lv002 LIKE '$kw')";
+            }
+
+            $whereClause = 'WHERE ' . implode(' AND ', $conditions);
+            $fromClause = "FROM lv_lv0001 $whereClause";
+
+            $countSql = "SELECT COUNT(1) AS total $fromClause";
+            $countRes = db_query($countSql);
+            if (!$countRes) {
+                throw new Exception('Không thể đếm log hủy hóa đơn');
+            }
+            $countRow = db_fetch_array($countRes, MYSQLI_ASSOC);
+            $totalRows = isset($countRow['total']) ? (int)$countRow['total'] : 0;
+
+            $offset = ($page - 1) * $pageSize;
+            $logs = [];
+            if ($totalRows > 0) {
+                $dataSql = "SELECT lv001, lv002, lv003, lv005 $fromClause ORDER BY lv003 DESC, lv001 DESC LIMIT $offset, $pageSize";
+                $dataRes = db_query($dataSql);
+                if (!$dataRes) {
+                    throw new Exception('Không thể tải log hủy hóa đơn');
+                }
+                while ($row = db_fetch_array($dataRes, MYSQLI_ASSOC)) {
+                    $rawDetails = isset($row['lv005']) ? $row['lv005'] : '';
+                    $details = json_decode($rawDetails, true);
+                    if (!is_array($details)) {
+                        $details = [];
+                    }
+                    $logs[] = [
+                        'id' => (int)$row['lv001'],
+                        'userId' => $row['lv002'] ?? '',
+                        'timestamp' => $row['lv003'] ?? '',
+                        'invoiceId' => $details['invoiceId'] ?? '',
+                        'tableId' => $details['tableId'] ?? '',
+                        'customerName' => $details['customerName'] ?? '',
+                        'previousStatus' => $details['previousStatus'] ?? '',
+                        'cancelReasonCode' => $details['cancelReasonCode'] ?? '',
+                        'cancelReasonLabel' => $details['cancelReasonLabel'] ?? '',
+                        'cancelReasonNote' => $details['cancelReasonNote'] ?? '',
+                        'rawDetails' => $rawDetails
+                    ];
+                }
+            }
+
+            $reasonTotals = [];
+            $userTotals = [];
+            $summarySql = "SELECT lv002, lv005 $fromClause";
+            $summaryRes = db_query($summarySql);
+            if ($summaryRes) {
+                while ($row = db_fetch_array($summaryRes, MYSQLI_ASSOC)) {
+                    $details = json_decode($row['lv005'] ?? '', true);
+                    if (!is_array($details)) {
+                        $details = [];
+                    }
+                    $code = isset($details['cancelReasonCode']) ? trim((string)$details['cancelReasonCode']) : '';
+                    $label = isset($details['cancelReasonLabel']) ? $details['cancelReasonLabel'] : $code;
+                    if ($code !== '') {
+                        if (!isset($reasonTotals[$code])) {
+                            $reasonTotals[$code] = [
+                                'cancelReasonCode' => $code,
+                                'cancelReasonLabel' => $label,
+                                'total' => 0
+                            ];
+                        }
+                        $reasonTotals[$code]['total']++;
+                    }
+
+                    $userId = isset($row['lv002']) ? $row['lv002'] : '';
+                    if ($userId !== '') {
+                        if (!isset($userTotals[$userId])) {
+                            $userTotals[$userId] = [
+                                'userId' => $userId,
+                                'total' => 0
+                            ];
+                        }
+                        $userTotals[$userId]['total']++;
+                    }
+                }
+            }
+
+            $reasonBreakdown = array_values($reasonTotals);
+            usort($reasonBreakdown, function ($a, $b) {
+                return $b['total'] <=> $a['total'];
+            });
+            $userBreakdown = array_values($userTotals);
+            usort($userBreakdown, function ($a, $b) {
+                return $b['total'] <=> $a['total'];
+            });
+
+            $vOutput = [
+                'success' => true,
+                'data' => $logs,
+                'pagination' => [
+                    'page' => $page,
+                    'pageSize' => $pageSize,
+                    'total' => $totalRows,
+                    'totalPages' => $pageSize > 0 ? (int)ceil($totalRows / $pageSize) : 0
+                ],
+                'filters' => [
+                    'fromDate' => $fromDate,
+                    'toDate' => $toDate,
+                    'keyword' => $keyword,
+                    'user' => $userFilter,
+                    'reasonCode' => $reasonCode
+                ],
+                'summary' => [
+                    'reasonBreakdown' => $reasonBreakdown,
+                    'userBreakdown' => $userBreakdown
+                ],
+                'availableReasons' => array_map(function ($item) {
+                    return [
+                        'code' => $item['cancelReasonCode'],
+                        'label' => $item['cancelReasonLabel']
+                    ];
+                }, $reasonBreakdown),
+                'availableUsers' => array_map(function ($item) {
+                    return $item['userId'];
+                }, $userBreakdown)
+            ];
+        } catch (Exception $ex) {
+            $vOutput = [
+                'success' => false,
+                'message' => 'Không thể tải log hủy hóa đơn: ' . $ex->getMessage()
+            ];
+        }
+        break;
+
     // Case xuất báo cáo bán hàng chi tiết
     case 'BaoCaoBanHang':
         include("../clsall/sl_lv0214.php");

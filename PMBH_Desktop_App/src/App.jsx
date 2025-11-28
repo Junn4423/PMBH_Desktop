@@ -52,6 +52,7 @@ const XemThongTinXoaDonHang = React.lazy(() => import('./pages/XemThongTinXoaDon
 const ChoNhaBepQl = React.lazy(() => import('./pages/ChoNhaBepQl/ChoNhaBepQl'));
 const ChoQuayBarQl = React.lazy(() => import('./pages/ChoQuayBarQl/ChoQuayBarQl'));
 const BaoCaoDoanhThuKhachHang = React.lazy(() => import('./pages/BaoCaoDoanhThuKhachHang/BaoCaoDoanhThuKhachHang'));
+const SystemLogs = React.lazy(() => import('./pages/SystemLogs/SystemLogs'));
 
 const { Content } = Layout;
 
@@ -190,6 +191,7 @@ function App() {
               <Route path="/chuong-trinh-kinh-doanh" element={<ChuongTrinhKinhDoanh />} />
               <Route path="/cau-hinh-quan-ly-nha-hang" element={<CauHinhQuanLyNhaHang />} />
               <Route path="/xem-thong-tin-xoa-don-hang" element={<XemThongTinXoaDonHang />} />
+              <Route path="/kiem-tra-lich-su-he-thong" element={<SystemLogs />} />
               <Route path="/nguoi-dang-ky" element={<NguoiDangKy />} />
               <Route path="/cho-nguoi-quan-ly" element={<ChoNguoiQuanLy />} />
               <Route path="/cho-nha-bep-ql" element={<ChoNhaBepQl />} />

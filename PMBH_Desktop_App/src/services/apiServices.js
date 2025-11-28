@@ -1628,8 +1628,21 @@ export async function suaBan(banData) {
   return result;
 }
 
-export async function huyHoaDon(maHd) {
-  return await callApi('sl_lv0013', 'huyHoaDon', { maHd });
+export async function huyHoaDon(maHd, cancelReasonPayload = {}) {
+  const payload = { maHd };
+  if (cancelReasonPayload && typeof cancelReasonPayload === 'object') {
+    const { cancelReasonCode, cancelReasonLabel, cancelReasonNote } = cancelReasonPayload;
+    if (cancelReasonCode) {
+      payload.cancelReasonCode = cancelReasonCode;
+    }
+    if (cancelReasonLabel) {
+      payload.cancelReasonLabel = cancelReasonLabel;
+    }
+    if (cancelReasonNote !== undefined) {
+      payload.cancelReasonNote = cancelReasonNote;
+    }
+  }
+  return await callApi('sl_lv0013', 'huyHoaDon', payload);
 }
 
 export async function loadDsCthdV3(maHd) {

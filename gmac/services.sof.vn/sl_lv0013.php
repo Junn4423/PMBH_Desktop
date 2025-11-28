@@ -2861,10 +2861,13 @@ class sl_lv0013 extends lv_controler
 		];
 	}
 // Hàm hủy/xóa hóa đơn theo mã hóa đơn
-	function huyHoaDon($maHd)
+	function huyHoaDon($maHd, $cancelReason = array())
 	{
+		if (!is_array($cancelReason)) {
+			$cancelReason = array();
+		}
 		// Kiểm tra xem hóa đơn có tồn tại không
-		$sqlCheck = "SELECT lv001, lv011 FROM sl_lv0013 WHERE lv001 = '$maHd'";
+		$sqlCheck = "SELECT lv001, lv002, lv007, lv011 FROM sl_lv0013 WHERE lv001 = '$maHd'";
 		$result = db_query($sqlCheck);
 		
 		if (!$result || mysqli_num_rows($result) == 0) {
@@ -2876,6 +2879,8 @@ class sl_lv0013 extends lv_controler
 		
 		$row = db_fetch_array($result);
 		$trangThai = $row['lv011'];
+		$maBan = $row['lv007'] ?? '';
+		$tenKhach = $row['lv002'] ?? '';
 		
 		// Chỉ cho phép hủy hóa đơn ở trạng thái chưa thanh toán (0: chờ, 1: đang phục vụ)
 		if ($trangThai != 0 && $trangThai != 1) {
@@ -2903,6 +2908,24 @@ class sl_lv0013 extends lv_controler
 			
 			// Commit transaction
 			db_query("COMMIT");
+			
+			$logPayload = json_encode(
+				array(
+					'invoiceId' => $maHd,
+					'tableId' => $maBan,
+					'customerName' => $tenKhach,
+					'previousStatus' => $trangThai,
+					'cancelReasonCode' => $cancelReason['cancelReasonCode'] ?? '',
+					'cancelReasonLabel' => $cancelReason['cancelReasonLabel'] ?? '',
+					'cancelReasonNote' => $cancelReason['cancelReasonNote'] ?? '',
+					'userId' => $_SESSION['ERPSOFV2RUserID'] ?? '',
+					'loggedAt' => $this->DateCurrent
+				),
+				JSON_UNESCAPED_UNICODE
+			);
+			if ($logPayload !== false) {
+				$this->InsertLogOperation($this->DateCurrent, 'sl_lv0013.cancel', sof_escape_string($logPayload));
+			}
 			
 			return [
 				'success' => true,

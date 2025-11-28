@@ -188,6 +188,10 @@ const SidebarMenu = ({ isCollapsed = false, onCollapseChange }) => {
               label: 'Xem thông tin xóa đơn hàng',
             },
             {
+              key: '/kiem-tra-lich-su-he-thong',
+              label: 'Kiểm tra lịch sử hệ thống',
+            },
+            {
               key: '/nguoi-dang-ky',
               label: 'Người đăng ký',
             },
