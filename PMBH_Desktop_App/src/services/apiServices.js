@@ -1,10 +1,41 @@
 import axios from 'axios';
 import {url_api_services, url_chart_api, url_image_base} from "./url";
-import { getAuthHeaders, refreshAuthToken } from './apiLogin';
+import { getAuthHeaders, refreshAuthToken, clearAuthCache, setSessionConflictHandler } from './apiLogin';
 
 const urlApi = url_api_services;
 
 // -------------------- API Functions --------------------
+
+const SESSION_CONFLICT_CODE = 'session_conflict';
+
+// Biến lưu handler cho session conflict (được set từ AuthContext)
+let localSessionConflictHandler = null;
+
+// Hàm để set handler từ bên ngoài
+export const setApiSessionConflictHandler = (handler) => {
+  localSessionConflictHandler = typeof handler === 'function' ? handler : null;
+};
+
+const notifySessionConflict = (message) => {
+  if (typeof localSessionConflictHandler === 'function') {
+    try {
+      localSessionConflictHandler(message);
+    } catch (notifyError) {
+      console.error('Session conflict handler failed:', notifyError);
+    }
+  }
+};
+
+const isSessionConflictResponse = (data) => {
+  if (!data) {
+    return false;
+  }
+  const message = typeof data === 'string' ? data : data.message || data.error || data.statusMessage;
+  if (!message) {
+    return false;
+  }
+  return String(message).toLowerCase() === SESSION_CONFLICT_CODE;
+};
 
 const isInvalidAuthResponse = (data) => {
   if (data === null || data === undefined) {
@@ -35,6 +66,15 @@ export async function callApi(table, func, additionalData = {}, retryCount = 0) 
 
     const res = await axios.post(urlApi, payload, { headers });
     const data = res.data;
+
+    // Kiểm tra session conflict trước - nếu bị kick thì thông báo và logout
+    if (isSessionConflictResponse(data)) {
+      clearAuthCache();
+      notifySessionConflict('Tài khoản được đăng nhập ở nơi khác. Vui lòng đăng nhập lại.');
+      const conflictError = new Error(SESSION_CONFLICT_CODE);
+      conflictError.code = SESSION_CONFLICT_CODE;
+      throw conflictError;
+    }
 
     if (isInvalidAuthResponse(data)) {
       if (retryCount === 0) {

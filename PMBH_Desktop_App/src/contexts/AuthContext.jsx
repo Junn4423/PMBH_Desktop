@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { message } from 'antd';
-import { login as apiLogin, clearAuthCache, setSessionConflictHandler, verifySession } from '../services/apiLogin';
+import { login as apiLogin, clearAuthCache, setSessionConflictHandler } from '../services/apiLogin';
+import { setApiSessionConflictHandler } from '../services/apiServices';
 
 const AuthContext = createContext();
 
@@ -39,44 +40,50 @@ export const AuthProvider = ({ children }) => {
 
   useEffect(() => {
     setSessionConflictHandler(handleForcedLogout);
-    return () => setSessionConflictHandler(null);
+    setApiSessionConflictHandler(handleForcedLogout);
+    return () => {
+      setSessionConflictHandler(null);
+      setApiSessionConflictHandler(null);
+    };
   }, [handleForcedLogout]);
 
-  useEffect(() => {
-    if (!user?.taiKhoan || !user?.token) {
-      return undefined;
-    }
-
-    let cancelled = false;
-    const pollIntervalMs = 5000;
-
-    const pollSession = async () => {
-      try {
-        const status = await verifySession(user.taiKhoan, user.token);
-        if (!status?.valid && !cancelled) {
-          const reason = status?.message === 'session_conflict'
-            ? 'Tài khoản của bạn đã được đăng nhập ở nơi khác. Vui lòng đăng nhập lại.'
-            : 'Phiên đăng nhập không còn hợp lệ. Vui lòng đăng nhập lại.';
-          handleForcedLogout(reason);
-        }
-      } catch (error) {
-        if (cancelled) {
-          return;
-        }
-        const rawMessage = error?.response?.data?.message || error?.message;
-        if (rawMessage === 'session_conflict') {
-          handleForcedLogout('Tài khoản của bạn đã được đăng nhập ở nơi khác. Vui lòng đăng nhập lại.');
-        }
-      }
-    };
-
-    pollSession();
-    const intervalId = setInterval(pollSession, pollIntervalMs);
-    return () => {
-      cancelled = true;
-      clearInterval(intervalId);
-    };
-  }, [user?.taiKhoan, user?.token, handleForcedLogout]);
+  // Tạm thời tắt polling session mỗi 5 giây
+  // Chỉ hiện thông báo khi user thao tác và nhận lỗi "invalid" từ API
+  // useEffect(() => {
+  //   if (!user?.taiKhoan || !user?.token) {
+  //     return undefined;
+  //   }
+  //
+  //   let cancelled = false;
+  //   const pollIntervalMs = 5000;
+  //
+  //   const pollSession = async () => {
+  //     try {
+  //       const status = await verifySession(user.taiKhoan, user.token);
+  //       if (!status?.valid && !cancelled) {
+  //         const reason = status?.message === 'session_conflict'
+  //           ? 'Tài khoản của bạn đã được đăng nhập ở nơi khác. Vui lòng đăng nhập lại.'
+  //           : 'Phiên đăng nhập không còn hợp lệ. Vui lòng đăng nhập lại.';
+  //         handleForcedLogout(reason);
+  //       }
+  //     } catch (error) {
+  //       if (cancelled) {
+  //         return;
+  //       }
+  //       const rawMessage = error?.response?.data?.message || error?.message;
+  //       if (rawMessage === 'session_conflict') {
+  //         handleForcedLogout('Tài khoản của bạn đã được đăng nhập ở nơi khác. Vui lòng đăng nhập lại.');
+  //       }
+  //     }
+  //   };
+  //
+  //   pollSession();
+  //   const intervalId = setInterval(pollSession, pollIntervalMs);
+  //   return () => {
+  //     cancelled = true;
+  //     clearInterval(intervalId);
+  //   };
+  // }, [user?.taiKhoan, user?.token, handleForcedLogout]);
 
   const login = async (taiKhoan, matKhau, options = {}) => {
     try {
