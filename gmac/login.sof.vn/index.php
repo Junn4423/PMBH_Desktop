@@ -29,6 +29,10 @@ $lvmac = substr($mycom, ($pmac + strlen($lvIpClient) + 2), 30); // Get Physical 
 $vArLogin = array();
 $vArLogin['code'] = '';
 $vArLogin['token'] = '';
+$vArLogin['role'] = null;
+$vArLogin['chiNhanh'] = '';
+$vArLogin['success'] = false;
+$vArLogin['requiresForceLogout'] = false;
 
 function CodeAutoFill($vLen = 10)
 {
@@ -45,22 +49,121 @@ function ASCCodeAuto()
 	switch ($vcode) {
 		case 1:
 			return chr(rand(48, 57));
-			break;
 		case 2:
 			return chr(rand(65, 90));
-			break;
 		default:
 			return chr(rand(97, 122));
-			break;
 	}
+}
+
+function sof_get_request_value($input, $key)
+{
+	if (is_array($input) && array_key_exists($key, $input)) {
+		return $input[$key];
+	}
+	if (isset($_POST[$key])) {
+		return $_POST[$key];
+	}
+	if (isset($_GET[$key])) {
+		return $_GET[$key];
+	}
+	return null;
+}
+
+function sof_to_bool($value)
+{
+	if (is_bool($value)) {
+		return $value;
+	}
+	if (is_numeric($value)) {
+		return ((int) $value) === 1;
+	}
+	if (is_string($value)) {
+		$normalized = strtolower(trim($value));
+		return in_array($normalized, array('1', 'true', 'yes', 'on'), true);
+	}
+	return false;
+}
+
+function sof_hash_equals($expected, $provided)
+{
+	if (function_exists('hash_equals')) {
+		return hash_equals($expected, $provided);
+	}
+	return $expected === $provided;
+}
+
+function sof_prepare_session_status_response($input)
+{
+	$vCode = trim((string) sof_get_request_value($input, 'code'));
+	$vToken = trim((string) sof_get_request_value($input, 'token'));
+
+	if ($vCode === '' || $vToken === '') {
+		return array(
+			'success' => false,
+			'valid' => false,
+			'message' => 'invalid_request'
+		);
+	}
+
+	$vsql = "select lv097, lv098 from lv_lv0007 where lv001='$vCode' limit 1";
+	$vresult = db_query($vsql);
+	if (!$vresult) {
+		return array(
+			'success' => false,
+			'valid' => false,
+			'message' => 'db_error'
+		);
+	}
+
+	$vrow = db_fetch_array($vresult);
+	if (!$vrow) {
+		return array(
+			'success' => false,
+			'valid' => false,
+			'message' => 'user_not_found'
+		);
+	}
+
+	$vStoredToken = trim((string) $vrow['lv097']);
+	if ($vStoredToken === '' || !sof_hash_equals($vStoredToken, $vToken)) {
+		return array(
+			'success' => false,
+			'valid' => false,
+			'message' => 'session_conflict',
+			'lastActive' => $vrow['lv098']
+		);
+	}
+
+	return array(
+		'success' => true,
+		'valid' => true,
+		'message' => 'active',
+		'lastActive' => $vrow['lv098']
+	);
 }
 // $vUserName=$_POST['txtUserName'];
 // $vPassword=$_POST['txtPassword'];
 $inputJSON = file_get_contents('php://input');
 $input = json_decode($inputJSON, true);
 
-$vUserName = isset($input['txtUserName']) ? $input['txtUserName'] : (isset($_POST['txtUserName']) ? $_POST['txtUserName'] : "");
-$vPassword = isset($input['txtPassword']) ? $input['txtPassword'] : (isset($_POST['txtPassword']) ? $_POST['txtPassword'] : "");
+$actionRaw = sof_get_request_value($input, 'action');
+$action = is_string($actionRaw) ? strtolower(trim($actionRaw)) : '';
+
+if ($action === 'session_status') {
+	$vSessionStatus = sof_prepare_session_status_response($input);
+	echo json_encode($vSessionStatus);
+	ob_end_flush();
+	exit();
+}
+
+$vUserName = sof_get_request_value($input, 'txtUserName');
+$vPassword = sof_get_request_value($input, 'txtPassword');
+$forceLogoutRaw = sof_get_request_value($input, 'forceLogout');
+$forceLogout = sof_to_bool($forceLogoutRaw);
+$currentTokenInput = trim((string) sof_get_request_value($input, 'currentToken'));
+$vUserName = $vUserName !== null ? $vUserName : "";
+$vPassword = $vPassword !== null ? $vPassword : "";
 /*
 	if($vUserName=='' || $vUserName==NULL)
 	{
@@ -78,11 +181,29 @@ if ($vUserName != "" && $vPassword != "") {
 	}
 	if ($vnum > 0) {
 		$vrow = db_fetch_array($vresult);
+		$vStoredToken = trim((string) $vrow['lv097']);
+		$hasActiveSession = ($vStoredToken !== '');
+		$isSameSession = $hasActiveSession && $currentTokenInput !== '' && sof_hash_equals($vStoredToken, $currentTokenInput);
+		if ($hasActiveSession && !$isSameSession && !$forceLogout) {
+			$vArLogin['code'] = $vrow['lv001'];
+			$vArLogin['token'] = '';
+			$vArLogin['role'] = $vrow['lv900'];
+			$vArLogin['chiNhanh'] = $vrow['lv100'];
+			$vArLogin['success'] = false;
+			$vArLogin['requiresForceLogout'] = true;
+			$vArLogin['message'] = "Tài khoản đang đăng nhập ở nơi khác, bạn có muốn đăng xuất phiên đó không?";
+			$vArLogin['lastActive'] = $vrow['lv098'];
+			echo json_encode($vArLogin);
+			ob_end_flush();
+			exit();
+		}
 		if ($vrow['lv197'] != '' && $vrow['lv197'] != null) { {
 				$vArLogin['code'] = $vrow['lv001'];
 				$vArLogin['token'] = CodeAutoFill(16);
 				$vArLogin['role'] = $vrow['lv900']; // Thêm cột phân quyền
 				$vArLogin['chiNhanh'] = $vrow['lv100']; // Them cot Chi nhanh
+				$vArLogin['success'] = true;
+				$vArLogin['requiresForceLogout'] = false;
 				$vsql = "update lv_lv0007 set lv097='" . $vArLogin['token'] . "',lv098=now() where lv001='$vUserName'";
 				$vresult = db_query($vsql);
 				$vDate = GetServerDate();
@@ -95,6 +216,8 @@ if ($vUserName != "" && $vPassword != "") {
 			$vArLogin['token'] = CodeAutoFill(16);
 			$vArLogin['role'] = $vrow['lv900']; // Thêm cột phân quyền
 			$vArLogin['chiNhanh'] = $vrow['lv100']; // Them cot Chi nhanh
+			$vArLogin['success'] = true;
+			$vArLogin['requiresForceLogout'] = false;
 			$vsql = "update lv_lv0007 set lv097='" . $vArLogin['token'] . "',lv098=concat(CurDate(),' ',CurTime()) where lv001='$vUserName'";
 			$vresult = db_query($vsql);
 			$vDate = GetServerDate();

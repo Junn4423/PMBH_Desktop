@@ -15,6 +15,7 @@ class lv_controler
 	protected $isRel = 0;
 	protected $isHelp = 0;
 	protected $isConfig = 0;
+	protected $authErrorCode = 'invalid';
 
 	protected $isApr = 0;
 	protected $isUnApr = 0;
@@ -50,8 +51,8 @@ class lv_controler
 		if ($this->CheckStaff_Valid($vCode, $vToken)) {
 			echo '';
 		} else {
-
-			echo '{"message":"invalid"}';
+			$vMessage = ($this->authErrorCode === 'session_conflict') ? 'session_conflict' : 'invalid';
+			echo '{"message":"' . $vMessage . '"}';
 			exit();
 		}
 		$this->UserID = $vUserID;
@@ -72,15 +73,34 @@ class lv_controler
 	}
 	public function CheckStaff_Valid($vCode, $vToken)
 	{
-		$lvsql = "select count(*) Nums from  lv_lv0007 Where lv001='$vCode' and lv097='$vToken'";
+		$this->authErrorCode = 'invalid';
+		$vCode = trim((string) $vCode);
+		$vToken = trim((string) $vToken);
+		if ($vCode === '' || $vToken === '') {
+			return false;
+		}
+		$lvsql = "select lv097 from  lv_lv0007 Where lv001='$vCode' limit 1";
 		$vresult = db_query($lvsql);
-		$vrow = db_fetch_array($vresult);
-		if ($vrow) {
-			if ($vrow['Nums'] == 0)
+		if ($vresult) {
+			$vrow = db_fetch_array($vresult);
+			if ($vrow) {
+				$vStoredToken = trim((string) $vrow['lv097']);
+				if ($vStoredToken !== '' && $this->tokensMatch($vStoredToken, $vToken)) {
+					return true;
+				}
+				$this->authErrorCode = ($vStoredToken === '' ? 'logged_out' : 'session_conflict');
 				return false;
-			return true;
+			}
 		}
 		return false;
+	}
+
+	protected function tokensMatch($expected, $provided)
+	{
+		if (function_exists('hash_equals')) {
+			return hash_equals($expected, $provided);
+		}
+		return $expected === $provided;
 	}
 	public function LV_Escape_String($lvStr)
 	{
