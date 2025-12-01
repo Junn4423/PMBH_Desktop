@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { url_api_services, url_login_api, url_api_logout, environment } from './url';
+import { url_api_services, url_login_api, url_api_logout, environment, url_session_status } from './url';
 
 const urlApi = url_api_services;
 const urlLoginApi = url_login_api;
@@ -23,6 +23,50 @@ let lastCredentials = null;
 let refreshPromise = null;
 let autoRefreshTimer = null;
 let autoRefreshEnabled = false;
+let sessionConflictHandler = null;
+const SESSION_CONFLICT_CODE = 'session_conflict';
+const SESSION_STATUS_ACTION = 'session_status';
+
+const normalizeSessionStatusResponse = (data) => {
+  if (!data || typeof data !== 'object') {
+    return {
+      success: false,
+      valid: false,
+      message: data && data.message ? data.message : 'invalid_response',
+    };
+  }
+
+  if (typeof data.valid === 'boolean') {
+    return data;
+  }
+
+  if (String(data.message || '').toLowerCase() === SESSION_CONFLICT_CODE) {
+    return {
+      ...data,
+      success: false,
+      valid: false,
+      message: SESSION_CONFLICT_CODE,
+    };
+  }
+
+  return {
+    ...data,
+    valid: Boolean(data.success),
+  };
+};
+
+const shouldAttemptSessionStatusFallback = (error) => {
+  if (!error) {
+    return false;
+  }
+
+  if (!error.response) {
+    return true;
+  }
+
+  const status = error.response.status;
+  return status === 404 || status === 500 || status === 0;
+};
 
 const isInvalidAuthResponse = (data) => {
   if (data === null || data === undefined) {
@@ -41,6 +85,31 @@ const isInvalidAuthResponse = (data) => {
 
   const normalizedMessage = String(message).toLowerCase();
   return normalizedMessage === 'invalid' || normalizedMessage.includes('invalid token');
+};
+
+const isSessionConflictResponse = (data) => {
+  if (!data) {
+    return false;
+  }
+  const message = typeof data === 'string' ? data : data.message || data.error || data.statusMessage;
+  if (!message) {
+    return false;
+  }
+  return String(message).toLowerCase() === SESSION_CONFLICT_CODE;
+};
+
+export const setSessionConflictHandler = (handler) => {
+  sessionConflictHandler = typeof handler === 'function' ? handler : null;
+};
+
+const notifySessionConflict = (message) => {
+  if (typeof sessionConflictHandler === 'function') {
+    try {
+      sessionConflictHandler(message);
+    } catch (notifyError) {
+      console.error('Session conflict handler failed:', notifyError);
+    }
+  }
 };
 
 function clearAutoRefreshTimer() {
@@ -95,7 +164,24 @@ const cacheAuthResult = (result) => {
   return authCache;
 };
 
-const requestLoginToken = async (credentials) => {
+const performLoginHandshake = async (credentials, options = {}) => {
+  const payload = {
+    ...credentials,
+  };
+
+  if (options.forceLogout) {
+    payload.forceLogout = true;
+  }
+
+  if (options.currentToken) {
+    payload.currentToken = options.currentToken;
+  }
+
+  const res = await axios.post(urlLoginApi, payload, LOGIN_REQUEST_CONFIG);
+  return res.data;
+};
+
+const requestLoginToken = async (credentials, options = {}) => {
   if (!credentials) {
     throw new Error('Missing credentials for login request');
   }
@@ -105,8 +191,11 @@ const requestLoginToken = async (credentials) => {
   }
 
   refreshPromise = (async () => {
-    const res = await axios.post(urlLoginApi, credentials, LOGIN_REQUEST_CONFIG);
-    const result = res.data;
+    const result = await performLoginHandshake(credentials, options);
+
+    if (result?.requiresForceLogout) {
+      throw new Error('force_logout_required');
+    }
 
     if (!result || !result.token || !result.code) {
       throw new Error(result?.message || 'Invalid GMAC response');
@@ -146,7 +235,7 @@ async function getAuthToken(forceRefresh = false) {
   }
 
   try {
-    return await requestLoginToken(lastCredentials);
+    return await requestLoginToken(lastCredentials, { currentToken: authCache?.token });
   } catch (error) {
     console.error('GMAC server not available:', error.message);
     authCache = null;
@@ -178,6 +267,14 @@ async function callApiWithAuth(payload, retryCount = 0) {
     const res = await axios.post(urlApi, payload, { headers });
     const data = res.data;
 
+    if (isSessionConflictResponse(data)) {
+      clearAuthCache();
+      notifySessionConflict('Tài khoản được đăng nhập ở nơi khác. Vui lòng đăng nhập lại.');
+      const conflictError = new Error(SESSION_CONFLICT_CODE);
+      conflictError.code = SESSION_CONFLICT_CODE;
+      throw conflictError;
+    }
+
     if (isInvalidAuthResponse(data)) {
       if (retryCount === 0) {
         try {
@@ -203,12 +300,34 @@ async function callApiWithAuth(payload, retryCount = 0) {
   }
 }
 
-export async function login(username, password) {
+export async function login(username, password, options = {}) {
   const credentials = buildCredentialsPayload(username, password);
   lastCredentials = credentials;
 
   try {
-    const authData = await requestLoginToken(credentials);
+    const handshakeResponse = await performLoginHandshake(credentials, {
+      forceLogout: Boolean(options.forceLogout),
+      currentToken: options.currentToken || authCache?.token,
+    });
+
+    if (handshakeResponse?.requiresForceLogout) {
+      return {
+        success: false,
+        requiresForceLogout: true,
+        message: handshakeResponse.message,
+        code: handshakeResponse.code,
+        chiNhanh: handshakeResponse.chiNhanh,
+      };
+    }
+
+    if (!handshakeResponse || !handshakeResponse.token || !handshakeResponse.code) {
+      return {
+        success: false,
+        message: handshakeResponse?.message || 'Đăng nhập thất bại',
+      };
+    }
+
+    const authData = cacheAuthResult(handshakeResponse);
     startTokenAutoRefresh();
 
     return {
@@ -235,6 +354,38 @@ export function clearAuthCache() {
   lastCredentials = null;
 }
 
+export async function verifySession(code, token) {
+  if (!code || !token) {
+    throw new Error('missing_session_info');
+  }
+
+  const payload = {
+    code,
+    token,
+  };
+
+  try {
+    const res = await axios.post(url_session_status, payload, LOGIN_REQUEST_CONFIG);
+    return normalizeSessionStatusResponse(res.data);
+  } catch (error) {
+    if (!shouldAttemptSessionStatusFallback(error)) {
+      throw error;
+    }
+
+    const fallbackPayload = {
+      ...payload,
+      action: SESSION_STATUS_ACTION,
+    };
+
+    const fallbackResponse = await axios.post(
+      urlLoginApi,
+      fallbackPayload,
+      LOGIN_REQUEST_CONFIG
+    );
+    return normalizeSessionStatusResponse(fallbackResponse.data);
+  }
+}
+
 export const authDebug = {
   get cache() {
     return authCache;
@@ -251,6 +402,7 @@ const apiLoginService = {
   login,
   getAuthHeaders,
   clearAuthCache,
+  verifySession,
   startTokenAutoRefresh,
   stopTokenAutoRefresh,
   refreshAuthToken,
@@ -258,6 +410,7 @@ const apiLoginService = {
   environment,
   callApiWithAuth,
   urlLogoutApi,
+  setSessionConflictHandler,
 };
 
 export default apiLoginService;

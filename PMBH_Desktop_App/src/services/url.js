@@ -3,6 +3,7 @@ import { isElectron, isDevelopment, normalizeOrigin } from '../utils/environment
 const API_BASE_PATH = '/gmac';
 const LOGIN_PATH = `${API_BASE_PATH}/login.sof.vn/index.php`;
 const LOGOUT_PATH = `${API_BASE_PATH}/signout.sof.vn/index.php`;
+const SESSION_STATUS_PATH = `${API_BASE_PATH}/login.sof.vn/session_status.php`;
 const SERVICES_PATH = `${API_BASE_PATH}/services.sof.vn/index.php`;
 
 const DEFAULT_API_ORIGIN = normalizeOrigin(process.env.REACT_APP_API_ORIGIN || 'http://192.168.1.19');
@@ -30,6 +31,7 @@ const buildUrl = (origin, path) => {
 const baseUrl = buildUrl(apiOriginForRuntime, API_BASE_PATH);
 const loginUrl = buildUrl(apiOriginForRuntime, LOGIN_PATH);
 const logoutUrl = buildUrl(apiOriginForRuntime, LOGOUT_PATH);
+const sessionStatusUrl = buildUrl(apiOriginForRuntime, SESSION_STATUS_PATH);
 const servicesUrl = buildUrl(apiOriginForRuntime, SERVICES_PATH);
 const imageBaseUrl = buildUrl(imageOriginForRuntime, API_BASE_PATH);
 
@@ -40,6 +42,7 @@ const chartUrl = shouldUseDevProxy && CHART_PROXY_PATH
 export const url_api_services = servicesUrl;
 export const url_login_api = loginUrl;
 export const url_api_logout = logoutUrl;
+export const url_session_status = sessionStatusUrl;
 export const url_api = baseUrl;
 export const url_chart_api = chartUrl;
 export const url_image_base = imageBaseUrl;
@@ -53,6 +56,7 @@ export const environment = {
   baseUrl,
   loginUrl,
   logoutUrl,
+  sessionStatusUrl,
   servicesUrl,
   chartUrl,
   imageBaseUrl,

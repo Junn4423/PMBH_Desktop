@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { 
-  Card, Form, Input, Button, Checkbox, Alert, 
-  Typography, message 
+  Form, Input, Button, Checkbox, Alert, 
+  Typography, message, Modal 
 } from 'antd';
 import { 
   User, 
@@ -33,6 +33,18 @@ const DangNhap = () => {
     electronAPI?.exitApp?.();
   };
 
+  const confirmForceLogout = () => new Promise((resolve) => {
+    Modal.confirm({
+      title: 'Phiên đăng nhập đang được sử dụng',
+      content: 'Đã đăng nhập tài khoản ở một nơi khác, bạn muốn đăng xuất tài khoản đó ra không?',
+      okText: 'Đăng xuất thiết bị kia',
+      cancelText: 'Giữ phiên cũ',
+      centered: true,
+      onOk: () => resolve(true),
+      onCancel: () => resolve(false),
+    });
+  });
+
   const xuLyDangNhap = async (values) => {
     setLoading(true);
     setShowError(false);
@@ -42,7 +54,20 @@ const DangNhap = () => {
       const { tenDangNhap, matKhau, ghi_nho } = values;
       
       // Call auth login
-      const result = await authLogin(tenDangNhap, matKhau);
+      let result = await authLogin(tenDangNhap, matKhau);
+
+      if (result.requiresForceLogout) {
+        setLoading(false);
+        const shouldForceLogout = await confirmForceLogout();
+
+        if (!shouldForceLogout) {
+          message.info('Bạn đã hủy yêu cầu đăng nhập.');
+          return;
+        }
+
+        setLoading(true);
+        result = await authLogin(tenDangNhap, matKhau, { forceLogout: true });
+      }
 
       if (result.success) {
         // Clear any previous errors

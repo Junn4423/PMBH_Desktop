@@ -1,5 +1,6 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
-import { login as apiLogin, clearAuthCache, startTokenAutoRefresh } from '../services/apiLogin';
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import { message } from 'antd';
+import { login as apiLogin, clearAuthCache, setSessionConflictHandler, verifySession } from '../services/apiLogin';
 
 const AuthContext = createContext();
 
@@ -16,16 +17,68 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
+  const handleForcedLogout = useCallback((conflictMessage) => {
+    setUser(null);
+    setIsAuthenticated(false);
+    clearAuthCache();
+    localStorage.removeItem('pmbh_user');
+    localStorage.removeItem('pmbh_token');
+    if (conflictMessage) {
+      message.warning(conflictMessage);
+    }
+  }, []);
+
   useEffect(() => {
     // Clear session trước, không restore từ localStorage
     // App yêu cầu logout mỗi lần restart
     localStorage.removeItem('pmbh_user');
     localStorage.removeItem('pmbh_token');
-    
+
     setLoading(false);
   }, []);
 
-  const login = async (taiKhoan, matKhau) => {
+  useEffect(() => {
+    setSessionConflictHandler(handleForcedLogout);
+    return () => setSessionConflictHandler(null);
+  }, [handleForcedLogout]);
+
+  useEffect(() => {
+    if (!user?.taiKhoan || !user?.token) {
+      return undefined;
+    }
+
+    let cancelled = false;
+    const pollIntervalMs = 5000;
+
+    const pollSession = async () => {
+      try {
+        const status = await verifySession(user.taiKhoan, user.token);
+        if (!status?.valid && !cancelled) {
+          const reason = status?.message === 'session_conflict'
+            ? 'Tài khoản của bạn đã được đăng nhập ở nơi khác. Vui lòng đăng nhập lại.'
+            : 'Phiên đăng nhập không còn hợp lệ. Vui lòng đăng nhập lại.';
+          handleForcedLogout(reason);
+        }
+      } catch (error) {
+        if (cancelled) {
+          return;
+        }
+        const rawMessage = error?.response?.data?.message || error?.message;
+        if (rawMessage === 'session_conflict') {
+          handleForcedLogout('Tài khoản của bạn đã được đăng nhập ở nơi khác. Vui lòng đăng nhập lại.');
+        }
+      }
+    };
+
+    pollSession();
+    const intervalId = setInterval(pollSession, pollIntervalMs);
+    return () => {
+      cancelled = true;
+      clearInterval(intervalId);
+    };
+  }, [user?.taiKhoan, user?.token, handleForcedLogout]);
+
+  const login = async (taiKhoan, matKhau, options = {}) => {
     try {
       // Demo accounts for testing
       const demoAccounts = [
@@ -61,10 +114,18 @@ export const AuthProvider = ({ children }) => {
       }
 
       // If not demo account, try real API
-      const result = await apiLogin(taiKhoan, matKhau);
+      const result = await apiLogin(taiKhoan, matKhau, options);
       
       console.log('AuthContext received result:', result);
       
+      if (result.requiresForceLogout) {
+        return {
+          success: false,
+          requiresForceLogout: true,
+          message: result.message || 'Tài khoản đang đăng nhập ở thiết bị khác',
+        };
+      }
+
       if (result.success && result.userCode && result.token) {
         const userData = {
           id: result.userCode,
@@ -81,8 +142,6 @@ export const AuthProvider = ({ children }) => {
         
         localStorage.setItem('pmbh_user', JSON.stringify(userData));
         localStorage.setItem('pmbh_token', result.token);
-
-        startTokenAutoRefresh();
         
         return { success: true };
       } else {
@@ -100,11 +159,7 @@ export const AuthProvider = ({ children }) => {
   };
 
   const logout = () => {
-    setUser(null);
-    setIsAuthenticated(false);
-    clearAuthCache();
-    localStorage.removeItem('pmbh_user');
-    localStorage.removeItem('pmbh_token');
+    handleForcedLogout();
   };
 
   const value = {
