@@ -192,6 +192,12 @@ switch ($vtable) {
 				$vOutput = $sl_lv0013->huyHoaDon($maHd, $cancelReason);
 				break;
 
+			case 'capNhatMaTraCuuHoaDon':
+				$maHd = $input['maHd'] ?? $_POST['maHd'] ?? '';
+				$maTraCuu = $input['maTraCuu'] ?? $_POST['maTraCuu'] ?? '';
+				$vOutput = $sl_lv0013->capNhatMaTraCuuHoaDon($maHd, $maTraCuu);
+				break;
+
 			default:
 				break;
 		}

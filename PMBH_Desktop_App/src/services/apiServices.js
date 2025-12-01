@@ -1395,6 +1395,21 @@ export async function thanhToanHoaDonChiTiet(paymentData) {
   });
 }
 
+// Lưu mã tra cứu hóa đơn điện tử
+export async function capNhatMaTraCuuHoaDon({ maHd, maTraCuu, taxResponse } = {}) {
+  if (!maHd) {
+    throw new Error('Thiếu mã hóa đơn để lưu mã tra cứu.');
+  }
+
+  const lookupCode = typeof maTraCuu === 'string' ? maTraCuu.trim() : '';
+
+  return await callApi('sl_lv0013', 'capNhatMaTraCuuHoaDon', {
+    maHd,
+    maTraCuu: lookupCode,
+    taxResponse: taxResponse ?? null
+  });
+}
+
 // Lấy lịch sử thanh toán - Get payment history
 export async function layLichSuThanhToan(maHd) {
   return await callApi('sl_lv0013', 'layLichSuThanhToan', { maHd });

@@ -45,6 +45,35 @@ const DEFAULT_TOKEN_BODY = Object.freeze({
   client_secret: ''
 });
 
+const DEFAULT_LOOKUP_CODE_PATHS = Object.freeze([
+  'data.lookup_code',
+  'data.lookupCode',
+  'data.ma_tra_cuu',
+  'data.maTraCuu',
+  'result.lookup_code',
+  'result.lookupCode',
+  'result.ma_tra_cuu',
+  'result.maTraCuu',
+  'invoice.lookup_code',
+  'invoice.lookupCode',
+  'lookup_code',
+  'lookupCode',
+  'ma_tra_cuu',
+  'maTraCuu',
+  'reference.lookup_code',
+  'reference.lookupCode'
+]);
+
+const LOOKUP_KEYWORDS = Object.freeze([
+  'lookupcode',
+  'lookup',
+  'matracuu',
+  'ma_tra_cuu',
+  'tracuu',
+  'searchcode',
+  'referencecode'
+]);
+
 const DEFAULT_CONFIG = Object.freeze({
   enabled: false,
   apiBaseUrl: '',
@@ -52,6 +81,7 @@ const DEFAULT_CONFIG = Object.freeze({
   invoiceEndpoint: '',
   createAction: 'create',
   updateAction: 'update',
+  lookupCodeResponsePath: '',
   tokenBody: DEFAULT_TOKEN_BODY,
   tokenResponseAccessPath: 'access_token',
   tokenResponseExpiresPath: 'expires_in',
@@ -401,6 +431,51 @@ export async function ensureTaxAccessToken(config, forceRefresh = false) {
   return tokenData.access_token || tokenData.accessToken || tokenData.token;
 }
 
+function coerceLookupValue(value) {
+  if (value === null || value === undefined) {
+    return '';
+  }
+  if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') {
+    return sanitizeString(String(value), '');
+  }
+  if (Array.isArray(value)) {
+    for (const item of value) {
+      const candidate = coerceLookupValue(item);
+      if (candidate) {
+        return candidate;
+      }
+    }
+  }
+  return '';
+}
+
+function findLookupCodeDeep(source, depth = 0, maxDepth = 6) {
+  if (!source || typeof source !== 'object' || depth > maxDepth) {
+    return '';
+  }
+
+  for (const [key, value] of Object.entries(source)) {
+    const normalizedKey = key.toLowerCase().replace(/[^a-z0-9]/g, '');
+    const isLookupKey = LOOKUP_KEYWORDS.some((keyword) => normalizedKey.includes(keyword));
+
+    if (isLookupKey) {
+      const candidate = coerceLookupValue(value);
+      if (candidate) {
+        return candidate;
+      }
+    }
+
+    if (value && typeof value === 'object') {
+      const nested = findLookupCodeDeep(value, depth + 1, maxDepth);
+      if (nested) {
+        return nested;
+      }
+    }
+  }
+
+  return '';
+}
+
 export async function submitInvoiceToTaxPortal(invoicePayload, config, mode = 'create') {
   const normalized = normalizeTaxConfig(config);
   if (!normalized.enabled) {
@@ -439,6 +514,47 @@ export async function submitInvoiceToTaxPortal(invoicePayload, config, mode = 'c
     success: true,
     data: response.data
   };
+}
+
+export function extractTaxLookupCode(responseData, config) {
+  if (!responseData) {
+    return '';
+  }
+
+  const normalized = normalizeTaxConfig(config || loadTaxConfig());
+  const candidatePaths = [];
+
+  if (normalized.lookupCodeResponsePath) {
+    candidatePaths.push(normalized.lookupCodeResponsePath);
+  }
+  candidatePaths.push(...DEFAULT_LOOKUP_CODE_PATHS);
+
+  for (const path of candidatePaths) {
+    const value = resolvePath(responseData, path);
+    const candidate = coerceLookupValue(value);
+    if (candidate) {
+      return candidate;
+    }
+  }
+
+  if (Array.isArray(responseData)) {
+    for (const item of responseData) {
+      const nestedCandidate = extractTaxLookupCode(item, normalized);
+      if (nestedCandidate) {
+        return nestedCandidate;
+      }
+    }
+    return '';
+  }
+
+  if (typeof responseData === 'object') {
+    const deepCandidate = findLookupCodeDeep(responseData);
+    if (deepCandidate) {
+      return deepCandidate;
+    }
+  }
+
+  return coerceLookupValue(responseData);
 }
 
 export function prepareInvoicePayload(context = {}, config) {

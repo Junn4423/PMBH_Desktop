@@ -225,6 +225,14 @@ const TaxIntegration = () => {
                 <Input placeholder="/invoice" />
               </Form.Item>
 
+              <Form.Item
+                label="Đường dẫn mã tra cứu"
+                name="lookupCodeResponsePath"
+                tooltip="Đường dẫn JSON tới mã tra cứu. Để trống để hệ thống tự dò theo các khóa phổ biến."
+              >
+                <Input placeholder="data.lookup_code" />
+              </Form.Item>
+
               <Divider orientation="left">Thông tin token</Divider>
 
               <Form.Item

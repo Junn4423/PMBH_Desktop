@@ -81,6 +81,58 @@ class sl_lv0013 extends lv_controler
 			$this->lv032 = $vrow['lv032'];
 		}
 	}
+
+	public function capNhatMaTraCuuHoaDon($maHd, $maTraCuu)
+	{
+		$maHd = trim((string) $maHd);
+		$maTraCuu = trim((string) $maTraCuu);
+
+		if ($maHd === '') {
+			return ['success' => false, 'message' => 'Thiếu mã hóa đơn'];
+		}
+		if ($maTraCuu === '') {
+			return ['success' => false, 'message' => 'Thiếu mã tra cứu'];
+		}
+
+		$maHdEsc = sof_escape_string($maHd);
+		$lookupEsc = sof_escape_string($maTraCuu);
+		$now = $this->DateCurrent ?: (GetServerDate() . ' ' . GetServerTime());
+
+		$sql = "UPDATE sl_lv0013 SET lv363 = '{$lookupEsc}' WHERE lv001 = '{$maHdEsc}' LIMIT 1";
+		$result = db_query($sql);
+		if (!$result) {
+			return ['success' => false, 'message' => 'Không thể cập nhật mã tra cứu'];
+		}
+
+		$affected = 0;
+		if (function_exists('mysqli_affected_rows')) {
+			$affected = mysqli_affected_rows(db_connect());
+		}
+
+		if ($this->isLog) {
+			$this->InsertLogOperation($now, 'sl_lv0013.updateLookupCode', sof_escape_string($sql));
+		}
+
+		if ($affected === 0) {
+			$checkSql = "SELECT lv001 FROM sl_lv0013 WHERE lv001='{$maHdEsc}' LIMIT 1";
+			$checkResult = db_query($checkSql);
+			if ($checkResult && db_fetch_array($checkResult)) {
+				return [
+					'success' => true,
+					'unchanged' => true,
+					'maHd' => $maHd,
+					'maTraCuu' => $maTraCuu
+				];
+			}
+			return ['success' => false, 'message' => 'Không tìm thấy hóa đơn cần cập nhật'];
+		}
+
+		return [
+			'success' => true,
+			'maHd' => $maHd,
+			'maTraCuu' => $maTraCuu
+		];
+	}
 	function LV_ExistEmp($vlv010, $vlv007, &$vBlock = 0)
 	{
 		$lvsql = "select lv001,lv031 from sl_lv0013 BB where BB.lv007='$vlv007' and (BB.lv011=0)";

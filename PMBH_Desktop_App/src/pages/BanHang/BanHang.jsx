@@ -105,7 +105,8 @@ import {
   searchLoyaltyCustomers,
   getLoyaltySummary,
   addLoyaltyPoints,
-  capNhatChietKhauMon
+  capNhatChietKhauMon,
+  capNhatMaTraCuuHoaDon
 } from '../../services/apiServices';
 import dayjs from 'dayjs';
 import {
@@ -113,7 +114,8 @@ import {
   normalizeTaxConfig,
   shouldSendInvoice,
   submitInvoiceToTaxPortal,
-  prepareInvoicePayload
+  prepareInvoicePayload,
+  extractTaxLookupCode
 } from '../../services/taxIntegrationService';
 
 // Import components
@@ -2271,6 +2273,21 @@ const BanHang = () => {
             const taxResponse = await submitInvoiceToTaxPortal(invoicePayload, taxConfig, 'create');
             if (taxResponse?.success) {
               message.success('Đã gửi hóa đơn điện tử.');
+
+              const lookupCode = extractTaxLookupCode(taxResponse?.data, taxConfig);
+              const invoiceIdForLookup = currentInvoice?.maHd || paymentData?.maHd || currentInvoice?.lv001;
+
+              if (lookupCode && invoiceIdForLookup) {
+                try {
+                  await capNhatMaTraCuuHoaDon({
+                    maHd: invoiceIdForLookup,
+                    maTraCuu: lookupCode,
+                    taxResponse: taxResponse?.data
+                  });
+                } catch (persistLookupError) {
+                  console.error('Không thể lưu mã tra cứu hóa đơn:', persistLookupError);
+                }
+              }
             } else if (!taxResponse?.skipped) {
               message.warning('Không thể xác nhận trạng thái hóa đơn điện tử.');
             }
