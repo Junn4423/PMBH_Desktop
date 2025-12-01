@@ -126,6 +126,14 @@ npm run dist
 npm test
 ```
 
+## 📘 API & Swagger Docs
+
+- Chạy server tài liệu: `npm run swagger`
+- Truy cập tại `http://localhost:4000/docs` để xem giao diện Swagger UI
+- Tập tin đặc tả: `docs/openapi.yaml` (OpenAPI 3.0) với tag Auth, Catalog, Inventory, POS, Payments, Reports
+- Endpoint `/openapi.json` phục vụ JSON spec nhằm tích hợp với Postman, Hoppscotch hoặc CI
+- Server cũng kích hoạt sẵn các route VNPay từ `src/services/vnpayIPNHandler.js` để test webhook thực tế
+
 ## 🔑 Tài khoản demo
 
 - **Tài khoản**: admin
