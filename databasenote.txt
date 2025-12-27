@@ -1,0 +1,2 @@
+- Chi nhánh 1 -> all_gmacv3_0.sql
+- Chi nhánh 2 -> gmac_cn1v3_0.sql

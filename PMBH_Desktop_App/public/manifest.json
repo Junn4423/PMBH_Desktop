@@ -1,0 +1,17 @@
+{
+  "short_name": "PMBH Cafe POS",
+  "name": "PMBH Cafe POS - Phần mềm quản lý quán cafe",
+  "description": "Ứng dụng quản lý bán hàng cho quán cafe",
+  "icons": [
+    {
+      "src": "favicon.ico",
+      "sizes": "64x64 32x32 24x24 16x16",
+      "type": "image/x-icon"
+    }
+  ],
+  "start_url": ".",
+  "display": "standalone",
+  "theme_color": "#197dd3",
+  "background_color": "#ffffff",
+  "categories": ["business", "productivity", "lifestyle"]
+}

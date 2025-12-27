@@ -1,0 +1,52 @@
+.xem-thong-tin-xoa-don-hang-container {
+  padding: 24px;
+}
+
+.page-breadcrumb {
+  margin-bottom: 24px;
+}
+
+.main-card {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.page-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #197dd3;
+}
+
+.cancel-log-summary-row {
+  margin-bottom: 16px;
+}
+
+.cancel-log-summary-card {
+  min-height: 120px;
+  box-shadow: none;
+}
+
+.cancel-log-filter-card {
+  margin-bottom: 16px;
+}
+
+.cancel-log-table-card {
+  border: none;
+}
+
+.cancel-log-table-card .ant-card-body {
+  padding: 0;
+  max-height: 65vh;
+  overflow: auto;
+}
+
+.cancel-log__cell {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.cancel-log__muted {
+  font-size: 12px;
+  color: #6c6c6c;
+}

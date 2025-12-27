@@ -1,0 +1,204 @@
+/* ChonBan Component Styles - Tuân thủ color palette: #197dd3, #77d4fb, #bdbcc4, #4b4344 */
+
+.chon-ban-container {
+  width: 100%;
+  height: 100%;
+}
+
+.chon-ban-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.chon-ban-header h4 {
+  margin: 0;
+  color: #197dd3;
+}
+
+.status-legend {
+  display: flex;
+  gap: 8px;
+}
+
+/* Khu vực và bàn styles */
+.khu-vuc-list {
+  margin-bottom: 24px;
+  padding: 16px;
+  background-color: #fafafa;
+  border-radius: 8px;
+  border: 1px solid #bdbcc4;
+}
+
+.khu-vuc-list h5 {
+  margin-bottom: 12px;
+  color: #197dd3;
+}
+
+.ban-list {
+  min-height: 400px;
+}
+
+.ban-list h5 {
+  margin-bottom: 16px;
+  color: #197dd3;
+}
+
+.tables-grid {
+  min-height: 400px;
+}
+
+.table-card {
+  transition: all 0.3s ease;
+  border: 2px solid transparent;
+  cursor: pointer;
+  position: relative;
+}
+
+.table-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.table-card.selected {
+  border-color: #197dd3;
+  box-shadow: 0 0 0 2px rgba(25, 125, 211, 0.2);
+}
+
+.table-card.trong {
+  border-color: #52c41a;
+}
+
+.table-card.dang_su_dung {
+  opacity: 0.7;
+  cursor: not-allowed;
+  border-color: #f5222d;
+}
+
+.table-card.dang_su_dung:hover {
+  transform: none;
+}
+
+.table-card.dat_truoc {
+  border-color: #faad14;
+}
+
+.table-content {
+  text-align: center;
+  padding: 8px 0;
+}
+
+.table-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 12px;
+}
+
+.table-icon {
+  display: flex;
+  justify-content: center;
+  width: 100%;
+}
+
+.table-info {
+  margin-bottom: 12px;
+}
+
+.table-name {
+  display: block;
+  font-size: 16px;
+  color: #4b4344;
+  margin-bottom: 4px;
+}
+
+.table-seats {
+  display: block;
+  font-size: 12px;
+  color: #8c8c8c;
+}
+
+.table-status {
+  margin-bottom: 8px;
+}
+
+.table-description {
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid #f0f0f0;
+}
+
+.description-text {
+  font-size: 11px;
+  display: block;
+  line-height: 1.3;
+}
+
+.selected-table-info {
+  margin-top: 20px;
+  background-color: #f6ffed;
+  border-color: #b7eb8f;
+}
+
+.selected-info {
+  text-align: center;
+}
+
+/* Loading state */
+.loading-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px;
+  text-align: center;
+}
+
+.loading-container .ant-spin-nested-loading {
+  width: 100%;
+}
+
+/* Error state */
+.error-container {
+  padding: 20px;
+  text-align: center;
+}
+
+/* Empty state */
+.empty-container {
+  padding: 40px;
+  text-align: center;
+  color: #8c8c8c;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .chon-ban-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+  
+  .table-card {
+    margin-bottom: 8px;
+  }
+  
+  .table-name {
+    font-size: 14px;
+  }
+
+  .khu-vuc-list {
+    padding: 12px;
+  }
+
+  .khu-vuc-list .ant-row {
+    justify-content: center;
+  }
+
+  .khu-vuc-list .ant-col {
+    margin-bottom: 8px;
+  }
+}

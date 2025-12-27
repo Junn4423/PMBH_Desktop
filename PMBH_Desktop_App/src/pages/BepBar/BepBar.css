@@ -1,0 +1,412 @@
+/* BepBar.css - Kitchen Management Interface */
+
+.bep-bar-container {
+  padding: 24px;
+  background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 50%, #f8fafc 100%);
+  min-height: 100vh;
+  position: relative;
+}
+
+.bep-bar-container::before {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-image: url('../../assets/Img/bg.jpg');
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-attachment: fixed;
+  opacity: 0.2;
+  z-index: -1;
+  pointer-events: none;
+}
+
+.bep-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+  padding: 20px;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.bep-title {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: #4b4344;
+}
+
+.refresh-button {
+  background: linear-gradient(135deg, #197dd3 0%, #77d4fb 100%);
+  border: none;
+  border-radius: 8px;
+  height: 40px;
+  padding: 0 20px;
+  color: white;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 8px rgba(25, 125, 211, 0.3);
+}
+
+.refresh-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 16px rgba(25, 125, 211, 0.4);
+  background: linear-gradient(135deg, #1565c0 0%, #64b5f6 100%);
+  border-color: transparent;
+  color: white;
+}
+
+.refresh-button:focus {
+  background: linear-gradient(135deg, #1565c0 0%, #64b5f6 100%);
+  border-color: transparent;
+  color: white;
+  box-shadow: 0 4px 16px rgba(25, 125, 211, 0.4);
+}
+
+.kitchen-content {
+  background: rgba(255, 255, 255, 0.95);
+  border-radius: 12px;
+  padding: 24px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  backdrop-filter: blur(10px);
+  position: relative;
+}
+
+.kitchen-tabs .ant-tabs-tab {
+  font-size: 16px;
+  font-weight: 500;
+  padding: 12px 24px;
+  margin-right: 8px;
+  border-radius: 8px 8px 0 0;
+  background: #f8f9fa;
+  border: 1px solid #e9ecef;
+  border-bottom: none;
+  color: #6c757d;
+  transition: all 0.2s ease;
+}
+
+.kitchen-tabs .ant-tabs-tab-active {
+  background: linear-gradient(135deg, #197dd3 0%, #77d4fb 100%);
+  color: white !important;
+  border-color: #197dd3;
+  font-weight: 600;
+}
+
+.kitchen-tabs .ant-tabs-tab:hover {
+  color: #197dd3;
+  background: #f0f9ff;
+}
+
+.kitchen-tabs .ant-tabs-tab-active:hover {
+  color: white !important;
+  background: linear-gradient(135deg, #1565c0 0%, #64b5f6 100%);
+}
+
+/* Fix text color in active tab content */
+.kitchen-tabs .ant-tabs-tab-active .anticon,
+.kitchen-tabs .ant-tabs-tab-active span {
+  color: white !important;
+}
+
+.kitchen-tabs .ant-tabs-content-holder {
+  background: white;
+  border-radius: 0 12px 12px 12px;
+  border: 1px solid #e9ecef;
+  border-top: none;
+  padding: 24px;
+  min-height: 500px;
+}
+
+.orders-container {
+  min-height: 400px;
+  position: relative;
+}
+
+.loading-container,
+.empty-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 300px;
+  gap: 16px;
+  color: #bdbcc4;
+}
+
+.loading-container .anticon,
+.empty-container svg {
+  opacity: 0.6;
+  color: #bdbcc4;
+}
+
+.orders-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 16px;
+  padding: 8px 0;
+}
+
+.order-item {
+  background: white;
+  border: 1px solid #e9ecef;
+  border-radius: 12px;
+  padding: 20px;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  position: relative;
+  overflow: hidden;
+}
+
+.order-item:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+  border-color: #197dd3;
+}
+
+.order-item.completed {
+  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+  border-color: #28a745;
+}
+
+.order-item.completed .order-item-header {
+  color: #28a745;
+}
+
+.order-item::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: linear-gradient(135deg, #197dd3 0%, #77d4fb 100%);
+}
+
+.order-item.completed::before {
+  background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+}
+
+.order-item-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 16px;
+  color: #4b4344;
+}
+
+.table-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 600;
+  font-size: 16px;
+}
+
+.time-info {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 14px;
+  color: #6c757d;
+}
+
+.order-item-content {
+  margin-bottom: 16px;
+}
+
+.dish-name {
+  font-size: 18px;
+  font-weight: 600;
+  color: #2c3e50;
+  margin-bottom: 8px;
+  display: block;
+}
+
+.order-details {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.quantity {
+  font-weight: 500;
+  color: #197dd3;
+  font-size: 16px;
+}
+
+.price {
+  font-weight: 600;
+  color: #28a745;
+  font-size: 16px;
+}
+
+.order-item-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-top: 1px solid #e9ecef;
+  padding-top: 16px;
+  margin-top: 16px;
+}
+
+.complete-button {
+  background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+  border: none;
+  border-radius: 8px;
+  color: white;
+  font-weight: 500;
+  height: 36px;
+  padding: 0 16px;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 8px rgba(40, 167, 69, 0.3);
+}
+
+.complete-button:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(40, 167, 69, 0.4);
+  background: linear-gradient(135deg, #218838 0%, #1e7e34 100%);
+  border-color: transparent;
+  color: white;
+}
+
+.complete-button:focus {
+  background: linear-gradient(135deg, #218838 0%, #1e7e34 100%);
+  border-color: transparent;
+  color: white;
+  box-shadow: 0 4px 12px rgba(40, 167, 69, 0.4);
+}
+
+.revert-button {
+  background: linear-gradient(135deg, #ffc107 0%, #ffb300 100%);
+  border: none;
+  border-radius: 8px;
+  color: #212529;
+  font-weight: 500;
+  height: 36px;
+  padding: 0 16px;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 8px rgba(255, 193, 7, 0.3);
+}
+
+.revert-button:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(255, 193, 7, 0.4);
+  background: linear-gradient(135deg, #e0a800 0%, #d39e00 100%);
+  border-color: transparent;
+  color: #212529;
+}
+
+.revert-button:focus {
+  background: linear-gradient(135deg, #e0a800 0%, #d39e00 100%);
+  border-color: transparent;
+  color: #212529;
+  box-shadow: 0 4px 12px rgba(255, 193, 7, 0.4);
+}
+
+.waiting-time {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 14px;
+  color: #6c757d;
+}
+
+.waiting-time.urgent {
+  color: #dc3545;
+  font-weight: 600;
+}
+
+.waiting-time.urgent svg {
+  color: #dc3545;
+}
+
+/* Badge customizations */
+.ant-badge-count {
+  background: #197dd3;
+  border-color: #197dd3;
+  box-shadow: 0 2px 8px rgba(25, 125, 211, 0.3);
+}
+
+/* Loading styles */
+.loading-container .anticon-loading {
+  font-size: 48px;
+  color: #197dd3;
+}
+
+/* Responsive design */
+@media (max-width: 1200px) {
+  .orders-list {
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 12px;
+  }
+}
+
+@media (max-width: 768px) {
+  .bep-bar-container {
+    padding: 16px;
+  }
+  
+  .bep-header {
+    flex-direction: column;
+    gap: 16px;
+    text-align: center;
+  }
+  
+  .kitchen-content {
+    padding: 16px;
+  }
+  
+  .orders-list {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+  
+  .kitchen-tabs .ant-tabs-tab {
+    padding: 8px 16px;
+    font-size: 14px;
+  }
+}
+
+/* Animation for order completion */
+@keyframes orderComplete {
+  0% {
+    transform: scale(1);
+    background: white;
+  }
+  50% {
+    transform: scale(1.02);
+    background: #d4edda;
+  }
+  100% {
+    transform: scale(1);
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+  }
+}
+
+.order-item.completing {
+  animation: orderComplete 0.6s ease-in-out;
+}
+
+/* Tab badge animations */
+@keyframes badgePulse {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.1);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+.ant-badge-count {
+  animation: badgePulse 2s infinite;
+}

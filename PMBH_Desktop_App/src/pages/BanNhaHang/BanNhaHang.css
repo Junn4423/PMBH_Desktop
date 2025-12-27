@@ -1,0 +1,158 @@
+/* ================================================================
+   QUAN LY BAN PAGE STYLES
+   Styles for the table management page
+   Pallet: #197dd3, #77d4fb, #bdbcc4, #4b4344
+================================================================ */
+
+.quan-ly-ban-container {
+  background-color: #ffffff;
+  border-radius: 8px;
+  padding: 24px;
+  height: 100%;
+}
+
+.quan-ly-ban-header {
+  margin-bottom: 24px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid #e8e8e8;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.quan-ly-ban-title {
+  color: #197dd3;
+  margin: 0;
+  font-weight: 600;
+}
+
+.quan-ly-ban-actions {
+  display: flex;
+  gap: 12px;
+}
+
+.quan-ly-ban-btn-primary {
+  background-color: #197dd3;
+  border-color: #197dd3;
+}
+
+.quan-ly-ban-btn-primary:hover {
+  background-color: #77d4fb;
+  border-color: #77d4fb;
+}
+
+.quan-ly-ban-areas {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 24px;
+  margin-bottom: 32px;
+}
+
+.quan-ly-ban-area {
+  background-color: #f8f9fa;
+  border-radius: 12px;
+  padding: 20px;
+  border: 1px solid #e8e8e8;
+}
+
+.quan-ly-ban-area-title {
+  color: #197dd3;
+  font-size: 18px;
+  font-weight: 600;
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+  border-bottom: 2px solid #77d4fb;
+}
+
+.quan-ly-ban-tables {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+  gap: 12px;
+}
+
+.quan-ly-ban-table {
+  aspect-ratio: 1;
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.3s;
+  padding: 12px;
+  text-align: center;
+  font-weight: 500;
+}
+
+.quan-ly-ban-table.available {
+  background-color: #ffffff;
+  border: 2px solid #52c41a;
+  color: #52c41a;
+}
+
+.quan-ly-ban-table.occupied {
+  background-color: #fff2e8;
+  border: 2px solid #fa8c16;
+  color: #fa8c16;
+}
+
+.quan-ly-ban-table.reserved {
+  background-color: #f6ffed;
+  border: 2px solid #1890ff;
+  color: #1890ff;
+}
+
+.quan-ly-ban-table:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.quan-ly-ban-table-number {
+  font-size: 18px;
+  font-weight: bold;
+  margin-bottom: 4px;
+}
+
+.quan-ly-ban-table-status {
+  font-size: 12px;
+  opacity: 0.8;
+}
+
+.quan-ly-ban-legend {
+  display: flex;
+  justify-content: center;
+  gap: 24px;
+  margin-top: 24px;
+  padding: 16px;
+  background-color: #f8f9fa;
+  border-radius: 8px;
+}
+
+.quan-ly-ban-legend-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.quan-ly-ban-legend-color {
+  width: 16px;
+  height: 16px;
+  border-radius: 4px;
+}
+
+.quan-ly-ban-legend-color.available {
+  background-color: #52c41a;
+}
+
+.quan-ly-ban-legend-color.occupied {
+  background-color: #fa8c16;
+}
+
+.quan-ly-ban-legend-color.reserved {
+  background-color: #1890ff;
+}
+
+.quan-ly-ban-legend-text {
+  color: #4b4344;
+  font-size: 14px;
+}

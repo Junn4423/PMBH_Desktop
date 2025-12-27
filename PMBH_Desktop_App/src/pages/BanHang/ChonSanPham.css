@@ -1,0 +1,154 @@
+/* Sidebar layout for ChonSanPham (no inline CSS; follows theme) */
+.chonsp-layout {
+  display: flex;
+  gap: 0;
+  height: calc(100vh - 120px);
+}
+
+.chonsp-layout .categories-sidebar {
+  width: 240px;
+  min-width: 240px;
+  border-right: 1px solid #e8e8e8;
+  background: #ffffff;
+  display: flex;
+  flex-direction: column;
+}
+
+.chonsp-layout .sidebar-header {
+  position: sticky;
+  top: 0;
+  background: #ffffff;
+  z-index: 1;
+  padding: 12px 16px;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.chonsp-layout .sidebar-header h4 {
+  margin: 0;
+  color: #4b4344;
+}
+
+.chonsp-layout .categories-list {
+  padding: 12px;
+  overflow-y: auto;
+}
+
+.chonsp-layout .category-item {
+  padding: 10px 12px;
+  border: 1px solid #e8e8e8;
+  border-radius: 8px;
+  margin-bottom: 8px;
+  cursor: pointer;
+  transition: all .2s ease;
+  color: #4b4344;
+  background: #fff;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.chonsp-layout .category-item:hover {
+  border-color: #197dd3;
+  color: #197dd3;
+}
+
+.chonsp-layout .category-item.active {
+  background: linear-gradient(135deg, #197dd3 0%, #77d4fb 100%);
+  color: #fff;
+  border-color: transparent;
+}
+
+.chonsp-layout .category-count {
+  font-size: 12px;
+  opacity: 0.8;
+  font-weight: normal;
+}
+
+.chonsp-layout .products-pane {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  background: #f5f5f5;
+}
+
+.chonsp-layout .products-header {
+  padding: 12px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid #e8e8e8;
+  background: #fff;
+}
+
+.chonsp-layout .products-title span {
+  font-size: 16px;
+  font-weight: 600;
+  color: #4b4344;
+}
+
+.chonsp-layout .products-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 16px;
+  padding: 16px;
+  overflow-y: auto;
+  max-width: 100%;
+  align-items: stretch; /* Ensure all cards have same height */
+}
+
+/* Responsive grid adjustments for uniform layout */
+@media (min-width: 1200px) {
+  .chonsp-layout .products-grid {
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 18px;
+    padding: 20px;
+  }
+}
+
+@media (max-width: 992px) {
+  .chonsp-layout .products-grid {
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 14px;
+  }
+}
+
+.chonsp-layout .loading-container, .chonsp-layout .empty-container {
+  text-align: center;
+  padding: 40px;
+}
+
+@media (max-width: 768px) {
+  .chonsp-layout {
+    flex-direction: column;
+    height: auto;
+  }
+  .chonsp-layout .categories-sidebar {
+    width: 100%;
+    min-width: 100%;
+    border-right: none;
+    border-bottom: 1px solid #e8e8e8;
+  }
+  .chonsp-layout .categories-list {
+    display: flex;
+    gap: 8px;
+    overflow-x: auto;
+    padding: 12px 16px;
+  }
+  .chonsp-layout .category-item {
+    margin-bottom: 0;
+    white-space: nowrap;
+  }
+  .chonsp-layout .products-grid {
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    gap: 12px;
+    padding: 16px;
+  }
+}
+
+@media (max-width: 480px) {
+  .chonsp-layout .products-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+    padding: 12px;
+  }
+}

@@ -1,0 +1,5099 @@
+import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
+import {
+  Layout,
+  Row,
+  Col,
+  Card,
+  Button,
+  Select,
+  Typography,
+  message,
+  Badge,
+  Space,
+  Divider,
+  InputNumber,
+  Input,
+  List,
+  Popconfirm,
+  Modal,
+  Table,
+  Form,
+  Radio,
+  Tag
+} from 'antd';
+import { 
+  Coffee, 
+  Users, 
+  Clock, 
+  ShoppingCart, 
+  CreditCard, 
+  Trash2, 
+  Plus, 
+  Minus,
+  ArrowLeft,
+  CheckCircle,
+  Edit3,
+  X,
+  Printer,
+  History,
+  Save,
+  FileText,
+  Copy,
+  Merge,
+  Split,
+  ArrowRight,
+  UserPlus
+} from 'lucide-react';
+
+// Import constants
+import { DEFAULT_IMAGES, PLACEHOLDER_CONFIG } from '../../constants';
+import {
+  CANCEL_REASON_GROUPS,
+  CANCEL_REASON_MAP,
+  SYSTEM_AUTO_CANCEL_REASON
+} from '../../constants/cancelReasons';
+
+// Import API services
+import {
+  loadBan,
+  loadKhuVuc,
+  getAllSanPham,
+  getLoaiSanPham,
+  taoHoaDon,
+  taoCthd,
+  loadDsCthd,
+  loadHoaDonTheoBan,
+  thanhToanHoaDonBanhang,
+  thanhToanHoaDonChiTiet,
+  tratien,
+  ajaxBangId,
+  capNhatHd,
+  capNhatHdV2,
+  chuyenXuongBep,
+  xoaCtHd,
+  capNhatCtHd,
+  getChiTietHoaDonRong,
+  getChiTietHoaDonTheoMaHD,
+  loadDanhMucSp,
+  loadSanPhamTheoMaDanhMucSp,
+  huyHoaDon,
+  tinhTongTienHoaDon,
+  layLichSuHoaDonTheoBan,
+  taoHoaDonTam,
+  chuyenHoaDonTamThanhChinhThuc,
+  saoChepHoaDon,
+  loadDsCthdV3,
+  loadDsCthdV2,
+  gopBanBanhang,
+  tachBan,
+  chuyenBanCorrected,
+  capNhatTrangThaiDonHang,
+  xacNhanDonHang,
+  layTrangThaiDonHangRealtime,
+  inHoaDonThanhToan,
+  gopBanEnhanced,
+  chuyenBanEnhanced,
+  tachBanEnhanced,
+  loadProductImage,
+  getFullImageUrl,
+  layDsMonCho,
+  layDsMonDaXong,
+  capNhatTrangThaiMon,
+  listSalesPrograms,
+  getSalesProgram,
+  searchLoyaltyCustomers,
+  getLoyaltySummary,
+  addLoyaltyPoints,
+  capNhatChietKhauMon,
+  capNhatMaTraCuuHoaDon
+} from '../../services/apiServices';
+import dayjs from 'dayjs';
+import {
+  loadTaxConfig,
+  normalizeTaxConfig,
+  shouldSendInvoice,
+  submitInvoiceToTaxPortal,
+  prepareInvoicePayload,
+  extractTaxLookupCode
+} from '../../services/taxIntegrationService';
+
+// Import components
+import ChonSanPham from './ChonSanPham';
+import ProductCard from '../../components/common/ProductCard';
+import PaymentModal from '../../components/Payment/PaymentModal';
+import ReceiptPrinter from '../../components/Print/ReceiptPrinter';
+import OrderStatus from '../../components/Order/OrderStatus';
+import TableMergeModal from '../../components/TableOperations/TableMergeModal';
+import TableTransferModal from '../../components/TableOperations/TableTransferModal';
+import TableSplitModal from '../../components/TableOperations/TableSplitModal';
+import TableMergeAnimation from '../../components/TableOperations/TableMergeAnimation';
+import { useText } from '../../components/common/Text';
+
+// Debug utilities
+import { debugAPIFunctions, testPaymentAPI as quickPaymentTest } from '../../utils/debugAPI';
+
+// Customer display hook
+import useCustomerDisplaySync from '../../hooks/useCustomerDisplaySync';
+
+import './BanHang.css';
+import '../../styles/components/TableOperations.css';
+
+const { Title, Text } = Typography;
+const { Content } = Layout;
+const { Option } = Select;
+
+// View states based on flow requirements
+const VIEW_STATES = {
+  TABLES: 'tables',        // Initial view - show table grid
+  PRODUCTS: 'products',    // Show product grid after clicking "select items" 
+  COMBINED: 'combined'     // Combined view - invoice (25%) + products (75%)
+};
+const BanHang = () => {
+  const { translate } = useText();
+  const __ = (key, values, fallback) => translate(key, { values, defaultText: fallback ?? key });
+
+  const navigate = useNavigate();
+
+  // View state management
+  const [currentView, setCurrentView] = useState(VIEW_STATES.TABLES);
+
+  // State quản lý bàn
+  const [tables, setTables] = useState([]);
+  const [areas, setAreas] = useState([]);
+  const [selectedTable, setSelectedTable] = useState(null);
+  const [selectedArea, setSelectedArea] = useState('all');
+
+  // State quản lý sản phẩm
+  const [categories, setCategories] = useState([]);
+  const [products, setProducts] = useState([]);
+  const [selectedCategory, setSelectedCategory] = useState('all');
+  const [searchTerm, setSearchTerm] = useState('');
+
+  // State quản lý đơn hàng
+  const [currentInvoice, setCurrentInvoice] = useState(null);
+  const [invoiceDetails, setInvoiceDetails] = useState([]);
+  const [orderTotal, setOrderTotal] = useState(0);
+
+  // State cho modal chọn số lượng
+  const [showQuantityModal, setShowQuantityModal] = useState(false);
+  const [selectedProductForAdd, setSelectedProductForAdd] = useState(null);
+  const [quantityToAdd, setQuantityToAdd] = useState(1);
+
+  // State cho modal update số lượng
+  const [showUpdateQuantityModal, setShowUpdateQuantityModal] = useState(false);
+  const [selectedItemForUpdate, setSelectedItemForUpdate] = useState(null);
+  const [newQuantityForUpdate, setNewQuantityForUpdate] = useState(1);
+
+  // State cho Enhanced Invoice Management
+  const [invoiceHistory, setInvoiceHistory] = useState([]);
+  const [showInvoiceHistory, setShowInvoiceHistory] = useState(false);
+  const [editingInvoice, setEditingInvoice] = useState(false);
+  const [takeAwayInvoiceModalVisible, setTakeAwayInvoiceModalVisible] = useState(false);
+  const [takeAwayInvoiceCandidates, setTakeAwayInvoiceCandidates] = useState([]);
+  const [pendingTakeAwaySelection, setPendingTakeAwaySelection] = useState(null);
+  const [isCreatingTakeAwayInvoice, setIsCreatingTakeAwayInvoice] = useState(false);
+
+  const [isTouchDevice, setIsTouchDevice] = useState(false);
+
+  const [draftInvoices, setDraftInvoices] = useState([]);
+  const [includeVAT] = useState(false); // VAT always excluded in UI
+  const [invoiceSummary, setInvoiceSummary] = useState({
+    subtotal: 0,
+    tax: 0,
+    discount: 0,
+    total: 0,
+    loyaltyPoints: 0,
+    programDiscount: 0,
+    itemDiscount: 0
+  });
+  const [activeSalesProgram, setActiveSalesProgram] = useState(null);
+  const [programDiscountMap, setProgramDiscountMap] = useState({});
+  const [programDiscountBreakdown, setProgramDiscountBreakdown] = useState([]);
+  const [itemDiscountBreakdown, setItemDiscountBreakdown] = useState([]);
+  const [loyaltyPointsEarned, setLoyaltyPointsEarned] = useState(0);
+  const [loyaltyCustomer, setLoyaltyCustomer] = useState(null);
+  const [loyaltyCustomerSummary, setLoyaltyCustomerSummary] = useState(null);
+  const [loyaltySearchLoading, setLoyaltySearchLoading] = useState(false);
+  const [loyaltyPhoneInput, setLoyaltyPhoneInput] = useState('');
+  const [loyaltySearchResults, setLoyaltySearchResults] = useState([]);
+  const [loyaltyPickerVisible, setLoyaltyPickerVisible] = useState(false);
+
+  const [invoiceInfoModalVisible, setInvoiceInfoModalVisible] = useState(false);
+  const [itemDiscountModalVisible, setItemDiscountModalVisible] = useState(false);
+  const [selectedItemForDiscount, setSelectedItemForDiscount] = useState(null);
+  const [itemDiscountInput, setItemDiscountInput] = useState(0);
+  const [isCancelReasonModalOpen, setIsCancelReasonModalOpen] = useState(false);
+  const [cancelReasonSubmitting, setCancelReasonSubmitting] = useState(false);
+  const [cancelReasonForm] = Form.useForm();
+
+  // State cho Enhanced Payment System
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [paymentLoading, setPaymentLoading] = useState(false);
+  const [awaitingPaymentSuccessClose, setAwaitingPaymentSuccessClose] = useState(false);
+  const awaitingPaymentSuccessCloseRef = useRef(false);
+
+  useEffect(() => {
+    awaitingPaymentSuccessCloseRef.current = awaitingPaymentSuccessClose;
+  }, [awaitingPaymentSuccessClose]);
+
+  // State cho Order Status Tracking
+  const [orderStatus, setOrderStatus] = useState(null);
+  
+  // State UI
+  const [loading, setLoading] = useState(false);
+  const [lastRefresh, setLastRefresh] = useState(null);
+  const [autoRefreshEnabled, setAutoRefreshEnabled] = useState(true);
+  const [lastAction, setLastAction] = useState(null); // Track last user action
+  const [quickRefreshEnabled, setQuickRefreshEnabled] = useState(false); // For post-action refresh
+
+  // State cho Table Operations
+  const [showMergeTableModal, setShowMergeTableModal] = useState(false);
+  const [showSplitTableModal, setShowSplitTableModal] = useState(false);
+  const [showTransferTableModal, setShowTransferTableModal] = useState(false);
+  const [selectedTargetTable, setSelectedTargetTable] = useState(null);
+  const [availableTablesForOperation, setAvailableTablesForOperation] = useState([]);
+  
+  // State cho Split Table - món được chọn để tách
+  const [selectedItemsForSplit, setSelectedItemsForSplit] = useState([]);
+  const [splitTargetTable, setSplitTargetTable] = useState(null);
+  const [availableTablesForSplit, setAvailableTablesForSplit] = useState([]);
+  
+  // State cho Merged Table Groups - Track các nhóm bàn đã gộp
+  const [mergedTableGroups, setMergedTableGroups] = useState(() => {
+    try {
+      const saved = localStorage.getItem('mergedTableGroups');
+      return saved ? JSON.parse(saved) : {};
+    } catch (error) {
+      console.warn('Không thể load mergedTableGroups từ localStorage:', error);
+      return {};
+    }
+  }); // {mainTableId: [table1, table2, ...]}
+  
+  // Helper function để xóa bàn khỏi mergedTableGroups và localStorage
+  const clearMergedTableGroups = useCallback((tableToRemove) => {
+    if (tableToRemove) {
+      setMergedTableGroups(prev => {
+        const newGroups = { ...prev };
+        // Xóa nhóm nếu bàn hiện tại là bàn chính
+        if (newGroups[tableToRemove.id]) {
+          delete newGroups[tableToRemove.id];
+        }
+        // Hoặc xóa bàn khỏi nhóm khác nếu là bàn phụ
+        Object.keys(newGroups).forEach(mainTableId => {
+          newGroups[mainTableId] = newGroups[mainTableId].filter(t => t.id !== tableToRemove.id);
+          // Nếu nhóm chỉ còn 1 bàn, xóa luôn nhóm
+          if (newGroups[mainTableId].length <= 1) {
+            delete newGroups[mainTableId];
+          }
+        });
+        return newGroups;
+      });
+    }
+    
+    // Xóa dữ liệu mergedTableGroups khỏi localStorage
+    try {
+      localStorage.removeItem('mergedTableGroups');
+    } catch (error) {
+      console.warn('Không thể xóa mergedTableGroups khỏi localStorage:', error);
+    }
+  }, []);
+  
+  const resetViewAfterPayment = useCallback(() => {
+    const tableToClear = selectedTable;
+
+    setCurrentInvoice(null);
+    setInvoiceDetails([]);
+    setSelectedTable(null);
+    setCurrentView(VIEW_STATES.TABLES);
+    setShowPaymentModal(false);
+
+    if (tableToClear) {
+      clearMergedTableGroups(tableToClear);
+    }
+
+    try {
+      localStorage.removeItem('mergedTableGroups');
+    } catch (error) {
+      console.warn('Không thể xóa mergedTableGroups khỏi localStorage:', error);
+    }
+
+    setAwaitingPaymentSuccessClose(false);
+    awaitingPaymentSuccessCloseRef.current = false;
+  }, [selectedTable, clearMergedTableGroups]);
+
+  // State cho Animation
+  const [showMergeAnimation, setShowMergeAnimation] = useState(false);
+  const [animationTables, setAnimationTables] = useState({ source: null, target: null });
+  const [operationInProgress, setOperationInProgress] = useState(false);
+
+  // State theo dõi món chờ bếp/bar
+  const [pendingKitchenOrders, setPendingKitchenOrders] = useState([]);
+
+  // Performance refs to avoid duplicated network calls/timeouts
+  const tableStatusRequestRef = useRef(null);
+
+  // Customer Display Sync - Auto sync cart data to customer display window
+  useCustomerDisplaySync(
+    invoiceDetails,
+    selectedTable,
+    orderTotal,
+    invoiceSummary.discount ?? 0,
+    orderTotal
+  );
+  const quickRefreshTimeoutRef = useRef(null);
+
+  const pendingKitchenIdSet = useMemo(() => {
+    const idSet = new Set();
+    if (Array.isArray(pendingKitchenOrders)) {
+      pendingKitchenOrders.forEach(order => {
+        if (order?.idCthd) {
+          idSet.add(order.idCthd.toString());
+        }
+      });
+    }
+    return idSet;
+  }, [pendingKitchenOrders]);
+
+  const takeAwayInvoiceAggregatedAmount = useMemo(() => {
+    if (!Array.isArray(takeAwayInvoiceCandidates) || takeAwayInvoiceCandidates.length === 0) {
+      return 0;
+    }
+    return takeAwayInvoiceCandidates.reduce((sum, invoice) => {
+      const value = Number(invoice?.totalAmount || 0);
+      return sum + (Number.isFinite(value) ? value : 0);
+    }, 0);
+  }, [takeAwayInvoiceCandidates]);
+
+  const itemDiscountPreview = useMemo(() => {
+    if (!selectedItemForDiscount) {
+      return 0;
+    }
+    const unitPrice = parseFloat(
+      selectedItemForDiscount.gia ||
+      selectedItemForDiscount.giaBan ||
+      selectedItemForDiscount.donGia ||
+      0
+    );
+    const quantity = parseInt(
+      selectedItemForDiscount.sl ||
+      selectedItemForDiscount.soLuong ||
+      0,
+      10
+    );
+    const percent = Number(itemDiscountInput);
+
+    if (!Number.isFinite(unitPrice) || !Number.isFinite(quantity) || quantity <= 0 || !Number.isFinite(percent)) {
+      return 0;
+    }
+
+    return Math.max(unitPrice * quantity * (percent / 100), 0);
+  }, [selectedItemForDiscount, itemDiscountInput]);
+
+  // Helper functions cho table status
+  const getTableBadgeStatus = (status) => {
+    switch (status) {
+      case 'available': return 'success';
+      case 'occupied': return 'error';
+      case 'serving': return 'warning';
+      case 'checkout': return 'processing';
+      default: return 'default';
+    }
+  };
+
+  // Helper function để lấy màu sắc theo theme cho table status
+  const getTableStatusColor = (status) => {
+    switch (status) {
+      case 'available': return '#77d4fb';  // Light blue - available
+      case 'occupied': return '#197dd3';   // Main blue - occupied
+      case 'serving': return '#bdbcc4';    // Gray - serving
+      case 'checkout': return '#4b4344';   // Dark - checkout
+      default: return '#bdbcc4';
+    }
+  };
+
+  // Helper function để lấy text màu
+  const getTableStatusTextColor = (status) => {
+    switch (status) {
+      case 'available': return '#4b4344';
+      case 'occupied': return '#ffffff';
+      case 'serving': return '#4b4344';
+      case 'checkout': return '#ffffff';
+      default: return '#4b4344';
+    }
+  };
+
+  // Helper function để lấy text trạng thái
+  const getTableStatusText = (status) => {
+    switch (status) {
+      case 'available': return 'Trống';
+      case 'occupied': return 'Có khách';
+      case 'serving': return 'Đang phục vụ';
+      case 'checkout': return 'Chờ thanh toán';
+      default: return 'Không xác định';
+    }
+  };
+
+  const arePendingListsEqual = (prev = [], next = []) => {
+    if (prev.length !== next.length) return false;
+    const normalize = (list) => list
+      .map(item => `${item.idCthd || item.id || ''}-${item.soLuong || 0}`)
+      .sort()
+      .join('|');
+    return normalize(prev) === normalize(next);
+  };
+
+  const areTablesEqual = (prevTables = [], nextTables = []) => {
+    if (prevTables.length !== nextTables.length) return false;
+    const prevMap = new Map(prevTables.map(table => [table.id, table]));
+    for (const nextTable of nextTables) {
+      const prevTable = prevMap.get(nextTable.id);
+      if (!prevTable) return false;
+      if (
+        prevTable.status !== nextTable.status ||
+        prevTable.invoiceId !== nextTable.invoiceId ||
+        prevTable.totalAmount !== nextTable.totalAmount ||
+        prevTable.itemCount !== nextTable.itemCount ||
+        prevTable.hasPendingKitchenItems !== nextTable.hasPendingKitchenItems ||
+        prevTable.sittingTime !== nextTable.sittingTime ||
+        (prevTable.takeAwayAggregatedTotal || 0) !== (nextTable.takeAwayAggregatedTotal || 0)
+      ) {
+        return false;
+      }
+      const prevPending = (prevTable.pendingKitchenOrderIds || []).join(',');
+      const nextPending = (nextTable.pendingKitchenOrderIds || []).join(',');
+      if (prevPending !== nextPending) {
+        return false;
+      }
+      const prevActiveInvoices = Array.isArray(prevTable.activeInvoices) ? prevTable.activeInvoices : [];
+      const nextActiveInvoices = Array.isArray(nextTable.activeInvoices) ? nextTable.activeInvoices : [];
+      if (prevActiveInvoices.length !== nextActiveInvoices.length) {
+        return false;
+      }
+      const prevInvoiceKey = prevActiveInvoices
+        .map(invoice => invoice?.invoiceId || invoice?.idDonHang || '')
+        .sort()
+        .join(',');
+      const nextInvoiceKey = nextActiveInvoices
+        .map(invoice => invoice?.invoiceId || invoice?.idDonHang || '')
+        .sort()
+        .join(',');
+      if (prevInvoiceKey !== nextInvoiceKey) {
+        return false;
+      }
+    }
+    return true;
+  };
+
+  // Load dữ liệu ban đầu
+  useEffect(() => {
+    loadInitialData();
+  }, []);
+
+  // Manual refresh only - remove auto refresh to reduce lag
+  // User can manually refresh or refresh will happen after database actions
+
+  // Reduced quick refresh frequency to prevent lag
+  useEffect(() => {
+    let quickIntervalId;
+    
+    if (quickRefreshEnabled && currentView === VIEW_STATES.TABLES) {
+      // Quick refresh every 5 seconds for 15 seconds after action
+      quickIntervalId = setInterval(() => {
+        refreshTableStatusOnly({ skipIfBusy: true });
+      }, 5000); // 5 seconds - reduced frequency
+    }
+
+    return () => {
+      if (quickIntervalId) {
+        clearInterval(quickIntervalId);
+      }
+    };
+  }, [quickRefreshEnabled, currentView]);
+
+  useEffect(() => {
+    return () => {
+      if (quickRefreshTimeoutRef.current) {
+        clearTimeout(quickRefreshTimeoutRef.current);
+        quickRefreshTimeoutRef.current = null;
+      }
+    };
+  }, []);
+
+  // Lưu mergedTableGroups vào localStorage mỗi khi có thay đổi
+  useEffect(() => {
+    try {
+      localStorage.setItem('mergedTableGroups', JSON.stringify(mergedTableGroups));
+    } catch (error) {
+      console.warn('Không thể lưu mergedTableGroups vào localStorage:', error);
+    }
+  }, [mergedTableGroups]);
+
+  // Manual refresh handler
+  const handleManualRefresh = async () => {
+    setLastRefresh(new Date());
+    await loadTables();
+    await fetchActiveSalesProgram();
+    message.success(__('Đã cập nhật trạng thái bàn'));
+  };
+
+  // Refresh chỉ trạng thái bàn (không reload toàn bộ)
+  const refreshTableStatusOnly = async (options = {}) => {
+    if (tables.length === 0) return;
+    
+    try {
+      await loadTableStatuses(tables, { silent: true, ...options });
+      setLastRefresh(new Date());
+    } catch (error) {
+  // Silent console
+    }
+  };
+
+  // Trigger optimized refresh after user actions
+  const triggerQuickRefresh = (actionType) => {
+    setLastAction({ type: actionType, timestamp: new Date() });
+    setQuickRefreshEnabled(true);
+    refreshTableStatusOnly({ skipIfBusy: true });
+
+    if (quickRefreshTimeoutRef.current) {
+      clearTimeout(quickRefreshTimeoutRef.current);
+    }
+
+    // Shorter quick refresh period - 15 seconds instead of 10
+    quickRefreshTimeoutRef.current = setTimeout(() => {
+      setQuickRefreshEnabled(false);
+      quickRefreshTimeoutRef.current = null;
+    }, 15000);
+  };
+
+  // Remove auto-refresh for table statuses to reduce lag
+  // Only refresh on user action or manual refresh
+  useEffect(() => {
+    // Removed automatic 30-second refresh to improve performance
+    // Tables will only refresh when user performs actions or manually refreshes
+  }, [currentView, tables]);
+  
+  // Tính toán tổng tiền khi invoice details thay đổi
+  // Recalculate invoice summary when invoice details or VAT flag change
+  useEffect(() => {
+    calculateInvoiceSummary();
+  }, [invoiceDetails, includeVAT, programDiscountMap, products]);
+
+
+  // Load dữ liệu ban đầu - chỉ tables và areas, không load products để tránh lag
+  const loadInitialData = async () => {
+    // Debug API functions availability
+    debugAPIFunctions();
+    
+    // Make payment test available globally for debugging
+    window.testPaymentAPI = quickPaymentTest;
+    
+    // Only load essential data initially - products loaded lazily when needed
+    await Promise.all([
+      loadTables(),
+      loadAreas()
+      // Remove loadProducts() from initial load to improve startup performance
+    ]);
+  };
+  const fetchActiveSalesProgram = useCallback(async () => {
+    try {
+      const response = await listSalesPrograms({ status: 1 });
+      let programs = [];
+
+      if (response?.success && Array.isArray(response.data)) {
+        programs = response.data;
+      } else if (Array.isArray(response)) {
+        programs = response;
+      } else if (response?.data) {
+        if (Array.isArray(response.data)) {
+          programs = response.data;
+        } else if (typeof response.data === 'object') {
+          programs = Object.values(response.data);
+        }
+      }
+
+      const now = dayjs();
+      const activeCandidates = programs
+        .filter((program) => {
+          if (!program) return false;
+          const statusValue = Number(program.status ?? program.active ?? program.isActive ?? 0);
+          if (statusValue !== 1) return false;
+
+          const start = program.startDate ? dayjs(program.startDate) : null;
+          const end = program.endDate ? dayjs(program.endDate) : null;
+          const withinStart =
+            !start || !start.isValid() || start.isBefore(now) || start.isSame(now, 'day');
+          const withinEnd =
+            !end || !end.isValid() || end.isAfter(now) || end.isSame(now, 'day');
+          return withinStart && withinEnd;
+        })
+        .sort((a, b) => {
+          const aStart = a?.startDate ? dayjs(a.startDate) : null;
+          const bStart = b?.startDate ? dayjs(b.startDate) : null;
+          if (!aStart || !aStart.isValid()) return 1;
+          if (!bStart || !bStart.isValid()) return -1;
+          return bStart.valueOf() - aStart.valueOf();
+        });
+
+      let activeProgram = activeCandidates.length > 0 ? activeCandidates[0] : null;
+
+      if (!activeProgram && programs.length > 0) {
+        activeProgram =
+          programs.find(
+            (program) =>
+              Number(program.status ?? program.active ?? program.isActive ?? 0) === 1
+          ) || null;
+      }
+
+      if (activeProgram?.programId) {
+        const detailResponse = await getSalesProgram(activeProgram.programId);
+        const detailData =
+          detailResponse?.success && detailResponse.data ? detailResponse.data : detailResponse || {};
+
+        let programDetailsRaw = Array.isArray(detailData?.details) ? detailData.details : [];
+        if (
+          !Array.isArray(programDetailsRaw) &&
+          detailData?.details &&
+          typeof detailData.details === 'object'
+        ) {
+          programDetailsRaw = Object.values(detailData.details);
+        }
+
+        const discountMap = {};
+        const normalizedDetails = [];
+
+        programDetailsRaw.forEach((detail) => {
+          if (!detail) return;
+
+          const detailStatus =
+            detail.status ?? detail.active ?? detail.isActive ?? detail.statusFlag;
+          const isDetailActive =
+            detailStatus === undefined ||
+            detailStatus === null ||
+            detailStatus === true ||
+            detailStatus === 1 ||
+            detailStatus === '1';
+
+          if (!isDetailActive) {
+            return;
+          }
+
+          const possibleIds = [
+            detail.itemId,
+            detail.maSp,
+            detail.masp,
+            detail.maSP,
+            detail.ma,
+            detail.id
+          ];
+          const rawId = possibleIds.find((value) => value !== undefined && value !== null);
+          if (!rawId) {
+            return;
+          }
+
+          const key = String(rawId);
+          const normalizedDetail = { ...detail, itemId: key };
+          discountMap[key] = normalizedDetail;
+          normalizedDetails.push(normalizedDetail);
+        });
+
+        setActiveSalesProgram({
+          ...activeProgram,
+          ...detailData,
+          details: normalizedDetails
+        });
+        setProgramDiscountMap(discountMap);
+      } else {
+        setActiveSalesProgram(null);
+        setProgramDiscountMap({});
+      }
+    } catch (error) {
+      console.error('Không thể load chương trình kinh doanh đang hoạt động:', error);
+      setActiveSalesProgram(null);
+      setProgramDiscountMap({});
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchActiveSalesProgram();
+  }, [fetchActiveSalesProgram]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') {
+      return undefined;
+    }
+
+    const computeIsTouch = () => {
+      const hasWindowTouch = 'ontouchstart' in window;
+      const hasNavigatorTouch = typeof navigator !== 'undefined' && (
+        navigator.maxTouchPoints > 0 ||
+        navigator.msMaxTouchPoints > 0
+      );
+      const coarsePointer = typeof window.matchMedia === 'function' && window.matchMedia('(pointer: coarse)').matches;
+      return Boolean(hasWindowTouch || hasNavigatorTouch || coarsePointer);
+    };
+
+    setIsTouchDevice(computeIsTouch());
+
+    if (typeof window.matchMedia === 'function') {
+      const mediaQuery = window.matchMedia('(pointer: coarse)');
+      const handleChange = (event) => {
+        if (event && typeof event.matches === 'boolean') {
+          setIsTouchDevice(event.matches || computeIsTouch());
+        } else {
+          setIsTouchDevice(computeIsTouch());
+        }
+      };
+
+      if (typeof mediaQuery.addEventListener === 'function') {
+        mediaQuery.addEventListener('change', handleChange);
+        return () => mediaQuery.removeEventListener('change', handleChange);
+      }
+
+      if (typeof mediaQuery.addListener === 'function') {
+        mediaQuery.addListener(handleChange);
+        return () => mediaQuery.removeListener(handleChange);
+      }
+    }
+
+    return undefined;
+  }, []);
+
+
+  const normalizeLoyaltyCustomer = (customer) => {
+    if (!customer || typeof customer !== 'object') {
+      return null;
+    }
+
+    const id =
+      customer.customerId ??
+      customer.id ??
+      customer.maKh ??
+      customer.maKhach ??
+      customer.ma_kh ??
+      customer.lv001;
+
+    if (!id) {
+      return null;
+    }
+
+    const name =
+      customer.name ??
+      customer.fullName ??
+      customer.tenKhach ??
+      customer.ten_khach ??
+      customer.ten ??
+      'Khach hang';
+
+    const phone =
+      customer.phone ??
+      customer.soDienThoai ??
+      customer.sdt ??
+      customer.dienThoai ??
+      customer.tel ??
+      '';
+
+    const pointsValue = Number(customer.points ?? customer.loyaltyPoints ?? customer.totalPoints ?? 0) || 0;
+
+    return {
+      id: String(id),
+      name,
+      phone,
+      points: pointsValue,
+      raw: customer
+    };
+  };
+
+  const fetchLoyaltySummary = useCallback(async (customerId) => {
+    if (!customerId) {
+      setLoyaltyCustomerSummary(null);
+      return;
+    }
+
+    try {
+      const response = await getLoyaltySummary(customerId);
+      const summaryData =
+        response?.success && response.data ? response.data : response || {};
+
+      const summary = {
+        points: Number(summaryData.points ?? summaryData.totalPoints ?? summaryData.balance ?? 0) || 0,
+        tier: summaryData.tier ?? summaryData.level ?? summaryData.rank ?? null
+      };
+      setLoyaltyCustomerSummary(summary);
+    } catch (error) {
+      console.error('Failed to load loyalty summary:', error);
+      setLoyaltyCustomerSummary(null);
+    }
+  }, []);
+
+  const clearLoyaltyCustomer = useCallback(() => {
+    setLoyaltyCustomer(null);
+    setLoyaltyCustomerSummary(null);
+    setLoyaltyPhoneInput('');
+    setLoyaltySearchResults([]);
+    setLoyaltyPickerVisible(false);
+  }, []);
+
+  const handleLoyaltyPhoneInputChange = useCallback((event) => {
+    const { value } = event.target;
+    setLoyaltyPhoneInput(value);
+    if (value === '') {
+      setLoyaltySearchResults([]);
+      setLoyaltyPickerVisible(false);
+      setLoyaltyCustomer(null);
+      setLoyaltyCustomerSummary(null);
+      return;
+    }
+    if (loyaltyCustomer) {
+      const currentIdentifier = loyaltyCustomer.phone || loyaltyCustomer.id;
+      if (currentIdentifier && currentIdentifier !== value) {
+        setLoyaltyCustomer(null);
+        setLoyaltyCustomerSummary(null);
+      }
+    }
+    
+    // Real-time search suggestion
+    if (value.trim().length >= 3) {
+      const searchTimeout = setTimeout(async () => {
+        try {
+          const response = await searchLoyaltyCustomers(value.trim(), 5);
+          let customersData = [];
+
+          if (response?.success && Array.isArray(response.data)) {
+            customersData = response.data;
+          } else if (Array.isArray(response)) {
+            customersData = response;
+          } else if (Array.isArray(response?.data?.items)) {
+            customersData = response.data.items;
+          }
+
+          const normalizedResults = customersData
+            .map((customer) => normalizeLoyaltyCustomer(customer))
+            .filter(Boolean);
+
+          if (normalizedResults.length > 0) {
+            setLoyaltySearchResults(normalizedResults);
+            setLoyaltyPickerVisible(true);
+          } else {
+            setLoyaltySearchResults([]);
+            setLoyaltyPickerVisible(false);
+          }
+        } catch (error) {
+          console.error('Real-time search error:', error);
+        }
+      }, 500); // Debounce 500ms
+
+      return () => clearTimeout(searchTimeout);
+    }
+  }, [loyaltyCustomer]);
+
+  const handleSelectLoyaltyResult = useCallback((normalizedCustomer) => {
+    if (!normalizedCustomer) {
+      clearLoyaltyCustomer();
+      return;
+    }
+
+    setLoyaltyCustomer(normalizedCustomer);
+    setLoyaltyPhoneInput(normalizedCustomer.phone || normalizedCustomer.id);
+    setLoyaltyPickerVisible(false);
+    setLoyaltySearchResults([]);
+    fetchLoyaltySummary(normalizedCustomer.id);
+  }, [clearLoyaltyCustomer, fetchLoyaltySummary]);
+
+  const handleLoyaltySearchByPhone = useCallback(async () => {
+    const keyword = loyaltyPhoneInput.trim();
+    if (keyword === '') {
+      message.warning('Vui lòng nhập số điện thoại khách hàng');
+      return;
+    }
+
+    setLoyaltySearchLoading(true);
+    try {
+      const response = await searchLoyaltyCustomers(keyword, 10);
+      let customersData = [];
+
+      if (response?.success && Array.isArray(response.data)) {
+        customersData = response.data;
+      } else if (Array.isArray(response)) {
+        customersData = response;
+      } else if (Array.isArray(response?.data?.items)) {
+        customersData = response.data.items;
+      }
+
+      const normalizedResults = customersData
+        .map((customer) => normalizeLoyaltyCustomer(customer))
+        .filter(Boolean);
+
+      if (normalizedResults.length === 0) {
+        message.info('Không tìm thấy khách hàng phù hợp');
+        setLoyaltySearchResults([]);
+        setLoyaltyPickerVisible(false);
+        return;
+      }
+
+      if (normalizedResults.length === 1) {
+        handleSelectLoyaltyResult(normalizedResults[0]);
+        return;
+      }
+
+      // Hiển thị dropdown thay vì modal
+      setLoyaltySearchResults(normalizedResults);
+      setLoyaltyPickerVisible(true);
+    } catch (error) {
+      console.error('Failed to search loyalty customers:', error);
+      message.error('Không thể tìm khách hàng thân thiết');
+      setLoyaltySearchResults([]);
+      setLoyaltyPickerVisible(false);
+    } finally {
+      setLoyaltySearchLoading(false);
+    }
+  }, [handleSelectLoyaltyResult, loyaltyPhoneInput]);
+
+
+
+  // Load danh sách bàn với trạng thái
+  const loadTables = async () => {
+    try {
+      setLoading(true);
+      const tablesResponse = await loadBan();
+      
+      let tablesData = [];
+      if (Array.isArray(tablesResponse)) {
+        tablesData = tablesResponse.map((table) => {
+          const rawId = table?.idBan ?? table?.id ?? table?.maBan;
+          const normalizedId = rawId ?? '';
+          const tableName = table?.tenBan ?? table?.name ?? (normalizedId !== '' ? `Bàn ${normalizedId}` : 'Bàn mới');
+          const rawAreaId = table?.idKhuVuc ?? table?.areaId;
+
+          const derivedIsTakeAway = Boolean(
+            table?.isTakeAway === true ||
+            table?.isTakeAway === 1 ||
+            table?.isTakeAway === '1' ||
+            table?.tableType === 'TAKEAWAY' ||
+            table?.banTakeAway === '1' ||
+            table?.loaiBan === 'TAKEAWAY' ||
+            `${rawId}` === '0'
+          );
+
+          const derivedIsAutoTakeAway = Boolean(
+            table?.isAutoTakeAway === true ||
+            table?.isAutoTakeAway === 1 ||
+            table?.isAutoTakeAway === '1' ||
+            table?.takeAwaySource === 'AUTO_ZERO' ||
+            `${rawId}` === '0'
+          );
+
+          const normalizedAreaId =
+            rawAreaId !== undefined && rawAreaId !== null
+              ? rawAreaId
+              : derivedIsTakeAway
+                ? '__TAKEAWAY__'
+                : undefined;
+          const areaIdAsString =
+            normalizedAreaId !== undefined && normalizedAreaId !== null
+              ? normalizedAreaId.toString()
+              : undefined;
+
+          return {
+            id: normalizedId,
+            maBan: normalizedId, // Sử dụng normalizedId cho modal
+            name: tableName,
+            tenBan: tableName,
+            areaId: areaIdAsString,
+            areaName: table?.tenKhuVuc ?? table?.areaName ?? (derivedIsTakeAway ? 'Take Away' : undefined),
+            status: 'available', // Sẽ được cập nhật từ loadTableStatuses
+            tableType: table?.tableType ?? (derivedIsTakeAway ? 'TAKEAWAY' : 'DINE_IN'),
+            isTakeAway: derivedIsTakeAway,
+            isAutoTakeAway: derivedIsAutoTakeAway,
+            takeAwaySource: table?.takeAwaySource ?? (derivedIsAutoTakeAway ? 'AUTO_ZERO' : undefined),
+            activeInvoices: [],
+            takeAwayAggregatedTotal: 0
+          };
+        });
+      } else {
+  // Silent console
+        tablesData = [];
+      }
+
+      setTables(tablesData);
+
+      // Đảm bảo danh sách khu vực luôn có mục Take Away nếu tồn tại bàn take away
+      setAreas(prevAreas => {
+        const needsTakeAwayArea = tablesData.some(item => item.isTakeAway);
+        if (!needsTakeAwayArea) {
+          return prevAreas;
+        }
+
+        const existingAreas = Array.isArray(prevAreas) ? prevAreas : [];
+        const hasTakeAwayArea = existingAreas.some(area => area?.idKhuVuc === '__TAKEAWAY__');
+
+        if (hasTakeAwayArea) {
+          return existingAreas;
+        }
+
+        return [
+          ...existingAreas,
+          {
+            idKhuVuc: '__TAKEAWAY__',
+            ten: 'Take Away',
+            isTakeAwayArea: true
+          }
+        ];
+      });
+
+      // Load trạng thái bàn riêng biệt
+  await loadTableStatuses(tablesData, { silent: true });
+      
+    } catch (error) {
+  // Silent console
+        message.error(__('Không thể tải danh sách bàn'));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Load trạng thái bàn theo hóa đơn - sử dụng API getChiTietHoaDonRong
+  const loadTableStatuses = async (currentTables, options = {}) => {
+    const { silent = false, skipIfBusy = false } = options;
+    if (!currentTables || currentTables.length === 0) return;
+
+    if (tableStatusRequestRef.current) {
+      if (skipIfBusy) {
+        return;
+      }
+      return tableStatusRequestRef.current;
+    }
+
+    const requestPromise = (async () => {
+      if (!silent) {
+        setLoading(true);
+      }
+
+      try {
+        // Lấy song song trạng thái hóa đơn và các món đang chờ ở bếp/bar
+        const [statusResponse, pendingResponseRaw] = await Promise.all([
+          getChiTietHoaDonRong(),
+          layDsMonCho().catch(() => [])
+        ]);
+
+        const normalizedPending = Array.isArray(pendingResponseRaw)
+          ? pendingResponseRaw
+              .map(order => ({
+                ...order,
+                idBan: order?.idBan ? order.idBan.toString() : '',
+                idCthd: order?.idCthd ? order.idCthd.toString() : ''
+              }))
+              .filter(order => order.idBan && order.idCthd)
+          : [];
+
+        const pendingByTableMap = normalizedPending.reduce((acc, order) => {
+          if (!acc[order.idBan]) acc[order.idBan] = [];
+          acc[order.idBan].push(order);
+          return acc;
+        }, {});
+
+        setPendingKitchenOrders(prev => (
+          arePendingListsEqual(prev, normalizedPending) ? prev : normalizedPending
+        ));
+        
+        if (Array.isArray(statusResponse)) {
+          const invoicesByTable = statusResponse.reduce((acc, rawInvoice) => {
+            const tableKey = rawInvoice?.idBan !== undefined && rawInvoice?.idBan !== null
+              ? rawInvoice.idBan.toString()
+              : rawInvoice?.maBan !== undefined && rawInvoice?.maBan !== null
+                ? rawInvoice.maBan.toString()
+                : null;
+
+            const rawInvoiceId = rawInvoice?.idDonHang ?? rawInvoice?.maHd ?? rawInvoice?.maHoaDon ?? rawInvoice?.id;
+            if (!tableKey || !rawInvoiceId) {
+              return acc;
+            }
+
+            const normalizedInvoice = {
+              invoiceId: rawInvoiceId.toString(),
+              totalAmount: Number(rawInvoice?.tongTien ?? rawInvoice?.tong_tien ?? 0) || 0,
+              createdAt: rawInvoice?.thoiGian ?? rawInvoice?.createdAt ?? rawInvoice?.ngayTao ?? null,
+              itemCount: Number(rawInvoice?.tongSoLuong ?? rawInvoice?.soLuong ?? rawInvoice?.tongMon ?? 0) || 0,
+              raw: rawInvoice
+            };
+
+            if (!acc[tableKey]) {
+              acc[tableKey] = [];
+            }
+            acc[tableKey].push(normalizedInvoice);
+            return acc;
+          }, {});
+
+          const updatedTables = await Promise.all(
+            currentTables.map(async (table) => {
+              const tableIdStr = table.id?.toString() || '';
+              const tablePendingOrders = pendingByTableMap[tableIdStr] || [];
+              const tableInvoices = Array.isArray(invoicesByTable[tableIdStr]) ? invoicesByTable[tableIdStr].slice() : [];
+
+              tableInvoices.sort((a, b) => {
+                const dateA = a.createdAt ? dayjs(a.createdAt) : null;
+                const dateB = b.createdAt ? dayjs(b.createdAt) : null;
+                if (dateA && dateB && dateA.isValid() && dateB.isValid()) {
+                  return dateB.valueOf() - dateA.valueOf();
+                }
+                if (dateA && dateA.isValid()) {
+                  return -1;
+                }
+                if (dateB && dateB.isValid()) {
+                  return 1;
+                }
+                return 0;
+              });
+
+              const primaryInvoiceSummary = tableInvoices[0] ?? null;
+              const primaryInvoiceRaw = primaryInvoiceSummary?.raw;
+              const resolvedInvoiceId = primaryInvoiceSummary?.invoiceId ?? null;
+              const totalForPrimary = primaryInvoiceSummary?.totalAmount ?? 0;
+              const aggregatedTakeAwayTotal = tableInvoices.reduce((sum, invoice) => sum + (invoice.totalAmount || 0), 0);
+
+              if (resolvedInvoiceId && primaryInvoiceRaw) {
+                try {
+                  const invoiceDetails = await getChiTietHoaDonTheoMaHD(resolvedInvoiceId);
+
+                  let sittingTime = '';
+                  const startTimestamp = primaryInvoiceRaw?.thoiGian ?? primaryInvoiceRaw?.createdAt ?? null;
+                  if (startTimestamp) {
+                    try {
+                      const startTime = new Date(startTimestamp);
+                      const now = new Date();
+                      const diffMinutes = Math.floor((now.getTime() - startTime.getTime()) / 60000);
+                      const hours = Math.floor(diffMinutes / 60);
+                      const minutes = diffMinutes % 60;
+                      sittingTime = hours > 0 ? `${hours}h ${minutes}m` : `${minutes}m`;
+                    } catch (timeError) {
+                      sittingTime = '';
+                    }
+                  }
+
+                  const itemsWithQuantity = Array.isArray(invoiceDetails)
+                    ? invoiceDetails.filter(item => parseInt(item.sl, 10) > 0)
+                    : [];
+
+                  return {
+                    ...table,
+                    status: 'occupied',
+                    invoiceId: resolvedInvoiceId,
+                    customerCount: 0,
+                    orderTime: primaryInvoiceRaw?.thoiGian || null,
+                    sittingTime,
+                    totalAmount: table.isTakeAway ? aggregatedTakeAwayTotal : totalForPrimary,
+                    itemCount: itemsWithQuantity.length,
+                    orderItems: itemsWithQuantity.slice(0, 3),
+                    isEmptyInvoice: totalForPrimary === 0,
+                    hasPendingKitchenItems: tablePendingOrders.length > 0,
+                    pendingKitchenOrders: tablePendingOrders,
+                    pendingKitchenOrderIds: tablePendingOrders.map(order => order.idCthd),
+                    activeInvoices: tableInvoices,
+                    takeAwayAggregatedTotal: aggregatedTakeAwayTotal
+                  };
+                } catch (error) {
+                  return {
+                    ...table,
+                    status: 'occupied',
+                    invoiceId: resolvedInvoiceId,
+                    customerCount: 0,
+                    orderTime: primaryInvoiceRaw?.thoiGian || null,
+                    sittingTime: '',
+                    totalAmount: table.isTakeAway ? aggregatedTakeAwayTotal : totalForPrimary,
+                    itemCount: primaryInvoiceSummary?.itemCount || 0,
+                    orderItems: [],
+                    isEmptyInvoice: totalForPrimary === 0,
+                    hasPendingKitchenItems: tablePendingOrders.length > 0,
+                    pendingKitchenOrders: tablePendingOrders,
+                    pendingKitchenOrderIds: tablePendingOrders.map(order => order.idCthd),
+                    activeInvoices: tableInvoices,
+                    takeAwayAggregatedTotal: aggregatedTakeAwayTotal
+                  };
+                }
+              }
+
+              return {
+                ...table,
+                status: 'available',
+                invoiceId: null,
+                customerCount: 0,
+                orderTime: null,
+                sittingTime: '',
+                totalAmount: 0,
+                itemCount: 0,
+                orderItems: [],
+                isEmptyInvoice: false,
+                hasPendingKitchenItems: false,
+                pendingKitchenOrders: [],
+                pendingKitchenOrderIds: [],
+                activeInvoices: [],
+                takeAwayAggregatedTotal: 0
+              };
+            })
+          );
+
+          setTables(prevTables => (
+            areTablesEqual(prevTables, updatedTables) ? prevTables : updatedTables
+          ));
+        } else {
+  // Silent console
+        }
+      } catch (error) {
+  // Silent console
+        // Don't show error message for status loading failure
+      } finally {
+        if (!silent) {
+          setLoading(false);
+        }
+        tableStatusRequestRef.current = null;
+      }
+    })();
+
+    tableStatusRequestRef.current = requestPromise;
+    return requestPromise;
+  };
+
+  // Load danh sách khu vực
+  const loadAreas = async () => {
+    try {
+      const areasResponse = await loadKhuVuc();
+      
+      // Xử lý dữ liệu areas tương tự như BanHangOld
+      let areasData = [];
+      if (Array.isArray(areasResponse)) {
+        areasData = areasResponse;
+      } else if (areasResponse && areasResponse.success && areasResponse.data) {
+        if (Array.isArray(areasResponse.data)) {
+          areasData = areasResponse.data;
+        } else if (typeof areasResponse.data === 'object') {
+          areasData = Object.values(areasResponse.data);
+        }
+      } else if (areasResponse && typeof areasResponse === 'object') {
+        areasData = Object.values(areasResponse);
+      }
+
+      const normalizeAreaRecord = (area) => {
+        if (!area) return null;
+        const rawId = area.idKhuVuc ?? area.maKhuVuc ?? area.khuVucId ?? area.lv001 ?? area.id ?? area.code ?? area.value;
+        const normalizedId = rawId !== undefined && rawId !== null ? rawId.toString() : null;
+        const label = area.ten ?? area.tenKhuVuc ?? area.tenKhu ?? area.lv002 ?? area.name ?? area.label;
+
+        if (!normalizedId && !area.isTakeAwayArea) {
+          return null;
+        }
+
+        return {
+          ...area,
+          idKhuVuc: normalizedId ?? area.idKhuVuc ?? '__TAKEAWAY__',
+          ten: label || (normalizedId ? `Khu vực ${normalizedId}` : 'Khu vực'),
+          isTakeAwayArea: Boolean(area.isTakeAwayArea)
+        };
+      };
+
+      const normalizedAreasMap = new Map();
+      areasData.forEach(area => {
+        const normalized = normalizeAreaRecord(area);
+        if (normalized) {
+          normalizedAreasMap.set(normalized.idKhuVuc, normalized);
+        }
+      });
+
+      const hasTakeAwayArea = Array.from(normalizedAreasMap.values()).some(area =>
+        area.idKhuVuc === '__TAKEAWAY__' || area.isTakeAwayArea
+      );
+
+      if (!hasTakeAwayArea) {
+        const takeAwayArea = normalizeAreaRecord({ idKhuVuc: '__TAKEAWAY__', ten: 'Take Away', isTakeAwayArea: true });
+        normalizedAreasMap.set(takeAwayArea.idKhuVuc, takeAwayArea);
+      }
+
+      const normalizedAreas = Array.from(normalizedAreasMap.values())
+        .sort((a, b) => a.ten.localeCompare(b.ten, 'vi', { sensitivity: 'base' }));
+
+      setAreas(normalizedAreas);
+      setSelectedArea(prev => (prev === 'all' || normalizedAreas.some(area => area.idKhuVuc === prev) ? prev : 'all'));
+    } catch (error) {
+  // console.error('Error loading areas:', error);
+    message.error(__('Không thể tải danh sách khu vực'));
+    }
+  };
+
+  // Load danh mục sản phẩm (chỉ khi cần) - Enhanced with debugging
+  const loadProductCategories = async () => {
+    try {
+  // Loading product categories
+      
+      // Try new API first
+      let categoriesResponse;
+      try {
+        categoriesResponse = await loadDanhMucSp();
+  // dev log suppressed
+      } catch (newApiError) {
+  // dev log suppressed
+        // Fallback to old API
+        categoriesResponse = await getLoaiSanPham();
+  // dev log suppressed
+      }
+      
+      // Xử lý dữ liệu categories theo mobile logic pattern
+      let categoriesData = [];
+      if (Array.isArray(categoriesResponse)) {
+        categoriesData = categoriesResponse;
+        
+      } else if (categoriesResponse && categoriesResponse.success && categoriesResponse.data) {
+        if (Array.isArray(categoriesResponse.data)) {
+          categoriesData = categoriesResponse.data;
+          
+        } else if (typeof categoriesResponse.data === 'object') {
+          categoriesData = Object.values(categoriesResponse.data);
+          
+        }
+      } else if (categoriesResponse && typeof categoriesResponse === 'object') {
+        categoriesData = Object.values(categoriesResponse);
+        
+      }
+
+      // Map categories to consistent format following mobile logic
+      const mappedCategories = categoriesData
+        .filter(cat => cat && (cat.maDanhMucSp || cat.idLoaiSp || cat.id || cat.maLoai))
+        .map(cat => ({
+          value: cat.maDanhMucSp || cat.idLoaiSp || cat.id || cat.maLoai,
+          label: cat.tenDanhMucSp || cat.tenLoaiSp || cat.ten || cat.tenLoai || 'Không có tên',
+          // Keep original fields for backward compatibility
+          maDm: cat.maDanhMucSp || cat.idLoaiSp || cat.id || cat.maLoai,
+          ten: cat.tenDanhMucSp || cat.tenLoaiSp || cat.ten || cat.tenLoai || 'Không có tên'
+        }));
+
+      setCategories(mappedCategories);
+      
+      
+      if (mappedCategories.length === 0) {
+        
+  message.warning(__('Không tìm thấy danh mục sản phẩm'));
+      }
+    } catch (error) {
+      // Silent console
+      
+      // Tuân thủ .rules: không mock dữ liệu
+  message.error(__('Không thể tải danh mục sản phẩm.'));
+      setCategories([]);
+    }
+  };
+
+  // Load sản phẩm (chỉ khi cần) - Enhanced with database image loading
+  const loadProducts = async () => {
+    try {
+      const productsResponse = await getAllSanPham();
+
+      // Xử lý dữ liệu products tương tự như categories
+      let productsData = [];
+      if (Array.isArray(productsResponse)) {
+        productsData = productsResponse;
+      } else if (productsResponse && productsResponse.success && productsResponse.data) {
+        if (Array.isArray(productsResponse.data)) {
+          productsData = productsResponse.data;
+        } else if (typeof productsResponse.data === 'object') {
+          productsData = Object.values(productsResponse.data);
+        }
+      } else if (productsResponse && typeof productsResponse === 'object') {
+        productsData = Object.values(productsResponse);
+      }
+
+      // Map products to consistent format with enhanced image handling - Exclude "NL" products
+      const mappedProducts = await Promise.all(productsData
+        .filter(product => {
+          // Filter out products with codes starting with "NL" (Nguyên liệu)
+          const productCode = product.maSp || product.id || product.maSP || '';
+          return !productCode.toString().startsWith('NL');
+        })
+        .map(async (product) => {
+          let imageUrl = null;
+          
+          // Try to get image from product data first
+          if (product.hinhAnh && product.hinhAnh !== DEFAULT_IMAGES.PRODUCT) {
+            if (typeof product.hinhAnh === 'string' && product.hinhAnh.startsWith('data:image/')) {
+              imageUrl = product.hinhAnh;
+            } else {
+              imageUrl = getFullImageUrl(product.hinhAnh);
+            }
+          } else {
+            // Try to load from database if no direct image URL
+            try {
+              const imageData = await loadProductImage(product.maSp || product.id);
+              if (imageData?.success && imageData.imageUrl) {
+                imageUrl = imageData.imageUrl;
+              } else if (imageData?.imagePath) {
+                imageUrl = getFullImageUrl(imageData.imagePath);
+              }
+            } catch (error) {
+              // Ignore individual image load errors
+            }
+          }
+
+          return {
+            id: product.maSp || product.id || product.maSP,
+            ten: product.tenSp || product.ten || product.tenSP,
+            gia: product.giaBan || product.gia || product.donGia || 0,
+            danhMuc: product.danhMuc || product.maLoai,
+            moTa: product.moTa || product.ghiChu || '',
+            hinhAnh: imageUrl // Will be null if no valid image found
+          };
+        }));
+
+      setProducts(mappedProducts);
+    } catch (error) {
+      console.error('[LOAD_PRODUCTS] Lỗi tải sản phẩm:', error);
+      message.error(__('Không thể tải danh sách sản phẩm.'));
+      setProducts([]);
+    }
+  };
+
+  // FLOW 1: Chọn bàn và xử lý tự động tạo/load hóa đơn
+  const handleTableSelect = async (table, options = {}) => {
+    const {
+      targetInvoiceId = null,
+      skipInvoicePicker = false
+    } = options || {};
+    try {
+  // Silent console
+      
+      // Kiểm tra xem bàn này có phải là bàn đã gộp (không phải bàn chính) không
+      const isMergedSlave = Object.values(mergedTableGroups).some(group => 
+        group.some(t => t.id === table.id) && mergedTableGroups[table.id] === undefined
+      );
+      
+      if (isMergedSlave) {
+        message.warning(__('pages.banhang.table_merged_warning', { table: table.tenBan }, `Bàn ${table.tenBan} đã được gộp vào bàn khác. Chỉ được thao tác trên bàn chính của nhóm.`));
+        return; // Không cho phép chọn bàn đã gộp
+      }
+      
+      // Kiểm tra xem bàn này có phải là phần của nhóm gộp không (để chuyển đến bàn chính)
+      const mergedGroup = Object.entries(mergedTableGroups).find(([mainTableId, groupTables]) => 
+        groupTables.some(t => t.id === table.id)
+      );
+      
+      let actualTable = table;
+      if (mergedGroup) {
+        // Nếu bàn này thuộc nhóm gộp, chuyển đến bàn chính
+        const [mainTableId, groupTables] = mergedGroup;
+        const mainTableFromState = tables.find(t => t.id === mainTableId);
+        const mainTable = mainTableFromState || groupTables.find(t => t.id === mainTableId);
+        if (mainTable) {
+          actualTable = mainTable;
+          message.info(__('pages.banhang.table_merged_info', { table: table.tenBan, mainTable: mainTable.tenBan }, `Bàn ${table.tenBan} đã được gộp vào bàn ${mainTable.tenBan}`));
+        }
+      }
+      
+      setSelectedTable(actualTable);
+
+      const tableInvoices = Array.isArray(actualTable.activeInvoices) ? actualTable.activeInvoices : [];
+      if (!skipInvoicePicker && actualTable.isTakeAway && tableInvoices.length > 1 && !targetInvoiceId) {
+        setPendingTakeAwaySelection(actualTable);
+        setTakeAwayInvoiceCandidates(tableInvoices);
+        setTakeAwayInvoiceModalVisible(true);
+        return;
+      }
+
+      setLoading(true);
+      
+      // Kiểm tra bàn có hóa đơn hay không
+      const invoiceIdToLoad = targetInvoiceId || (actualTable.status === 'occupied' ? actualTable.invoiceId : null);
+      const chosenInvoiceMeta = tableInvoices.find(invoice => invoice.invoiceId === invoiceIdToLoad) || null;
+
+      if (invoiceIdToLoad) {
+        // Bàn có hóa đơn - load hóa đơn đó lên (kể cả hóa đơn rỗng)
+        
+        // Tạo invoice object từ dữ liệu có sẵn
+        const invoice = {
+          maHd: invoiceIdToLoad,
+          maBan: actualTable.id,
+          tenBan: actualTable.name
+        };
+        setCurrentInvoice(invoice);
+        
+        // Load chi tiết hóa đơn
+        const detailsResponse = await getChiTietHoaDonTheoMaHD(invoiceIdToLoad);
+        console.log('[INVOICE_DETAILS] Raw details response:', detailsResponse);
+        
+        if (Array.isArray(detailsResponse)) {
+          // Lọc chỉ những món có số lượng > 0
+          const itemsWithQuantity = detailsResponse.filter(item => parseInt(item.sl) > 0);
+          console.log('[INVOICE_DETAILS] Items with quantity:', itemsWithQuantity);
+          console.log('[INVOICE_DETAILS] Item structure example:', itemsWithQuantity[0]);
+          setInvoiceDetails(itemsWithQuantity);
+        } else {
+          console.log('[INVOICE_DETAILS] No valid array response, setting empty');
+          setInvoiceDetails([]);
+        }
+        
+        const invoiceLabel = chosenInvoiceMeta?.invoiceId || invoiceIdToLoad;
+        const isInvoiceEmpty = chosenInvoiceMeta
+          ? (chosenInvoiceMeta.totalAmount || 0) === 0
+          : Boolean(actualTable.isEmptyInvoice);
+
+        if (isInvoiceEmpty) {
+          message.success(__('pages.banhang.empty_invoice_loaded', { table: actualTable.name }, `Đã load hóa đơn rỗng cho bàn ${actualTable.name} - Sẵn sàng chọn món`));
+        } else {
+          message.success(__('pages.banhang.invoice_loaded', { table: actualTable.name, invoice: invoiceLabel }, `Đã load hóa đơn cho bàn ${actualTable.name} - #${invoiceLabel}`));
+        }
+      } else {
+        // Bàn trống - tự động tạo hóa đơn mới và chuyển sang combined layout
+        
+        const response = await taoHoaDon(actualTable.id);
+        
+        if (response && response.success && response.message) {
+          const newInvoice = {
+            maHd: response.message, // API trả về mã hóa đơn trong field message
+            maBan: actualTable.id,
+            tenBan: actualTable.name
+          };
+          setCurrentInvoice(newInvoice);
+          setInvoiceDetails([]);
+          
+          message.success(__('pages.banhang.invoice_created_for_table', { table: actualTable.name, code: response.message }, `Đã tạo hóa đơn mới cho bàn ${actualTable.name} - #${response.message}`));
+          
+          // Trigger refresh để cập nhật trạng thái bàn
+          triggerQuickRefresh('INVOICE_CREATE');
+          
+          // Chuyển thẳng sang combined layout cho bàn trống
+          setCurrentView(VIEW_STATES.COMBINED);
+          return; // Kết thúc hàm tại đây
+        } else {
+          console.error('Invalid response from taoHoaDon:', response);
+          throw new Error('Không thể tạo hóa đơn mới');
+        }
+      }
+      
+      // Chuyển sang view combined cho bàn có hóa đơn
+      setCurrentView(VIEW_STATES.COMBINED);
+      
+      // Trigger quick refresh sau khi chọn bàn
+      triggerQuickRefresh('TABLE_SELECT');
+    } catch (error) {
+      console.error('Error selecting table:', error);
+      message.error('Không thể xử lý bàn: ' + (error.message || 'Lỗi không xác định'));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // FLOW 2: Chuyển sang view chọn sản phẩm (dữ liệu do ChonSanPham tự tải)
+  const resetTakeAwayModalState = () => {
+    setTakeAwayInvoiceModalVisible(false);
+    setTakeAwayInvoiceCandidates([]);
+    setPendingTakeAwaySelection(null);
+    setIsCreatingTakeAwayInvoice(false);
+  };
+
+  const openTakeAwayInvoiceModal = (table) => {
+    if (!table) {
+      message.error('Không xác định được bàn để quản lý hóa đơn.');
+      return;
+    }
+
+    const latestTable = tables.find(t => t.id === table.id) || table;
+    const invoices = Array.isArray(latestTable.activeInvoices) ? latestTable.activeInvoices : [];
+
+    if (invoices.length === 0) {
+      message.info('Bàn take away chưa có hóa đơn nào đang mở.');
+      return;
+    }
+
+    setPendingTakeAwaySelection(latestTable);
+    setTakeAwayInvoiceCandidates(invoices);
+    setTakeAwayInvoiceModalVisible(true);
+  };
+
+  const handleTakeAwayInvoicePick = async (invoiceId) => {
+    if (!invoiceId) {
+      message.error('Không xác định được hóa đơn cần mở.');
+      return;
+    }
+
+    if (!pendingTakeAwaySelection) {
+      message.error('Không xác định được bàn take away.');
+      return;
+    }
+
+    const tableRecord = tables.find(t => t.id === pendingTakeAwaySelection.id) || pendingTakeAwaySelection;
+
+    resetTakeAwayModalState();
+
+    await handleTableSelect(tableRecord, {
+      targetInvoiceId: invoiceId,
+      skipInvoicePicker: true
+    });
+  };
+
+  const handleCreateTakeAwayInvoice = async () => {
+    if (!pendingTakeAwaySelection) {
+      message.error('Không xác định được bàn take away.');
+      return;
+    }
+
+    try {
+      setIsCreatingTakeAwayInvoice(true);
+      const response = await taoHoaDon(pendingTakeAwaySelection.id);
+
+      if (response && response.success && response.message) {
+        const newInvoiceId = response.message;
+        message.success(`Đã tạo hóa đơn take away mới #${newInvoiceId}`);
+
+        const tableRecord = tables.find(t => t.id === pendingTakeAwaySelection.id) || pendingTakeAwaySelection;
+        resetTakeAwayModalState();
+
+        triggerQuickRefresh('TAKEAWAY_CREATE_INVOICE');
+
+        await handleTableSelect(tableRecord, {
+          targetInvoiceId: newInvoiceId,
+          skipInvoicePicker: true
+        });
+      } else {
+        throw new Error('Không thể tạo hóa đơn mới.');
+      }
+    } catch (error) {
+      console.error('handleCreateTakeAwayInvoice error:', error);
+      message.error(error?.message || 'Không thể tạo hóa đơn mới cho bàn take away.');
+    } finally {
+      setIsCreatingTakeAwayInvoice(false);
+    }
+  };
+
+  const handleSelectItems = async () => {
+    setCurrentView(VIEW_STATES.COMBINED); // Chuyển sang combined view thay vì products
+  };
+
+  // Tạo hóa đơn mới cho bàn
+  const createNewInvoice = async () => {
+    if (!selectedTable) {
+      message.error('Vui lòng chọn bàn');
+      return;
+    }
+
+    try {
+      setLoading(true);
+      const response = await taoHoaDon(selectedTable.id);
+      
+      if (response && response.success && response.message) {
+        // API trả về mã hóa đơn trong message
+        const newInvoice = {
+          maHd: response.message,
+          maBan: selectedTable.id,
+          tenBan: selectedTable.name
+        };
+        setCurrentInvoice(newInvoice);
+        setInvoiceDetails([]);
+        message.success(`Đã tạo hóa đơn mới: ${response.message}`);
+        
+        // Trigger quick refresh sau khi tạo hóa đơn mới
+        triggerQuickRefresh('CREATE_INVOICE');
+      } else {
+        throw new Error('Không thể tạo hóa đơn');
+      }
+    } catch (error) {
+  // Silent console
+      message.error('Không thể tạo hóa đơn mới: ' + (error.message || 'Lỗi không xác định'));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Thêm sản phẩm vào hóa đơn với modal chọn số lượng
+  const addProductToOrder = (product) => {
+    if (!selectedTable) {
+      message.error('Vui lòng chọn bàn trước');
+      return;
+    }
+
+    // Mở modal chọn số lượng
+    setSelectedProductForAdd(product);
+    setQuantityToAdd(1);
+    setShowQuantityModal(true);
+  };
+
+  // Xác nhận thêm sản phẩm với số lượng đã chọn
+  const confirmAddProduct = async () => {
+    if (!selectedProductForAdd || !selectedTable) {
+      return;
+    }
+
+    // Nếu chưa có hóa đơn, tạo mới
+    if (!currentInvoice) {
+      await createNewInvoice();
+      // Đợi một chút để đảm bảo state đã cập nhật
+      await new Promise(resolve => setTimeout(resolve, 100));
+    }
+
+    // Kiểm tra lại sau khi tạo hóa đơn
+    if (!currentInvoice || !currentInvoice.maHd) {
+      message.error('Không thể tạo hóa đơn, vui lòng thử lại');
+      return;
+    }
+
+    try {
+      setLoading(true);
+      const response = await taoCthd(currentInvoice.maHd, selectedProductForAdd.id, quantityToAdd);
+      
+      if (response) {
+        // Reload chi tiết hóa đơn
+        const detailsResponse = await getChiTietHoaDonTheoMaHD(currentInvoice.maHd);
+        if (Array.isArray(detailsResponse)) {
+          setInvoiceDetails(detailsResponse);
+        }
+        message.success(`Đã thêm ${selectedProductForAdd.ten} (x${quantityToAdd}) vào đơn hàng`);
+        
+        // Trigger quick refresh sau khi thêm sản phẩm
+        triggerQuickRefresh('ADD_PRODUCT');
+        
+        // Đóng modal
+        setShowQuantityModal(false);
+        setSelectedProductForAdd(null);
+        setQuantityToAdd(1);
+      }
+    } catch (error) {
+  // Silent console
+      message.error('Không thể thêm sản phẩm: ' + (error.message || 'Lỗi không xác định'));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Cập nhật số lượng sản phẩm - mở modal
+  const updateProductQuantity = (item, newQuantity) => {
+    if (newQuantity <= 0) {
+      removeProductFromOrder(item.maCt || item.cthd);
+      return;
+    }
+
+    // Mở modal để nhập số lượng mới
+    setSelectedItemForUpdate(item);
+    setNewQuantityForUpdate(newQuantity);
+    setShowUpdateQuantityModal(true);
+  };
+
+  // Cập nhật số lượng trực tiếp không qua modal (cho combined view)
+  const updateItemQuantity = async (maCt, newQuantity) => {
+    if (!currentInvoice) {
+      message.error('Thiếu thông tin hóa đơn');
+      return;
+    }
+
+    const currentItem = invoiceDetails.find(item => item.maCt === maCt || item.cthd === maCt);
+    if (!currentItem) {
+      message.error('Không tìm thấy sản phẩm trong đơn hàng');
+      return;
+    }
+
+    if (newQuantity <= 0) {
+      // Xóa sản phẩm nếu số lượng <= 0
+      try {
+        await xoaCtHd({ maCt: maCt });
+        const detailsResponse = await getChiTietHoaDonTheoMaHD(currentInvoice.maHd);
+        if (Array.isArray(detailsResponse)) {
+          setInvoiceDetails(detailsResponse.filter(item => parseInt(item.sl) > 0));
+        }
+        message.success('Đã xóa sản phẩm khỏi đơn hàng');
+        triggerQuickRefresh('REMOVE_ITEM');
+      } catch (error) {
+        message.error('Không thể xóa sản phẩm: ' + (error.message || 'Lỗi không xác định'));
+      }
+      return;
+    }
+
+    try {
+      setLoading(true);
+      
+      // Phương pháp 1: Thử cập nhật trực tiếp bằng capNhatCtHd
+      try {
+        const updateResult = await capNhatCtHd({
+          maCt: maCt,
+          soLuong: newQuantity,
+          maHd: currentInvoice.maHd
+        });
+        
+        if (updateResult && !Array.isArray(updateResult) && updateResult.success !== false) {
+          // Reload chi tiết hóa đơn
+          const detailsResponse = await getChiTietHoaDonTheoMaHD(currentInvoice.maHd);
+          if (Array.isArray(detailsResponse)) {
+            setInvoiceDetails(detailsResponse.filter(item => parseInt(item.sl) > 0));
+          }
+          
+          // Trigger quick refresh
+          triggerQuickRefresh('UPDATE_QUANTITY');
+          return; // Thành công
+        } else {
+          throw new Error('API returned unsuccessful result');
+        }
+      } catch (directUpdateError) {
+        // Continue to fallback method
+      }
+      
+      // Phương pháp 2: Fallback - Mở modal để cập nhật
+      setSelectedItemForUpdate(currentItem);
+      setNewQuantityForUpdate(newQuantity);
+      setShowUpdateQuantityModal(true);
+      message.info('Đang chuyển sang chế độ cập nhật thủ công');
+      
+    } catch (error) {
+      message.error('Không thể cập nhật số lượng: ' + (error.message || 'Lỗi không xác định'));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Xác nhận update số lượng với fallback strategy
+  const confirmUpdateQuantity = async () => {
+    if (!selectedItemForUpdate || !currentInvoice) {
+      message.error('Thiếu thông tin để cập nhật số lượng');
+      return;
+    }
+
+    try {
+      setLoading(true);
+      
+      // Phương pháp 1: Thử cập nhật trực tiếp bằng capNhatCtHd
+      try {
+        const updateResult = await capNhatCtHd({
+          maCt: selectedItemForUpdate.maCt || selectedItemForUpdate.cthd, // Thử cả 2 field
+          soLuong: newQuantityForUpdate,
+          maHd: currentInvoice.maHd
+        });
+        
+        // Sửa lại logic kiểm tra - mảng rỗng có nghĩa là không thành công
+        if (updateResult && !Array.isArray(updateResult) && updateResult.success !== false) {
+          // Reload chi tiết hóa đơn
+          const detailsResponse = await getChiTietHoaDonTheoMaHD(currentInvoice.maHd);
+          if (Array.isArray(detailsResponse)) {
+            setInvoiceDetails(detailsResponse.filter(item => parseInt(item.sl) > 0));
+          }
+          
+          message.success(`Đã cập nhật số lượng ${selectedItemForUpdate.tenSp} thành ${newQuantityForUpdate}`);
+          
+          // Trigger quick refresh
+          triggerQuickRefresh('UPDATE_QUANTITY');
+          
+          // Đóng modal
+          setShowUpdateQuantityModal(false);
+          setSelectedItemForUpdate(null);
+          setNewQuantityForUpdate(1);
+          return; // Exit successfully
+        } else {
+          throw new Error('API returned empty array or unsuccessful result');
+        }
+      } catch (directUpdateError) {
+        // Continue to fallback method
+      }
+      
+      // Phương pháp 2: Fallback - Xóa và thêm lại
+      
+      // Nếu products chưa được load, load ngay
+      if (!products || products.length === 0) {
+        await loadProducts();
+      }
+      
+      // Bước 1: Xóa item hiện tại
+      await xoaCtHd({ maCt: selectedItemForUpdate.maCt || selectedItemForUpdate.cthd });
+      
+      // Bước 2: Tìm sản phẩm gốc để lấy mã sản phẩm
+      // Thử nhiều cách match để tránh lỗi
+      let foundProduct = null;
+      
+      // Cách 1: Match theo tên chính xác
+      foundProduct = products.find(p => p.ten === selectedItemForUpdate.tenSp);
+      
+      // Cách 2: Match theo tên không phân biệt hoa thường
+      if (!foundProduct) {
+        foundProduct = products.find(p => 
+          p.ten?.toLowerCase().trim() === selectedItemForUpdate.tenSp?.toLowerCase().trim()
+        );
+      }
+      
+      // Cách 3: Match theo mã sản phẩm nếu có trong item
+      if (!foundProduct && selectedItemForUpdate.maSp) {
+        foundProduct = products.find(p => p.id === selectedItemForUpdate.maSp);
+      }
+      
+      // Cách 4: Match partial name
+      if (!foundProduct) {
+        foundProduct = products.find(p => 
+          p.ten?.includes(selectedItemForUpdate.tenSp) || 
+          selectedItemForUpdate.tenSp?.includes(p.ten)
+        );
+      }
+      
+      if (!foundProduct) {
+        throw new Error(`Không tìm thấy sản phẩm "${selectedItemForUpdate.tenSp}" trong danh sách. Vui lòng thử lại sau khi tải lại trang.`);
+      }
+      
+      // Bước 3: Thêm lại với số lượng mới
+      await taoCthd(currentInvoice.maHd, foundProduct.id, newQuantityForUpdate);
+      
+      // Reload chi tiết hóa đơn
+      const detailsResponse = await getChiTietHoaDonTheoMaHD(currentInvoice.maHd);
+      if (Array.isArray(detailsResponse)) {
+        setInvoiceDetails(detailsResponse.filter(item => parseInt(item.sl) > 0));
+      }
+      
+      message.success(`Đã cập nhật số lượng ${selectedItemForUpdate.tenSp} thành ${newQuantityForUpdate}`);
+      
+      // Trigger quick refresh sau khi cập nhật số lượng
+      triggerQuickRefresh('UPDATE_QUANTITY');
+      
+      // Đóng modal
+      setShowUpdateQuantityModal(false);
+      setSelectedItemForUpdate(null);
+      setNewQuantityForUpdate(1);
+    } catch (error) {
+      console.error('[UPDATE_QUANTITY] Lỗi:', error);
+      message.error('Không thể cập nhật số lượng: ' + (error.message || 'Lỗi không xác định'));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const openItemDiscountModal = (item) => {
+    if (!item) {
+      return;
+    }
+
+    if (editingInvoice) {
+      return;
+    }
+
+    const discountPercent = parseFloat(item.lv011 ?? item.discountPercent ?? item.chietKhau ?? 0) || 0;
+    setSelectedItemForDiscount(item);
+    setItemDiscountInput(Number.isFinite(discountPercent) ? parseFloat(discountPercent.toFixed(2)) : 0);
+    setItemDiscountModalVisible(true);
+  };
+
+  const closeItemDiscountModal = () => {
+    setItemDiscountModalVisible(false);
+    setSelectedItemForDiscount(null);
+    setItemDiscountInput(0);
+  };
+
+  const handleItemDiscountChange = (value) => {
+    if (value === null || value === undefined) {
+      setItemDiscountInput(0);
+      return;
+    }
+    setItemDiscountInput(value);
+  };
+
+  const confirmItemDiscount = async () => {
+    if (!selectedItemForDiscount || !currentInvoice) {
+      message.error('Thiếu thông tin món cần cập nhật');
+      return;
+    }
+
+    const maCt =
+      selectedItemForDiscount.maCt ||
+      selectedItemForDiscount.cthd ||
+      selectedItemForDiscount.idCthd ||
+      selectedItemForDiscount.id;
+
+    if (!maCt) {
+      message.error('Không xác định được mã chi tiết hóa đơn');
+      return;
+    }
+
+    const normalizedDiscount = Number(itemDiscountInput);
+    if (!Number.isFinite(normalizedDiscount) || normalizedDiscount < 0) {
+      message.error('Chiết khấu không hợp lệ');
+      return;
+    }
+
+    try {
+      setLoading(true);
+
+      const response = await capNhatChietKhauMon({
+        maCt,
+        chietKhau: normalizedDiscount,
+        maHd: currentInvoice.maHd
+      });
+
+      if (response && response.success === false) {
+        throw new Error(response.message || 'API không cập nhật được chiết khấu');
+      }
+
+      const detailsResponse = await getChiTietHoaDonTheoMaHD(currentInvoice.maHd);
+      if (Array.isArray(detailsResponse)) {
+        setInvoiceDetails(detailsResponse);
+      }
+
+      message.success('Đã cập nhật chiết khấu món');
+      closeItemDiscountModal();
+      triggerQuickRefresh('UPDATE_ITEM_DISCOUNT');
+    } catch (error) {
+      message.error('Không thể cập nhật chiết khấu: ' + (error.message || 'Lỗi không xác định'));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Xóa sản phẩm khỏi đơn hàng
+  const removeProductFromOrder = async (maCt) => {
+    try {
+      setLoading(true);
+      
+      
+      // Sử dụng API mới xoaCtHd với object parameter
+      const deleteResponse = await xoaCtHd({ maCt });
+      
+      // Reload chi tiết hóa đơn
+      const detailsResponse = await getChiTietHoaDonTheoMaHD(currentInvoice.maHd);
+      
+      if (Array.isArray(detailsResponse)) {
+        setInvoiceDetails(detailsResponse);
+      }
+      
+      message.success('Đã xóa sản phẩm khỏi hóa đơn');
+      
+      // Trigger quick refresh sau khi xóa sản phẩm
+      triggerQuickRefresh('REMOVE_PRODUCT');
+    } catch (error) {
+  // Silent console
+      message.error('Không thể xóa sản phẩm: ' + (error.message || 'Lỗi không xác định'));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Chuyển xuống bếp
+  const sendToKitchen = async () => {
+    if (!currentInvoice) {
+      message.error('Không có hóa đơn để chuyển xuống bếp');
+      return;
+    }
+
+    try {
+      setLoading(true);
+      
+      // Sử dụng API mới chuyenXuongBep với object parameter
+      await chuyenXuongBep({ maHd: currentInvoice.maHd });
+      message.success('Đã chuyển đơn hàng xuống bếp');
+      
+      // Trigger quick refresh sau khi chuyển xuống bếp
+      triggerQuickRefresh('SEND_TO_KITCHEN');
+      
+      // Refresh invoice details để cập nhật trạng thái
+      const detailsResponse = await getChiTietHoaDonTheoMaHD(currentInvoice.maHd);
+      if (Array.isArray(detailsResponse)) {
+        setInvoiceDetails(detailsResponse);
+      }
+    } catch (error) {
+  // Silent console
+      message.error('Không thể chuyển xuống bếp: ' + (error.message || 'Lỗi không xác định'));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // ===== ENHANCED ORDER PROCESSING WORKFLOW =====
+  
+  // Confirm order before sending to kitchen
+  const confirmOrder = async () => {
+    if (!currentInvoice || invoiceDetails.length === 0) {
+      message.error('Không có đơn hàng để xác nhận');
+      return;
+    }
+
+    try {
+      setLoading(true);
+      
+      // Confirm order with current user
+      await xacNhanDonHang(currentInvoice.maHd, 'current_user'); // Replace with actual user ID
+      
+      message.success('Đã xác nhận đơn hàng');
+      
+      // Update order status
+      await capNhatTrangThaiDonHang(currentInvoice.maHd, 'confirmed');
+      
+      // Refresh invoice details
+      const detailsResponse = await getChiTietHoaDonTheoMaHD(currentInvoice.maHd);
+      if (Array.isArray(detailsResponse)) {
+        setInvoiceDetails(detailsResponse);
+      }
+      
+    } catch (error) {
+  // Silent console
+      message.error('Không thể xác nhận đơn hàng: ' + (error.message || 'Lỗi không xác định'));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Track order status in real-time
+  const trackOrderStatus = async () => {
+    if (!currentInvoice) return;
+    
+    try {
+      const statusResponse = await layTrangThaiDonHangRealtime(currentInvoice.maHd);
+      
+      // Update order status state
+      setOrderStatus(statusResponse);
+      
+      // Update UI based on status
+      // This could trigger notifications or UI updates
+      
+    } catch (error) {
+  // Silent console
+      // Don't show error message for tracking failures to avoid spam
+    }
+  };
+
+  // Auto-track order status every 30 seconds
+  useEffect(() => {
+    let trackingInterval;
+    
+    if (currentInvoice && currentView === VIEW_STATES.COMBINED) {
+      trackingInterval = setInterval(trackOrderStatus, 30000); // Track every 30 seconds
+    }
+    
+    return () => {
+      if (trackingInterval) {
+        clearInterval(trackingInterval);
+      }
+    };
+  }, [currentInvoice, currentView]);
+
+  // Enhanced payment processing with detailed tracking
+  const processPaymentEnhanced = async (paymentData) => {
+    try {
+      setPaymentLoading(true);
+      const paymentTotal = Number(paymentData.finalTotal ?? paymentData.tongTien ?? 0) || 0;
+      const pointsFromPayment = Math.max(Math.floor(paymentTotal / 1000), 0);
+      paymentData.loyaltyPoints = pointsFromPayment;
+
+      if (loyaltyCustomer) {
+        const loyaltySnapshot = {
+          customerId: loyaltyCustomer.id,
+          name: loyaltyCustomer.name,
+          phone: loyaltyCustomer.phone || loyaltyCustomer.id
+        };
+        paymentData.loyaltyCustomer = loyaltySnapshot;
+      }
+
+      // Quy trình thanh toán theo backend:
+      // Bước 1: PaymentModal đã gọi thanhToanHoaDonChiTiet (tương ứng với việc tính tiền)
+      // Bước 2: Gọi tratien với trangThai=3 để kích hoạt chế độ chờ thanh toán (lv011=1)
+      // Bước 3: Gọi tratien với trangThai=2 để hoàn tất thanh toán (lv011=2) và xóa khỏi hệ thống
+      // Bước 4: Check trạng thái bàn để refresh UI (giống web GMAC)
+      
+      if (currentInvoice && selectedTable) {
+        try {
+          // Bước 2: Kích hoạt chế độ chờ thanh toán (tương ứng với bangtitlewaitmini trên web)
+          const activateResponse = await tratien(
+            currentInvoice.maHd, 
+            selectedTable.id, 
+            3, // opt=3: Kích hoạt chế độ chờ thanh toán
+            '' // cusid rỗng
+          );
+          // Silent console
+          
+          // Bước 3: Hoàn tất thanh toán và xóa khỏi hệ thống
+          const finalizeResponse = await tratien(
+            currentInvoice.maHd, 
+            selectedTable.id, 
+            2, // opt=2: Thanh toán hoàn tất, xóa khỏi hệ thống
+            '' // cusid rỗng
+          );
+          // Silent console
+          
+          // Bước 4: Check trạng thái bàn sau thanh toán (ajaxbangid) - Giống web GMAC
+          const statusResponse = await ajaxBangId(selectedTable.id);
+          // Silent console
+          
+          if (finalizeResponse && finalizeResponse.success !== false) {
+            message.success('Thanh toán hoàn tất');
+          } else {
+            message.warning('Thanh toán hoàn tất');
+          }
+        } catch (tratienError) {
+          // Silent console
+          message.warning('Thanh toán hoàn tất');
+        }
+      }
+
+      if (loyaltyCustomer && pointsFromPayment > 0) {
+        try {
+          const payload = {
+            customerId: loyaltyCustomer.id,
+            points: pointsFromPayment,
+            invoiceId: currentInvoice?.maHd || undefined,
+            orderCode: currentInvoice?.maHd || paymentData.maHd || undefined,
+            note: currentInvoice?.maHd ? `Ban hang HD ${currentInvoice.maHd}` : 'Ban hang thanh toan',
+            amount: paymentTotal
+          };
+
+          if (activeSalesProgram?.programId) {
+            payload.programId = activeSalesProgram.programId;
+          }
+
+          if (programDiscountBreakdown.length > 0) {
+            payload.details = programDiscountBreakdown.map((item) => ({
+              productId: item.productId,
+              quantity: item.quantity,
+              discountPercent: item.discountPercent,
+              discountAmount: Math.round(item.discountAmount || 0),
+              points: item.points
+            }));
+          }
+
+          if (payload.invoiceId === undefined) {
+            delete payload.invoiceId;
+          }
+          if (payload.orderCode === undefined) {
+            delete payload.orderCode;
+          }
+
+          await addLoyaltyPoints(payload);
+          message.success(`Cong ${pointsFromPayment.toLocaleString('vi-VN')} diem cho ${loyaltyCustomer.name || 'khach hang'}`);
+        } catch (error) {
+          console.error('Failed to add loyalty points:', error);
+          message.warning('Không thể cộng điểm khách hàng');
+        }
+      }
+
+      try {
+        const taxConfig = normalizeTaxConfig(loadTaxConfig());
+        if (shouldSendInvoice(taxConfig) && Array.isArray(invoiceDetails) && invoiceDetails.length > 0) {
+          const invoicePayload = prepareInvoicePayload(
+            {
+              invoice: currentInvoice,
+              invoiceDetails,
+              invoiceSummary,
+              paymentData,
+              loyaltyCustomer
+            },
+            taxConfig
+          );
+
+          if (invoicePayload && Array.isArray(invoicePayload.detail) && invoicePayload.detail.length > 0) {
+            const taxResponse = await submitInvoiceToTaxPortal(invoicePayload, taxConfig, 'create');
+            if (taxResponse?.success) {
+              message.success('Đã gửi hóa đơn điện tử.');
+
+              const lookupCode = extractTaxLookupCode(taxResponse?.data, taxConfig);
+              const invoiceIdForLookup = currentInvoice?.maHd || paymentData?.maHd || currentInvoice?.lv001;
+
+              if (lookupCode && invoiceIdForLookup) {
+                try {
+                  await capNhatMaTraCuuHoaDon({
+                    maHd: invoiceIdForLookup,
+                    maTraCuu: lookupCode,
+                    taxResponse: taxResponse?.data
+                  });
+                } catch (persistLookupError) {
+                  console.error('Không thể lưu mã tra cứu hóa đơn:', persistLookupError);
+                }
+              }
+            } else if (!taxResponse?.skipped) {
+              message.warning('Không thể xác nhận trạng thái hóa đơn điện tử.');
+            }
+          }
+        }
+      } catch (taxError) {
+        console.error('Tax invoice submission failed:', taxError);
+        message.warning(taxError?.response?.data?.message || taxError.message || 'Không thể gửi hóa đơn điện tử');
+      }
+
+      clearLoyaltyCustomer();
+
+      // Trigger refresh to update table status
+      triggerQuickRefresh('PAYMENT_COMPLETE');
+      
+      // Tất cả các phương thức thanh toán đều hiển thị PaymentSuccess window
+      setAwaitingPaymentSuccessClose(true);
+      awaitingPaymentSuccessCloseRef.current = true;
+
+      const key = `payment_success_${Date.now()}`;
+      localStorage.setItem(key, JSON.stringify(paymentData));
+
+      let successWindowOpened = false;
+
+      if (window.electronAPI?.openPaymentSuccessWindow) {
+        try {
+          const response = await window.electronAPI.openPaymentSuccessWindow(key);
+          if (!response || response.success !== false) {
+            successWindowOpened = true;
+          } else {
+            message.warning(response?.error || 'Không thể mở cửa sổ thanh toán thành công.');
+          }
+        } catch (error) {
+          message.warning(error?.message || 'Không thể mở cửa sổ thanh toán thành công.');
+        }
+      }
+
+      if (!successWindowOpened) {
+        const popupUrl = `${window.location.origin}/#/payment/success?key=${key}`;
+        const popup = window.open(
+          popupUrl,
+          '_blank',
+          // eslint-disable-next-line no-restricted-globals
+          `width=${Math.floor(screen.width * 0.7)},height=${screen.height},left=0,top=0,scrollbars=yes,resizable=yes`
+        );
+        if (popup) {
+          successWindowOpened = true;
+        } else {
+          message.warning('Không thể mở cửa sổ thanh toán thành công. Vui lòng cho phép cửa sổ bật lên.');
+        }
+      }
+
+      if (successWindowOpened) {
+        return;
+      }
+
+      localStorage.removeItem(key);
+      setAwaitingPaymentSuccessClose(false);
+      awaitingPaymentSuccessCloseRef.current = false;
+      handlePaymentSuccessClose();
+      return;
+
+    } catch (error) {
+  // Silent console
+      setAwaitingPaymentSuccessClose(false);
+      awaitingPaymentSuccessCloseRef.current = false;
+      message.error('Không thể xử lý thanh toán: ' + (error.message || 'Lỗi không xác định'));
+    } finally {
+      setPaymentLoading(false);
+    }
+  };
+
+  // Handle payment success modal close logic
+  const handlePaymentSuccessClose = useCallback(({ fromExternalEvent = false } = {}) => {
+    if (fromExternalEvent && !awaitingPaymentSuccessCloseRef.current) {
+      return;
+    }
+
+    setAwaitingPaymentSuccessClose(false);
+    awaitingPaymentSuccessCloseRef.current = false;
+
+    if (window.electronAPI?.focusMainWindow) {
+      window.electronAPI.focusMainWindow();
+    } else if (typeof window.focus === 'function') {
+      window.focus();
+    }
+
+    resetViewAfterPayment();
+    message.success('Đã quay lại trang chọn bàn');
+  }, [resetViewAfterPayment]);
+    
+  // Open payment modal
+  const openPaymentModal = async () => {
+    if (!currentInvoice || invoiceDetails.length === 0) {
+      message.error('Không có đơn hàng để thanh toán');
+      return;
+    }
+
+    // Load products nếu chưa có (cần để tính giảm giá từ chương trình)
+    if (!products || products.length === 0) {
+      console.log('Products not loaded, loading now...');
+      await loadProducts();
+    }
+
+    // Debug: Log promotion discount info
+    console.log('=== OPENING PAYMENT MODAL ===');
+    console.log('invoiceSummary:', invoiceSummary);
+    console.log('promotionDiscountAmount:', invoiceSummary.discount);
+    console.log('subtotalBeforeDiscount:', invoiceSummary.subtotal);
+    console.log('activeSalesProgram:', activeSalesProgram);
+    console.log('programDiscountMap:', programDiscountMap);
+    console.log('programDiscountBreakdown:', programDiscountBreakdown);
+
+    // Check if current table has pending kitchen items
+    const currentTable = selectedTable;
+    const hasPendingItems = currentTable?.hasPendingKitchenItems || 
+      invoiceDetails.some(item => {
+        const rawId = item.maCt || item.cthd || item.idCthd || item.id || item.lv001;
+        return rawId && pendingKitchenIdSet.has(rawId.toString());
+      });
+
+    if (hasPendingItems) {
+      Modal.confirm({
+        title: 'Xác nhận thanh toán',
+        content: 'Bàn này có món chưa xong - xác nhận thanh toán?',
+        okText: 'Thanh toán',
+        cancelText: 'Hủy',
+        onOk: () => {
+          setShowPaymentModal(true);
+        },
+        onCancel: () => {
+          // Do nothing, just close the modal
+        }
+      });
+    } else {
+      setShowPaymentModal(true);
+    }
+  };
+
+  // Legacy payment function (kept for compatibility)
+  const processPayment = async () => {
+    if (!currentInvoice || invoiceDetails.length === 0) {
+      message.error('Không có đơn hàng để thanh toán');
+      return;
+    }
+
+    try {
+      setLoading(true);
+      
+      // Tính toán tổng tiền từ server để đảm bảo chính xác
+      const totalResponse = await tinhTongTienHoaDon(currentInvoice.maHd);
+      const serverTotal = totalResponse && totalResponse.tongTien ? 
+        parseFloat(totalResponse.tongTien) : orderTotal;
+
+      // Thanh toán với số tiền chính xác
+      await thanhToanHoaDonBanhang({
+        maHd: currentInvoice.maHd,
+        tongTien: serverTotal,
+        tienKhachDua: serverTotal, // Simplified payment - customer pays exact amount
+        tienThua: 0
+      });
+
+      message.success('Thanh toán thành công');
+      
+      // Trigger quick refresh sau khi thanh toán
+      triggerQuickRefresh('PAYMENT_COMPLETE');
+      
+      // Reset và quay về trang chọn bàn
+      setCurrentInvoice(null);
+      setInvoiceDetails([]);
+      setSelectedTable(null);
+      setCurrentView(VIEW_STATES.TABLES);
+      
+      // Xóa bàn khỏi mergedTableGroups nếu có
+      if (selectedTable) {
+        setMergedTableGroups(prev => {
+          const newGroups = { ...prev };
+          // Xóa nhóm nếu bàn hiện tại là bàn chính
+          if (newGroups[selectedTable.id]) {
+            delete newGroups[selectedTable.id];
+          }
+          // Hoặc xóa bàn khỏi nhóm khác nếu là bàn phụ
+          Object.keys(newGroups).forEach(mainTableId => {
+            newGroups[mainTableId] = newGroups[mainTableId].filter(t => t.id !== selectedTable.id);
+            // Nếu nhóm chỉ còn 1 bàn, xóa luôn nhóm
+            if (newGroups[mainTableId].length <= 1) {
+              delete newGroups[mainTableId];
+            }
+          });
+          return newGroups;
+        });
+      }
+      
+      // Refresh table data to update status
+      await loadTables();
+      
+    } catch (error) {
+  // Silent console
+      message.error('Không thể xử lý thanh toán: ' + (error.message || 'Lỗi không xác định'));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // ===== ENHANCED INVOICE MANAGEMENT FUNCTIONS =====
+  
+  // Copy invoice
+  const copyInvoice = async (maHd) => {
+    try {
+      const result = await saoChepHoaDon(maHd, selectedTable.name);
+      if (result.success) {
+        message.success('Sao chép hóa đơn thành công!');
+        // Refresh current invoice data
+        const detailsResponse = await getChiTietHoaDonTheoMaHD(currentInvoice.maHd);
+        if (Array.isArray(detailsResponse)) {
+          setInvoiceDetails(detailsResponse.filter(item => parseInt(item.sl) > 0));
+        }
+        triggerQuickRefresh('COPY_INVOICE');
+      } else {
+        message.error('Không thể sao chép hóa đơn: ' + (result.message || 'Lỗi không xác định'));
+      }
+    } catch (error) {
+  // Silent console
+      message.error('Lỗi khi sao chép hóa đơn');
+    }
+  };
+
+  // Reprint invoice
+  const reprintInvoice = async (invoice) => {
+    try {
+      // Here you would integrate with your printing system
+      message.success('Đang chuẩn bị in hóa đơn...');
+      
+      // Example print action - replace with actual print implementation
+      window.print();
+    } catch (error) {
+  // Silent console
+      message.error('Lỗi khi in lại hóa đơn');
+    }
+  };
+
+  // Edit invoice details
+  const editInvoiceDetails = () => {
+    if (!selectedTable?.currentInvoice) {
+      message.error('Không có hóa đơn để chỉnh sửa');
+      return;
+    }
+    
+    setEditingInvoice(true);
+    message.info('Chế độ chỉnh sửa hóa đơn đã được kích hoạt');
+  };
+
+  // Save invoice edits
+  const saveInvoiceEdits = async () => {
+    try {
+      setLoading(true);
+      
+      // Calculate updated summary
+      const updatedSummary = calculateInvoiceSummary();
+      
+      // Update invoice with new data
+      await capNhatHd({
+        maHd: currentInvoice.maHd,
+        tongTien: updatedSummary.total,
+        thue: updatedSummary.tax,
+        giamGia: updatedSummary.discount
+      });
+      
+      setEditingInvoice(false);
+      message.success('Đã lưu thay đổi hóa đơn');
+      
+      // Refresh data
+      const detailsResponse = await getChiTietHoaDonTheoMaHD(currentInvoice.maHd);
+      if (Array.isArray(detailsResponse)) {
+        setInvoiceDetails(detailsResponse.filter(item => parseInt(item.sl) > 0));
+      }
+      triggerQuickRefresh('SAVE_EDITS');
+      
+    } catch (error) {
+  // Silent console
+      message.error('Lỗi khi lưu thay đổi hóa đơn');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Cancel invoice edits
+  const cancelInvoiceEdits = () => {
+    setEditingInvoice(false);
+    // Reload original invoice data
+    if (currentInvoice) {
+      getChiTietHoaDonTheoMaHD(currentInvoice.maHd).then(detailsResponse => {
+        if (Array.isArray(detailsResponse)) {
+          setInvoiceDetails(detailsResponse.filter(item => parseInt(item.sl) > 0));
+        }
+      });
+    }
+    message.info('Đã hủy chỉnh sửa hóa đơn');
+  };
+
+  const openCancelReasonModal = () => {
+    if (!currentInvoice) {
+      message.error('Không có hóa đơn để hủy');
+      return;
+    }
+    cancelReasonForm.resetFields();
+    setIsCancelReasonModalOpen(true);
+  };
+
+  const closeCancelReasonModal = () => {
+    cancelReasonForm.resetFields();
+    setIsCancelReasonModalOpen(false);
+  };
+
+  const cancelInvoice = async (reasonPayload) => {
+    if (!currentInvoice) {
+      message.error('Không có hóa đơn để hủy');
+      return false;
+    }
+
+    try {
+      setLoading(true);
+      await huyHoaDon(currentInvoice.maHd, reasonPayload);
+      message.success('Đã hủy hóa đơn thành công');
+
+      triggerQuickRefresh('CANCEL_INVOICE');
+
+      setCurrentInvoice(null);
+      setInvoiceDetails([]);
+      setSelectedTable(null);
+      setCurrentView(VIEW_STATES.TABLES);
+
+      if (selectedTable) {
+        setMergedTableGroups(prev => {
+          const newGroups = { ...prev };
+          if (newGroups[selectedTable.id]) {
+            delete newGroups[selectedTable.id];
+          }
+          Object.keys(newGroups).forEach(mainTableId => {
+            newGroups[mainTableId] = newGroups[mainTableId].filter(t => t.id !== selectedTable.id);
+            if (newGroups[mainTableId].length <= 1) {
+              delete newGroups[mainTableId];
+            }
+          });
+          return newGroups;
+        });
+      }
+
+      await loadTables();
+      return true;
+
+    } catch (error) {
+  // Silent console
+      message.error('Không thể hủy hóa đơn: ' + (error.message || 'Lỗi không xác định'));
+      return false;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleConfirmCancelInvoice = async () => {
+    try {
+      const values = await cancelReasonForm.validateFields();
+      const reasonMeta = CANCEL_REASON_MAP[values.cancelReasonCode] || {
+        label: values.cancelReasonCode
+      };
+      setCancelReasonSubmitting(true);
+      const success = await cancelInvoice({
+        cancelReasonCode: values.cancelReasonCode,
+        cancelReasonLabel: reasonMeta.label,
+        cancelReasonNote: values.cancelReasonNote ? values.cancelReasonNote.trim() : ''
+      });
+      if (success) {
+        closeCancelReasonModal();
+      }
+    } catch (error) {
+      if (!error?.errorFields) {
+        message.error(error.message || 'Không thể xác nhận lý do hủy hóa đơn');
+      }
+    } finally {
+      setCancelReasonSubmitting(false);
+    }
+  };
+
+  // Load lịch sử hóa đơn theo bàn
+  const loadInvoiceHistory = async () => {
+    if (!selectedTable) {
+      message.error('Vui lòng chọn bàn');
+      return;
+    }
+
+    try {
+      setLoading(true);
+      const today = new Date();
+      const fromDate = new Date(today.setDate(today.getDate() - 30)); // 30 ngày trước
+      const toDate = new Date(); // Hôm nay
+
+      const historyResponse = await layLichSuHoaDonTheoBan(
+        selectedTable.id, 
+        fromDate.toISOString().split('T')[0], 
+        toDate.toISOString().split('T')[0]
+      );
+
+      if (Array.isArray(historyResponse)) {
+        setInvoiceHistory(historyResponse);
+        setShowInvoiceHistory(true);
+        message.success(`Đã tải ${historyResponse.length} hóa đơn trong 30 ngày qua`);
+      } else {
+        setInvoiceHistory([]);
+        message.info('Không có lịch sử hóa đơn');
+      }
+    } catch (error) {
+  // Silent console
+      message.error('Không thể tải lịch sử hóa đơn: ' + (error.message || 'Lỗi không xác định'));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // ===== TABLE OPERATIONS FUNCTIONS =====
+  
+  // Function to reload current table's invoice data
+  const loadDsHoaDon = async () => {
+    if (!selectedTable) {
+      return;
+    }
+
+    try {
+      // Reload table data to get updated status and invoice ID
+      await loadTables();
+      // Find the updated table info
+      const updatedTable = tables.find(t => t.id === selectedTable.id);
+      if (updatedTable) {
+        // Update current invoice data if table has invoice
+        if (updatedTable.invoiceId && updatedTable.status === 'occupied') {
+          const invoice = {
+            maHd: updatedTable.invoiceId,
+            maBan: updatedTable.id,
+            tenBan: updatedTable.name
+          };
+          setCurrentInvoice(invoice);
+          // Load chi tiết hóa đơn
+          const detailsResponse = await getChiTietHoaDonTheoMaHD(updatedTable.invoiceId);
+          if (Array.isArray(detailsResponse)) {
+            const itemsWithQuantity = detailsResponse.filter(item => parseInt(item.sl) > 0);
+            setInvoiceDetails(itemsWithQuantity);
+          } else {
+            setInvoiceDetails([]);
+          }
+        } else {
+          // Table is now empty
+          setCurrentInvoice(null);
+          setInvoiceDetails([]);
+        }
+        // Update selected table with new data
+        setSelectedTable(updatedTable);
+      } else {
+      }
+    } catch (error) {
+      message.error('Không thể tải lại dữ liệu hóa đơn: ' + (error.message || 'Lỗi không xác định'));
+    }
+  };
+  
+  // Load danh sách bàn có thể thực hiện operation
+  const loadAvailableTablesForOperation = async () => {
+    try {
+      // Lấy tất cả bàn có hóa đơn đang mở (để gộp/chuyển)
+      const allTablesWithInvoices = tables.filter(table => table.status === 'occupied');
+
+      // Lọc thêm theo khu vực nếu đang chọn bàn nguồn
+      let filteredTables = allTablesWithInvoices;
+      if (selectedTable) {
+        filteredTables = allTablesWithInvoices.filter(table =>
+          table.idKhuVuc === selectedTable.idKhuVuc && table.id !== selectedTable.id
+        );
+      }
+
+      setAvailableTablesForOperation(filteredTables);
+
+    } catch (error) {
+      message.error('Không thể tải danh sách bàn');
+    }
+  };
+
+  // Load danh sách bàn trống cho tách bàn
+  const loadAvailableTablesForSplit = async () => {
+    try {
+      // Lấy tất cả bàn trống cùng khu vực
+      const emptyTables = tables.filter(table =>
+        table.status === 'available' &&
+        (!selectedTable || table.idKhuVuc === selectedTable.idKhuVuc) &&
+        table.id !== selectedTable?.id
+      );
+
+      setAvailableTablesForSplit(emptyTables);
+
+    } catch (error) {
+      message.error('Không thể tải danh sách bàn trống');
+    }
+  };
+
+  // Enhanced Gộp bàn với custom logic (không dùng API)
+  const handleMergeTable = async (targetTable) => {
+      
+      // Lấy chi tiết đầy đủ của bàn nguồn để có mã sản phẩm
+      let sourceDetailsFull = [];
+      try {
+        const sourceResponse = await loadDsCthdV2(currentInvoice.maHd);
+        sourceDetailsFull = Array.isArray(sourceResponse) 
+          ? sourceResponse.filter(item => parseInt(item.sl) > 0)
+          : [];
+      } catch (error) {
+        sourceDetailsFull = invoiceDetails; // fallback
+      }
+      
+      // Lấy danh sách sản phẩm để map tên -> mã
+      let allProducts = [];
+      try {
+        const productsResponse = await getAllSanPham();
+        allProducts = Array.isArray(productsResponse) ? productsResponse : [];
+      } catch (error) {
+      }
+
+      // Hàm tìm mã sản phẩm từ tên
+      const findProductCode = (productName) => {
+        if (!productName || !allProducts.length) return null;
+        
+        // Chuẩn hóa tên để so sánh
+        const normalizedName = productName.trim().toLowerCase();
+        
+        // Tìm sản phẩm có tên khớp
+        const product = allProducts.find(p => 
+          (p.tenSp && p.tenSp.trim().toLowerCase() === normalizedName) ||
+          (p.ten && p.ten.trim().toLowerCase() === normalizedName) ||
+          (p.tensp && p.tensp.trim().toLowerCase() === normalizedName) ||
+          (p.name && p.name.trim().toLowerCase() === normalizedName)
+        );
+        
+        return product ? (product.maSp || product.ma || product.id || product.ma_sp) : null;
+      };
+      
+    if (!selectedTable?.invoiceId || !targetTable) {
+      message.error('Vui lòng chọn bàn có hóa đơn và bàn đích để gộp');
+      return;
+    }
+
+    // Validation: Kiểm tra cùng khu vực
+    if (selectedTable.idKhuVuc !== targetTable.idKhuVuc) {
+      message.error('Không thể gộp bàn từ khu vực khác nhau');
+      return;
+    }
+
+    try {
+      setOperationInProgress(true);
+      setLoading(true);
+
+      // 1. Lấy chi tiết hóa đơn của bàn đích (nếu có)
+      let targetInvoiceDetails = [];
+      let targetInvoice = null;
+
+      if (targetTable.invoiceId) {
+        try {
+          const targetDetailsResponse = await loadDsCthdV2(targetTable.invoiceId);
+          targetInvoiceDetails = Array.isArray(targetDetailsResponse) 
+            ? targetDetailsResponse.filter(item => parseInt(item.sl) > 0)
+            : [];
+          
+          if (targetDetailsResponse === null || targetDetailsResponse === undefined) {
+            targetInvoiceDetails = [];
+          }
+          
+          targetInvoice = {
+            maHd: targetTable.invoiceId,
+            maBan: targetTable.maBan,
+            tenBan: targetTable.tenBan
+          };
+        } catch (error) {
+          targetInvoiceDetails = [];
+        }
+      } else {
+      }
+
+      // 2. Kết hợp chi tiết hóa đơn: bàn đích + bàn nguồn
+      const combinedInvoiceDetails = [...targetInvoiceDetails, ...invoiceDetails];
+
+      // 3. Tạo hoặc cập nhật hóa đơn cho bàn đích
+      let finalInvoiceId = targetTable.invoiceId;
+
+      if (!targetTable.invoiceId) {
+        // Tạo hóa đơn mới cho bàn đích
+        try {
+          const createResponse = await taoHoaDon(targetTable.id);
+          if (createResponse && createResponse.success) {
+            finalInvoiceId = createResponse.message;
+            } else {
+            throw new Error('Không thể tạo hóa đơn cho bàn đích');
+          }
+        } catch (error) {
+          throw error;
+        }
+      }
+
+      // 4. Lấy danh sách món đã xong từ bàn nguồn trước khi gộp
+      let completedItems = [];
+      try {
+        const completedResponse = await layDsMonDaXong();
+        completedItems = Array.isArray(completedResponse) ? completedResponse : [];
+        // Lọc chỉ lấy món từ hóa đơn hiện tại
+        completedItems = completedItems.filter(item => 
+          item.maHd === currentInvoice.maHd || item.donHangId === currentInvoice.maHd
+        );
+        } catch (error) {
+        }
+
+      // 5. Thêm tất cả món từ bàn nguồn vào bàn đích
+      if (!finalInvoiceId) {
+        throw new Error('Không có mã hóa đơn đích để thêm món');
+      }
+
+      for (const item of invoiceDetails) {
+        try {
+          // Sử dụng taoCthd thay vì themChiTietHoaDon
+          const productName = item.tenSp || item.ten || item.tensp || item.name;
+          const productCode = findProductCode(productName);
+          console.log('Sử dụng mã sản phẩm:', productCode, 'cho tên:', productName);
+          
+          if (!productCode) {
+            continue;
+          }
+          
+          const addResponse = await taoCthd(finalInvoiceId, productCode, parseInt(item.sl));
+
+          if (!addResponse || !addResponse.success) {
+            } else {
+            }
+        } catch (error) {
+          }
+      }
+
+      // 6. Load lại chi tiết hóa đơn đích để lấy thông tin chi tiết mới
+      let newInvoiceDetails = [];
+      try {
+        const newDetailsResponse = await getChiTietHoaDonTheoMaHD(finalInvoiceId);
+        newInvoiceDetails = Array.isArray(newDetailsResponse) 
+          ? newDetailsResponse.filter(item => parseInt(item.sl) > 0)
+          : [];
+        } catch (error) {
+        }
+
+      // 7. Cập nhật trạng thái món đã xong
+      for (const newItem of newInvoiceDetails) {
+        // Kiểm tra xem món này có trong danh sách đã xong của bàn nguồn không
+        const isCompleted = completedItems.some(completedItem => {
+          const completedName = completedItem.tenSp || completedItem.ten || completedItem.tensp || completedItem.name || '';
+          const newItemName = newItem.tenSp || newItem.ten || newItem.tensp || newItem.name || '';
+          const completedQty = parseInt(completedItem.sl || completedItem.soLuong || 0);
+          const newItemQty = parseInt(newItem.sl || 0);
+          
+          return completedName.trim().toLowerCase() === newItemName.trim().toLowerCase() && 
+                 completedQty === newItemQty;
+        });
+
+        if (isCompleted) {
+          try {
+            // Lấy ID của chi tiết hóa đơn mới
+            const itemId = newItem.idCthd || newItem.maCt || newItem.id;
+            if (itemId) {
+              // Cập nhật trạng thái món về "đã xong"
+              // Giả sử trạng thái 2 = "đã xong" (1 = chờ, 2 = xong)
+              await capNhatTrangThaiMon(itemId, 2, 'Chuyển từ bàn gộp - đã xong');
+              } else {
+              }
+          } catch (error) {
+            }
+        }
+      }
+
+      // 8. Xóa hóa đơn bàn nguồn (thay vì chỉ cập nhật trạng thái)
+      if (selectedTable.invoiceId) {
+    try {
+      await huyHoaDon(selectedTable.invoiceId, {
+      ...SYSTEM_AUTO_CANCEL_REASON,
+      cancelReasonNote: 'Gộp bàn - tự động xóa bill nguồn'
+      });
+          } catch (error) {
+          }
+      }
+
+      // 9. Load lại chi tiết hóa đơn đích lần cuối
+      let finalInvoiceDetails = [];
+      try {
+        const finalDetailsResponse = await getChiTietHoaDonTheoMaHD(finalInvoiceId);
+        finalInvoiceDetails = Array.isArray(finalDetailsResponse) 
+          ? finalDetailsResponse.filter(item => parseInt(item.sl) > 0)
+          : [];
+        } catch (error) {
+        finalInvoiceDetails = newInvoiceDetails; // fallback
+      }
+
+      // 10. Cập nhật state local
+      // Cập nhật currentInvoice và invoiceDetails cho bàn đích
+      const finalInvoice = {
+        maHd: finalInvoiceId,
+        maBan: targetTable.maBan,
+        tenBan: targetTable.tenBan
+      };
+
+      setCurrentInvoice(finalInvoice);
+      setInvoiceDetails(finalInvoiceDetails); // Sử dụng dữ liệu từ server
+      setSelectedTable(targetTable);
+
+      // Cập nhật merged table groups với logic mới
+      setMergedTableGroups(prev => {
+        const newGroups = { ...prev };
+        
+        // Kiểm tra xem targetTable đã là bàn chính của nhóm gộp nào chưa
+        const isTargetMainTable = newGroups[targetTable.id] !== undefined;
+        
+        if (isTargetMainTable) {
+          // Nếu targetTable đã là bàn chính: thêm selectedTable vào nhóm hiện tại
+          newGroups[targetTable.id] = [...newGroups[targetTable.id], selectedTable];
+        } else {
+          // Nếu targetTable chưa phải bàn chính: kiểm tra selectedTable
+          const isSelectedMainTable = newGroups[selectedTable.id] !== undefined;
+          
+          if (isSelectedMainTable) {
+            // Nếu selectedTable là bàn chính: bàn chính cũ trở thành bàn gộp, targetTable trở thành bàn chính mới
+            const oldGroup = newGroups[selectedTable.id];
+            delete newGroups[selectedTable.id]; // Xóa nhóm cũ
+            
+            // Tạo nhóm mới với targetTable là bàn chính
+            newGroups[targetTable.id] = [targetTable, ...oldGroup]; // targetTable là bàn chính, các bàn cũ (bao gồm selectedTable) trở thành bàn gộp
+          } else {
+            // Nếu selectedTable là bàn gộp: tìm nhóm của nó và thêm targetTable vào nhóm đó
+            const currentGroupKey = Object.keys(newGroups).find(mainTableId => 
+              newGroups[mainTableId].some(t => t.id === selectedTable.id)
+            );
+            
+            if (currentGroupKey) {
+              // Thêm targetTable vào nhóm hiện tại
+              newGroups[currentGroupKey] = [...newGroups[currentGroupKey], targetTable];
+            } else {
+              // Trường hợp không tìm thấy nhóm (không nên xảy ra), tạo nhóm mới
+              newGroups[targetTable.id] = [selectedTable, targetTable];
+            }
+          }
+        }
+        
+        return newGroups;
+      });
+
+      // 11. Thiết lập animation ghép bàn
+      setAnimationTables({
+        source: selectedTable,
+        target: targetTable
+      });
+      setShowMergeAnimation(true);
+
+      message.success(`Đã gộp bàn ${selectedTable.tenBan} vào bàn ${targetTable.tenBan}`);
+
+      // Reset modal states
+      setShowMergeTableModal(false);
+      setSelectedTargetTable(null);
+
+      // Delay để chạy animation xong rồi mới refresh
+      setTimeout(async () => {
+        await loadDsHoaDon();
+        refreshTableStatusOnly();
+        setOperationInProgress(false);
+      }, 2500); // Animation kéo dài 2s + 0.5s buffer
+
+    } catch (error) {
+      message.error('Không thể gộp bàn: ' + (error.message || 'Lỗi không xác định'));
+      setOperationInProgress(false);
+    } finally {
+      setLoading(false);
+    }
+
+    };
+
+  // Enhanced Tách bàn - Tách theo món lẻ
+ 
+  const handleSplitTable = async () => {
+    
+
+    // Validation
+    if (!selectedTable?.invoiceId || !currentInvoice) {
+      
+      message.error('Vui lòng chọn bàn có hóa đơn để tách');
+      return;
+    }
+
+    if (invoiceDetails.length <= 1) {
+      
+      message.error('Bàn chỉ có 1 món, không thể tách bàn');
+      return;
+    }
+
+    if (!selectedItemsForSplit || selectedItemsForSplit.length === 0) {
+      
+      message.error('Vui lòng chọn ít nhất 1 món để tách');
+      return;
+    }
+
+    if (!splitTargetTable) {
+      
+      message.error('Vui lòng chọn bàn đích để chuyển món');
+      return;
+    }
+
+    // Validation: Kiểm tra cùng khu vực
+    if (selectedTable.idKhuVuc !== splitTargetTable.idKhuVuc) {
+      
+      message.error('Không thể tách bàn sang khu vực khác');
+      return;
+    }
+
+    // Validation: Kiểm tra bàn đích trống
+    if (splitTargetTable.status !== 'available') {
+      
+      message.error('Bàn đích phải là bàn trống');
+      return;
+    }
+
+    // Validation: Kiểm tra còn món ở bàn nguồn sau khi tách
+    const remainingItems = invoiceDetails.filter(item =>
+      !selectedItemsForSplit.some(selectedItem =>
+        (selectedItem.maCt || selectedItem.cthd || selectedItem.idCthd) ===
+        (item.maCt || item.cthd || item.idCthd)
+      )
+    );
+
+    if (remainingItems.length === 0) {
+      
+      message.error('Phải chừa lại ít nhất 1 món ở bàn nguồn');
+      return;
+    }
+
+    
+
+    try {
+      setOperationInProgress(true);
+      setLoading(true);
+
+      // 1. Tạo hóa đơn mới cho bàn đích
+      
+
+      const createResponse = await taoHoaDon(splitTargetTable.id);
+      if (!createResponse || !createResponse.success) {
+        throw new Error('Không thể tạo hóa đơn cho bàn đích');
+      }
+
+      const targetInvoiceId = createResponse.message;
+      
+
+      // 2. Lấy danh sách món đã xong từ bàn nguồn trước khi tách
+      
+
+      let completedItems = [];
+      try {
+        const completedResponse = await layDsMonDaXong();
+        completedItems = Array.isArray(completedResponse) ? completedResponse : [];
+        // Lọc chỉ lấy món từ hóa đơn hiện tại
+        completedItems = completedItems.filter(item => 
+          item.maHd === currentInvoice.maHd || item.donHangId === currentInvoice.maHd
+        );
+        
+      } catch (error) {
+        
+      }
+
+      // 3. Lấy danh sách sản phẩm để map tên -> mã
+      
+
+      let allProducts = [];
+      try {
+        const productsResponse = await getAllSanPham();
+        allProducts = Array.isArray(productsResponse) ? productsResponse : [];
+        
+      } catch (error) {
+        
+      }
+
+      // Hàm tìm mã sản phẩm từ tên
+      const findProductCode = (productName) => {
+        if (!productName || !allProducts.length) return null;
+
+        const normalizedName = productName.trim().toLowerCase();
+
+        const product = allProducts.find(p =>
+          (p.tenSp && p.tenSp.trim().toLowerCase() === normalizedName) ||
+          (p.ten && p.ten.trim().toLowerCase() === normalizedName) ||
+          (p.tensp && p.tensp.trim().toLowerCase() === normalizedName) ||
+          (p.name && p.name.trim().toLowerCase() === normalizedName)
+        );
+
+        return product ? (product.maSp || product.ma || product.id || product.ma_sp) : null;
+      };
+
+      // 5. Thêm món được chọn vào bàn đích
+      
+
+      for (const item of selectedItemsForSplit) {
+        try {
+          const productName = item.tenSp || item.ten || item.tensp || item.name;
+          const productCode = findProductCode(productName);
+          const quantity = parseInt(item.sl || item.soLuong || 1);
+
+          
+
+          if (!productCode) {
+            
+            continue;
+          }
+
+          const addResponse = await taoCthd(targetInvoiceId, productCode, quantity);
+
+          if (!addResponse || !addResponse.success) {
+            
+          } else {
+            
+          }
+        } catch (error) {
+          
+        }
+      }
+
+      // 6. Load lại chi tiết hóa đơn đích để lấy thông tin chi tiết mới
+      
+
+      let newInvoiceDetails = [];
+      try {
+        const newDetailsResponse = await getChiTietHoaDonTheoMaHD(targetInvoiceId);
+        newInvoiceDetails = Array.isArray(newDetailsResponse) 
+          ? newDetailsResponse.filter(item => parseInt(item.sl) > 0)
+          : [];
+        
+      } catch (error) {
+        
+      }
+
+      // 7. Cập nhật trạng thái món đã xong
+      
+
+      for (const newItem of newInvoiceDetails) {
+        // Kiểm tra xem món này có trong danh sách đã xong của bàn nguồn không
+        const isCompleted = completedItems.some(completedItem => {
+          const completedName = completedItem.tenSp || completedItem.ten || completedItem.tensp || completedItem.name || '';
+          const newItemName = newItem.tenSp || newItem.ten || newItem.tensp || newItem.name || '';
+          const completedQty = parseInt(completedItem.sl || completedItem.soLuong || 0);
+          const newItemQty = parseInt(newItem.sl || 0);
+          
+          return completedName.trim().toLowerCase() === newItemName.trim().toLowerCase() && 
+                 completedQty === newItemQty;
+        });
+
+        if (isCompleted) {
+          try {
+            // Lấy ID của chi tiết hóa đơn mới
+            const itemId = newItem.idCthd || newItem.maCt || newItem.id;
+            if (itemId) {
+              // Cập nhật trạng thái món về "đã xong"
+              // Giả sử trạng thái 2 = "đã xong" (1 = chờ, 2 = xong)
+              await capNhatTrangThaiMon(itemId, 2, 'Chuyển từ bàn tách - đã xong');
+              
+            } else {
+              
+            }
+          } catch (error) {
+            
+          }
+        }
+      }
+
+      // 8. Xóa món đã tách khỏi bàn nguồn
+      
+
+      for (const item of selectedItemsForSplit) {
+        try {
+          const itemId = item.maCt || item.cthd || item.idCthd || item.id;
+          if (itemId) {
+            await xoaCtHd({ maCt: itemId });
+            
+          } else {
+            
+          }
+        } catch (error) {
+          
+        }
+      }
+
+      // 9. Load lại dữ liệu bàn nguồn
+      
+
+      const sourceDetailsResponse = await getChiTietHoaDonTheoMaHD(currentInvoice.maHd);
+      if (Array.isArray(sourceDetailsResponse)) {
+        setInvoiceDetails(sourceDetailsResponse);
+        
+      }
+
+      // 10. Reset states
+      
+
+      setSelectedItemsForSplit([]);
+      setSplitTargetTable(null);
+      setShowSplitTableModal(false);
+
+      
+
+      message.success(`Đã tách ${selectedItemsForSplit.length} món sang bàn ${splitTargetTable.tenBan}`);
+
+      // Trigger quick refresh
+      triggerQuickRefresh('SPLIT_TABLE');
+
+    } catch (error) {
+      
+      message.error('Không thể tách bàn: ' + (error.message || 'Lỗi không xác định'));
+    } finally {
+      setLoading(false);
+      setOperationInProgress(false);
+    }
+
+    
+  };
+
+  // Enhanced Chuyển bàn
+  const handleTransferTable = async (targetTable) => {
+
+    const invoiceIdToUse = selectedTable?.invoiceId || currentInvoice?.maHd;
+    if (!invoiceIdToUse || !targetTable) {
+      message.error('Vui lòng chọn bàn có hóa đơn và bàn đích để chuyển');
+      return;
+    }
+
+    try {
+
+      setOperationInProgress(true);
+      setLoading(true);
+      // Gọi API chuyển bàn enhanced - sử dụng invoiceId từ selectedTable hoặc currentInvoice
+      const result = await chuyenBanEnhanced(invoiceIdToUse, targetTable.maBan);
+      if (result && result.success !== false) {
+        message.success(`Đã chuyển từ bàn ${selectedTable.tenBan} sang bàn ${targetTable.tenBan}`);
+        
+        // Cập nhật trạng thái bàn và mergedTableGroups
+        setSelectedTable(targetTable);
+        
+        // Chuyển trạng thái bàn chính nếu bàn hiện tại là bàn chính của nhóm gộp
+        if (mergedTableGroups[selectedTable.id]) {
+          setMergedTableGroups(prev => {
+            const newGroups = { ...prev };
+            // Chuyển nhóm từ bàn cũ sang bàn mới
+            newGroups[targetTable.id] = newGroups[selectedTable.id].map(table => 
+              table.id === selectedTable.id ? targetTable : table
+            );
+            delete newGroups[selectedTable.id];
+            return newGroups;
+          });
+        }
+        
+        // Reset states
+        setShowTransferTableModal(false);
+        setSelectedTargetTable(null);
+        // Refresh data và chọn bàn mới
+        await loadDsHoaDon();
+        await loadTableStatuses(tables, { silent: true });
+
+      } else {
+        throw new Error(result?.message || 'Chuyển bàn thất bại');
+      }
+    } catch (error) {
+      message.error('Không thể chuyển bàn: ' + (error.message || 'Lỗi không xác định'));
+    } finally {
+      setLoading(false);
+      setOperationInProgress(false);
+    }
+  };
+
+  // Mở modal operations và load data
+  const openMergeTableModal = () => {
+  // Silent console
+    loadAvailableTablesForOperation();
+    setShowMergeTableModal(true);
+  };
+
+  const openTransferTableModal = () => {
+  // Silent console
+    loadAvailableTablesForOperation();
+    setShowTransferTableModal(true);
+  };
+
+  const openSplitTableModal = () => {
+    loadAvailableTablesForSplit();
+    setShowSplitTableModal(true);
+  };
+
+  // Animation completion handler
+  const handleAnimationComplete = () => {
+    setShowMergeAnimation(false);
+    setAnimationTables({ source: null, target: null });
+  };
+
+  // ===== END TABLE OPERATIONS =====
+
+  // Tạo hóa đơn tạm (draft)
+  const createDraftInvoice = async () => {
+    if (!selectedTable) {
+      message.error('Vui lòng chọn bàn');
+      return;
+    }
+
+    try {
+      setLoading(true);
+      const draftResponse = await taoHoaDonTam(selectedTable.id);
+      
+      if (draftResponse && draftResponse.success) {
+        const newDraft = {
+          maHd: draftResponse.message,
+          maBan: selectedTable.id,
+          tenBan: selectedTable.name,
+          isDraft: true
+        };
+        setCurrentInvoice(newDraft);
+        setInvoiceDetails([]);
+        message.success(`Đã tạo hóa đơn tạm: ${draftResponse.message}`);
+        
+        // Trigger quick refresh sau khi tạo draft
+        triggerQuickRefresh('CREATE_DRAFT');
+      } else {
+        throw new Error('Không thể tạo hóa đơn tạm');
+      }
+    } catch (error) {
+  // Silent console
+      message.error('Không thể tạo hóa đơn tạm: ' + (error.message || 'Lỗi không xác định'));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Chuyển hóa đơn tạm thành chính thức
+  const convertDraftToOfficial = async () => {
+    if (!currentInvoice || !currentInvoice.isDraft) {
+      message.error('Không có hóa đơn tạm để chuyển đổi');
+      return;
+    }
+
+    try {
+      setLoading(true);
+      await chuyenHoaDonTamThanhChinhThuc(currentInvoice.maHd);
+      
+      // Update current invoice to remove draft status
+      setCurrentInvoice(prev => ({ ...prev, isDraft: false }));
+      message.success('Đã chuyển hóa đơn tạm thành chính thức');
+      
+      // Trigger quick refresh sau khi chuyển đổi
+      triggerQuickRefresh('CONVERT_DRAFT');
+      
+    } catch (error) {
+  // Silent console
+      message.error('Không thể chuyển đổi hóa đơn: ' + (error.message || 'Lỗi không xác định'));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Tính toán invoice summary với thuế, giảm giá
+  const calculateInvoiceSummary = () => {
+    if (!invoiceDetails || invoiceDetails.length === 0) {
+      const emptySummary = {
+        subtotal: 0,
+        tax: 0,
+        discount: 0,
+        total: 0,
+        loyaltyPoints: 0,
+        programDiscount: 0,
+        itemDiscount: 0
+      };
+      setInvoiceSummary(emptySummary);
+      setProgramDiscountBreakdown([]);
+      setItemDiscountBreakdown([]);
+      setLoyaltyPointsEarned(0);
+      setOrderTotal(0);
+      return emptySummary;
+    }
+
+    let subtotal = 0;
+    let programDiscount = 0;
+    let generalDiscount = 0; // Chiết khấu chung từ chương trình
+    let itemDiscountTotal = 0;
+    let earnedPoints = 0;
+    const breakdown = [];
+    const manualDiscountRecords = [];
+
+    console.log('=== PROCESSING INVOICE DETAILS ===');
+    console.log('programDiscountMap keys:', Object.keys(programDiscountMap));
+    console.log('programDiscountMap:', programDiscountMap);
+    console.log('products count:', products.length);
+    console.log('activeSalesProgram:', activeSalesProgram);
+    
+    // Tạo product map theo tên để tra cứu nhanh mã sản phẩm
+    const productNameToIdMap = {};
+    if (products && products.length > 0) {
+      products.forEach(product => {
+        if (product.ten && product.id) {
+          productNameToIdMap[product.ten] = product.id;
+        }
+      });
+    }
+    console.log('productNameToIdMap:', productNameToIdMap);
+
+    invoiceDetails.forEach((item, index) => {
+      console.log(`\n--- Processing item ${index + 1} ---`);
+      console.log('Full item:', item);
+      
+      const price = parseFloat(item.gia || item.giaBan || item.donGia || 0);
+      const quantity = parseInt(item.sl || item.soLuong || 0);
+      const lineTotal = price * quantity;
+      subtotal += lineTotal;
+
+      const manualDiscountPercent = parseFloat(item.lv011 ?? item.discountPercent ?? item.chietKhau ?? 0) || 0;
+      if (manualDiscountPercent > 0 && price > 0 && quantity > 0) {
+        const manualDiscountAmount = lineTotal * (manualDiscountPercent / 100);
+        itemDiscountTotal += manualDiscountAmount;
+        manualDiscountRecords.push({
+          detailId: item.maCt || item.cthd || item.idCthd || item.id || `item-${index}`,
+          productName: item.tenSp || item.ten || item.tensp || item.name || '',
+          quantity,
+          unitPrice: price,
+          discountPercent: manualDiscountPercent,
+          discountAmount: manualDiscountAmount
+        });
+      }
+
+      if (!quantity || !price) {
+        console.log('Skipping: no quantity/price');
+        return;
+      }
+
+      // Lấy mã sản phẩm từ tên sản phẩm
+      const productName = item.tenSp || item.ten || item.tensp || item.name;
+      const productIdFromName = productName ? productNameToIdMap[productName] : null;
+      
+      console.log('Product name:', productName);
+      console.log('Product ID from name:', productIdFromName);
+
+      if (!programDiscountMap || Object.keys(programDiscountMap).length === 0) {
+        console.log('Program discount map empty, skipping program discount logic');
+        return;
+      }
+
+      const candidateIds = [
+        productIdFromName,  // Ưu tiên ID từ tên sản phẩm
+        item.maSp,
+        item.maSP,
+        item.masp,
+        item.ma_sp,
+        item.ma,
+        item.idSp,
+        item.idsp,
+        item.idSanPham,
+        item.maHang,
+        item.maHangHoa,
+        item.maSanPham,
+        item.productId,
+        item.id,
+        item.lv001,  // Backend field
+        item.lv002,  // Possible alternate field
+        item.mact,   // Possible product code
+        item.maCt,
+        item.masp_hd, // Invoice product code
+        item.maSpHd,
+        item.code,   // Generic code field
+        item.productCode
+      ].map(value => (value !== undefined && value !== null ? String(value) : null));
+
+      console.log('Candidate IDs:', candidateIds.filter(id => id !== null));
+
+      const matchedId = candidateIds.find(candidate => candidate && programDiscountMap[candidate]);
+      
+      if (!matchedId) {
+        console.log('No matched ID found in programDiscountMap');
+        return;
+      }
+
+      console.log('✓ Matched ID:', matchedId);
+
+      const programDetail = programDiscountMap[matchedId];
+      if (!programDetail) {
+        console.log('No program detail found');
+        return;
+      }
+
+      const isDetailActive =
+        programDetail.status === undefined ||
+        programDetail.status === null ||
+        programDetail.status === true ||
+        programDetail.status === '1' ||
+        programDetail.status === 1;
+
+      if (!isDetailActive) {
+        return;
+      }
+
+      const threshold = parseInt(programDetail.threshold ?? 0, 10) || 0;
+      const qualifies = threshold > 0 ? quantity >= threshold : quantity > 0;
+      if (!qualifies) {
+        return;
+      }
+
+      const discountPercent = parseFloat(programDetail.discount ?? 0) || 0;
+      let discountAmount = 0;
+      if (discountPercent > 0) {
+        discountAmount = lineTotal * (discountPercent / 100);
+        programDiscount += discountAmount;
+      }
+
+      const basePoints = parseInt(programDetail.points ?? 0, 10) || 0;
+      let points = 0;
+      if (basePoints > 0) {
+        const multiplier = threshold > 0 ? Math.floor(quantity / threshold) : quantity;
+        if (multiplier > 0) {
+          points = basePoints * multiplier;
+          earnedPoints += points;
+        }
+      }
+
+      breakdown.push({
+        productId: matchedId,
+        productName: item.tenSp || item.ten || item.tensp || item.name || '',
+        quantity,
+        discountPercent,
+        discountAmount,
+        points
+      });
+    });
+
+    if (programDiscount > subtotal) {
+      programDiscount = subtotal;
+    }
+
+    // Tính chiết khấu chung trên tổng đơn từ activeSalesProgram
+    if (activeSalesProgram && activeSalesProgram.value) {
+      const generalDiscountValue = parseFloat(activeSalesProgram.value);
+      if (!isNaN(generalDiscountValue) && generalDiscountValue > 0) {
+        // Kiểm tra xem value là phần trăm hay số tiền cố định
+        // Giả sử value < 100 là phần trăm, >= 100 là số tiền
+        if (generalDiscountValue <= 100) {
+          generalDiscount = subtotal * (generalDiscountValue / 100);
+        } else {
+          generalDiscount = generalDiscountValue;
+        }
+        console.log('General discount from program:', generalDiscount);
+      }
+    }
+
+    // Tổng chiết khấu = chiết khấu theo sản phẩm + chiết khấu chung
+    const totalProgramDiscount = programDiscount + generalDiscount;
+    const totalDiscountValue = totalProgramDiscount + itemDiscountTotal;
+    
+    const taxableBase = Math.max(subtotal - totalDiscountValue, 0);
+    const tax = includeVAT ? taxableBase * 0.1 : 0;
+    const total = taxableBase + tax;
+    earnedPoints = Math.max(Math.floor(total / 1000), 0);
+
+    const summary = {
+      subtotal,
+      tax,
+      discount: totalDiscountValue,
+      programDiscount,
+      itemDiscount: itemDiscountTotal,
+      total,
+      loyaltyPoints: earnedPoints
+    };
+
+    console.log('=== CALCULATE INVOICE SUMMARY ===');
+    console.log('subtotal:', subtotal);
+    console.log('programDiscount (by product):', programDiscount);
+    console.log('generalDiscount:', generalDiscount);
+    console.log('totalProgramDiscount:', totalProgramDiscount);
+  console.log('itemDiscountTotal:', itemDiscountTotal);
+  console.log('totalDiscountValue:', totalDiscountValue);
+    console.log('breakdown:', breakdown);
+    console.log('summary:', summary);
+
+    setInvoiceSummary(summary);
+    setProgramDiscountBreakdown(breakdown);
+  setItemDiscountBreakdown(manualDiscountRecords);
+    setLoyaltyPointsEarned(earnedPoints);
+    setOrderTotal(total);
+
+    return summary;
+  };
+
+  // In hóa đơn
+  const printInvoice = () => {
+    if (!currentInvoice || invoiceDetails.length === 0) {
+      message.error('Không có hóa đơn để in');
+      return;
+    }
+
+    // Tạo content để in
+    const printContent = `
+      <div style="font-family: Arial; padding: 20px;">
+        <h2 style="text-align: center;">HÓA ĐƠN BÁN HÀNG</h2>
+        <p><strong>Bàn:</strong> ${selectedTable?.name}</p>
+        <p><strong>Mã hóa đơn:</strong> ${currentInvoice.maHd}</p>
+        <p><strong>Thời gian:</strong> ${new Date().toLocaleString()}</p>
+        <hr>
+        <table style="width: 100%; border-collapse: collapse;">
+          <tr style="background: #f5f5f5;">
+            <th style="border: 1px solid #ddd; padding: 8px;">Tên món</th>
+            <th style="border: 1px solid #ddd; padding: 8px;">SL</th>
+            <th style="border: 1px solid #ddd; padding: 8px;">Đơn giá</th>
+            <th style="border: 1px solid #ddd; padding: 8px;">Thành tiền</th>
+          </tr>
+          ${invoiceDetails.map(item => `
+            <tr>
+              <td style="border: 1px solid #ddd; padding: 8px;">${item.tenSp || item.ten}</td>
+              <td style="border: 1px solid #ddd; padding: 8px; text-align: center;">${item.sl || item.soLuong}</td>
+              <td style="border: 1px solid #ddd; padding: 8px; text-align: right;">${(parseFloat(item.gia || item.giaBan || item.donGia || 0)).toLocaleString()}đ</td>
+              <td style="border: 1px solid #ddd; padding: 8px; text-align: right;">${(parseFloat(item.gia || item.giaBan || item.donGia || 0) * parseInt(item.sl || item.soLuong)).toLocaleString()}đ</td>
+            </tr>
+          `).join('')}
+        </table>
+        <hr>
+        <div style="text-align: right; margin-top: 20px;">
+          <p><strong>Tạm tính:</strong> ${invoiceSummary.subtotal.toLocaleString()}đ</p>
+          ${includeVAT ? `<p><strong>Thuế VAT (10%):</strong> ${invoiceSummary.tax.toLocaleString()}đ</p>` : ''}
+          <p><strong>Giảm giá:</strong> ${invoiceSummary.discount.toLocaleString()}đ</p>
+          <h3><strong>Tổng cộng:</strong> ${invoiceSummary.total.toLocaleString()}đ</h3>
+        </div>
+      </div>
+    `;
+
+    // Mở window mới để in
+    const printWindow = window.open('', '_blank');
+    printWindow.document.write(printContent);
+    printWindow.document.close();
+    printWindow.print();
+    
+    message.success('Đã gửi hóa đơn đến máy in');
+  };
+
+  // Quay lại view trước
+  const handleGoBack = () => {
+    if (currentView === VIEW_STATES.PRODUCTS) {
+      setCurrentView(VIEW_STATES.COMBINED);
+      setSelectedCategory('all');
+      setSearchTerm('');
+    } else if (currentView === VIEW_STATES.COMBINED) {
+      setCurrentView(VIEW_STATES.TABLES);
+      setSelectedTable(null);
+      setCurrentInvoice(null);
+      setInvoiceDetails([]);
+      setSelectedCategory('all');
+      setSearchTerm('');
+      
+      // Trigger quick refresh khi quay về tables view
+      triggerQuickRefresh('BACK_TO_TABLES');
+    }
+  };
+
+  // Filter dữ liệu
+  const filteredTables = tables.filter(table => {
+    const matchesArea =
+      selectedArea === 'all' ||
+      (table.areaId !== undefined && table.areaId !== null && table.areaId.toString() === selectedArea);
+    return matchesArea;
+  });
+
+  const filteredProducts = products.filter(product => {
+    const matchesSearch = product.ten?.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesCategory = selectedCategory === 'all' || product.danhMuc === selectedCategory;
+    return matchesSearch && matchesCategory;
+  });
+
+  // RENDER VIEWS BASED ON FLOW
+  const renderTablesView = () => {
+    const controlSize = isTouchDevice ? 'large' : 'middle';
+    const infoFontSize = isTouchDevice ? '14px' : '12px';
+    const statusFontSize = isTouchDevice ? '16px' : '14px';
+  const tableTitleFontSize = isTouchDevice ? '18px' : '16px';
+  const detailFontSize = isTouchDevice ? '13px' : '12px';
+    const headerSpacing = isTouchDevice ? 12 : 8;
+    const selectWidth = isTouchDevice ? 240 : 200;
+
+    return (
+    <div className="tables-view">
+      <div className="view-header">
+        <div className="header-left">
+          <Title level={3} style={{ marginBottom: 0, fontSize: isTouchDevice ? 30 : undefined }}>
+            Chọn bàn để bán hàng
+          </Title>
+          <div style={{ display: 'flex', gap: `${headerSpacing}px`, alignItems: 'center', flexWrap: 'wrap' }}>
+            {lastRefresh && (
+              <Text type="secondary" style={{ fontSize: infoFontSize }}>
+                Cập nhật lần cuối: {lastRefresh.toLocaleTimeString()}
+              </Text>
+            )}
+            {quickRefreshEnabled && (
+              <Text
+                type="primary"
+                icon={<refresh-ccw size={isTouchDevice ? 12 : 8} />}
+                onClick={processPayment}
+                disabled={invoiceDetails.length === 0}
+                style={{ fontSize: isTouchDevice ? '13px' : '11px', fontWeight: 'bold' }}>
+                Đang cập nhật real-time...
+              </Text>
+            )}
+            {lastAction && (
+              <Text type="info" style={{ fontSize: isTouchDevice ? '12px' : '10px' }}>
+                Hành động: {lastAction.type}
+              </Text>
+            )}
+          </div>
+        </div>
+  <div className="header-right" style={{ gap: `${headerSpacing}px`, flexWrap: isTouchDevice ? 'wrap' : 'nowrap' }}>
+          <Button 
+            onClick={handleManualRefresh}
+            loading={loading}
+            size={controlSize}
+            className="touch-action-button"
+            style={{ marginRight: 8 }}
+          >
+            Làm mới
+          </Button>
+          <Select
+            value={selectedArea}
+            onChange={(value) => setSelectedArea(value === undefined || value === null ? 'all' : value.toString())}
+            size={controlSize}
+            style={{ width: selectWidth }}
+            placeholder="Chọn khu vực"
+          >
+            <Option value="all">Tất cả khu vực</Option>
+            {areas.map(area => (
+              <Option key={area.idKhuVuc} value={area.idKhuVuc}>
+                {area.ten}
+              </Option>
+            ))}
+          </Select>
+        </div>
+      </div>
+      
+      <div className="tables-grid">
+        {filteredTables.map(table => {
+          // Kiểm tra xem bàn này có thuộc nhóm gộp không
+          const isMerged = Object.values(mergedTableGroups).some(group => 
+            group.some(t => t.id === table.id)
+          );
+          
+          // Kiểm tra xem bàn này có phải là bàn chính của nhóm gộp không
+          const isMainTable = mergedTableGroups[table.id] !== undefined;
+          
+          // Lấy thông tin nhóm gộp nếu có
+          const mergedGroup = isMainTable ? mergedTableGroups[table.id] : null;
+
+          const isTakeAway = Boolean(table.isTakeAway);
+          const isAutoTakeAway = Boolean(table.isAutoTakeAway);
+          const cardClassName = [
+            'table-card',
+            table.status,
+            table.hasPendingKitchenItems && !isTakeAway ? 'table-pending-blink' : '',
+            isMerged ? 'table-merged' : '',
+            isMainTable ? 'table-main-merged' : '',
+            isTakeAway ? 'table-takeaway' : ''
+          ].filter(Boolean).join(' ');
+
+          const computedBorderColor = isTakeAway
+            ? (table.status === 'occupied' ? '#fa8c16' : '#ffb84d')
+            : (isMainTable ? '#ff6b35' : (isMerged ? '#ff9500' : getTableStatusColor(table.status)));
+
+          const computedBorderStyle = isTakeAway ? 'dashed' : 'solid';
+          
+          return (
+            <Card
+              key={table.id}
+              className={cardClassName}
+              onClick={() => handleTableSelect(table)}
+              hoverable={false}
+              bodyStyle={{ 
+                padding: 0, 
+                height: '100%',
+                backgroundColor: getTableStatusColor(table.status),
+                color: getTableStatusTextColor(table.status)
+              }}
+              style={{
+                backgroundColor: getTableStatusColor(table.status),
+                borderColor: computedBorderColor,
+                borderWidth: isMerged ? '2px' : '1px',
+                borderStyle: computedBorderStyle,
+                cursor: 'pointer',
+                position: 'relative',
+                touchAction: 'manipulation',
+                WebkitTapHighlightColor: 'rgba(0,0,0,0)'
+              }}
+            >
+              {/* Badge cho bàn đã gộp */}
+              {isMerged && (
+                <div className="merged-table-badge">
+                  {isMainTable ? (
+                    <Badge count={mergedGroup.length} color="#ff6b35" />
+                  ) : (
+                    <Badge count="Gộp" color="#ff9500" />
+                  )}
+                </div>
+              )}
+              
+              <div className="table-header">
+                <div className="table-icon">
+                  <Coffee 
+                    size={isTouchDevice ? 28 : 24} 
+                    color={getTableStatusTextColor(table.status)}
+                  />
+                </div>
+                <div className="table-info">
+                  <Title 
+                    level={5} 
+                    style={{ 
+                      margin: 0, 
+                      color: getTableStatusTextColor(table.status),
+                      fontSize: tableTitleFontSize,
+                      fontWeight: 600
+                    }}
+                  >
+                    {table.name}
+                  </Title>
+                  {isTakeAway && (
+                    <Tag
+                      color={table.status === 'occupied' ? '#fa8c16' : '#ffd666'}
+                      className={`table-takeaway-tag${isAutoTakeAway ? ' table-takeaway-tag-auto' : ''}`}
+                    >
+                      {isAutoTakeAway ? 'Take Away • Bàn 0' : 'Take Away'}
+                    </Tag>
+                  )}
+                  <div className="table-status">
+                    <Text style={{ 
+                      color: getTableStatusTextColor(table.status),
+                      fontWeight: '500',
+                      fontSize: statusFontSize
+                    }}>
+                      {getTableStatusText(table.status)}
+                    </Text>
+                    {isMerged && (
+                      <Text style={{ 
+                        color: getTableStatusTextColor(table.status),
+                        fontSize: '12px',
+                        fontStyle: 'italic',
+                        marginLeft: '4px'
+                      }}>
+                        {isMainTable ? '(Bàn chính)' : '(Đã gộp)'}
+                      </Text>
+                    )}
+                  </div>
+                  {table.hasPendingKitchenItems && (
+                    <div className="table-pending-pill">
+                      Đang chờ bếp
+                    </div>
+                  )}
+                </div>
+              </div>
+            
+            {/* Hiển thị thông tin chi tiết nếu bàn có khách */}
+            {table.status !== 'available' && (
+              <div className="table-details" style={{ 
+                fontSize: detailFontSize,
+                color: getTableStatusTextColor(table.status),
+                background: 'rgba(255,255,255,0.1)',
+                padding: '8px',
+                borderRadius: '4px',
+                marginTop: '8px'
+              }}>
+                {table.sittingTime && (
+                  <div style={{ 
+                    display: 'flex', 
+                    justifyContent: 'space-between',
+                    marginBottom: '4px'
+                  }}>
+                    <span>Thời gian:</span>
+                    <span style={{ fontWeight: 'bold' }}>
+                      {table.sittingTime}
+                    </span>
+                  </div>
+                )}
+                {table.totalAmount > 0 && (
+                  <div style={{ 
+                    display: 'flex', 
+                    justifyContent: 'space-between',
+                    marginBottom: '4px'
+                  }}>
+                    <span>
+                      {isTakeAway && Array.isArray(table.activeInvoices) && table.activeInvoices.length > 1
+                        ? 'Tổng tiền (tất cả HĐ):'
+                        : 'Tổng tiền:'}
+                    </span>
+                    <span style={{ fontWeight: 'bold' }}>
+                      {table.totalAmount.toLocaleString()}đ
+                    </span>
+                  </div>
+                )}
+                {table.itemCount > 0 && (
+                  <div style={{ 
+                    display: 'flex', 
+                    justifyContent: 'space-between',
+                    marginBottom: '4px'
+                  }}>
+                    <span>Số món:</span>
+                    <span style={{ fontWeight: 'bold' }}>
+                      {table.itemCount}
+                    </span>
+                  </div>
+                )}
+                {table.hasPendingKitchenItems && (
+                  <div className="table-pending-info">
+                    <span>Đang chế biến:</span>
+                    <span style={{ fontWeight: 'bold' }}>
+                      {table.pendingKitchenOrders.length} món
+                    </span>
+                  </div>
+                )}
+                {table.hasPendingKitchenItems && (
+                  <div className="table-pending-list">
+                    {table.pendingKitchenOrders.slice(0, 3).map((pendingItem, idx) => (
+                      <div key={`${pendingItem.idCthd || idx}`} className="pending-item-row">
+                        • {pendingItem.tenNuoc} ({pendingItem.soLuong})
+                      </div>
+                    ))}
+                    {table.pendingKitchenOrders.length > 3 && (
+                      <div className="pending-item-row more">
+                        ...còn {table.pendingKitchenOrders.length - 3} món khác
+                      </div>
+                    )}
+                  </div>
+                )}
+                {isTakeAway && Array.isArray(table.activeInvoices) && table.activeInvoices.length > 0 && (
+                  <div className="table-takeaway-invoices">
+                    <div className="table-takeaway-invoices-header">
+                      <span>Hóa đơn đang mở</span>
+                      <span className="table-takeaway-invoice-count">
+                        {table.activeInvoices.length}
+                      </span>
+                    </div>
+                    <div className="table-takeaway-invoices-list">
+                      {table.activeInvoices.slice(0, 3).map((invoice) => {
+                        const amount = Number(invoice.totalAmount || 0);
+                        const formattedAmount = amount > 0 ? `${amount.toLocaleString()}đ` : '0đ';
+                        return (
+                          <div
+                            key={invoice.invoiceId}
+                            className="table-takeaway-invoice-chip"
+                          >
+                            #{invoice.invoiceId} • {formattedAmount}
+                          </div>
+                        );
+                      })}
+                      {table.activeInvoices.length > 3 && (
+                        <div className="table-takeaway-invoice-more">
+                          + {table.activeInvoices.length - 3} hóa đơn khác
+                        </div>
+                      )}
+                    </div>
+                    <div className="table-takeaway-invoices-actions">
+                      <Button
+                        size={isTouchDevice ? 'large' : 'small'}
+                        type={isTakeAway ? 'primary' : 'link'}
+                        block={isTouchDevice}
+                        className="table-takeaway-manage-button"
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          openTakeAwayInvoiceModal(table);
+                        }}
+                      >
+                        Quản lý hóa đơn
+                      </Button>
+                    </div>
+                  </div>
+                )}
+                {table.orderItems && table.orderItems.length > 0 && (
+                  <div style={{ 
+                    marginTop: '8px',
+                    fontSize: '11px',
+                    opacity: 0.9
+                  }}>
+                    {table.orderItems.map((item, index) => (
+                      <div key={index} style={{ marginBottom: '2px' }}>
+                        • {item.tenSp || item.ten} ({item.sl || item.soLuong})
+                      </div>
+                    ))}
+                    {table.itemCount > 3 && (
+                      <div style={{ 
+                        fontStyle: 'italic',
+                        marginTop: '4px'
+                      }}>
+                        ...và {table.itemCount - 3} món khác
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
+          </Card>
+          );
+        })}
+      </div>
+    </div>
+  );
+  };
+
+  const renderProductsView = () => (
+    <Content className="products-content">
+      {/* Back Button Row */}
+      <div className="back-button-row">
+        <Button 
+          icon={<ArrowLeft size={16} />}
+          onClick={handleGoBack}
+          className="back-button"
+        >
+          Quay lại hóa đơn
+        </Button>
+      </div>
+      
+      <div className="view-header">
+        <Title level={3}>Chọn món - {selectedTable?.name}</Title>
+      </div>
+
+      {/* Delegate categories + products UI to ChonSanPham inside products-content */}
+      <ChonSanPham onAddToCart={addProductToOrder} />
+    </Content>
+  );
+
+  // Combined view - 25% Invoice + 75% Products
+  const renderCombinedView = () => (
+    <div className="combined-view">
+      {/* Back Button Row */}
+      <div className="back-button-row">
+        <Button 
+          icon={<ArrowLeft size={16} />}
+          onClick={handleGoBack}
+          className="back-button"
+        >
+          Quay lại hóa đơn
+        </Button>
+      </div>
+
+      <div className="combined-content">
+        {/* Left panel - Products (75%) */}
+        <div className="products-panel">
+          <div className="panel-header">
+            <Title level={4} style={{ margin: 0, color: '#197dd3' }}>
+              Chọn món
+            </Title>
+          </div>
+          <div className="products-content-wrapper">
+            <ChonSanPham onAddToCart={addProductToOrder} />
+          </div>
+        </div>
+
+        {/* Right panel - Invoice (25%) */}
+        <div className="invoice-panel">
+          <div className="panel-header">
+            <Title level={4} style={{ margin: 0, color: '#197dd3' }}>
+              Hóa đơn - {selectedTable?.name}
+              {currentInvoice && ` (#${currentInvoice.maHd})`}
+            </Title>
+          </div>
+
+          {!currentInvoice ? (
+            <div className="empty-invoice">
+              <Users size={32} />
+              <Text>Không có hóa đơn</Text>
+            </div>
+          ) : (
+            <>
+              <div className="invoice-summary">
+                <div className="invoice-info-compact">
+                  <Text strong>Mã HĐ: {currentInvoice.maHd}</Text>
+                  <br />
+                  <Text>Bàn: {selectedTable?.name}</Text>
+                </div>
+                
+                <div className="invoice-items-compact">
+                  {invoiceDetails.length === 0 ? (
+                    <div className="empty-items-compact">
+                      <ShoppingCart size={32} />
+                      <Text>Chưa có món</Text>
+                    </div>
+                  ) : (
+                    invoiceDetails.map((item, idx) => {
+                      const rawId = item.maCt || item.cthd || item.idCthd || item.id || item.lv001;
+                      const detailId = rawId ? rawId.toString() : `item-${idx}`;
+                      const isPendingItem = rawId && pendingKitchenIdSet.has(rawId.toString());
+                      const quantity = parseInt(item.sl || item.soLuong || 0, 10) || 0;
+                      const unitPrice = parseFloat(item.gia || item.giaBan || item.donGia || 0);
+                      const itemDiscountPercent = parseFloat(item.lv011 ?? item.discountPercent ?? item.chietKhau ?? 0) || 0;
+                      const itemDiscountAmount = itemDiscountPercent > 0 ? unitPrice * quantity * (itemDiscountPercent / 100) : 0;
+                      return (
+                        <div
+                          key={detailId}
+                          className={`invoice-item-compact ${isPendingItem ? 'invoice-item-pending' : ''}`}
+                          role="button"
+                          tabIndex={0}
+                          onClick={() => openItemDiscountModal(item)}
+                          onKeyDown={(event) => {
+                            if (event.key === 'Enter' || event.key === ' ') {
+                              event.preventDefault();
+                              openItemDiscountModal(item);
+                            }
+                          }}
+                          title="Nhấn để thiết lập chiết khấu món"
+                          style={{ cursor: 'pointer' }}
+                        >
+                          <div className="item-info-compact">
+                            <div className="item-info-header">
+                              <Text strong>{item.tenSp}</Text>
+                              {isPendingItem && (
+                                <span className="kitchen-status-tag">Đang chế biến</span>
+                              )}
+                            </div>
+                            <div className="item-details">
+                              <Text type="secondary">SL: {item.sl}</Text>
+                              <Text type="secondary">
+                                {unitPrice.toLocaleString('vi-VN')}đ
+                              </Text>
+                              {itemDiscountPercent > 0 && (
+                                <Text type="danger" style={{ display: 'block', fontSize: '11px', marginTop: 2 }}>
+                                  Giảm {itemDiscountPercent}% (-{itemDiscountAmount.toLocaleString('vi-VN')}đ)
+                                </Text>
+                              )}
+                            </div>
+                          </div>
+                          
+                          <div
+                            className="item-controls-compact"
+                            onClick={(event) => event.stopPropagation()}
+                          >
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                              <Button
+                                size="small"
+                                icon={<Minus size={12} />}
+                                onClick={(event) => {
+                                  event.stopPropagation();
+                                  updateProductQuantity(
+                                    item,
+                                    parseInt(item.sl || item.soLuong || 1) - 1
+                                  );
+                                }}
+                                disabled={editingInvoice}
+                              />
+                              <span className="quantity-compact">{item.sl || item.soLuong || 1}</span>
+                              <Button
+                                size="small"
+                                icon={<Plus size={12} />}
+                                onClick={(event) => {
+                                  event.stopPropagation();
+                                  updateProductQuantity(
+                                    item,
+                                    parseInt(item.sl || item.soLuong || 1) + 1
+                                  );
+                                }}
+                                disabled={editingInvoice}
+                              />
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })
+                  )}
+                </div>
+              </div>
+
+              {/* Fixed footer with total and actions */}
+              <div className="invoice-footer-fixed">
+                <div className="invoice-total-compact">
+                  <div style={{ marginBottom: '12px' }}>
+                    <Button
+                      size="small"
+                      type="default"
+                      block
+                      icon={<FileText size={12} />}
+                      onClick={() => setInvoiceInfoModalVisible(true)}
+                    >
+                      Thông tin khách & ưu đãi
+                    </Button>
+                    {loyaltyCustomer ? (
+                      <Text style={{ display: 'block', marginTop: 6 }}>
+                        Khách: <strong>{loyaltyCustomer.name || 'Khách hàng'}</strong>
+                        {loyaltyCustomer.phone && ` • ${loyaltyCustomer.phone}`}
+                      </Text>
+                    ) : (
+                      <Text type="secondary" style={{ display: 'block', marginTop: 6 }}>
+                        Chưa chọn khách hàng tích điểm
+                      </Text>
+                    )}
+                    {invoiceSummary.itemDiscount > 0 && (
+                      <Text type="danger" style={{ display: 'block', marginTop: 4 }}>
+                        Giảm món: -{invoiceSummary.itemDiscount.toLocaleString('vi-VN')} đ
+                      </Text>
+                    )}
+                    {invoiceSummary.programDiscount > 0 && (
+                      <Text type="danger" style={{ display: 'block', marginTop: 2 }}>
+                        CTKM: -{invoiceSummary.programDiscount.toLocaleString('vi-VN')} đ
+                      </Text>
+                    )}
+                    {invoiceSummary.discount > 0 && (
+                      <Text type="danger" style={{ display: 'block', marginTop: 2 }}>
+                        Tổng giảm: -{invoiceSummary.discount.toLocaleString('vi-VN')} đ
+                      </Text>
+                    )}
+                  </div>
+                  <div className="total-display">
+                    <Text strong style={{ fontSize: '16px' }}>Tổng: </Text>
+                    <Text strong className="total-amount" style={{ fontSize: '22px', color: '#197dd3' }}>
+                      {invoiceSummary.total.toLocaleString('vi-VN')} đ
+                    </Text>
+                  </div>
+                </div>
+
+                <div className="invoice-actions-compact">
+                  <Button
+                    icon={<Clock size={14} />}
+                    onClick={sendToKitchen}
+                    size="small"
+                    block
+                    style={{ marginBottom: 8 }}
+                  >
+                    Gửi bếp
+                  </Button>
+                  
+                  <Button
+                    type="primary"
+                    icon={<CreditCard size={14} />}
+                    onClick={openPaymentModal}
+                    disabled={invoiceDetails.length === 0}
+                    size="small"
+                    block
+                    style={{ marginBottom: 8 }}
+                  >
+                    Thanh toán
+                  </Button>
+
+                  {/* Hóa đơn management buttons */}
+                  <div className="invoice-management-buttons">
+                    <Button
+                      icon={<Printer size={14} />}
+                      onClick={printInvoice}
+                      disabled={invoiceDetails.length === 0}
+                      size="small"
+                      title="In hóa đơn đầy đủ"
+                    >
+                      In đầy đủ
+                    </Button>
+                    
+                    <ReceiptPrinter
+                      invoice={currentInvoice}
+                      invoiceDetails={invoiceDetails}
+                      orderTotal={invoiceSummary.total}
+                      paymentDetails={null}
+                      includeVAT={includeVAT}
+                      size="small"
+                    />
+                    
+                    {!editingInvoice && (
+                      <Button
+                        danger
+                        icon={<X size={14} />}
+                        onClick={openCancelReasonModal}
+                        size="small"
+                      >
+                        Hủy HĐ
+                      </Button>
+                    )}
+                  </div>
+
+                  {/* Table management buttons */}
+                  {currentInvoice && !currentInvoice.isDraft && (
+                    <div className="table-management-buttons">
+                      <Button
+                        icon={<ArrowRight size={14} />}
+                        onClick={openTransferTableModal}
+                        disabled={loading || operationInProgress}
+                        size="small"
+                      >
+                        Chuyển bàn
+                      </Button>
+                      
+                      <Button
+                        icon={<Users size={14} />}
+                        onClick={openMergeTableModal}
+                        disabled={loading || operationInProgress}
+                        size="small"
+                      >
+                        Gộp bàn
+                      </Button>
+                      
+                      <Button
+                        icon={<Split size={14} />}
+                        onClick={openSplitTableModal}
+                        disabled={loading || operationInProgress || invoiceDetails.length <= 1}
+                        size="small"
+                      >
+                        Tách bàn
+                      </Button>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+
+  // Listen for payment success popup close messages
+  useEffect(() => {
+    const handleMessage = (event) => {
+      if (event.data?.type === 'PAYMENT_SUCCESS_CLOSED') {
+        handlePaymentSuccessClose({ fromExternalEvent: true });
+      } else if (event.data?.type === 'PAYMENT_SUCCESS_OPEN_LOYALTY') {
+        const payload = event.data?.payload || {};
+        handlePaymentSuccessClose({ fromExternalEvent: true });
+        navigate('/danh-muc-khach-hang', {
+          state: {
+            fromPaymentSuccess: true,
+            loyaltyPrefill: payload.loyaltyCustomer || null,
+            invoiceCode: payload.invoiceCode || null,
+            pointsEarned: payload.pointsEarned || null
+          }
+        });
+      }
+    };
+
+    window.addEventListener('message', handleMessage);
+    return () => window.removeEventListener('message', handleMessage);
+  }, [handlePaymentSuccessClose, navigate]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined' || !window.electronAPI?.onPaymentSuccessWindowClosed) {
+      return undefined;
+    }
+
+    const removeListener = window.electronAPI.onPaymentSuccessWindowClosed(() => {
+      handlePaymentSuccessClose({ fromExternalEvent: true });
+    });
+
+    return () => {
+      if (typeof removeListener === 'function') {
+        removeListener();
+      }
+    };
+  }, [handlePaymentSuccessClose]);
+
+  // Main render
+  return (
+    <div className={`banhang-container${isTouchDevice ? ' touch-mode' : ''}`}>
+      {currentView === VIEW_STATES.TABLES && renderTablesView()}
+      {currentView === VIEW_STATES.PRODUCTS && renderProductsView()}
+      {currentView === VIEW_STATES.COMBINED && renderCombinedView()}
+      
+      {/* Enhanced Invoice Management Modals */}
+
+      <Modal
+        title={`Quản lý hóa đơn Take Away${pendingTakeAwaySelection ? ` - ${pendingTakeAwaySelection?.name || pendingTakeAwaySelection?.tenBan || ''}` : ''}`}
+        open={takeAwayInvoiceModalVisible}
+        onCancel={resetTakeAwayModalState}
+        footer={null}
+        width={520}
+      >
+        <Space direction="vertical" size={16} style={{ width: '100%' }}>
+          <div>
+            <Text strong>Danh sách hóa đơn đang mở</Text>
+            <div style={{ fontSize: 12, color: 'rgba(0,0,0,0.55)', marginTop: 4 }}>
+              Tổng cộng {takeAwayInvoiceCandidates.length} hóa đơn • Tổng tiền: {takeAwayInvoiceAggregatedAmount.toLocaleString('vi-VN')} đ
+            </div>
+          </div>
+
+          <List
+            locale={{ emptyText: 'Chưa có hóa đơn nào đang mở' }}
+            dataSource={takeAwayInvoiceCandidates}
+            bordered
+            size={isTouchDevice ? 'large' : 'default'}
+            renderItem={(invoice) => {
+              const amount = Number(invoice?.totalAmount || 0);
+              const formattedAmount = amount > 0 ? `${amount.toLocaleString('vi-VN')} đ` : '0 đ';
+              const createdDisplay = invoice?.createdAt
+                ? dayjs(invoice.createdAt).isValid()
+                  ? dayjs(invoice.createdAt).format('HH:mm DD/MM/YYYY')
+                  : invoice.createdAt
+                : 'Chưa xác định';
+
+              return (
+                <List.Item
+                  key={invoice.invoiceId}
+                  actions={[
+                    <Button
+                      key="open"
+                      type="primary"
+                      size={isTouchDevice ? 'middle' : 'small'}
+                      onClick={() => handleTakeAwayInvoicePick(invoice.invoiceId)}
+                    >
+                      Mở
+                    </Button>
+                  ]}
+                >
+                  <List.Item.Meta
+                    title={
+                      <span style={{ fontSize: isTouchDevice ? 16 : 14, fontWeight: 600 }}>
+                        Hóa đơn #{invoice.invoiceId}
+                      </span>
+                    }
+                    description={
+                      <Space direction="vertical" size={2} style={{ fontSize: isTouchDevice ? 14 : 12 }}>
+                        <span>Thời gian tạo: {createdDisplay}</span>
+                        <span>Tổng tiền: {formattedAmount}</span>
+                      </Space>
+                    }
+                  />
+                </List.Item>
+              );
+            }}
+          />
+
+          <Space style={{ width: '100%', justifyContent: 'space-between', alignItems: 'center', gap: isTouchDevice ? 12 : 8, flexWrap: isTouchDevice ? 'wrap' : 'nowrap' }}>
+            <Text type="secondary" style={{ fontSize: isTouchDevice ? 13 : 12 }}>
+              Chọn "Mở" để tiếp tục phục vụ từng hóa đơn.
+            </Text>
+            <Button
+              type="dashed"
+              icon={<Plus size={14} />}
+              size={isTouchDevice ? 'large' : 'middle'}
+              block={isTouchDevice}
+              onClick={handleCreateTakeAwayInvoice}
+              loading={isCreatingTakeAwayInvoice}
+            >
+              Tạo hóa đơn mới
+            </Button>
+          </Space>
+        </Space>
+      </Modal>
+
+      <Modal
+        className="cancel-reason-modal"
+        title="Chọn lý do hủy hóa đơn"
+        open={isCancelReasonModalOpen}
+        onCancel={closeCancelReasonModal}
+        onOk={handleConfirmCancelInvoice}
+        okText="Xác nhận hủy"
+        cancelText="Đóng"
+        confirmLoading={cancelReasonSubmitting}
+        width={920}
+        centered
+        destroyOnClose
+      >
+        <Form form={cancelReasonForm} layout="vertical" className="cancel-reason-form">
+          <Form.Item
+            label="Lý do hủy hóa đơn"
+            name="cancelReasonCode"
+            rules={[{ required: true, message: 'Vui lòng chọn lý do hủy hóa đơn' }]}
+          >
+            <Radio.Group className="cancel-reason-radio-group">
+              <div className="cancel-reason-grid">
+                {CANCEL_REASON_GROUPS.map((group) => (
+                  <div key={group.id} className="cancel-reason-card">
+                    <div className="cancel-reason-card__header">
+                      <Tag color={group.color}>{group.title}</Tag>
+                      <Text type="secondary">{group.description}</Text>
+                    </div>
+                    <div className="cancel-reason-card__body">
+                      {group.reasons.map((reason) => (
+                        <Radio key={reason.code} value={reason.code} className="cancel-reason-card__option">
+                          <div className="cancel-reason-card__option-content">
+                            <Text strong>{reason.label}</Text>
+                            <Text type="secondary" className="cancel-reason-card__option-desc">
+                              {reason.description}
+                            </Text>
+                          </div>
+                        </Radio>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </Radio.Group>
+          </Form.Item>
+
+          <Form.Item
+            label="Ghi chú thêm"
+            name="cancelReasonNote"
+            rules={[
+              ({ getFieldValue }) => ({
+                validator(_, value) {
+                  if (getFieldValue('cancelReasonCode') === 'OTHER' && !value?.trim()) {
+                    return Promise.reject(new Error('Vui lòng mô tả lý do khác'));
+                  }
+                  return Promise.resolve();
+                }
+              })
+            ]}
+          >
+            <Input.TextArea
+              rows={3}
+              placeholder="Nhập ghi chú (bắt buộc khi chọn lý do khác)"
+              allowClear
+            />
+          </Form.Item>
+        </Form>
+      </Modal>
+      
+      {/* Invoice History Modal */}
+      <Modal
+        title={`Lịch sử hóa đơn - ${selectedTable?.name}`}
+        open={showInvoiceHistory}
+        onCancel={() => setShowInvoiceHistory(false)}
+        width={800}
+        footer={[
+          <Button key="close" onClick={() => setShowInvoiceHistory(false)}>
+            Đóng
+          </Button>
+        ]}
+      >
+        <Table
+          dataSource={invoiceHistory}
+          columns={[
+            {
+              title: 'Mã HĐ',
+              dataIndex: 'maHd',
+              key: 'maHd',
+              width: 100
+            },
+            {
+              title: 'Ngày',
+              dataIndex: 'ngayTao',
+              key: 'ngayTao',
+              width: 120,
+              render: (date) => new Date(date).toLocaleDateString('vi-VN')
+            },
+            {
+              title: 'Thời gian',
+              dataIndex: 'gioTao',
+              key: 'gioTao',
+              width: 100,
+              render: (time) => time ? new Date(time).toLocaleTimeString('vi-VN') : ''
+            },
+            {
+              title: 'Tổng tiền',
+              dataIndex: 'tongTien',
+              key: 'tongTien',
+              width: 120,
+              render: (amount) => `${parseFloat(amount || 0).toLocaleString('vi-VN')} đ`
+            },
+            {
+              title: 'Trạng thái',
+              dataIndex: 'trangThai',
+              key: 'trangThai',
+              width: 100,
+              render: (status) => {
+                const statusMap = {
+                  '0': 'Tạm',
+                  '1': 'Hoàn thành',
+                  '2': 'Đã hủy'
+                };
+                return statusMap[status] || status;
+              }
+            },
+            {
+              title: 'Thao tác',
+              key: 'actions',
+              width: 120,
+              render: (_, record) => (
+                <Space>
+                  <Button 
+                    size="small" 
+                    icon={<Copy size={12} />}
+                    title="Sao chép"
+                    onClick={() => copyInvoice(record.maHd)}
+                  />
+                  <Button 
+                    size="small" 
+                    icon={<Printer size={12} />}
+                    title="In lại"
+                    onClick={() => reprintInvoice(record)}
+                  />
+                </Space>
+              )
+            }
+          ]}
+          pagination={{
+            pageSize: 10,
+            showSizeChanger: false,
+            showTotal: (total) => `Tổng ${total} hóa đơn`
+          }}
+          rowKey="maHd"
+          size="small"
+        />
+      </Modal>
+
+      {/* Table Operations Modals */}
+      
+      {/* Enhanced Table Operations Modals */}
+      <TableMergeModal
+        visible={showMergeTableModal}
+        onCancel={() => {
+          setShowMergeTableModal(false);
+          setSelectedTargetTable(null);
+        }}
+        onConfirm={handleMergeTable}
+        selectedTable={selectedTable}
+        tables={tables}
+        loading={loading || operationInProgress}
+      />
+
+      <TableSplitModal
+        visible={showSplitTableModal}
+        onCancel={() => {
+          setShowSplitTableModal(false);
+          setSelectedItemsForSplit([]);
+          setSplitTargetTable(null);
+        }}
+        onConfirm={handleSplitTable}
+        selectedTable={selectedTable}
+        invoiceDetails={invoiceDetails}
+        loading={loading || operationInProgress}
+        selectedItemsForSplit={selectedItemsForSplit}
+        setSelectedItemsForSplit={setSelectedItemsForSplit}
+        splitTargetTable={splitTargetTable}
+        setSplitTargetTable={setSplitTargetTable}
+        availableTablesForSplit={availableTablesForSplit}
+      />
+
+      <TableTransferModal
+        visible={showTransferTableModal}
+        onCancel={() => {
+          setShowTransferTableModal(false);
+          setSelectedTargetTable(null);
+        }}
+        onConfirm={handleTransferTable}
+        selectedTable={selectedTable}
+        tables={tables}
+        loading={loading || operationInProgress}
+      />
+
+      {/* Table Merge Animation */}
+      <TableMergeAnimation
+        sourceTable={animationTables.source}
+        targetTable={animationTables.target}
+        isVisible={showMergeAnimation}
+        onComplete={handleAnimationComplete}
+      />
+
+      {/* Modal chọn số lượng khi thêm sản phẩm */}
+      <Modal
+        title={`Thêm ${selectedProductForAdd?.ten || ''}`}
+        open={showQuantityModal}
+        onOk={confirmAddProduct}
+        onCancel={() => {
+          setShowQuantityModal(false);
+          setSelectedProductForAdd(null);
+          setQuantityToAdd(1);
+        }}
+        okText="Thêm vào đơn"
+        cancelText="Hủy"
+        width={400}
+      >
+        <div style={{ textAlign: 'center', padding: '20px 0' }}>
+          <div style={{ marginBottom: 16 }}>
+            <Text strong style={{ fontSize: 16 }}>
+              {selectedProductForAdd?.ten}
+            </Text>
+            <br />
+            <Text type="secondary">
+              Giá: {selectedProductForAdd?.gia?.toLocaleString('vi-VN')} đ
+            </Text>
+          </div>
+          
+          <div style={{ marginBottom: 20 }}>
+            <Text>Số lượng:</Text>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', marginTop: 8 }}>
+              <Button
+                icon={<Minus size={16} />}
+                onClick={() => setQuantityToAdd(Math.max(1, quantityToAdd - 1))}
+                disabled={quantityToAdd <= 1}
+              />
+              <InputNumber
+                value={quantityToAdd}
+                min={1}
+                style={{ width: 80, margin: '0 12px' }}
+                onChange={(value) => setQuantityToAdd(value || 1)}
+              />
+              <Button
+                icon={<Plus size={16} />}
+                onClick={() => setQuantityToAdd(quantityToAdd + 1)}
+              />
+            </div>
+          </div>
+          
+          <div>
+            <Text strong>
+              Tổng: {((selectedProductForAdd?.gia || 0) * quantityToAdd).toLocaleString('vi-VN')} đ
+            </Text>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Modal cập nhật số lượng */}
+      <Modal
+        title={`Cập nhật số lượng: ${selectedItemForUpdate?.tenSp || ''}`}
+        open={showUpdateQuantityModal}
+        onOk={confirmUpdateQuantity}
+        onCancel={() => {
+          setShowUpdateQuantityModal(false);
+          setSelectedItemForUpdate(null);
+          setNewQuantityForUpdate(1);
+        }}
+        okText="Cập nhật"
+        cancelText="Hủy"
+        width={400}
+      >
+        <div style={{ textAlign: 'center', padding: '20px 0' }}>
+          <div style={{ marginBottom: 16 }}>
+            <Text strong style={{ fontSize: 16 }}>
+              {selectedItemForUpdate?.tenSp}
+            </Text>
+            <br />
+            <Text type="secondary">
+              Giá: {parseFloat(selectedItemForUpdate?.gia || selectedItemForUpdate?.giaBan || 0).toLocaleString('vi-VN')} đ
+            </Text>
+          </div>
+          
+          <div style={{ marginBottom: 20 }}>
+            <Text>Số lượng mới:</Text>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', marginTop: 8 }}>
+              <Button
+                icon={<Minus size={16} />}
+                onClick={() => setNewQuantityForUpdate(Math.max(1, newQuantityForUpdate - 1))}
+                disabled={newQuantityForUpdate <= 1}
+              />
+              <InputNumber
+                value={newQuantityForUpdate}
+                min={1}
+                style={{ width: 80, margin: '0 12px' }}
+                onChange={(value) => setNewQuantityForUpdate(value || 1)}
+              />
+              <Button
+                icon={<Plus size={16} />}
+                onClick={() => setNewQuantityForUpdate(newQuantityForUpdate + 1)}
+              />
+            </div>
+          </div>
+          
+          <div>
+            <Text strong>
+              Tổng mới: {(parseFloat(selectedItemForUpdate?.gia || selectedItemForUpdate?.giaBan || 0) * newQuantityForUpdate).toLocaleString('vi-VN')} đ
+            </Text>
+          </div>
+          
+          <div style={{ marginTop: 16, padding: 12, backgroundColor: '#fff2e8', borderRadius: 6 }}>
+            <Text type="warning" style={{ fontSize: 12 }}>
+              Món sẽ được xóa và thêm lại với số lượng mới
+            </Text>
+          </div>
+        </div>
+      </Modal>
+
+      <Modal
+        title="Thông tin khách hàng & ưu đãi"
+        open={invoiceInfoModalVisible}
+        onCancel={() => {
+          setInvoiceInfoModalVisible(false);
+          setLoyaltyPickerVisible(false);
+        }}
+        footer={[
+          <Button key="close" type="primary" onClick={() => {
+            setInvoiceInfoModalVisible(false);
+            setLoyaltyPickerVisible(false);
+          }}>
+            Đóng
+          </Button>
+        ]}
+        width={540}
+      >
+        <Space direction="vertical" size={16} style={{ width: '100%' }}>
+          <div>
+            <Text strong>Khách hàng tích điểm</Text>
+            <div style={{ marginTop: 8, position: 'relative' }}>
+              <Input.Search
+                placeholder="Nhập số điện thoại khách hàng"
+                value={loyaltyPhoneInput}
+                onChange={handleLoyaltyPhoneInputChange}
+                onSearch={handleLoyaltySearchByPhone}
+                enterButton="Tìm"
+                loading={loyaltySearchLoading}
+                allowClear
+              />
+              {loyaltyPickerVisible && loyaltySearchResults.length > 0 && (
+                <div
+                  style={{
+                    position: 'absolute',
+                    top: '100%',
+                    left: 0,
+                    right: 0,
+                    maxHeight: '220px',
+                    overflowY: 'auto',
+                    background: 'white',
+                    border: '1px solid #d9d9d9',
+                    borderRadius: 4,
+                    boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
+                    marginTop: 4,
+                    zIndex: 1000
+                  }}
+                >
+                  {loyaltySearchResults.map((customer) => (
+                    <div
+                      key={customer.id}
+                      onClick={() => handleSelectLoyaltyResult(customer)}
+                      style={{
+                        padding: '8px 12px',
+                        cursor: 'pointer',
+                        borderBottom: '1px solid #f0f0f0'
+                      }}
+                      onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#f5f5f5')}
+                      onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'white')}
+                    >
+                      <div style={{ fontWeight: 'bold', color: '#1890ff' }}>
+                        {customer.name || 'Khách hàng'}
+                      </div>
+                      <div style={{ fontSize: 12, color: '#666' }}>
+                        SĐT: {customer.phone || customer.id}
+                      </div>
+                      <div style={{ fontSize: 12, color: '#52c41a' }}>
+                        Điểm: {customer.points?.toLocaleString('vi-VN') || 0}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+            <Space direction="vertical" size={6} style={{ width: '100%', marginTop: 8 }}>
+              <Button
+                size="small"
+                onClick={clearLoyaltyCustomer}
+                disabled={!loyaltyCustomer && loyaltyPhoneInput === ''}
+              >
+                Xóa khách hàng
+              </Button>
+              {loyaltyCustomer && (
+                <div style={{ padding: 8, background: '#f0f5ff', borderRadius: 4 }}>
+                  <Text strong style={{ color: '#1890ff', display: 'block' }}>
+                    {loyaltyCustomer.name || 'Khách hàng'}
+                  </Text>
+                  <Text type="secondary" style={{ fontSize: 12 }}>
+                    SĐT: {loyaltyCustomer.phone || loyaltyCustomer.id}
+                  </Text>
+                </div>
+              )}
+              {loyaltyCustomerSummary && (
+                <div>
+                  <Text type="secondary">
+                    Điểm hiện có: {loyaltyCustomerSummary.points.toLocaleString('vi-VN')}
+                  </Text>
+                  {loyaltyCustomerSummary.tier && (
+                    <Text type="secondary" style={{ display: 'block' }}>
+                      Hạng: {loyaltyCustomerSummary.tier}
+                    </Text>
+                  )}
+                </div>
+              )}
+              {loyaltyPointsEarned > 0 && (
+                <Text type="success">
+                  Điểm sẽ cộng: {loyaltyPointsEarned.toLocaleString('vi-VN')}
+                </Text>
+              )}
+            </Space>
+          </div>
+          <Divider style={{ margin: '12px 0' }} />
+          <div>
+            <Text strong>Chương trình khuyến mãi</Text>
+            {activeSalesProgram ? (
+              <div style={{ marginTop: 8 }}>
+                <Text style={{ display: 'block' }}>
+                  Tên chương trình: <strong>{activeSalesProgram.name || activeSalesProgram.programId}</strong>
+                </Text>
+                {activeSalesProgram.value && (
+                  <Text style={{ display: 'block', marginTop: 4 }}>
+                    Chiết khấu chung: {activeSalesProgram.value}%
+                  </Text>
+                )}
+                {programDiscountBreakdown.length > 0 && (
+                  <List
+                    size="small"
+                    dataSource={programDiscountBreakdown}
+                    style={{ marginTop: 8 }}
+                    renderItem={(discountItem) => (
+                      <List.Item>
+                        <List.Item.Meta
+                          title={`${discountItem.productName} (x${discountItem.quantity})`}
+                          description={`Chiết khấu: ${discountItem.discountPercent}%`}
+                        />
+                        <div style={{ color: '#cf1322', fontWeight: 600 }}>
+                          -{discountItem.discountAmount.toLocaleString('vi-VN')} đ
+                        </div>
+                      </List.Item>
+                    )}
+                  />
+                )}
+                <Text strong style={{ display: 'block', marginTop: 8, color: '#cf1322' }}>
+                  Tổng chiết khấu chương trình: -{(invoiceSummary.programDiscount || 0).toLocaleString('vi-VN')} đ
+                </Text>
+              </div>
+            ) : (
+              <Text type="secondary" style={{ display: 'block', marginTop: 8 }}>
+                Chưa áp dụng chương trình khuyến mãi.
+              </Text>
+            )}
+          </div>
+          <Divider style={{ margin: '12px 0' }} />
+          <div>
+            <Text strong>Chiết khấu từng món</Text>
+            {itemDiscountBreakdown.length > 0 ? (
+              <List
+                size="small"
+                dataSource={itemDiscountBreakdown}
+                style={{ marginTop: 8 }}
+                renderItem={(discountItem) => (
+                  <List.Item>
+                    <List.Item.Meta
+                      title={`${discountItem.productName} (x${discountItem.quantity})`}
+                      description={`Chiết khấu: ${discountItem.discountPercent}%`}
+                    />
+                    <div style={{ color: '#d4380d', fontWeight: 600 }}>
+                      -{discountItem.discountAmount.toLocaleString('vi-VN')} đ
+                    </div>
+                  </List.Item>
+                )}
+              />
+            ) : (
+              <Text type="secondary" style={{ display: 'block', marginTop: 8 }}>
+                Chưa áp dụng chiết khấu cho món nào.
+              </Text>
+            )}
+            <Text strong style={{ display: 'block', marginTop: 8, color: '#d4380d' }}>
+              Tổng chiết khấu món: -{(invoiceSummary.itemDiscount || 0).toLocaleString('vi-VN')} đ
+            </Text>
+          </div>
+        </Space>
+      </Modal>
+
+      <Modal
+        title={`Chiết khấu món: ${selectedItemForDiscount?.tenSp || ''}`}
+        open={itemDiscountModalVisible}
+        onCancel={closeItemDiscountModal}
+        onOk={confirmItemDiscount}
+        okText="Lưu"
+        cancelText="Hủy"
+        confirmLoading={loading}
+        width={420}
+      >
+        <Space direction="vertical" size={12} style={{ width: '100%' }}>
+          <div>
+            <Text strong style={{ display: 'block' }}>
+              {selectedItemForDiscount?.tenSp || 'Chọn món để thiết lập chiết khấu'}
+            </Text>
+            {selectedItemForDiscount && (
+              <Text type="secondary" style={{ display: 'block', marginTop: 4 }}>
+                Đơn giá: {parseFloat(selectedItemForDiscount.gia || selectedItemForDiscount.giaBan || selectedItemForDiscount.donGia || 0).toLocaleString('vi-VN')} đ • SL: {selectedItemForDiscount.sl || selectedItemForDiscount.soLuong || 0}
+              </Text>
+            )}
+          </div>
+          <div>
+            <Text style={{ display: 'block', marginBottom: 6 }}>Chiết khấu (%)</Text>
+            <InputNumber
+              value={itemDiscountInput}
+              onChange={handleItemDiscountChange}
+              min={0}
+              max={100}
+              precision={2}
+              style={{ width: '100%' }}
+            />
+          </div>
+          <div style={{ padding: 10, background: '#fff7e6', borderRadius: 6, border: '1px solid #ffd591' }}>
+            <Text style={{ display: 'block', color: '#d46b08' }}>
+              Số tiền giảm ước tính: -{itemDiscountPreview.toLocaleString('vi-VN')} đ
+            </Text>
+          </div>
+        </Space>
+      </Modal>
+
+      {/* Enhanced Payment Modal */}
+      <PaymentModal
+        visible={showPaymentModal}
+        onCancel={() => setShowPaymentModal(false)}
+        onConfirm={processPaymentEnhanced}
+        onPaymentSuccessClose={handlePaymentSuccessClose}
+        invoice={currentInvoice}
+        orderTotal={orderTotal}
+        invoiceDetails={invoiceDetails}
+        loading={paymentLoading}
+        includeVAT={includeVAT}
+        promotionDiscountAmount={invoiceSummary.discount}
+        subtotalBeforeDiscount={invoiceSummary.subtotal}
+        activeSalesProgram={activeSalesProgram}
+        programDiscountBreakdown={programDiscountBreakdown}
+        programDiscountAmount={invoiceSummary.programDiscount || 0}
+        itemDiscountAmount={invoiceSummary.itemDiscount || 0}
+        itemDiscountBreakdown={itemDiscountBreakdown}
+      />
+    </div>
+  );
+
+};
+
+export default BanHang;

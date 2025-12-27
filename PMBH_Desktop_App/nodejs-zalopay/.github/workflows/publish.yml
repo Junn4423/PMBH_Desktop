@@ -1,0 +1,60 @@
+name: Publish package to GitHub Packages and NPM registry
+on:
+  push:
+    tags:
+      - "v*.*.*"
+jobs:
+  github-packages:
+    runs-on: ubuntu-latest
+    permissions:
+      packages: write
+      contents: read
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+      - name: Set up node
+        uses: actions/setup-node@v3
+        with:
+          node-version: 16
+          registry-url: https://npm.pkg.github.com/
+          scope: "@zalopay-oss"
+      - name: Install dependencies
+        run: npm i
+      - name: Compile the package
+        run: |
+          npm run build
+      - name: Publish package to GitHub Packages
+        run: npm publish --access public
+        env:
+          NODE_AUTH_TOKEN: ${{secrets.GITHUB_TOKEN}}
+  npm-registry:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+      - name: Set up node
+        uses: actions/setup-node@v3
+        with:
+          node-version: 16
+          registry-url: "https://registry.npmjs.org"
+      - name: Install dependencies
+        run: npm i
+      - name: Compile the package
+        run: |
+          npm run build
+      - name: Publish package to NPM registry
+        run: npm publish --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+  release:
+    permissions:
+      contents: write
+    needs: [github-packages, npm-registry]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: GH Release
+        uses: softprops/action-gh-release@v0.1.15
+        with:
+          token: ${{secrets.GITHUB_TOKEN}}
+          generate_release_notes: true

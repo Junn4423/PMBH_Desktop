@@ -1,0 +1,110 @@
+{
+  "name": "pmbh-desktop-app",
+  "version": "1.0.0",
+  "description": "Ứng dụng POS Quán Cafe - Phần mềm bán hàng Desktop",
+  "main": "public/electron.js",
+  "private": true,
+  "homepage": "./",
+  "author": "PMBH Team",
+  "proxy": "http://localhost",
+  "scripts": {
+    "electron": "electron .",
+    "electron-dev": "set ELECTRON_IS_DEV=true && electron .",
+    "electron-dev-mac": "ELECTRON_IS_DEV=true electron .",
+    "electron-only": "npm run build && electron .",
+    "electron-test": "set ELECTRON_IS_DEV=false && npm run build && electron .",
+    "electron-mac": "npm run build && ELECTRON_IS_DEV=false electron .",
+    "start": "react-scripts start",
+    "build": "react-scripts build",
+    "test": "react-scripts test",
+    "eject": "react-scripts eject",
+    "electron-pack": "electron-builder",
+    "preelectron-pack": "npm run build",
+    "dev": "concurrently \"npm start\" \"wait-on http://localhost:3000 && npm run electron-dev\"",
+    "dev-mac": "concurrently \"npm start\" \"wait-on http://localhost:3000 && npm run electron-dev-mac\"",
+    "dev-web": "npm start",
+    "swagger": "node proxy-server.js",
+    "dist": "npm run build && electron-builder --publish=never",
+    "build-win": "npm run build && electron-builder --win",
+    "build-mac": "npm run build && electron-builder --mac",
+    "build-linux": "npm run build && electron-builder --linux"
+  },
+  "build": {
+    "appId": "com.pmbh.cafepos",
+    "productName": "PMBH Cafe POS",
+    "directories": {
+      "buildResources": "build"
+    },
+    "files": [
+      "build/**/*",
+      "public/**/*"
+    ],
+    "mac": {
+      "category": "public.app-category.business"
+    },
+    "win": {
+      "target": "nsis"
+    },
+    "linux": {
+      "target": "zip",
+      "category": "Office"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "PMBH Cafe POS"
+    }
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "electron-is-dev": "^2.0.0",
+    "electron-store": "^8.1.0",
+    "express": "^5.1.0",
+    "helmet": "^8.1.0",
+    "morgan": "^1.10.1",
+    "swagger-ui-express": "^5.0.1",
+    "uuid": "^9.0.1",
+    "yaml": "^2.8.2"
+  },
+  "devDependencies": {
+    "@ant-design/icons": "^5.2.6",
+    "@tanstack/react-query": "^5.90.2",
+    "antd": "^5.12.8",
+    "axios": "^1.6.2",
+    "concurrently": "^8.2.2",
+    "crypto-js": "^4.2.0",
+    "dayjs": "^1.11.18",
+    "electron": "^27.1.3",
+    "electron-builder": "^24.6.4",
+    "electron-packager": "^17.1.2",
+    "http-proxy-middleware": "^3.0.5",
+    "lodash": "^4.17.21",
+    "lucide-react": "^0.542.0",
+    "moment": "^2.29.4",
+    "qrcode.react": "^4.2.0",
+    "qs": "^6.14.0",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "react-router-dom": "^6.20.1",
+    "react-scripts": "^5.0.1",
+    "react-window": "^2.1.2",
+    "react-window-infinite-loader": "^2.0.0",
+    "recharts": "^2.8.0",
+    "styled-components": "^6.1.6",
+    "wait-on": "^7.2.0"
+  },
+  "browserslist": {
+    "production": [
+      ">0.2%",
+      "not dead",
+      "not op_mini all"
+    ],
+    "development": [
+      "last 1 chrome version",
+      "last 1 firefox version",
+      "last 1 safari version"
+    ]
+  }
+}

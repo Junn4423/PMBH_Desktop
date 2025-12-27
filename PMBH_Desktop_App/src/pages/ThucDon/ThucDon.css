@@ -1,0 +1,10 @@
+.thuc-don .page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+}
+
+.thuc-don .page-header h2 {
+  margin: 0;
+}
